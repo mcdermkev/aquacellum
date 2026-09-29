@@ -97,25 +97,25 @@ export function BuyerInsights({ walletAccount, totalXp = 0, casualModeActive = f
         <div className="buyer-insights__kpis">
           <InsightTile
             icon={<ShoppingCart weight="duotone" size={18} />}
-            color="#38bdf8"
+            color="#0369a1"
             label="Orders"
             value={stats.total_orders.toLocaleString()}
           />
           <InsightTile
             icon={<Package weight="duotone" size={18} />}
-            color="#a78bfa"
+            color="#6d28d9"
             label="Spent"
             value={formatPriceCents(stats.total_spent_cents || 0)}
           />
           <InsightTile
             icon={<Users weight="duotone" size={18} />}
-            color="#34d399"
+            color="#047857"
             label="Sellers"
             value={(stats.unique_sellers || 0).toLocaleString()}
           />
           <InsightTile
             icon={<Star weight="duotone" size={18} />}
-            color="#fbbf24"
+            color="#b45309"
             label="XP Earned"
             value={(stats.total_xp_earned || 0).toLocaleString()}
           />
@@ -129,7 +129,7 @@ export function BuyerInsights({ walletAccount, totalXp = 0, casualModeActive = f
       <div className="buyer-insights__xp-progress glass-card">
         <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.25rem" }}>
           <Handshake weight="duotone" size={18} style={{ color: "var(--amber-400, #fbbf24)" }} />
-          <strong style={{ fontFamily: "Outfit, sans-serif", fontSize: "0.85rem", color: "#fff" }}>
+          <strong style={{ fontFamily: "Outfit, sans-serif", fontSize: "0.85rem", color: "var(--text-primary)" }}>
             {xpProgress.currentTier.breederLabel || xpProgress.currentTier.key}
           </strong>
         </div>
@@ -157,7 +157,7 @@ function InsightTile({ icon, color, label, value }) {
   return (
     <div className="glass-card" style={{ padding: "0.85rem", display: "flex", flexDirection: "column", alignItems: "center", gap: "0.3rem", borderTop: `2px solid ${color}` }}>
       <span style={{ color, display: "flex" }}>{icon}</span>
-      <span style={{ fontFamily: "Outfit, sans-serif", fontSize: "1.05rem", fontWeight: 700, color: "#fff" }}>{value}</span>
+      <span style={{ fontFamily: "Outfit, sans-serif", fontSize: "1.05rem", fontWeight: 700, color: "var(--text-primary)" }}>{value}</span>
       <span style={{ fontSize: "0.62rem", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.03em" }}>{label}</span>
     </div>
   );

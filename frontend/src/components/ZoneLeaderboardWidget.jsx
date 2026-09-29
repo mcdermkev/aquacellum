@@ -18,12 +18,12 @@ import { getPointsSuffix, getTierInfo, TIER_LADDER } from "../utils/xp";
 // ─────────────────────────────────────────────────────────────────────────────
 
 const TIER_COLORS = {
-  Shallow: "#94a3b8",
-  Coastal: "#38bdf8",
-  Pelagic: "#fbbf24",
-  Abyssal: "#a855f7",
-  Hadal: "#f59e0b",
-  "Hadal-Champion": "#f59e0b",
+  Shallow: "var(--text-muted)",
+  Coastal: "var(--accent-blue)",
+  Pelagic: "var(--accent-amber)",
+  Abyssal: "var(--accent-violet)",
+  Hadal: "var(--accent-amber)",
+  "Hadal-Champion": "var(--accent-amber)",
 };
 
 const TIER_ICONS = {
@@ -41,7 +41,7 @@ const TIER_ICONS = {
 
 function LeaderboardRow({ entry, rank, isCurrentUser, casualModeActive }) {
   const suffix = getPointsSuffix(casualModeActive);
-  const tierColor = TIER_COLORS[entry.current_tier] || "#94a3b8";
+  const tierColor = TIER_COLORS[entry.current_tier] || "var(--text-muted)";
   const tierIcon = TIER_ICONS[entry.current_tier] || "🥚";
 
   const rankDisplay = rank === 1 ? "👑" : rank === 2 ? "🥈" : rank === 3 ? "🥉" : `${rank}`;
@@ -68,7 +68,7 @@ function LeaderboardRow({ entry, rank, isCurrentUser, casualModeActive }) {
           fontSize: rank <= 3 ? "1rem" : "0.75rem",
           width: "1.5rem",
           textAlign: "center",
-          color: rank === 1 ? "#fbbf24" : "var(--text-muted)",
+          color: rank === 1 ? "var(--accent-amber)" : "var(--text-muted)",
           fontWeight: rank <= 3 ? "700" : "400",
           flexShrink: 0,
         }}>
@@ -79,13 +79,13 @@ function LeaderboardRow({ entry, rank, isCurrentUser, casualModeActive }) {
           <div style={{
             fontSize: "0.78rem",
             fontWeight: isCurrentUser ? "700" : "500",
-            color: isCurrentUser ? "#fff" : "var(--text-secondary)",
+            color: isCurrentUser ? "var(--text-primary)" : "var(--text-secondary)",
             overflow: "hidden",
             textOverflow: "ellipsis",
             whiteSpace: "nowrap",
           }}>
             {entry.display_name || `${entry.wallet_address?.slice(0, 6)}...${entry.wallet_address?.slice(-4)}`}
-            {isCurrentUser && <span style={{ fontSize: "0.6rem", color: "var(--accent-cyan)", marginLeft: "0.3rem" }}>(you)</span>}
+            {isCurrentUser && <span style={{ fontSize: "0.6rem", color: "var(--accent-teal)", marginLeft: "0.3rem" }}>(you)</span>}
           </div>
         </div>
       </div>
@@ -113,8 +113,8 @@ function ZonePicker({ zones, selectedZone, onSelect, isLoading }) {
       <button
         onClick={() => setOpen(!open)}
         style={{
-          background: "rgba(255,255,255,0.04)",
-          border: "1px solid rgba(255,255,255,0.1)",
+          background: "rgba(var(--ink-rgb), 0.04)",
+          border: "1px solid rgba(var(--ink-rgb), 0.15)",
           borderRadius: "6px",
           padding: "0.3rem 0.6rem",
           fontSize: "0.65rem",
@@ -137,8 +137,8 @@ function ZonePicker({ zones, selectedZone, onSelect, isLoading }) {
           top: "calc(100% + 4px)",
           right: 0,
           zIndex: 100,
-          background: "rgba(10, 10, 20, 0.95)",
-          border: "1px solid rgba(255,255,255,0.1)",
+          background: "#ffffff",
+          border: "1px solid rgba(var(--ink-rgb), 0.15)",
           borderRadius: "10px",
           padding: "0.5rem",
           maxHeight: "200px",
@@ -154,7 +154,7 @@ function ZonePicker({ zones, selectedZone, onSelect, isLoading }) {
               borderRadius: "6px",
               cursor: "pointer",
               fontSize: "0.7rem",
-              color: !selectedZone ? "var(--accent-cyan)" : "var(--text-secondary)",
+              color: !selectedZone ? "var(--accent-teal)" : "var(--text-secondary)",
               fontWeight: !selectedZone ? "600" : "400",
               background: !selectedZone ? "rgba(56,189,248,0.08)" : "transparent",
             }}
@@ -177,7 +177,7 @@ function ZonePicker({ zones, selectedZone, onSelect, isLoading }) {
                 borderRadius: "6px",
                 cursor: "pointer",
                 fontSize: "0.7rem",
-                color: selectedZone === zone.zone_hash ? "var(--accent-cyan)" : "var(--text-secondary)",
+                color: selectedZone === zone.zone_hash ? "var(--accent-teal)" : "var(--text-secondary)",
                 fontWeight: selectedZone === zone.zone_hash ? "600" : "400",
                 background: selectedZone === zone.zone_hash ? "rgba(56,189,248,0.08)" : "transparent",
                 display: "flex",
@@ -230,13 +230,13 @@ export function ZoneLeaderboardWidget({ casualModeActive = true, compact = false
         style={{
           padding: compact ? "0.75rem" : "1rem 1.25rem",
           borderRadius: "var(--radius-sm)",
-          border: "1px solid rgba(255,255,255,0.06)",
-          background: "rgba(255,255,255,0.02)",
+          border: "1px solid rgba(var(--ink-rgb), 0.11)",
+          background: "rgba(var(--ink-rgb), 0.02)",
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", marginBottom: "0.5rem" }}>
           <span style={{ fontSize: "1rem" }}>🏆</span>
-          <span style={{ fontSize: "0.8rem", fontWeight: "700", color: "#fff" }}>Zone Rankings</span>
+          <span style={{ fontSize: "0.8rem", fontWeight: "700", color: "var(--text-primary)" }}>Zone Rankings</span>
         </div>
         <p style={{ fontSize: "0.72rem", color: "var(--text-muted)", lineHeight: "1.5", margin: 0 }}>
           Enable location to join your regional zone leaderboard and compete with nearby keepers.
@@ -265,7 +265,7 @@ export function ZoneLeaderboardWidget({ casualModeActive = true, compact = false
         <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
           <span style={{ fontSize: "1rem" }}>🏆</span>
           <div>
-            <h4 style={{ margin: 0, fontSize: "0.8rem", fontWeight: "700", color: "#fff" }}>
+            <h4 style={{ margin: 0, fontSize: "0.8rem", fontWeight: "700", color: "var(--text-primary)" }}>
               {zoneName}
             </h4>
             {userRank && isViewingOwnZone && (
@@ -324,7 +324,7 @@ export function ZoneLeaderboardWidget({ casualModeActive = true, compact = false
           <span style={{ color: "var(--text-secondary)" }}>
             ···  You: #{userRank.zone_rank}
           </span>
-          <span style={{ color: TIER_COLORS[userRank.current_tier] || "#94a3b8", fontFamily: "monospace", fontWeight: "600" }}>
+          <span style={{ color: TIER_COLORS[userRank.current_tier] || "var(--text-muted)", fontFamily: "monospace", fontWeight: "600" }}>
             {userRank.total_xp?.toLocaleString()} {getPointsSuffix(casualModeActive)}
           </span>
         </div>

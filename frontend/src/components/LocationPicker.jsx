@@ -24,7 +24,7 @@
  *      they picked the right car park, not one two towns over. A coordinate pair
  *      is unverifiable by eye.
  *
- * The Mapbox load/init approach (CDN script injection, dark-v11, VITE_MAPBOX_TOKEN)
+ * The Mapbox load/init approach (CDN script injection, Mapbox style, VITE_MAPBOX_TOKEN; light-v11 here for the daylight theme)
  * follows TideMap.jsx and breeder/PickupSpotSetup.jsx. PickupSpotSetup's own
  * comment notes "there is no existing shared Mapbox wrapper component to reuse" —
  * this is that component. It is deliberately NOT retrofitted into PickupSpotSetup
@@ -160,13 +160,13 @@ export function LocationPicker({
       id: "picker-radius-fill",
       type: "fill",
       source: "picker-radius",
-      paint: { "fill-color": "#38bdf8", "fill-opacity": 0.14 },
+      paint: { "fill-color": "#0284c7", "fill-opacity": 0.14 },
     });
     map.addLayer({
       id: "picker-radius-line",
       type: "line",
       source: "picker-radius",
-      paint: { "line-color": "#38bdf8", "line-width": 1.5 },
+      paint: { "line-color": "#0284c7", "line-width": 1.5 },
     });
   }, []);
 
@@ -183,7 +183,7 @@ export function LocationPicker({
       const hasPin = lat != null && lng != null;
       const map = new window.mapboxgl.Map({
         container: mapContainer.current,
-        style: "mapbox://styles/mapbox/dark-v11",
+        style: "mapbox://styles/mapbox/light-v11",
         center: hasPin ? [lng, lat] : DEFAULT_CENTER,
         zoom: hasPin ? PICKED_ZOOM : DEFAULT_ZOOM,
       });

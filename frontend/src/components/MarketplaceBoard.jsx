@@ -789,7 +789,7 @@ export function MarketplaceBoard({
           overflow: "hidden",
           boxShadow: "0 8px 32px 0 rgba(168, 85, 247, 0.05)"
         }}>
-          <h2 style={{ fontSize: "1.75rem", color: "#fff", margin: 0, display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          <h2 style={{ fontSize: "1.75rem", color: "var(--text-primary)", margin: 0, display: "flex", alignItems: "center", gap: "0.5rem" }}>
             <span>📊</span> Live Expo Sales & Inventory Analytics
           </h2>
           <p style={{ color: "var(--text-secondary)", fontSize: "0.875rem", marginTop: "0.5rem", marginBottom: 0 }}>
@@ -805,7 +805,7 @@ export function MarketplaceBoard({
             borderRadius: "20px",
             background: "rgba(168, 85, 247, 0.15)",
             border: "1px solid rgba(168, 85, 247, 0.4)",
-            color: "#c084fc",
+            color: "var(--accent-violet)",
             letterSpacing: "0.05em",
             textTransform: "uppercase"
           }}>
@@ -825,7 +825,7 @@ export function MarketplaceBoard({
             border: "1px solid rgba(168, 85, 247, 0.2)",
             boxShadow: "0 4px 20px rgba(168, 85, 247, 0.05)"
           }}>
-            <h3 style={{ fontSize: "1.1rem", color: "#fff", margin: 0, display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            <h3 style={{ fontSize: "1.1rem", color: "var(--text-primary)", margin: 0, display: "flex", alignItems: "center", gap: "0.5rem" }}>
               <span>🚀</span> Inventory Velocity Meters
             </h3>
             <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", margin: 0 }}>
@@ -835,10 +835,10 @@ export function MarketplaceBoard({
               {speciesVelocity.map((sp, idx) => (
                 <div key={idx} style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.8rem" }}>
-                    <strong style={{ color: "#fff" }}>{sp.name}</strong>
+                    <strong style={{ color: "var(--text-primary)" }}>{sp.name}</strong>
                     <span style={{ color: sp.statusColor, fontWeight: "600" }}>{sp.status}</span>
                   </div>
-                  <div style={{ height: "8px", width: "100%", background: "rgba(255,255,255,0.03)", borderRadius: "4px", overflow: "hidden", border: "1px solid rgba(255,255,255,0.05)" }}>
+                  <div style={{ height: "8px", width: "100%", background: "rgba(var(--ink-rgb), 0.03)", borderRadius: "4px", overflow: "hidden", border: "1px solid rgba(var(--ink-rgb), 0.1)" }}>
                     <div style={{ height: "100%", width: `${sp.pct}%`, background: sp.pct >= 50 ? "linear-gradient(90deg, var(--accent-red) 0%, #ef4444 100%)" : "linear-gradient(90deg, var(--accent-blue) 0%, #38bdf8 100%)", borderRadius: "4px" }} />
                   </div>
                   <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.65rem", color: "var(--text-secondary)" }}>
@@ -859,7 +859,7 @@ export function MarketplaceBoard({
             border: "1px solid rgba(168, 85, 247, 0.2)",
             boxShadow: "0 4px 20px rgba(168, 85, 247, 0.05)"
           }}>
-            <h3 style={{ fontSize: "1.1rem", color: "#fff", margin: 0, display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            <h3 style={{ fontSize: "1.1rem", color: "var(--text-primary)", margin: 0, display: "flex", alignItems: "center", gap: "0.5rem" }}>
               <span>⚖️</span> Fulfillment Splits
             </h3>
             <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", margin: 0 }}>
@@ -869,7 +869,7 @@ export function MarketplaceBoard({
             <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem", margin: "auto 0" }}>
               {/* Split Bar — only drawn when there is something to split. */}
               {hasFulfillmentData ? (
-                <div style={{ display: "flex", height: "24px", width: "100%", borderRadius: "6px", overflow: "hidden", border: "1px solid rgba(255,255,255,0.05)" }}>
+                <div style={{ display: "flex", height: "24px", width: "100%", borderRadius: "6px", overflow: "hidden", border: "1px solid rgba(var(--ink-rgb), 0.1)" }}>
                   <div style={{ width: `${cashPct}%`, background: "var(--accent-green)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: "0.7rem", fontWeight: "700" }} title="Cash Handshake">
                     {cashPct > 15 ? `${cashPct}%` : ""}
                   </div>
@@ -908,7 +908,7 @@ export function MarketplaceBoard({
             border: "1px solid rgba(168, 85, 247, 0.2)",
             boxShadow: "0 4px 20px rgba(168, 85, 247, 0.05)"
           }}>
-            <h3 style={{ fontSize: "1.1rem", color: "#fff", margin: 0, display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            <h3 style={{ fontSize: "1.1rem", color: "var(--text-primary)", margin: 0, display: "flex", alignItems: "center", gap: "0.5rem" }}>
               <span>🎖️</span> Double XP Telemetry
             </h3>
             <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", margin: 0 }}>
@@ -932,7 +932,7 @@ export function MarketplaceBoard({
                 <strong style={{ fontSize: "1.75rem", color: "var(--accent-amber)", fontFamily: "monospace" }}>+{eventDoubleXp}</strong>
               </div>
               <div style={{ textAlign: "center" }}>
-                <strong style={{ display: "block", color: "#fff", fontSize: "0.85rem" }}>Live Event Boost Active</strong>
+                <strong style={{ display: "block", color: "var(--text-primary)", fontSize: "0.85rem" }}>Live Event Boost Active</strong>
                 <span style={{ fontSize: "0.7rem", color: "var(--text-secondary)" }}>
                   You receive +2x XP points for all local transactions fulfilled within event bounds!
                 </span>
@@ -951,7 +951,7 @@ export function MarketplaceBoard({
       {casualModeActive && (
         <div style={{
           display: "flex",
-          background: "rgba(8, 25, 48, 0.6)",
+          background: "var(--bg-band)",
           border: "1px solid rgba(56, 189, 248, 0.12)",
           borderRadius: "10px",
           padding: "0.35rem",
@@ -970,7 +970,7 @@ export function MarketplaceBoard({
               borderRadius: "6px",
               cursor: "pointer",
               background: activeSubTab === "listings" ? "rgba(56, 189, 248, 0.15)" : "transparent",
-              color: activeSubTab === "listings" ? "#7dd3fc" : "var(--text-muted)",
+              color: activeSubTab === "listings" ? "var(--accent-blue)" : "var(--text-muted)",
               transition: "all 0.2s"
             }}
           >
@@ -987,7 +987,7 @@ export function MarketplaceBoard({
               borderRadius: "6px",
               cursor: "pointer",
               background: activeSubTab === "wanted" ? "rgba(56, 189, 248, 0.15)" : "transparent",
-              color: activeSubTab === "wanted" ? "#7dd3fc" : "var(--text-muted)",
+              color: activeSubTab === "wanted" ? "var(--accent-blue)" : "var(--text-muted)",
               transition: "all 0.2s"
             }}
           >
@@ -1000,7 +1000,7 @@ export function MarketplaceBoard({
       {!casualModeActive && (
         <div style={{
           display: "flex",
-          background: "rgba(15, 23, 42, 0.6)",
+          background: "#ffffff",
           border: "1px solid rgba(168, 85, 247, 0.2)",
           borderRadius: "10px",
           padding: "0.4rem",
@@ -1019,7 +1019,7 @@ export function MarketplaceBoard({
               borderRadius: "6px",
               cursor: "pointer",
               background: activeSubTab === "listings" ? "rgba(168, 85, 247, 0.18)" : "transparent",
-              color: activeSubTab === "listings" ? "#c084fc" : "var(--text-muted)",
+              color: activeSubTab === "listings" ? "var(--accent-violet)" : "var(--text-muted)",
               boxShadow: activeSubTab === "listings" ? "0 0 10px rgba(168, 85, 247, 0.15)" : "none",
               transition: "all 0.2s"
             }}
@@ -1037,7 +1037,7 @@ export function MarketplaceBoard({
               borderRadius: "6px",
               cursor: "pointer",
               background: activeSubTab === "wanted" ? "rgba(168, 85, 247, 0.18)" : "transparent",
-              color: activeSubTab === "wanted" ? "#c084fc" : "var(--text-muted)",
+              color: activeSubTab === "wanted" ? "var(--accent-violet)" : "var(--text-muted)",
               boxShadow: activeSubTab === "wanted" ? "0 0 10px rgba(168, 85, 247, 0.15)" : "none",
               transition: "all 0.2s"
             }}
@@ -1060,7 +1060,7 @@ export function MarketplaceBoard({
                 borderRadius: "6px",
                 cursor: "pointer",
                 background: activeSubTab === "analytics" ? "rgba(168, 85, 247, 0.18)" : "transparent",
-                color: activeSubTab === "analytics" ? "#c084fc" : "var(--text-muted)",
+                color: activeSubTab === "analytics" ? "var(--accent-violet)" : "var(--text-muted)",
                 boxShadow: activeSubTab === "analytics" ? "0 0 10px rgba(168, 85, 247, 0.15)" : "none",
                 transition: "all 0.2s"
               }}
@@ -1107,11 +1107,11 @@ export function MarketplaceBoard({
           <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
             <span style={{ fontSize: "1.5rem" }}>🤝</span>
             <div>
-              <h4 style={{ color: "#fff", margin: 0, fontSize: "0.95rem", fontWeight: "700" }}>
+              <h4 style={{ color: "var(--text-primary)", margin: 0, fontSize: "0.95rem", fontWeight: "700" }}>
                 Consolidated Local Pickup Funnel Active
               </h4>
               <p style={{ color: "var(--text-secondary)", margin: "0.25rem 0 0 0", fontSize: "0.8rem" }}>
-                Now displaying only active listings from breeder: <code style={{ color: "var(--accent-amber)", background: "rgba(255,255,255,0.05)", padding: "0.1rem 0.3rem", borderRadius: "4px" }}><SellerName address={activeSellerFilter} /></code>. Add additional specimens to consolidate your pickup trip.
+                Now displaying only active listings from breeder: <code style={{ color: "var(--accent-amber)", background: "rgba(var(--ink-rgb), 0.05)", padding: "0.1rem 0.3rem", borderRadius: "4px" }}><SellerName address={activeSellerFilter} /></code>. Add additional specimens to consolidate your pickup trip.
               </p>
             </div>
           </div>
@@ -1133,7 +1133,7 @@ export function MarketplaceBoard({
       {!filterSpeciesId && (
         <div className="glass-card" style={{ padding: "2rem", marginBottom: "2rem", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1.5rem" }}>
           <div>
-            <h2 style={{ fontSize: "1.75rem", marginBottom: "0.25rem", color: "#fff" }}>
+            <h2 style={{ fontSize: "1.75rem", marginBottom: "0.25rem", color: "var(--text-primary)" }}>
               {casualModeActive ? "Local Breeder Store" : "Available Local Livestock Directory"}
             </h2>
             <p style={{ color: "var(--text-muted)", fontSize: "0.875rem" }}>
@@ -1181,7 +1181,7 @@ export function MarketplaceBoard({
             padding: "1rem 1.5rem",
             marginBottom: "1.5rem",
             background: "linear-gradient(135deg, rgba(34, 197, 94, 0.04) 0%, rgba(56, 189, 248, 0.02) 100%)",
-            border: "1px solid rgba(255, 255, 255, 0.08)",
+            border: "1px solid rgba(var(--ink-rgb), 0.13)",
             borderRadius: "var(--radius-md)",
             backdropFilter: "blur(12px)",
             display: "flex",
@@ -1190,12 +1190,12 @@ export function MarketplaceBoard({
           }}>
             <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap" }}>
               <span style={{ fontSize: "1.2rem", lineHeight: 1 }}>🛡️</span>
-              <strong style={{ color: "#34d399", fontSize: "0.85rem" }}>
+              <strong style={{ color: "var(--accent-green)", fontSize: "0.85rem" }}>
                 Breeder Store Guarantee
               </strong>
               <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginLeft: "auto" }}>
-                <span style={{ fontSize: "0.7rem", padding: "0.25rem 0.65rem", borderRadius: "20px", background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.25)", color: "#34d399", textShadow: "0 0 6px rgba(34,197,94,0.2)", whiteSpace: "nowrap" }}>🛡️ Escrow Health Guarantee</span>
-                <span style={{ fontSize: "0.7rem", padding: "0.25rem 0.65rem", borderRadius: "20px", background: "rgba(56,189,248,0.08)", border: "1px solid rgba(56,189,248,0.25)", color: "#7dd3fc", textShadow: "0 0 6px rgba(56,189,248,0.2)", whiteSpace: "nowrap" }}>📦 3-Day Safe Arrival</span>
+                <span style={{ fontSize: "0.7rem", padding: "0.25rem 0.65rem", borderRadius: "20px", background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.25)", color: "var(--accent-green)", whiteSpace: "nowrap" }}>🛡️ Escrow Health Guarantee</span>
+                <span style={{ fontSize: "0.7rem", padding: "0.25rem 0.65rem", borderRadius: "20px", background: "rgba(56,189,248,0.08)", border: "1px solid rgba(56,189,248,0.25)", color: "var(--accent-blue)", whiteSpace: "nowrap" }}>📦 3-Day Safe Arrival</span>
                 {/* REMOVED: a "🤝 Verified Local Breeders" pill (§9.28). The other
                     two pills describe real platform mechanisms — escrow and the
                     arrival window both exist and are enforced. That one asserted
@@ -1224,17 +1224,17 @@ export function MarketplaceBoard({
           }}>
             <span style={{ fontSize: "1.75rem", lineHeight: 1 }}>🛡️</span>
             <div style={{ flex: 1, minWidth: "220px" }}>
-              <strong style={{ color: "#c084fc", fontSize: "0.85rem", display: "block", marginBottom: "0.2rem" }}>
+              <strong style={{ color: "var(--accent-violet)", fontSize: "0.85rem", display: "block", marginBottom: "0.2rem" }}>
                 Safe & Trusted Peer-to-Peer Exchange
               </strong>
               <p style={{ color: "var(--text-secondary)", fontSize: "0.75rem", margin: 0, lineHeight: 1.5 }}>
-                Every transaction is protected by a <strong style={{ color: "#fff" }}>smart-contract escrow lock</strong> — funds are only released after you confirm receipt. Local pickups use a <strong style={{ color: "#fff" }}>secure handshake PIN</strong> and shipping orders carry a <strong style={{ color: "#fff" }}>3-day delivery safety window</strong> before any funds clear. Fraud protection is built-in.
+                Every transaction is protected by a <strong style={{ color: "var(--text-primary)" }}>smart-contract escrow lock</strong> — funds are only released after you confirm receipt. Local pickups use a <strong style={{ color: "var(--text-primary)" }}>secure handshake PIN</strong> and shipping orders carry a <strong style={{ color: "var(--text-primary)" }}>3-day delivery safety window</strong> before any funds clear. Fraud protection is built-in.
               </p>
             </div>
             <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
-              <span style={{ fontSize: "0.7rem", padding: "0.3rem 0.75rem", borderRadius: "20px", background: "rgba(168,85,247,0.12)", border: "1px solid rgba(168,85,247,0.35)", color: "#c084fc", whiteSpace: "nowrap" }}>🔒 Escrow Protected</span>
-              <span style={{ fontSize: "0.7rem", padding: "0.3rem 0.75rem", borderRadius: "20px", background: "rgba(56,189,248,0.10)", border: "1px solid rgba(56,189,248,0.3)", color: "#7dd3fc", whiteSpace: "nowrap" }}>📦 3-Day Safety Window</span>
-              <span style={{ fontSize: "0.7rem", padding: "0.3rem 0.75rem", borderRadius: "20px", background: "rgba(251,191,36,0.10)", border: "1px solid rgba(251,191,36,0.3)", color: "#fbbf24", whiteSpace: "nowrap" }}>🤝 Handshake Verified</span>
+              <span style={{ fontSize: "0.7rem", padding: "0.3rem 0.75rem", borderRadius: "20px", background: "rgba(168,85,247,0.12)", border: "1px solid rgba(168,85,247,0.35)", color: "var(--accent-violet)", whiteSpace: "nowrap" }}>🔒 Escrow Protected</span>
+              <span style={{ fontSize: "0.7rem", padding: "0.3rem 0.75rem", borderRadius: "20px", background: "rgba(56,189,248,0.10)", border: "1px solid rgba(56,189,248,0.3)", color: "var(--accent-blue)", whiteSpace: "nowrap" }}>📦 3-Day Safety Window</span>
+              <span style={{ fontSize: "0.7rem", padding: "0.3rem 0.75rem", borderRadius: "20px", background: "rgba(251,191,36,0.10)", border: "1px solid rgba(251,191,36,0.3)", color: "var(--accent-amber)", whiteSpace: "nowrap" }}>🤝 Handshake Verified</span>
             </div>
           </div>
         )
@@ -1270,10 +1270,10 @@ export function MarketplaceBoard({
             flex: "1",
             minWidth: "200px",
             padding: "0.5rem 1rem",
-            background: "rgba(255, 255, 255, 0.03)",
+            background: "rgba(var(--ink-rgb), 0.03)",
             border: casualModeActive ? "1px solid var(--glass-border)" : "1px solid rgba(168, 85, 247, 0.3)",
             borderRadius: "4px",
-            color: "#fff",
+            color: "var(--text-primary)",
             fontSize: "0.875rem",
             outline: "none",
             transition: "all 0.2s"
@@ -1303,10 +1303,10 @@ export function MarketplaceBoard({
           onChange={(e) => setSortBy(e.target.value)}
           style={{
             padding: "0.5rem 1rem",
-            background: "rgba(8, 12, 20, 0.9)",
+            background: "#ffffff",
             border: casualModeActive ? "1px solid var(--glass-border)" : "1px solid rgba(168, 85, 247, 0.3)",
             borderRadius: "4px",
-            color: "#fff",
+            color: "var(--text-primary)",
             fontSize: "0.875rem",
             outline: "none",
             cursor: "pointer",
@@ -1347,7 +1347,7 @@ export function MarketplaceBoard({
             padding: "0.5rem 1rem",
             fontSize: "0.875rem",
             borderRadius: "4px",
-            background: showFilterPanel ? "rgba(56, 189, 248, 0.12)" : "rgba(255,255,255,0.03)",
+            background: showFilterPanel ? "rgba(56, 189, 248, 0.12)" : "rgba(var(--ink-rgb), 0.03)",
             borderColor: showFilterPanel ? "var(--accent-blue)" : "var(--glass-border)",
           }}
         >
@@ -1360,9 +1360,9 @@ export function MarketplaceBoard({
             onClick={() => setIsWizardOpen(true)}
             style={{ 
               padding: "0.5rem 1rem", 
-              background: displayTank ? "rgba(34, 197, 94, 0.15)" : "rgba(255,255,255,0.03)", 
+              background: displayTank ? "rgba(34, 197, 94, 0.15)" : "rgba(var(--ink-rgb), 0.03)", 
               borderColor: displayTank ? "var(--accent-green)" : "var(--glass-border)",
-              color: displayTank ? "var(--accent-green)" : "#fff",
+              color: displayTank ? "var(--accent-green)" : "var(--text-primary)",
               fontSize: "0.875rem",
               borderRadius: "4px",
               cursor: "pointer"
@@ -1395,7 +1395,7 @@ export function MarketplaceBoard({
               id="marketplace-family-filter"
               value={familyFilter}
               onChange={(e) => setFamilyFilter(e.target.value)}
-              style={{ padding: "0.4rem 0.75rem", background: "rgba(8,12,20,0.9)", border: "1px solid var(--glass-border)", borderRadius: "4px", color: "#fff", fontSize: "0.8rem" }}
+              style={{ padding: "0.4rem 0.75rem", background: "#ffffff", border: "1px solid var(--glass-border)", borderRadius: "4px", color: "var(--text-primary)", fontSize: "0.8rem" }}
             >
               <option value="all">All Families ({Object.values(facets.family).reduce((a, b) => a + b, 0)})</option>
               {Object.entries(facets.family).sort().map(([fam, count]) => (
@@ -1412,7 +1412,7 @@ export function MarketplaceBoard({
               id="marketplace-care-filter"
               value={careLevelFilter}
               onChange={(e) => setCareLevelFilter(e.target.value)}
-              style={{ padding: "0.4rem 0.75rem", background: "rgba(8,12,20,0.9)", border: "1px solid var(--glass-border)", borderRadius: "4px", color: "#fff", fontSize: "0.8rem" }}
+              style={{ padding: "0.4rem 0.75rem", background: "#ffffff", border: "1px solid var(--glass-border)", borderRadius: "4px", color: "var(--text-primary)", fontSize: "0.8rem" }}
             >
               <option value="all">Any Care Level</option>
               {["0", "1", "2", "3"].map((lvl) => (
@@ -1431,7 +1431,7 @@ export function MarketplaceBoard({
               id="marketplace-fulfillment-filter"
               value={fulfillmentFilter}
               onChange={(e) => setFulfillmentFilter(e.target.value)}
-              style={{ padding: "0.4rem 0.75rem", background: "rgba(8,12,20,0.9)", border: "1px solid var(--glass-border)", borderRadius: "4px", color: "#fff", fontSize: "0.8rem" }}
+              style={{ padding: "0.4rem 0.75rem", background: "#ffffff", border: "1px solid var(--glass-border)", borderRadius: "4px", color: "var(--text-primary)", fontSize: "0.8rem" }}
             >
               <option value="all">Any Fulfillment</option>
               <option value={FULFILLMENT_TYPES.SHIPPING}>🚚 Ships Nationwide ({facets.fulfillmentType[FULFILLMENT_TYPES.SHIPPING] || 0})</option>
@@ -1454,7 +1454,7 @@ export function MarketplaceBoard({
                 aria-label="Minimum price in dollars"
                 value={priceMinInput}
                 onChange={(e) => setPriceMinInput(e.target.value)}
-                style={{ width: "70px", padding: "0.4rem 0.5rem", background: "rgba(0,0,0,0.3)", border: "1px solid var(--glass-border)", borderRadius: "4px", color: "#fff", fontSize: "0.8rem" }}
+                style={{ width: "70px", padding: "0.4rem 0.5rem", background: "var(--bg-band)", border: "1px solid var(--glass-border)", borderRadius: "4px", color: "var(--text-primary)", fontSize: "0.8rem" }}
               />
               <span style={{ color: "var(--text-muted)" }}>–</span>
               <label htmlFor="marketplace-price-max" style={{ position: "absolute", width: "1px", height: "1px", overflow: "hidden", clip: "rect(0,0,0,0)" }}>Maximum price in dollars</label>
@@ -1467,7 +1467,7 @@ export function MarketplaceBoard({
                 aria-label="Maximum price in dollars"
                 value={priceMaxInput}
                 onChange={(e) => setPriceMaxInput(e.target.value)}
-                style={{ width: "70px", padding: "0.4rem 0.5rem", background: "rgba(0,0,0,0.3)", border: "1px solid var(--glass-border)", borderRadius: "4px", color: "#fff", fontSize: "0.8rem" }}
+                style={{ width: "70px", padding: "0.4rem 0.5rem", background: "var(--bg-band)", border: "1px solid var(--glass-border)", borderRadius: "4px", color: "var(--text-primary)", fontSize: "0.8rem" }}
               />
             </div>
           </div>
@@ -1554,7 +1554,7 @@ export function MarketplaceBoard({
             padding: "0.85rem 1.25rem",
             backgroundColor: "rgba(56, 189, 248, 0.08)",
             border: "1px solid rgba(56, 189, 248, 0.25)",
-            color: "#7dd3fc",
+            color: "var(--accent-blue)",
             borderRadius: "var(--radius-sm)",
             marginBottom: "1.5rem",
             fontSize: "0.82rem",
@@ -1638,7 +1638,7 @@ export function MarketplaceBoard({
             width: "100%",
             position: "relative",
             scrollbarWidth: "thin",
-            scrollbarColor: "rgba(255,255,255,0.1) transparent"
+            scrollbarColor: "rgba(11, 37, 48, 0.2) transparent"
           }}
         >
           <div
@@ -1759,7 +1759,7 @@ export function MarketplaceBoard({
                             display: "flex", 
                             flexDirection: "column", 
                             gap: "1rem",
-                            background: "rgba(255,255,255,0.01)",
+                            background: "rgba(var(--ink-rgb), 0.01)",
                             ...(compatBorderColor && {
                               borderColor: compatBorderColor,
                               boxShadow: compatGlow,
@@ -1770,9 +1770,9 @@ export function MarketplaceBoard({
                           {(() => {
                             const isPlant = isPlantEntry(matchedSpecies || { specCode: item.speciesId || 0 });
                             const badgeLabel = isPlant ? "🌿 Certified Master Flora" : "🛡️ Breeder-Verified Master Stock";
-                            const badgeBg = isPlant ? "rgba(16,185,129,0.18)" : "rgba(56,189,248,0.12)";
+                            const badgeBg = isPlant ? "rgba(236, 253, 245, 0.92)" : "rgba(240, 249, 255, 0.92)";
                             const badgeBorder = isPlant ? "rgba(16,185,129,0.45)" : "rgba(56,189,248,0.35)";
-                            const badgeColor = isPlant ? "#34d399" : "#7dd3fc";
+                            const badgeColor = isPlant ? "var(--accent-green)" : "var(--accent-blue)";
                             const fallbackSvg = isPlant ? (
                               <PlantSilhouetteSVG
                                 specCode={item.speciesId || 9001}
@@ -1791,13 +1791,13 @@ export function MarketplaceBoard({
                                 borderRadius: "0.75rem", 
                                 background: isPlant 
                                   ? "linear-gradient(135deg, rgba(16, 185, 129, 0.06) 0%, rgba(16, 185, 129, 0.02) 100%)" 
-                                  : "linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%)",
+                                  : "linear-gradient(135deg, rgba(var(--ink-rgb), 0.03) 0%, rgba(var(--ink-rgb), 0.01) 100%)",
                                 backdropFilter: "blur(12px)",
-                                boxShadow: "inset 0 1px 1px rgba(255, 255, 255, 0.05), 0 4px 15px rgba(0, 0, 0, 0.1)",
+                                boxShadow: "inset 0 1px 1px rgba(255, 255, 255, 0.05), 0 4px 15px rgba(11, 37, 48, 0.03)",
                                 marginBottom: "0.5rem",
                                 position: "relative",
                                 overflow: "hidden",
-                                border: isPlant ? "1px solid rgba(16, 185, 129, 0.15)" : "1px solid rgba(255, 255, 255, 0.08)",
+                                border: isPlant ? "1px solid rgba(16, 185, 129, 0.15)" : "1px solid rgba(var(--ink-rgb), 0.13)",
                                 display: "flex",
                                 alignItems: "center",
                                 justifyContent: "center"
@@ -1964,7 +1964,7 @@ export function MarketplaceBoard({
                                 </span>
                               )}
                             </div>
-                            <h4 style={{ fontSize: "1.1rem", color: "#fff", marginTop: "0.25rem" }}>{item.commonName}</h4>
+                            <h4 style={{ fontSize: "1.1rem", color: "var(--text-primary)", marginTop: "0.25rem" }}>{item.commonName}</h4>
                             {item.scientificName && (
                               <span style={{ fontSize: "0.75rem", fontStyle: "italic", color: "var(--text-secondary)", display: "block" }}>
                                 {item.scientificName}
@@ -1981,12 +1981,12 @@ export function MarketplaceBoard({
                                 borderRadius: "50px",
                                 background: compatScore >= 80 ? "rgba(34, 197, 94, 0.15)" : compatScore >= 50 ? "rgba(251, 191, 36, 0.12)" : "rgba(248, 113, 113, 0.12)",
                                 border: `1px solid ${compatScore >= 80 ? "var(--accent-green)" : compatScore >= 50 ? "rgba(251, 191, 36, 0.5)" : "rgba(248, 113, 113, 0.5)"}`,
-                                color: compatScore >= 80 ? "var(--accent-green)" : compatScore >= 50 ? "#fbbf24" : "#f87171",
+                                color: compatScore >= 80 ? "var(--accent-green)" : compatScore >= 50 ? "var(--accent-amber)" : "var(--accent-red)",
                                 fontSize: "0.7rem",
                                 fontWeight: "700",
                                 marginTop: "0.5rem"
                               }}>
-                                <span style={{ display: "inline-block", width: "8px", height: "8px", borderRadius: "50%", background: compatScore >= 80 ? "var(--accent-green)" : compatScore >= 50 ? "#fbbf24" : "#f87171" }}></span>
+                                <span style={{ display: "inline-block", width: "8px", height: "8px", borderRadius: "50%", background: compatScore >= 80 ? "var(--accent-green)" : compatScore >= 50 ? "var(--accent-amber-fill)" : "var(--accent-red-fill)" }}></span>
                                 {compatScore >= 80 ? `[${compatScore}% Compatible]` : compatScore >= 50 ? `[${compatScore}% — Caution]` : `[${compatScore}% — Not Recommended]`}
                               </div>
                             )}
@@ -2001,7 +2001,7 @@ export function MarketplaceBoard({
                                     borderRadius: "12px",
                                     background: "rgba(34, 197, 94, 0.08)",
                                     border: "1px solid rgba(34, 197, 94, 0.2)",
-                                    color: "#34d399",
+                                    color: "var(--accent-green)",
                                     display: "inline-flex",
                                     alignItems: "center",
                                     gap: "0.25rem",
@@ -2016,7 +2016,7 @@ export function MarketplaceBoard({
                                     borderRadius: "12px",
                                     background: item.isShipping ? "rgba(56, 189, 248, 0.08)" : "rgba(251, 191, 36, 0.08)",
                                     border: item.isShipping ? "1px solid rgba(56, 189, 248, 0.2)" : "1px solid rgba(251, 191, 36, 0.2)",
-                                    color: item.isShipping ? "#7dd3fc" : "#fbbf24",
+                                    color: item.isShipping ? "var(--accent-blue)" : "var(--accent-amber)",
                                     display: "inline-flex",
                                     alignItems: "center",
                                     gap: "0.25rem",
@@ -2032,7 +2032,7 @@ export function MarketplaceBoard({
                                       borderRadius: "12px",
                                       background: "rgba(34, 211, 238, 0.08)",
                                       border: "1px solid rgba(34, 211, 238, 0.2)",
-                                      color: "#22d3ee",
+                                      color: "var(--accent-teal)",
                                       display: "inline-flex",
                                       alignItems: "center",
                                       gap: "0.25rem",
@@ -2065,7 +2065,7 @@ export function MarketplaceBoard({
                           {!casualModeActive && !item.isBatch && (
                             <div style={{
                               padding: "0.75rem",
-                              background: "rgba(255,255,255,0.02)",
+                              background: "rgba(var(--ink-rgb), 0.02)",
                               borderRadius: "4px",
                               fontSize: "0.75rem",
                               display: "flex",
@@ -2108,26 +2108,26 @@ export function MarketplaceBoard({
                             return (
                               <div style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap" }} aria-label="Frag details">
                                 {sizeLabel && (
-                                  <span style={{ fontSize: "0.65rem", padding: "0.15rem 0.45rem", borderRadius: "10px", background: "rgba(244,114,182,0.08)", border: "1px solid rgba(244,114,182,0.25)", color: "#f9a8d4" }}>
+                                  <span style={{ fontSize: "0.65rem", padding: "0.15rem 0.45rem", borderRadius: "10px", background: "rgba(244,114,182,0.08)", border: "1px solid rgba(244,114,182,0.25)", color: "#be185d" }}>
                                     🪸 {sizeLabel}
                                   </span>
                                 )}
                                 {frag.mount && frag.mount !== "none" && (
-                                  <span style={{ fontSize: "0.65rem", padding: "0.15rem 0.45rem", borderRadius: "10px", background: "rgba(56,189,248,0.08)", border: "1px solid rgba(56,189,248,0.2)", color: "#7dd3fc" }}>
+                                  <span style={{ fontSize: "0.65rem", padding: "0.15rem 0.45rem", borderRadius: "10px", background: "rgba(56,189,248,0.08)", border: "1px solid rgba(56,189,248,0.2)", color: "var(--accent-blue)" }}>
                                     {FRAG_MOUNT_LABELS[frag.mount]}
                                   </span>
                                 )}
                                 {frag.wysiwyg && (
-                                  <span style={{ fontSize: "0.65rem", padding: "0.15rem 0.45rem", borderRadius: "10px", background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.2)", color: "#34d399" }}>
+                                  <span style={{ fontSize: "0.65rem", padding: "0.15rem 0.45rem", borderRadius: "10px", background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.2)", color: "var(--accent-green)" }}>
                                     📸 WYSIWYG
                                   </span>
                                 )}
                                 {frag.origin === "aquacultured" && (
-                                  <span style={{ fontSize: "0.65rem", padding: "0.15rem 0.45rem", borderRadius: "10px", background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.2)", color: "#fbbf24" }}>
+                                  <span style={{ fontSize: "0.65rem", padding: "0.15rem 0.45rem", borderRadius: "10px", background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.2)", color: "var(--accent-amber)" }}>
                                     Aquacultured
                                   </span>
                                 )}
-                                <span style={{ fontSize: "0.65rem", padding: "0.15rem 0.45rem", borderRadius: "10px", background: "rgba(255,255,255,0.04)", border: "1px solid var(--glass-border)", color: "var(--text-secondary)" }}>
+                                <span style={{ fontSize: "0.65rem", padding: "0.15rem 0.45rem", borderRadius: "10px", background: "rgba(var(--ink-rgb), 0.04)", border: "1px solid var(--glass-border)", color: "var(--text-secondary)" }}>
                                   {Number(item.quantityRemaining ?? item.quantity) || 0} available
                                 </span>
                               </div>
@@ -2137,7 +2137,7 @@ export function MarketplaceBoard({
                           {!casualModeActive && item.isBatch && !isFragListing(item) && (
                             <div style={{
                               padding: "0.75rem",
-                              background: "rgba(255,255,255,0.02)",
+                              background: "rgba(var(--ink-rgb), 0.02)",
                               borderRadius: "4px",
                               fontSize: "0.75rem",
                               display: "flex",
@@ -2147,11 +2147,11 @@ export function MarketplaceBoard({
                               <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", textTransform: "uppercase", fontWeight: "600" }}>Batch Records:</span>
                               <div style={{ display: "flex", justifyContent: "space-between" }}>
                                 <span>Spawn Event ID:</span>
-                                <strong style={{ color: "#fff" }}>{item.spawnId}</strong>
+                                <strong style={{ color: "var(--text-primary)" }}>{item.spawnId}</strong>
                               </div>
                               <div style={{ display: "flex", justifyContent: "space-between" }}>
                                 <span>Available Juveniles:</span>
-                                <strong style={{ color: "#fff" }}>{item.quantity} fry</strong>
+                                <strong style={{ color: "var(--text-primary)" }}>{item.quantity} fry</strong>
                               </div>
                             </div>
                           )}
@@ -2160,13 +2160,13 @@ export function MarketplaceBoard({
                           {(item.description || item.age || item.size || item.diet || item.temperament || item.healthStatus) && (
                             <div style={{
                               padding: "0.75rem",
-                              background: "rgba(255,255,255,0.02)",
+                              background: "rgba(var(--ink-rgb), 0.02)",
                               borderRadius: "6px",
                               fontSize: "0.75rem",
                               display: "flex",
                               flexDirection: "column",
                               gap: "0.4rem",
-                              border: "1px solid rgba(255,255,255,0.04)"
+                              border: "1px solid rgba(var(--ink-rgb), 0.09)"
                             }}>
                               <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", textTransform: "uppercase", fontWeight: "600" }}>Specimen Details:</span>
 
@@ -2174,17 +2174,17 @@ export function MarketplaceBoard({
                               {(item.age || item.size) && (
                                 <div style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap" }}>
                                   {item.age && (
-                                    <span style={{ fontSize: "0.65rem", padding: "0.15rem 0.45rem", borderRadius: "10px", background: "rgba(56,189,248,0.08)", border: "1px solid rgba(56,189,248,0.2)", color: "#7dd3fc" }}>
+                                    <span style={{ fontSize: "0.65rem", padding: "0.15rem 0.45rem", borderRadius: "10px", background: "rgba(56,189,248,0.08)", border: "1px solid rgba(56,189,248,0.2)", color: "var(--accent-blue)" }}>
                                       📅 {item.age}
                                     </span>
                                   )}
                                   {item.size && (
-                                    <span style={{ fontSize: "0.65rem", padding: "0.15rem 0.45rem", borderRadius: "10px", background: "rgba(168,85,247,0.08)", border: "1px solid rgba(168,85,247,0.2)", color: "#c4b5fd" }}>
+                                    <span style={{ fontSize: "0.65rem", padding: "0.15rem 0.45rem", borderRadius: "10px", background: "rgba(168,85,247,0.08)", border: "1px solid rgba(168,85,247,0.2)", color: "var(--accent-violet)" }}>
                                       📏 {item.size}
                                     </span>
                                   )}
                                   {item.temperament && (
-                                    <span style={{ fontSize: "0.65rem", padding: "0.15rem 0.45rem", borderRadius: "10px", background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.2)", color: "#34d399" }}>
+                                    <span style={{ fontSize: "0.65rem", padding: "0.15rem 0.45rem", borderRadius: "10px", background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.2)", color: "var(--accent-green)" }}>
                                       {item.temperament === "Peaceful" ? "🕊️" : item.temperament === "Aggressive" ? "⚔️" : item.temperament === "Schooling" ? "🐠" : "⚡"} {item.temperament}
                                     </span>
                                   )}
@@ -2195,7 +2195,7 @@ export function MarketplaceBoard({
                               {item.diet && (
                                 <div style={{ display: "flex", justifyContent: "space-between" }}>
                                   <span style={{ color: "var(--text-muted)" }}>Diet:</span>
-                                  <span style={{ color: "#fff" }}>{item.diet}</span>
+                                  <span style={{ color: "var(--text-primary)" }}>{item.diet}</span>
                                 </div>
                               )}
 
@@ -2203,17 +2203,17 @@ export function MarketplaceBoard({
                               {(item.minTemp > 0 || item.minPh > 0 || item.tankSizeMin > 0) && (
                                 <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginTop: "0.15rem" }}>
                                   {item.minTemp > 0 && item.maxTemp > 0 && (
-                                    <span style={{ fontSize: "0.6rem", padding: "0.1rem 0.35rem", borderRadius: "4px", background: "rgba(251,191,36,0.06)", border: "1px solid rgba(251,191,36,0.15)", color: "#fbbf24" }}>
+                                    <span style={{ fontSize: "0.6rem", padding: "0.1rem 0.35rem", borderRadius: "4px", background: "rgba(251,191,36,0.06)", border: "1px solid rgba(251,191,36,0.15)", color: "var(--accent-amber)" }}>
                                       🌡️ {item.minTemp}–{item.maxTemp}°F
                                     </span>
                                   )}
                                   {item.minPh > 0 && item.maxPh > 0 && (
-                                    <span style={{ fontSize: "0.6rem", padding: "0.1rem 0.35rem", borderRadius: "4px", background: "rgba(56,189,248,0.06)", border: "1px solid rgba(56,189,248,0.15)", color: "#7dd3fc" }}>
+                                    <span style={{ fontSize: "0.6rem", padding: "0.1rem 0.35rem", borderRadius: "4px", background: "rgba(56,189,248,0.06)", border: "1px solid rgba(56,189,248,0.15)", color: "var(--accent-blue)" }}>
                                       💧 pH {item.minPh}–{item.maxPh}
                                     </span>
                                   )}
                                   {item.tankSizeMin > 0 && (
-                                    <span style={{ fontSize: "0.6rem", padding: "0.1rem 0.35rem", borderRadius: "4px", background: "rgba(34,211,238,0.06)", border: "1px solid rgba(34,211,238,0.15)", color: "#22d3ee" }}>
+                                    <span style={{ fontSize: "0.6rem", padding: "0.1rem 0.35rem", borderRadius: "4px", background: "rgba(34,211,238,0.06)", border: "1px solid rgba(34,211,238,0.15)", color: "var(--accent-teal)" }}>
                                       🏠 {item.tankSizeMin}+ gal
                                     </span>
                                   )}
@@ -2224,17 +2224,17 @@ export function MarketplaceBoard({
                               {(item.healthStatus || item.doaGuarantee !== undefined) && (
                                 <div style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap", marginTop: "0.15rem" }}>
                                   {item.healthStatus && item.healthStatus !== "healthy" && (
-                                    <span style={{ fontSize: "0.6rem", padding: "0.15rem 0.45rem", borderRadius: "10px", background: item.healthStatus === "treated" ? "rgba(251,191,36,0.08)" : "rgba(248,113,113,0.08)", border: item.healthStatus === "treated" ? "1px solid rgba(251,191,36,0.2)" : "1px solid rgba(248,113,113,0.2)", color: item.healthStatus === "treated" ? "#fbbf24" : "#f87171" }}>
+                                    <span style={{ fontSize: "0.6rem", padding: "0.15rem 0.45rem", borderRadius: "10px", background: item.healthStatus === "treated" ? "rgba(251,191,36,0.08)" : "rgba(248,113,113,0.08)", border: item.healthStatus === "treated" ? "1px solid rgba(251,191,36,0.2)" : "1px solid rgba(248,113,113,0.2)", color: item.healthStatus === "treated" ? "var(--accent-amber)" : "var(--accent-red)" }}>
                                       {item.healthStatus === "treated" ? "💊 Recently Treated" : "🔬 In Quarantine"}
                                     </span>
                                   )}
                                   {item.healthStatus === "healthy" && (
-                                    <span style={{ fontSize: "0.6rem", padding: "0.15rem 0.45rem", borderRadius: "10px", background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.2)", color: "#34d399" }}>
+                                    <span style={{ fontSize: "0.6rem", padding: "0.15rem 0.45rem", borderRadius: "10px", background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.2)", color: "var(--accent-green)" }}>
                                       ✅ Healthy
                                     </span>
                                   )}
                                   {item.doaGuarantee && (
-                                    <span style={{ fontSize: "0.6rem", padding: "0.15rem 0.45rem", borderRadius: "10px", background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.2)", color: "#34d399" }}>
+                                    <span style={{ fontSize: "0.6rem", padding: "0.15rem 0.45rem", borderRadius: "10px", background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.2)", color: "var(--accent-green)" }}>
                                       🛡️ DOA Guarantee
                                     </span>
                                   )}
@@ -2251,7 +2251,7 @@ export function MarketplaceBoard({
                           )}
 
                           {/* Listing pricing detail & actions */}
-                          <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", borderTop: "1px solid rgba(255,255,255,0.05)", paddingTop: "0.75rem", marginTop: "auto" }}>
+                          <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", borderTop: "1px solid rgba(var(--ink-rgb), 0.1)", paddingTop: "0.75rem", marginTop: "auto" }}>
                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                               <div>
                                 <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", display: "block", textTransform: "uppercase" }}>
@@ -2275,7 +2275,7 @@ export function MarketplaceBoard({
                                       setCheckoutQuantityMap(prev => ({ ...prev, [item.listingId]: val }));
                                     }}
                                     onClick={(e) => e.stopPropagation()}
-                                    style={{ width: "50px", background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.08)", color: "#fff", borderRadius: "4px", padding: "0.25rem 0.4rem", textAlign: "center", outline: "none", fontSize: "0.75rem" }}
+                                    style={{ width: "50px", background: "var(--bg-band)", border: "1px solid rgba(var(--ink-rgb), 0.13)", color: "var(--text-primary)", borderRadius: "4px", padding: "0.25rem 0.4rem", textAlign: "center", outline: "none", fontSize: "0.75rem" }}
                                   />
                                 </div>
                               )}
@@ -2339,13 +2339,13 @@ export function MarketplaceBoard({
                                           fetchListings();
                                         });
                                       }}
-                                      style={{ fontSize: "0.6rem", padding: "0.2rem 0.5rem", background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.2)", color: "#fbbf24", borderRadius: "6px", cursor: "pointer", fontWeight: "600" }}
+                                      style={{ fontSize: "0.6rem", padding: "0.2rem 0.5rem", background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.2)", color: "var(--accent-amber)", borderRadius: "6px", cursor: "pointer", fontWeight: "600" }}
                                     >
                                       ⚡ Boost Listing
                                     </button>
                                   )}
                                   {item.isBoosted && (
-                                    <span style={{ fontSize: "0.6rem", padding: "0.2rem 0.5rem", background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.2)", color: "#fbbf24", borderRadius: "6px", fontWeight: "600" }}>
+                                    <span style={{ fontSize: "0.6rem", padding: "0.2rem 0.5rem", background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.2)", color: "var(--accent-amber)", borderRadius: "6px", fontWeight: "600" }}>
                                       ⚡ Boosted
                                     </span>
                                   )}
@@ -2449,7 +2449,7 @@ export function MarketplaceBoard({
                                         marginTop: "0.15rem",
                                         padding: "0.3rem 0.6rem",
                                         fontSize: "0.62rem",
-                                        color: "#7dd3fc",
+                                        color: "var(--accent-blue)",
                                         background: "rgba(56,189,248,0.06)",
                                         border: "1px dashed rgba(56,189,248,0.3)",
                                         borderRadius: "6px",
@@ -2519,7 +2519,7 @@ export function MarketplaceBoard({
           left: 0,
           right: 0,
           bottom: 0,
-          background: "rgba(0,0,0,0.75)",
+          background: "rgba(11, 37, 48, 0.45)",
           backdropFilter: "blur(8px)",
           display: "flex",
           alignItems: "center",
@@ -2534,7 +2534,7 @@ export function MarketplaceBoard({
             background: "var(--bg-secondary)",
             border: "1px solid var(--accent-blue)"
           }}>
-            <h3 style={{ color: "#fff", marginBottom: "1rem" }}>🏡 Display Tank Setup Wizard</h3>
+            <h3 style={{ color: "var(--text-primary)", marginBottom: "1rem" }}>🏡 Display Tank Setup Wizard</h3>
             <p style={{ fontSize: "0.8rem", color: "var(--text-secondary)", marginBottom: "1.25rem" }}>
               Configure your home display aquarium parameters to check compatibility matches with breeder listings.
             </p>
@@ -2555,7 +2555,7 @@ export function MarketplaceBoard({
                   value={wizardVolume}
                   onChange={(e) => setWizardVolume(e.target.value)}
                   required
-                  style={{ width: "100%", padding: "0.5rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px" }}
+                  style={{ width: "100%", padding: "0.5rem", background: "rgba(var(--ink-rgb), 0.03)", border: "1px solid var(--glass-border)", color: "var(--text-primary)", borderRadius: "4px" }}
                 />
               </div>
 
@@ -2567,7 +2567,7 @@ export function MarketplaceBoard({
                   value={wizardPh}
                   onChange={(e) => setWizardPh(e.target.value)}
                   required
-                  style={{ width: "100%", padding: "0.5rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px" }}
+                  style={{ width: "100%", padding: "0.5rem", background: "rgba(var(--ink-rgb), 0.03)", border: "1px solid var(--glass-border)", color: "var(--text-primary)", borderRadius: "4px" }}
                 />
               </div>
 
@@ -2579,7 +2579,7 @@ export function MarketplaceBoard({
                   value={wizardTemp}
                   onChange={(e) => setWizardTemp(e.target.value)}
                   required
-                  style={{ width: "100%", padding: "0.5rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px" }}
+                  style={{ width: "100%", padding: "0.5rem", background: "rgba(var(--ink-rgb), 0.03)", border: "1px solid var(--glass-border)", color: "var(--text-primary)", borderRadius: "4px" }}
                 />
               </div>
 

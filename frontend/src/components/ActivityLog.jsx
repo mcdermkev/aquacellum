@@ -3,12 +3,12 @@ import { useUnitPrefs } from "../hooks/useUnitPrefs";
 import { formatTemperature } from "../utils/units";
 
 const ACTION_COLORS = {
-  "Water Change": "#38bdf8",
-  "Fed Fish": "#34d399",
-  "Cleaned Filter": "#a78bfa",
-  "Tested Water": "#fbbf24",
-  "Added Fertilizer": "#6ee7b7",
-  "Dosed Medication": "#f87171",
+  "Water Change": "#0369a1",
+  "Fed Fish": "#047857",
+  "Cleaned Filter": "#6d28d9",
+  "Tested Water": "#b45309",
+  "Added Fertilizer": "#0f766e",
+  "Dosed Medication": "#b91c1c",
 };
 
 export function ActivityLog({ onChainLogs, actionLogs, casualModeActive }) {
@@ -55,13 +55,13 @@ export function ActivityLog({ onChainLogs, actionLogs, casualModeActive }) {
           <div key={`a-${log._id}`} style={{
             padding: "0.65rem 0.85rem",
             background: "rgba(56,189,248,0.04)",
-            border: `1px solid ${(ACTION_COLORS[log.actionType] || "#38bdf8")}33`,
-            borderLeft: `3px solid ${ACTION_COLORS[log.actionType] || "#38bdf8"}`,
+            border: `1px solid ${(ACTION_COLORS[log.actionType] || "#0369a1")}33`,
+            borderLeft: `3px solid ${ACTION_COLORS[log.actionType] || "#0369a1"}`,
             borderRadius: "8px",
             fontSize: "0.8rem",
           }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.2rem" }}>
-              <strong style={{ color: ACTION_COLORS[log.actionType] || "#38bdf8" }}>{log.actionType}</strong>
+              <strong style={{ color: ACTION_COLORS[log.actionType] || "var(--accent-blue)" }}>{log.actionType}</strong>
               <span style={{ fontSize: "0.68rem", color: "var(--text-muted)" }}>{new Date(log._ts).toLocaleString()}</span>
             </div>
             {log.details ? <span style={{ color: "var(--text-secondary)" }}>{log.details}</span> : null}
@@ -69,7 +69,7 @@ export function ActivityLog({ onChainLogs, actionLogs, casualModeActive }) {
         ) : (
           <div key={`w-${log._id}`} style={{
             padding: "0.65rem 0.85rem",
-            background: "rgba(255,255,255,0.01)",
+            background: "rgba(var(--ink-rgb), 0.02)",
             border: "1px solid var(--glass-border)",
             borderLeft: "3px solid var(--accent-green)",
             borderRadius: "8px",

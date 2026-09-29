@@ -127,7 +127,7 @@ export function OfferModal({ isOpen, onClose, listing, walletAccount, casualMode
       {success ? (
         <div style={{ textAlign: "center", padding: "3rem 1.5rem" }}>
           <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>🤝</div>
-          <h3 style={{ color: "#fff", fontSize: "1.3rem", marginBottom: "0.5rem" }}>Offer Sent!</h3>
+          <h3 style={{ color: "var(--text-primary)", fontSize: "1.3rem", marginBottom: "0.5rem" }}>Offer Sent!</h3>
           <p style={{ color: "var(--text-secondary)", fontSize: "0.85rem", lineHeight: "1.5", marginBottom: "1.5rem" }}>
             The breeder has been notified of your ${offerVal.toFixed(2)} offer for {listing.commonName}.
             You'll receive a notification when they respond.
@@ -138,7 +138,7 @@ export function OfferModal({ isOpen, onClose, listing, walletAccount, casualMode
         </div>
       ) : (
         <>
-          <h3 style={{ fontSize: "1.4rem", color: "#fff", marginTop: "1rem" }}>
+          <h3 style={{ fontSize: "1.4rem", color: "var(--text-primary)", marginTop: "1rem" }}>
             Make an Offer
           </h3>
           <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", marginBottom: "1.25rem" }}>
@@ -148,13 +148,13 @@ export function OfferModal({ isOpen, onClose, listing, walletAccount, casualMode
           {/* Listing summary */}
           <div style={{
             display: "flex", alignItems: "center", gap: "0.75rem",
-            padding: "0.75rem 1rem", background: "rgba(255,255,255,0.02)",
+            padding: "0.75rem 1rem", background: "rgba(var(--ink-rgb), 0.02)",
             border: "1px solid var(--glass-border)", borderRadius: "10px",
             marginBottom: "1.25rem"
           }}>
             <span style={{ fontSize: "1.5rem" }}>🐟</span>
             <div style={{ flex: 1 }}>
-              <div style={{ fontWeight: "600", fontSize: "0.9rem", color: "#fff" }}>{listing.commonName}</div>
+              <div style={{ fontWeight: "600", fontSize: "0.9rem", color: "var(--text-primary)" }}>{listing.commonName}</div>
               <div style={{ fontSize: "0.72rem", fontStyle: "italic", color: "var(--text-secondary)" }}>{listing.scientificName}</div>
             </div>
             <div style={{ textAlign: "right" }}>
@@ -191,7 +191,7 @@ export function OfferModal({ isOpen, onClose, listing, walletAccount, casualMode
                 onChange={(e) => setOfferAmount(e.target.value)}
                 placeholder={`e.g. ${(askingPrice * 0.8).toFixed(2)}`}
                 required
-                style={{ width: "100%", padding: "0.75rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "8px", outline: "none", fontSize: "1rem", fontFamily: "monospace" }}
+                style={{ width: "100%", padding: "0.75rem", background: "rgba(var(--ink-rgb), 0.03)", border: "1px solid var(--glass-border)", color: "var(--text-primary)", borderRadius: "8px", outline: "none", fontSize: "1rem", fontFamily: "monospace" }}
               />
               {offerVal > 0 && offerVal < askingPrice && (
                 <div style={{ marginTop: "0.4rem", fontSize: "0.72rem", color: discount > 30 ? "var(--accent-red)" : "var(--accent-amber)" }}>
@@ -212,7 +212,7 @@ export function OfferModal({ isOpen, onClose, listing, walletAccount, casualMode
                 placeholder={casualModeActive ? "I'm really interested in this fish! Would you consider..." : "Interested in bulk purchase, or pickup this weekend..."}
                 rows={3}
                 maxLength={280}
-                style={{ width: "100%", padding: "0.65rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "8px", outline: "none", resize: "vertical", fontFamily: "inherit", fontSize: "0.85rem" }}
+                style={{ width: "100%", padding: "0.65rem", background: "rgba(var(--ink-rgb), 0.03)", border: "1px solid var(--glass-border)", color: "var(--text-primary)", borderRadius: "8px", outline: "none", resize: "vertical", fontFamily: "inherit", fontSize: "0.85rem" }}
               />
               <div style={{ fontSize: "0.6rem", color: "var(--text-muted)", textAlign: "right", marginTop: "0.2rem" }}>
                 {message.length}/280
@@ -228,7 +228,7 @@ export function OfferModal({ isOpen, onClose, listing, walletAccount, casualMode
               }}>
                 <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.8rem", color: "var(--text-secondary)" }}>
                   <span>You're offering:</span>
-                  <strong style={{ color: "#fff", fontFamily: "monospace" }}>${offerVal.toFixed(2)}</strong>
+                  <strong style={{ color: "var(--text-primary)", fontFamily: "monospace" }}>${offerVal.toFixed(2)}</strong>
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.8rem", color: "var(--text-secondary)", marginTop: "0.25rem" }}>
                   <span>You'd save:</span>

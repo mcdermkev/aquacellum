@@ -42,11 +42,11 @@ export function AnimatedFunnel({ eggs, fry, alive, sold, lost, survivalRate }) {
   }, [eggs, fry, alive, sold, lost]);
 
   const stages = [
-    { label: "Eggs", value: animatedValues.eggs, color: "#fbbf24", icon: "🥚" },
-    { label: "Fry", value: animatedValues.fry, color: "#60a5fa", icon: "🐟" },
-    { label: "Alive", value: animatedValues.alive, color: "#34d399", icon: "💚" },
-    { label: "Sold", value: animatedValues.sold, color: "#fbbf24", icon: "💰" },
-    { label: "Lost", value: animatedValues.lost, color: "#f87171", icon: "💀" },
+    { label: "Eggs", value: animatedValues.eggs, color: "var(--accent-amber)", icon: "🥚" },
+    { label: "Fry", value: animatedValues.fry, color: "var(--accent-blue)", icon: "🐟" },
+    { label: "Alive", value: animatedValues.alive, color: "var(--accent-green)", icon: "💚" },
+    { label: "Sold", value: animatedValues.sold, color: "var(--accent-amber)", icon: "💰" },
+    { label: "Lost", value: animatedValues.lost, color: "var(--accent-red)", icon: "💀" },
   ];
 
   return (
@@ -100,7 +100,7 @@ export function AnimatedFunnel({ eggs, fry, alive, sold, lost, survivalRate }) {
         <div style={{ marginLeft: "auto", textAlign: "center" }}>
           <div style={{
             fontSize: "1.1rem", fontWeight: "700",
-            color: survivalRate >= 80 ? "#34d399" : survivalRate >= 50 ? "#fbbf24" : "#f87171",
+            color: survivalRate >= 80 ? "var(--accent-green)" : survivalRate >= 50 ? "var(--accent-amber)" : "var(--accent-red)",
           }}>
             {survivalRate}%
           </div>
@@ -336,15 +336,15 @@ export function SuccessToast({ message, visible, onDismiss }) {
     <div style={{
       position: "fixed", bottom: "24px", left: "50%", transform: "translateX(-50%)",
       padding: "12px 20px", borderRadius: "12px",
-      background: "rgba(15, 12, 31, 0.95)", backdropFilter: "blur(12px)",
+      background: "var(--bg-secondary)", backdropFilter: "blur(12px)",
       border: "1px solid rgba(52, 211, 153, 0.3)",
-      boxShadow: "0 8px 32px rgba(0,0,0,0.4), 0 0 12px rgba(52,211,153,0.1)",
+      boxShadow: "var(--shadow-md)",
       display: "flex", alignItems: "center", gap: "10px",
       zIndex: 9999,
       animation: "toast-slide-up 0.3s ease-out",
     }}>
       <span style={{ fontSize: "1.1rem" }}>✓</span>
-      <span style={{ fontSize: "0.82rem", color: "#fff", fontWeight: "500" }}>{message}</span>
+      <span style={{ fontSize: "0.82rem", color: "var(--text-primary)", fontWeight: "500" }}>{message}</span>
       <button onClick={onDismiss} style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: "1rem", marginLeft: "8px" }}>×</button>
       <style>{`
         @keyframes toast-slide-up {

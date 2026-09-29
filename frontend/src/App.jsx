@@ -127,7 +127,7 @@ const AuctionsPage = lazy(() =>
 function CommerceAuthRequired({ title, onSignIn }) {
   return (
     <div className="glass-card" style={{ maxWidth: "560px", margin: "2rem auto", padding: "2.5rem", textAlign: "center" }}>
-      <h2 style={{ color: "#fff", marginBottom: "0.75rem" }}>{title}</h2>
+      <h2 style={{ color: "var(--text-primary)", marginBottom: "0.75rem" }}>{title}</h2>
       <p style={{ color: "var(--text-secondary)", marginBottom: "1.5rem", lineHeight: 1.5 }}>
         Sign in to continue. This commerce route will stay in place, and current data will be rechecked before any protected action.
       </p>
@@ -141,7 +141,7 @@ function CommerceAuthRequired({ title, onSignIn }) {
 function CommerceRouteNotice({ title, message, actionLabel = "Back to marketplace", onAction }) {
   return (
     <div className="glass-card" style={{ maxWidth: "620px", margin: "2rem auto", padding: "2.5rem", textAlign: "center" }}>
-      <h2 style={{ color: "#fff", marginBottom: "0.75rem" }}>{title}</h2>
+      <h2 style={{ color: "var(--text-primary)", marginBottom: "0.75rem" }}>{title}</h2>
       <p style={{ color: "var(--text-secondary)", marginBottom: "1.5rem", lineHeight: 1.5 }}>{message}</p>
       {onAction && (
         <button className="btn-secondary" type="button" onClick={onAction} style={{ margin: "0 auto", justifyContent: "center" }}>
@@ -1163,7 +1163,7 @@ export default function App() {
             {activeSpeciesFilter && (
               <div className="glass-card" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "1rem", padding: "0.75rem 1.25rem", marginBottom: "1rem", flexWrap: "wrap" }}>
                 <span style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
-                  Showing listings for <strong style={{ color: "#fff" }}>{activeSpeciesFilter.name || "this species"}</strong>
+                  Showing listings for <strong style={{ color: "var(--text-primary)" }}>{activeSpeciesFilter.name || "this species"}</strong>
                 </span>
                 <button className="btn-secondary" style={{ fontSize: "0.75rem", padding: "0.35rem 0.9rem" }} onClick={() => setActiveSpeciesFilter(null)}>
                   Clear filter
@@ -1258,7 +1258,7 @@ export default function App() {
           <Suspense fallback={
             <div style={{ display: "flex", flexDirection: "column", gap: "1rem", maxWidth: "640px", margin: "0 auto", padding: "2rem 0" }}>
               {[1, 2, 3].map((i) => (
-                <div key={i} style={{ height: "180px", borderRadius: "12px", background: "rgba(255, 255, 255, 0.03)", border: "1px solid rgba(255, 255, 255, 0.05)", animation: "pulse 1.5s ease-in-out infinite" }} />
+                <div key={i} style={{ height: "180px", borderRadius: "12px", background: "rgba(var(--ink-rgb), 0.03)", border: "1px solid rgba(var(--ink-rgb), 0.1)", animation: "pulse 1.5s ease-in-out infinite" }} />
               ))}
             </div>
           }>
@@ -1383,7 +1383,7 @@ export default function App() {
   // clerk laptop, a phone at the desk). It handles its own sign-in.
   if (commerceRoute?.fullScreen && String(commerceRoute.kind).startsWith("service-")) {
     return (
-      <Suspense fallback={<div style={{ minHeight: "100vh", background: "#041019" }} />}>
+      <Suspense fallback={<div style={{ minHeight: "100vh", background: "var(--bg-primary)" }} />}>
         <ServicePro
           view={commerceRoute.kind}
           clientId={commerceRoute.clientId || null}
@@ -1396,7 +1396,7 @@ export default function App() {
   if (commerceRoute?.fullScreen) {
     const paid = new URLSearchParams(location.search).get("paid");
     return (
-      <Suspense fallback={<div style={{ minHeight: "100vh", background: "#041019" }} />}>
+      <Suspense fallback={<div style={{ minHeight: "100vh", background: "var(--bg-primary)" }} />}>
         <AuctionNight
           view={commerceRoute.kind}
           auctionId={commerceRoute.auctionId || null}
@@ -1428,8 +1428,8 @@ export default function App() {
             ? "1px solid rgba(56, 189, 248, 0.12)" 
             : "1px solid rgba(168, 85, 247, 0.15)",
           boxShadow: casualModeActive
-            ? "0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(56, 189, 248, 0.05)"
-            : "0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(168, 85, 247, 0.06)",
+            ? "var(--glass-shadow)"
+            : "var(--glass-shadow)",
           transition: "border-color 0.35s ease, box-shadow 0.35s ease",
         }}
       >
@@ -1455,8 +1455,8 @@ export default function App() {
               alignItems: "center",
               justifyContent: "center",
               boxShadow: casualModeActive 
-                ? "0 0 14px rgba(56, 189, 248, 0.3)"
-                : "0 0 14px rgba(168, 85, 247, 0.3)",
+                ? "0 2px 8px rgba(3, 105, 161, 0.25)"
+                : "0 2px 8px rgba(124, 58, 237, 0.25)",
               transition: "background 0.35s ease, box-shadow 0.35s ease",
               flexShrink: 0,
             }}>
@@ -1467,7 +1467,7 @@ export default function App() {
                 fontSize: "1.25rem", 
                 fontWeight: "700", 
                 letterSpacing: "0.04em", 
-                color: "#fff", 
+                color: "var(--text-primary)", 
                 margin: 0,
                 lineHeight: "1.2"
               }}>
@@ -1545,7 +1545,7 @@ export default function App() {
                 }}
                 aria-label="Sync status — click to refresh"
                 title="Synced — click to refresh"
-                onMouseEnter={(e) => { e.currentTarget.style.borderColor = "rgba(52, 211, 153, 0.4)"; e.currentTarget.style.color = "#fff"; }}
+                onMouseEnter={(e) => { e.currentTarget.style.borderColor = "rgba(52, 211, 153, 0.4)"; e.currentTarget.style.color = "var(--text-primary)"; }}
                 onMouseLeave={(e) => { e.currentTarget.style.borderColor = "rgba(52, 211, 153, 0.15)"; e.currentTarget.style.color = "var(--text-muted)"; }}
               >
                 <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "var(--accent-green)", boxShadow: "0 0 4px var(--accent-green)" }} />
@@ -1569,8 +1569,8 @@ export default function App() {
           alignItems: "center",
           padding: casualModeActive ? "0.5rem 1.5rem 0.65rem" : "0.35rem 1.5rem 0.45rem",
           gap: "0.75rem",
-          borderTop: "1px solid rgba(255, 255, 255, 0.04)",
-          background: "rgba(0, 0, 0, 0.15)",
+          borderTop: "1px solid rgba(var(--ink-rgb), 0.09)",
+          background: "var(--bg-band)",
           opacity: casualModeActive ? 1 : 0.7,
           borderRadius: "0 0 var(--radius-md) var(--radius-md)",
         }}>
@@ -1612,7 +1612,7 @@ export default function App() {
           <div style={{ 
             flex: 1, 
             height: "4px", 
-            background: "rgba(255,255,255,0.04)", 
+            background: "rgba(var(--ink-rgb), 0.04)", 
             borderRadius: "10px", 
             overflow: "hidden",
             position: "relative",
@@ -1625,8 +1625,8 @@ export default function App() {
                 : "linear-gradient(90deg, #a855f7, #7c3aed)",
               borderRadius: "10px",
               boxShadow: casualModeActive 
-                ? "0 0 8px rgba(251, 191, 36, 0.4)"
-                : "0 0 8px rgba(168, 85, 247, 0.4)",
+                ? "none"
+                : "none",
               transition: "width 0.4s ease-out, background 0.35s ease"
             }} />
           </div>
@@ -1756,7 +1756,7 @@ export default function App() {
             <Suspense fallback={
               <div style={{ display: "flex", flexDirection: "column", gap: "1rem", padding: "2rem 0" }}>
                 {[1, 2, 3].map((i) => (
-                  <div key={i} style={{ height: "120px", borderRadius: "12px", background: "rgba(255, 255, 255, 0.03)", border: "1px solid rgba(255, 255, 255, 0.05)", animation: "pulse 1.5s ease-in-out infinite" }} />
+                  <div key={i} style={{ height: "120px", borderRadius: "12px", background: "rgba(var(--ink-rgb), 0.03)", border: "1px solid rgba(var(--ink-rgb), 0.1)", animation: "pulse 1.5s ease-in-out infinite" }} />
                 ))}
               </div>
             }>
@@ -1807,15 +1807,15 @@ export default function App() {
           alignItems: "center",
           gap: "0.75rem",
           padding: "0.75rem 1.25rem",
-          background: "rgba(14, 20, 36, 0.95)",
+          background: "var(--bg-secondary)",
           border: syncStatus === "failed"
             ? "1px solid rgba(248, 113, 113, 0.4)"
             : "1px solid rgba(56, 189, 248, 0.3)",
           borderRadius: "var(--radius-sm)",
-          boxShadow: "0 8px 32px rgba(0, 0, 0, 0.6)",
+          boxShadow: "var(--shadow-md)",
           backdropFilter: "blur(12px)",
           fontSize: "0.82rem",
-          color: "#f8fafc",
+          color: "var(--text-primary)",
           fontFamily: "'Plus Jakarta Sans', sans-serif",
           maxWidth: "90vw",
         }}>
@@ -1834,8 +1834,8 @@ export default function App() {
               <button
                 onClick={() => account && runCloudSync(account, { cancelled: false })}
                 style={{
-                  background: "rgba(255, 255, 255, 0.06)",
-                  border: "1px solid rgba(255, 255, 255, 0.12)",
+                  background: "rgba(var(--ink-rgb), 0.06)",
+                  border: "1px solid rgba(var(--ink-rgb), 0.17)",
                   borderRadius: "6px",
                   color: "var(--accent-blue)",
                   padding: "0.3rem 0.7rem",
@@ -1853,7 +1853,7 @@ export default function App() {
                 style={{
                   background: "none",
                   border: "none",
-                  color: "#64748b",
+                  color: "var(--text-muted)",
                   cursor: "pointer",
                   fontSize: "1rem",
                   padding: "0 0.25rem",
@@ -1884,11 +1884,11 @@ export default function App() {
             key={toast.id}
             style={{
               pointerEvents: "auto",
-              background: "rgba(14, 20, 36, 0.95)",
+              background: "var(--bg-secondary)",
               border: toast.isLevelUp ? "1px solid var(--accent-amber)" : "1px solid var(--accent-blue)",
               borderRadius: "var(--radius-sm)",
               padding: "1rem 1.25rem",
-              boxShadow: "0 8px 32px rgba(0, 0, 0, 0.6)",
+              boxShadow: "var(--shadow-md)",
               display: "flex",
               alignItems: "center",
               gap: "0.75rem",
@@ -1912,7 +1912,7 @@ export default function App() {
               {toast.isLevelUp ? "★" : `+${toast.points}`}
             </div>
             <div>
-              <strong style={{ display: "block", fontSize: "0.85rem", color: "#fff" }}>
+              <strong style={{ display: "block", fontSize: "0.85rem", color: "var(--text-primary)" }}>
                 {toast.isLevelUp ? (casualModeActive ? "LEVEL UP!" : "RANK UP!") : toast.label}
               </strong>
               <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>

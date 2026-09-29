@@ -57,9 +57,9 @@ export function MessagesPanel() {
           width: "34px",
           height: "34px",
           borderRadius: "50%",
-          border: "1px solid rgba(255, 255, 255, 0.08)",
-          background: isOpen ? "rgba(56, 189, 248, 0.1)" : "rgba(255, 255, 255, 0.03)",
-          color: isOpen ? "#38bdf8" : "var(--text-muted)",
+          border: "1px solid rgba(var(--ink-rgb), 0.13)",
+          background: isOpen ? "rgba(56, 189, 248, 0.1)" : "rgba(var(--ink-rgb), 0.03)",
+          color: isOpen ? "var(--accent-blue)" : "var(--text-muted)",
           fontSize: "1rem",
           cursor: "pointer",
           display: "flex",
@@ -85,7 +85,7 @@ export function MessagesPanel() {
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            border: "2px solid rgba(15, 23, 42, 0.95)",
+            border: "2px solid var(--bg-secondary)",
           }}>
             {unreadCount > 9 ? "9+" : unreadCount}
           </span>
@@ -101,10 +101,10 @@ export function MessagesPanel() {
           marginTop: "0.5rem",
           width: "320px",
           maxHeight: "420px",
-          background: "rgba(15, 23, 42, 0.97)",
-          border: "1px solid rgba(255, 255, 255, 0.08)",
+          background: "var(--bg-secondary)",
+          border: "1px solid rgba(var(--ink-rgb), 0.13)",
           borderRadius: "12px",
-          boxShadow: "0 16px 48px rgba(0, 0, 0, 0.5)",
+          boxShadow: "var(--shadow-lg)",
           overflow: "hidden",
           display: "flex",
           flexDirection: "column",
@@ -123,10 +123,10 @@ export function MessagesPanel() {
               {/* Header */}
               <div style={{
                 padding: "0.75rem 1rem",
-                borderBottom: "1px solid rgba(255, 255, 255, 0.05)",
+                borderBottom: "1px solid rgba(var(--ink-rgb), 0.1)",
                 fontWeight: 600,
                 fontSize: "0.8rem",
-                color: "#fff",
+                color: "var(--text-primary)",
               }}>
                 Messages
               </div>
@@ -159,7 +159,7 @@ export function MessagesPanel() {
                           ? "rgba(56, 189, 248, 0.04)"
                           : "transparent",
                         border: "none",
-                        borderBottom: "1px solid rgba(255, 255, 255, 0.03)",
+                        borderBottom: "1px solid rgba(var(--ink-rgb), 0.08)",
                         cursor: "pointer",
                         display: "flex",
                         alignItems: "center",
@@ -167,7 +167,7 @@ export function MessagesPanel() {
                         textAlign: "left",
                         transition: "background 0.1s ease",
                       }}
-                      onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.03)"; }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(var(--ink-rgb), 0.03)"; }}
                       onMouseLeave={(e) => { e.currentTarget.style.background = convo.myUnread > 0 ? "rgba(56, 189, 248, 0.04)" : "transparent"; }}
                     >
                       {/* Avatar */}
@@ -185,7 +185,7 @@ export function MessagesPanel() {
                           <span style={{
                             fontSize: "0.78rem",
                             fontWeight: convo.myUnread > 0 ? 700 : 500,
-                            color: "#fff",
+                            color: "var(--text-primary)",
                             overflow: "hidden",
                             textOverflow: "ellipsis",
                             whiteSpace: "nowrap",

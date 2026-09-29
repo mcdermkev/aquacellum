@@ -42,9 +42,9 @@ import {
 const inputStyle = {
   width: "100%",
   padding: "0.65rem",
-  background: "rgba(255,255,255,0.03)",
+  background: "rgba(var(--ink-rgb), 0.03)",
   border: "1px solid var(--glass-border)",
-  color: "#fff",
+  color: "var(--text-primary)",
   borderRadius: "6px",
   outline: "none",
 };
@@ -83,7 +83,7 @@ function ToggleTile({ pressed, onClick, children }) {
       aria-pressed={pressed}
       onClick={onClick}
       className={`delivery-tile ${pressed ? "active" : ""}`}
-      style={{ color: "#fff", font: "inherit" }}
+      style={{ color: "var(--text-primary)", font: "inherit" }}
     >
       {children}
     </button>
@@ -313,7 +313,7 @@ export function FragListingModal({ isOpen, onClose, walletAccount, onSuccess }) 
         &times;
       </button>
 
-      <h3 style={{ fontSize: "1.5rem", color: "#fff", marginTop: "1rem" }}>List Coral Frags</h3>
+      <h3 style={{ fontSize: "1.5rem", color: "var(--text-primary)", marginTop: "1rem" }}>List Coral Frags</h3>
       <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", marginBottom: "1.5rem" }}>
         Sell frags cut from your colonies. Buyers pick a quantity; stock counts down as they sell.
       </p>
@@ -354,7 +354,7 @@ export function FragListingModal({ isOpen, onClose, walletAccount, onSuccess }) 
             <p style={hintStyle}>The coral catalog didn't load. Check your connection and reopen this form.</p>
           )}
           {reefCare && (
-            <p style={{ ...hintStyle, color: "#34d399" }}>
+            <p style={{ ...hintStyle, color: "var(--accent-green)" }}>
               From the catalog: {[
                 reefCare.light && `${reefCare.light} light`,
                 reefCare.flow && `${reefCare.flow} flow`,

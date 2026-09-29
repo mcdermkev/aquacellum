@@ -170,8 +170,8 @@ export function VacationModeControl({ casualModeActive }) {
                 padding: "0.5rem 0.65rem",
                 minHeight: 40,
                 borderRadius: 8,
-                border: "1px solid rgba(255,255,255,0.15)",
-                background: "rgba(0,0,0,0.25)",
+                border: "1px solid rgba(var(--ink-rgb), 0.15)",
+                background: "#fff",
                 color: "var(--text-primary)",
                 fontSize: "0.8rem",
               }}

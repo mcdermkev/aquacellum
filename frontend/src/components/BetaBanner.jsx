@@ -68,7 +68,7 @@ export function BetaBanner() {
 
         {expanded && (
           <ul id="beta-limitations" style={styles.limitationsList}>
-            <li style={{...styles.limitationItem, marginBottom: "0.4rem", fontSize: "0.72rem", color: "#64748b", fontStyle: "italic" }}>
+            <li style={{...styles.limitationItem, marginBottom: "0.4rem", fontSize: "0.72rem", color: "var(--text-muted)", fontStyle: "italic" }}>
               What this means for you: everything works, but these are the rough edges we're still smoothing out.
             </li>
             <li style={styles.limitationItem}>
@@ -142,15 +142,15 @@ const styles = {
     fontSize: "0.65rem",
     fontWeight: 700,
     letterSpacing: "0.1em",
-    color: "#0f172a",
-    backgroundColor: "#38bdf8",
+    color: "#fff",
+    backgroundColor: "var(--accent-blue-fill)",
     padding: "0.2rem 0.5rem",
     borderRadius: "4px",
   },
   text: {
     margin: 0,
     fontSize: "0.82rem",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
     lineHeight: 1.5,
     flex: 1,
   },
@@ -158,7 +158,7 @@ const styles = {
     flexShrink: 0,
     background: "none",
     border: "none",
-    color: "#64748b",
+    color: "var(--text-muted)",
     fontSize: "1.25rem",
     cursor: "pointer",
     padding: "0.25rem 0.5rem",
@@ -171,7 +171,7 @@ const styles = {
     gap: "0.4rem",
     background: "none",
     border: "none",
-    color: "#38bdf8",
+    color: "var(--accent-blue)",
     fontSize: "0.75rem",
     fontWeight: 500,
     cursor: "pointer",
@@ -197,7 +197,7 @@ const styles = {
     alignItems: "flex-start",
     gap: "0.5rem",
     fontSize: "0.78rem",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
     lineHeight: 1.4,
   },
   limitationIcon: {

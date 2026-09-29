@@ -30,7 +30,7 @@ export function SpeciesPhotoCredit({ scientificName, style }) {
               target="_blank"
               rel="noopener noreferrer"
               aria-label={`Original photo on ${credit.sourceLabel} (opens in a new tab)`}
-              style={{ color: "#7dd3fc", textDecoration: "underline" }}
+              style={{ color: "inherit", textDecoration: "underline" }}
             >
               {credit.sourceLabel}
             </a>

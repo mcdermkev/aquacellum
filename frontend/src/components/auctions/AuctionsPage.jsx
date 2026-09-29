@@ -44,7 +44,7 @@ function LotPhoto({ src, alt, height = 180 }) {
   const [broken, setBroken] = useState(false);
   if (!src || broken) {
     return (
-      <div aria-hidden="true" style={{ height, borderRadius: "12px", background: "rgba(255,255,255,0.04)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-muted)" }}>
+      <div aria-hidden="true" style={{ height, borderRadius: "12px", background: "rgba(var(--ink-rgb), 0.04)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-muted)" }}>
         <ImageSquare size={36} weight="duotone" />
       </div>
     );
@@ -61,9 +61,9 @@ function LotPhoto({ src, alt, height = 180 }) {
 }
 
 function statusLine(lot, msLeft) {
-  if (lot.status === "live") return { text: formatTimeLeft(msLeft), tone: msLeft < 5 * 60 * 1000 ? "#fbbf24" : "#7dd3fc" };
+  if (lot.status === "live") return { text: formatTimeLeft(msLeft), tone: msLeft < 5 * 60 * 1000 ? "var(--accent-amber)" : "var(--accent-blue)" };
   if (lot.status === "upcoming") return { text: "Starts soon", tone: "var(--text-secondary)" };
-  if (lot.status === "sold") return { text: `Sold for ${centsToDollars(lot.soldForCents)}`, tone: "#86efac" };
+  if (lot.status === "sold") return { text: `Sold for ${centsToDollars(lot.soldForCents)}`, tone: "var(--accent-green)" };
   if (lot.status === "closed") return { text: "Bidding closed", tone: "var(--text-secondary)" };
   return { text: "Not sold", tone: "var(--text-muted)" };
 }
@@ -112,13 +112,13 @@ function LotCard({ lot, offset, now, onOpen }) {
         style={{ display: "flex", flexDirection: "column", gap: "0.6rem", padding: "0.9rem", textDecoration: "none", color: "inherit", height: "100%" }}
       >
         <LotPhoto src={lot.photos[0]} alt={lot.title} />
-        <span style={{ color: "#fff", fontWeight: 700, fontSize: "1rem", lineHeight: 1.3 }}>{lot.title}</span>
+        <span style={{ color: "var(--text-primary)", fontWeight: 700, fontSize: "1rem", lineHeight: 1.3 }}>{lot.title}</span>
         <span style={{ display: "flex", justifyContent: "space-between", gap: "0.5rem", alignItems: "baseline" }}>
           <span>
             <span style={{ color: "var(--text-muted)", fontSize: "0.8rem", display: "block" }}>
               {lot.bidCount ? `${lot.bidCount} ${lot.bidCount === 1 ? "bid" : "bids"}` : "Starting bid"}
             </span>
-            <strong style={{ color: "#fff", fontSize: "1.15rem" }}>{centsToDollars(current)}</strong>
+            <strong style={{ color: "var(--text-primary)", fontSize: "1.15rem" }}>{centsToDollars(current)}</strong>
           </span>
           <span style={{ color: s.tone, fontWeight: 600, fontSize: "0.9rem", display: "inline-flex", alignItems: "center", gap: "0.3rem" }}>
             <Clock size={16} weight="duotone" aria-hidden="true" /> {s.text}
@@ -129,7 +129,7 @@ function LotCard({ lot, offset, now, onOpen }) {
             <MapPin size={16} weight="duotone" aria-hidden="true" /> Pickup: {lot.pickupLocation}
           </span>
         )}
-        {lot.club && <span style={{ color: "#c4b5fd", fontSize: "0.8rem" }}>{lot.club.name}</span>}
+        {lot.club && <span style={{ color: "var(--accent-violet)", fontSize: "0.8rem" }}>{lot.club.name}</span>}
       </a>
     </li>
   );
@@ -171,7 +171,7 @@ function AuctionBrowse({ statusFilter, onNavigate }) {
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Medaka, plants, a breeder…"
-            style={{ minHeight: TAP, padding: "0 0.75rem", borderRadius: "10px", border: "1px solid var(--glass-border)", background: "rgba(255,255,255,0.05)", color: "#fff", fontSize: "1rem" }}
+            style={{ minHeight: TAP, padding: "0 0.75rem", borderRadius: "10px", border: "1px solid var(--glass-border)", background: "#fff", color: "var(--text-primary)", fontSize: "1rem" }}
           />
         </label>
         {statusFilter === "live" && (
@@ -180,7 +180,7 @@ function AuctionBrowse({ statusFilter, onNavigate }) {
             <select
               value={sort}
               onChange={(e) => setSort(e.target.value)}
-              style={{ minHeight: TAP, padding: "0 0.6rem", borderRadius: "10px", border: "1px solid var(--glass-border)", background: "rgba(15,23,42,0.9)", color: "#fff", fontSize: "1rem" }}
+              style={{ minHeight: TAP, padding: "0 0.6rem", borderRadius: "10px", border: "1px solid var(--glass-border)", background: "#fff", color: "var(--text-primary)", fontSize: "1rem" }}
             >
               <option value="ending">Ending soon</option>
               <option value="new">Newly listed</option>
@@ -193,10 +193,10 @@ function AuctionBrowse({ statusFilter, onNavigate }) {
       {query.isLoading ? (
         <p style={{ color: "var(--text-muted)" }}>Loading lots…</p>
       ) : query.isError ? (
-        <p role="alert" style={{ color: "#fca5a5" }}>{query.error.message}</p>
+        <p role="alert" style={{ color: "var(--accent-red)" }}>{query.error.message}</p>
       ) : lots.length === 0 ? (
         <div className="glass-card" style={{ padding: "2rem", textAlign: "center" }}>
-          <Gavel size={36} weight="duotone" color="#7dd3fc" aria-hidden="true" />
+          <Gavel size={36} weight="duotone" color="var(--accent-blue)" aria-hidden="true" />
           <p style={{ color: "var(--text-secondary)", margin: "0.5rem 0 0 0" }}>
             {statusFilter === "live" ? "No live lots right now. Check back soon." : "No ended lots yet."}
           </p>
@@ -256,12 +256,12 @@ function BidPanel({ lot, viewer, signedIn, onRequireSignIn, onBid }) {
     };
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
-        <p style={{ color: "#fff", fontWeight: 600, margin: 0 }}>Add a card to bid.</p>
+        <p style={{ color: "var(--text-primary)", fontWeight: 600, margin: 0 }}>Add a card to bid.</p>
         {disclosure}
         <button type="button" className="btn-primary" onClick={addCard} disabled={addingCard} style={{ minHeight: "52px", fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "0.5rem" }}>
           {addingCard ? <SpinnerGap size={20} className="spin" /> : <CreditCard size={20} weight="duotone" />} Add a card
         </button>
-        {error && <p role="alert" style={{ color: "#fca5a5", margin: 0 }}>{error}</p>}
+        {error && <p role="alert" style={{ color: "var(--accent-red)", margin: 0 }}>{error}</p>}
       </div>
     );
   }
@@ -287,11 +287,11 @@ function BidPanel({ lot, viewer, signedIn, onRequireSignIn, onBid }) {
   return (
     <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }} noValidate>
       {viewer?.isHighBidder && (
-        <p role="status" style={{ color: "#86efac", fontWeight: 700, margin: 0, display: "inline-flex", alignItems: "center", gap: "0.4rem" }}>
+        <p role="status" style={{ color: "var(--accent-green)", fontWeight: 700, margin: 0, display: "inline-flex", alignItems: "center", gap: "0.4rem" }}>
           <CheckCircle size={20} weight="fill" /> You have the high bid.
         </p>
       )}
-      <label htmlFor="bid-amount" style={{ color: "#fff", fontWeight: 600 }}>
+      <label htmlFor="bid-amount" style={{ color: "var(--text-primary)", fontWeight: 600 }}>
         Your bid (minimum {centsToDollars(lot.minNextBidCents)})
       </label>
       <div style={{ display: "flex", gap: "0.5rem" }}>
@@ -303,14 +303,14 @@ function BidPanel({ lot, viewer, signedIn, onRequireSignIn, onBid }) {
           onChange={(e) => setAmount(e.target.value)}
           disabled={busy || viewer?.isHighBidder}
           aria-describedby="bid-disclosure"
-          style={{ flex: 1, minHeight: "52px", padding: "0 0.75rem", borderRadius: "10px", border: "1px solid var(--glass-border)", background: "rgba(255,255,255,0.05)", color: "#fff", fontSize: "1.2rem" }}
+          style={{ flex: 1, minHeight: "52px", padding: "0 0.75rem", borderRadius: "10px", border: "1px solid var(--glass-border)", background: "#fff", color: "var(--text-primary)", fontSize: "1.2rem" }}
         />
         <button type="submit" className="btn-primary" disabled={busy || viewer?.isHighBidder} style={{ minHeight: "52px", padding: "0 1.25rem", fontWeight: 700 }}>
           {busy ? <SpinnerGap size={20} className="spin" /> : "Place bid"}
         </button>
       </div>
       <div id="bid-disclosure">{disclosure}</div>
-      {error && <p role="alert" style={{ color: "#fca5a5", margin: 0, display: "inline-flex", gap: "0.4rem", alignItems: "center" }}><Warning size={18} /> {error}</p>}
+      {error && <p role="alert" style={{ color: "var(--accent-red)", margin: 0, display: "inline-flex", gap: "0.4rem", alignItems: "center" }}><Warning size={18} /> {error}</p>}
     </form>
   );
 }
@@ -335,7 +335,7 @@ function AuctionLotDetail({ lotId, signedIn, onRequireSignIn, onNavigate }) {
   if (query.isError) {
     return (
       <div className="glass-card" style={{ padding: "2rem", textAlign: "center" }}>
-        <p role="alert" style={{ color: "#fca5a5" }}>{query.error.status === 404 ? "That lot doesn't exist or was withdrawn." : query.error.message}</p>
+        <p role="alert" style={{ color: "var(--accent-red)" }}>{query.error.status === 404 ? "That lot doesn't exist or was withdrawn." : query.error.message}</p>
         <button type="button" className="btn-secondary" onClick={() => onNavigate("/app/auctions")} style={{ minHeight: TAP }}>Back to auctions</button>
       </div>
     );
@@ -361,11 +361,11 @@ function AuctionLotDetail({ lotId, signedIn, onRequireSignIn, onNavigate }) {
 
       <div className="glass-card" style={{ padding: "1.25rem", display: "flex", flexDirection: "column", gap: "0.9rem" }}>
         <div>
-          <h2 id="lot-title" style={{ color: "#fff", fontSize: "1.4rem", margin: 0 }}>{lot.title}</h2>
+          <h2 id="lot-title" style={{ color: "var(--text-primary)", fontSize: "1.4rem", margin: 0 }}>{lot.title}</h2>
           <p style={{ color: "var(--text-muted)", margin: "0.3rem 0 0 0", fontSize: "0.9rem" }}>
             {lot.club ? `${lot.club.name} · ` : ""}Sold by{" "}
             {lot.seller.slug ? (
-              <a href={`/app/store/${encodeURIComponent(lot.seller.slug)}`} onClick={(e) => { e.preventDefault(); onNavigate(`/app/store/${encodeURIComponent(lot.seller.slug)}`); }} style={{ color: "#7dd3fc" }}>
+              <a href={`/app/store/${encodeURIComponent(lot.seller.slug)}`} onClick={(e) => { e.preventDefault(); onNavigate(`/app/store/${encodeURIComponent(lot.seller.slug)}`); }} style={{ color: "var(--accent-blue)" }}>
                 {lot.seller.name || "their store"}
               </a>
             ) : (lot.seller.name || "a breeder")}
@@ -373,7 +373,7 @@ function AuctionLotDetail({ lotId, signedIn, onRequireSignIn, onNavigate }) {
           </p>
         </div>
 
-        {cardNotice === "1" && <p role="status" style={{ color: "#86efac", margin: 0 }}>Card saved. You can bid now.</p>}
+        {cardNotice === "1" && <p role="status" style={{ color: "var(--accent-green)", margin: 0 }}>Card saved. You can bid now.</p>}
         {cardNotice === "0" && <p role="status" style={{ color: "var(--text-secondary)", margin: 0 }}>No card was saved.</p>}
 
         <div style={{ display: "flex", justifyContent: "space-between", gap: "1rem", flexWrap: "wrap" }}>
@@ -381,9 +381,9 @@ function AuctionLotDetail({ lotId, signedIn, onRequireSignIn, onNavigate }) {
             <span style={{ color: "var(--text-muted)", fontSize: "0.85rem", display: "block" }}>
               {lot.bidCount ? `Current bid · ${lot.bidCount} ${lot.bidCount === 1 ? "bid" : "bids"}` : "Starting bid"}
             </span>
-            <strong style={{ color: "#fff", fontSize: "2rem" }}>{centsToDollars(lot.highBidCents ?? lot.startingBidCents)}</strong>
+            <strong style={{ color: "var(--text-primary)", fontSize: "2rem" }}>{centsToDollars(lot.highBidCents ?? lot.startingBidCents)}</strong>
             {lot.hasReserve && (
-              <span style={{ display: "block", color: lot.reserveMet ? "#86efac" : "#fbbf24", fontSize: "0.85rem" }}>
+              <span style={{ display: "block", color: lot.reserveMet ? "var(--accent-green)" : "var(--accent-amber)", fontSize: "0.85rem" }}>
                 {lot.reserveMet ? "Reserve met" : "Reserve not met yet"}
               </span>
             )}
@@ -405,7 +405,7 @@ function AuctionLotDetail({ lotId, signedIn, onRequireSignIn, onNavigate }) {
           <BidPanel lot={lot} viewer={viewer} signedIn={signedIn} onRequireSignIn={onRequireSignIn} onBid={refresh} />
         ) : viewer?.isWinner ? (
           <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-            <p style={{ color: "#86efac", fontWeight: 700, margin: 0 }}>You won this lot.</p>
+            <p style={{ color: "var(--accent-green)", fontWeight: 700, margin: 0 }}>You won this lot.</p>
             <button type="button" className="btn-primary" onClick={() => onNavigate("/app/auctions/mine")} style={{ minHeight: TAP }}>
               See payment and pickup
             </button>
@@ -414,10 +414,10 @@ function AuctionLotDetail({ lotId, signedIn, onRequireSignIn, onNavigate }) {
 
         {bids.length > 0 && (
           <div>
-            <h3 style={{ color: "#fff", fontSize: "1rem", margin: "0 0 0.4rem 0" }}>Bid history</h3>
+            <h3 style={{ color: "var(--text-primary)", fontSize: "1rem", margin: "0 0 0.4rem 0" }}>Bid history</h3>
             <ol style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: "0.3rem", maxHeight: "240px", overflowY: "auto" }}>
               {bids.map((b, i) => (
-                <li key={`${b.at}-${i}`} style={{ display: "flex", justifyContent: "space-between", color: i === 0 ? "#fff" : "var(--text-secondary)", fontSize: "0.9rem" }}>
+                <li key={`${b.at}-${i}`} style={{ display: "flex", justifyContent: "space-between", color: i === 0 ? "var(--text-primary)" : "var(--text-secondary)", fontSize: "0.9rem" }}>
                   <span>{b.bidder}</span>
                   <span>{centsToDollars(b.amountCents)}</span>
                   <time dateTime={b.at} style={{ color: "var(--text-muted)" }}>
@@ -437,11 +437,11 @@ function AuctionLotDetail({ lotId, signedIn, onRequireSignIn, onNavigate }) {
 
 function wonState(item) {
   switch (item.status) {
-    case "paid": return { text: "Paid. Show your pickup code when you collect.", tone: "#86efac" };
-    case "handed_off": return { text: "Picked up. Enjoy your fish.", tone: "#86efac" };
-    case "payment_failed": return { text: item.lastChargeError || "Your card was declined.", tone: "#fca5a5" };
+    case "paid": return { text: "Paid. Show your pickup code when you collect.", tone: "var(--accent-green)" };
+    case "handed_off": return { text: "Picked up. Enjoy your fish.", tone: "var(--accent-green)" };
+    case "payment_failed": return { text: item.lastChargeError || "Your card was declined.", tone: "var(--accent-red)" };
     case "ended":
-    case "charging": return { text: "Charging your card…", tone: "#7dd3fc" };
+    case "charging": return { text: "Charging your card…", tone: "var(--accent-blue)" };
     case "forfeited": return { text: "Not paid in time. The lot went back to the seller.", tone: "var(--text-muted)" };
     case "refunded": return { text: "Refunded.", tone: "var(--text-muted)" };
     default: return { text: item.status, tone: "var(--text-secondary)" };
@@ -477,7 +477,7 @@ function MyAuctions({ onNavigate }) {
   };
 
   if (query.isLoading) return <p style={{ color: "var(--text-muted)" }}>Loading…</p>;
-  if (query.isError) return <p role="alert" style={{ color: "#fca5a5" }}>{query.error.message}</p>;
+  if (query.isError) return <p role="alert" style={{ color: "var(--accent-red)" }}>{query.error.message}</p>;
 
   const { bidding = [], selling = [] } = query.data;
   const live = bidding.filter((b) => b.status === "live");
@@ -488,7 +488,7 @@ function MyAuctions({ onNavigate }) {
     <li key={item.id} className="glass-card" style={{ listStyle: "none", padding: "0.9rem", display: "flex", gap: "0.8rem", alignItems: "center", flexWrap: "wrap" }}>
       <div style={{ width: 64, flexShrink: 0 }}><LotPhoto src={item.photo} alt="" height={64} /></div>
       <div style={{ flex: "1 1 220px", minWidth: 0 }}>
-        <a href={lotPath(item.id)} onClick={(e) => { e.preventDefault(); onNavigate(lotPath(item.id)); }} style={{ color: "#fff", fontWeight: 700 }}>{item.title}</a>
+        <a href={lotPath(item.id)} onClick={(e) => { e.preventDefault(); onNavigate(lotPath(item.id)); }} style={{ color: "var(--text-primary)", fontWeight: 700 }}>{item.title}</a>
         {children}
       </div>
     </li>
@@ -496,10 +496,10 @@ function MyAuctions({ onNavigate }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
-      {message && <p role={message.ok ? "status" : "alert"} style={{ color: message.ok ? "#86efac" : "#fca5a5", margin: 0 }}>{message.text}</p>}
+      {message && <p role={message.ok ? "status" : "alert"} style={{ color: message.ok ? "var(--accent-green)" : "var(--accent-red)", margin: 0 }}>{message.text}</p>}
 
       <section aria-labelledby="mine-won">
-        <h2 id="mine-won" style={{ color: "#fff", fontSize: "1.1rem" }}>Won</h2>
+        <h2 id="mine-won" style={{ color: "var(--text-primary)", fontSize: "1.1rem" }}>Won</h2>
         {won.length === 0 ? <p style={{ color: "var(--text-muted)" }}>Nothing won yet.</p> : (
           <ul style={{ display: "flex", flexDirection: "column", gap: "0.6rem", padding: 0, margin: 0 }}>
             {won.map((item) => {
@@ -535,11 +535,11 @@ function MyAuctions({ onNavigate }) {
       </section>
 
       <section aria-labelledby="mine-live">
-        <h2 id="mine-live" style={{ color: "#fff", fontSize: "1.1rem" }}>Bidding now</h2>
+        <h2 id="mine-live" style={{ color: "var(--text-primary)", fontSize: "1.1rem" }}>Bidding now</h2>
         {live.length === 0 ? <p style={{ color: "var(--text-muted)" }}>No live bids.</p> : (
           <ul style={{ display: "flex", flexDirection: "column", gap: "0.6rem", padding: 0, margin: 0 }}>
             {live.map((item) => row(item, (
-              <p style={{ color: item.winning ? "#86efac" : "#fbbf24", margin: "0.25rem 0 0 0" }}>
+              <p style={{ color: item.winning ? "var(--accent-green)" : "var(--accent-amber)", margin: "0.25rem 0 0 0" }}>
                 {item.winning ? `You're winning at ${centsToDollars(item.highBidCents)}` : `Outbid. High bid ${centsToDollars(item.highBidCents)} (yours ${centsToDollars(item.myTopBidCents)})`}
               </p>
             )))}
@@ -549,7 +549,7 @@ function MyAuctions({ onNavigate }) {
 
       {lost.length > 0 && (
         <section aria-labelledby="mine-lost">
-          <h2 id="mine-lost" style={{ color: "#fff", fontSize: "1.1rem" }}>Ended</h2>
+          <h2 id="mine-lost" style={{ color: "var(--text-primary)", fontSize: "1.1rem" }}>Ended</h2>
           <ul style={{ display: "flex", flexDirection: "column", gap: "0.6rem", padding: 0, margin: 0 }}>
             {lost.map((item) => row(item, <p style={{ color: "var(--text-muted)", margin: "0.25rem 0 0 0" }}>You didn&apos;t win this one.</p>))}
           </ul>
@@ -574,8 +574,8 @@ export function AuctionsPage({ view = "auctions", lotId = null, signedIn = false
   return (
     <div style={{ maxWidth: "1100px", margin: "0 auto", display: "flex", flexDirection: "column", gap: "1.25rem" }}>
       <header style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap", justifyContent: "space-between" }}>
-        <h1 style={{ color: "#fff", fontSize: "1.6rem", margin: 0, display: "inline-flex", alignItems: "center", gap: "0.5rem" }}>
-          <Gavel size={28} weight="duotone" color="#7dd3fc" aria-hidden="true" /> Auctions
+        <h1 style={{ color: "var(--text-primary)", fontSize: "1.6rem", margin: 0, display: "inline-flex", alignItems: "center", gap: "0.5rem" }}>
+          <Gavel size={28} weight="duotone" color="var(--accent-blue)" aria-hidden="true" /> Auctions
         </h1>
         <AuctionTabs view={view} statusFilter={statusFilter} onNavigate={go} signedIn={signedIn} />
       </header>

@@ -19,8 +19,8 @@
 }
 
 .pt-card {
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.08));
+  background: rgba(var(--ink-rgb), 0.02);
+  border: 1px solid var(--glass-border, rgba(var(--ink-rgb), 0.08));
   border-radius: 10px;
   padding: 0.6rem 0.7rem;
   display: flex;
@@ -61,7 +61,7 @@
   justify-content: center;
   color: var(--text-muted, #94a3b8);
   font-size: 0.72rem;
-  border: 1px dashed rgba(255, 255, 255, 0.08);
+  border: 1px dashed rgba(var(--ink-rgb), 0.08);
   border-radius: 8px;
 }
 

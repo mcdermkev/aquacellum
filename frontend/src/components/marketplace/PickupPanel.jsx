@@ -127,7 +127,7 @@ export function PickupPanel({ orderRef, sellerWallet, onOpenHandoff, casualModeA
 
   return (
     <div style={panelStyle}>
-      <h4 style={{ margin: 0, fontSize: "0.9rem", color: "#fff", display: "flex", alignItems: "center", gap: "0.4rem" }}>
+      <h4 style={{ margin: 0, fontSize: "0.9rem", color: "var(--text-primary)", display: "flex", alignItems: "center", gap: "0.4rem" }}>
         📍 {location.label}
       </h4>
 
@@ -162,7 +162,7 @@ export function PickupPanel({ orderRef, sellerWallet, onOpenHandoff, casualModeA
 
       {/* Status + confirmed time */}
       <div style={{ display: "flex", flexDirection: "column", gap: "0.3rem" }}>
-        <span style={{ fontSize: "0.78rem", color: "#fff", fontWeight: 600 }}>{statusView.label}</span>
+        <span style={{ fontSize: "0.78rem", color: "var(--text-primary)", fontWeight: 600 }}>{statusView.label}</span>
         {arrangement?.confirmedTime && (
           <span style={{ fontSize: "0.75rem", color: "var(--accent-green, #34d399)" }}>
             {new Date(arrangement.confirmedTime).toLocaleString()}
@@ -261,7 +261,7 @@ function PickupMap({ lat, lng, addressText }) {
     window.mapboxgl.accessToken = MAPBOX_TOKEN;
     const map = new window.mapboxgl.Map({
       container: mapContainer.current,
-      style: "mapbox://styles/mapbox/dark-v11",
+      style: "mapbox://styles/mapbox/light-v11",
       center: [lng, lat],
       zoom: 14,
       interactive: !prefersReducedMotion(),
@@ -282,7 +282,7 @@ function PickupMap({ lat, lng, addressText }) {
     return null;
   }
 
-  return <div ref={mapContainer} style={{ height: "200px", borderRadius: "8px", border: "1px solid var(--glass-border, rgba(255,255,255,0.12))" }} aria-label={addressText ? `Map showing ${addressText}` : "Pickup location map"} />;
+  return <div ref={mapContainer} style={{ height: "200px", borderRadius: "8px", border: "1px solid var(--glass-border, rgba(var(--ink-rgb), 0.12))" }} aria-label={addressText ? `Map showing ${addressText}` : "Pickup location map"} />;
 }
 
 const panelStyle = {
@@ -291,8 +291,8 @@ const panelStyle = {
   gap: "0.6rem",
   padding: "0.9rem 1rem",
   borderRadius: "10px",
-  background: "rgba(255,255,255,0.02)",
-  border: "1px solid var(--glass-border, rgba(255,255,255,0.12))",
+  background: "rgba(var(--ink-rgb), 0.02)",
+  border: "1px solid var(--glass-border, rgba(var(--ink-rgb), 0.12))",
 };
 
 const safetyBanner = {
@@ -307,11 +307,11 @@ const safetyBanner = {
 const openInMapsLink = { fontSize: "0.72rem", color: "var(--accent-blue, #60a5fa)", textDecoration: "none" };
 
 const selectStyle = {
-  background: "rgba(255,255,255,0.03)",
-  border: "1px solid var(--glass-border, rgba(255,255,255,0.12))",
+  background: "rgba(var(--ink-rgb), 0.03)",
+  border: "1px solid var(--glass-border, rgba(var(--ink-rgb), 0.12))",
   borderRadius: "6px",
   padding: "0.45rem 0.6rem",
-  color: "#fff",
+  color: "var(--text-primary)",
   fontSize: "0.78rem",
 };
 

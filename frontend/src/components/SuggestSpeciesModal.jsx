@@ -91,7 +91,7 @@ export default function SuggestSpeciesModal({
   return (
     <div style={{
       position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-      background: 'rgba(5, 8, 20, 0.85)', backdropFilter: 'blur(16px)',
+      background: 'rgba(11, 37, 48, 0.45)', backdropFilter: 'blur(16px)',
       display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 30000,
       padding: '1.5rem',
       overflowY: 'auto'
@@ -101,17 +101,17 @@ export default function SuggestSpeciesModal({
           maxWidth: "480px",
           width: "100%",
           padding: "2rem",
-          background: "rgba(14, 20, 36, 0.95)",
+          background: "#ffffff",
           border: "1px solid rgba(56, 189, 248, 0.4)",
           borderRadius: "1rem",
-          boxShadow: "0 20px 50px rgba(56, 189, 248, 0.25)",
+          boxShadow: "var(--shadow-lg)",
           textAlign: "center",
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
           gap: "1.25rem",
           animation: "shimmer 3s ease-in-out infinite",
-          color: "#fff"
+          color: "var(--text-primary)"
         }}>
           <div style={{
             width: "64px",
@@ -123,12 +123,12 @@ export default function SuggestSpeciesModal({
             alignItems: "center",
             justifyContent: "center",
             fontSize: "2rem",
-            boxShadow: "0 0 15px rgba(56, 189, 248, 0.3)"
+            boxShadow: "none"
           }}>
             🌊
           </div>
           
-          <h3 style={{ fontSize: "1.5rem", fontWeight: "800", color: "#38bdf8", margin: 0 }}>
+          <h3 style={{ fontSize: "1.5rem", fontWeight: "800", color: "var(--accent-blue)", margin: 0 }}>
             Tidecaller Intervention
           </h3>
           
@@ -145,13 +145,13 @@ export default function SuggestSpeciesModal({
             style={{ 
               padding: "0.5rem 1.5rem", 
               fontSize: "0.85rem",
-              background: "#38bdf8",
-              color: "#000",
+              background: "var(--accent-blue-fill)",
+              color: "#fff",
               border: "none",
               borderRadius: "4px",
               fontWeight: "bold",
               cursor: "pointer",
-              boxShadow: "0 0 10px rgba(56, 189, 248, 0.3)" 
+              boxShadow: "var(--shadow-md)" 
             }}
           >
             Dismiss
@@ -159,15 +159,15 @@ export default function SuggestSpeciesModal({
         </div>
       ) : (
         <div style={{
-          background: 'rgba(15, 23, 42, 0.93)',
+          background: '#ffffff',
           border: '1px solid rgba(56, 189, 248, 0.25)',
           borderRadius: '1rem',
           padding: '2rem',
           maxWidth: (!casualModeActive && activeTab === 'council') ? '920px' : '540px',
           width: '100%',
-          boxShadow: '0 25px 50px rgba(0, 0, 0, 0.5), 0 0 30px rgba(56, 189, 248, 0.1)',
+          boxShadow: 'var(--shadow-lg)',
           display: 'flex', flexDirection: 'column', gap: '1.2rem',
-          color: '#fff',
+          color: 'var(--text-primary)',
           backdropFilter: 'blur(12px)',
           maxHeight: '90vh',
           overflowY: 'auto',
@@ -189,17 +189,17 @@ export default function SuggestSpeciesModal({
               transition: 'color 0.2s',
               zIndex: 10
             }}
-            onMouseEnter={(e) => e.currentTarget.style.color = '#fff'}
+            onMouseEnter={(e) => e.currentTarget.style.color = 'var(--text-primary)'}
             onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-muted)'}
           >
             ✕
           </button>
 
           <div>
-            <h2 style={{ fontSize: '1.4rem', fontWeight: '800', margin: 0, color: '#38bdf8' }}>
+            <h2 style={{ fontSize: '1.4rem', fontWeight: '800', margin: 0, color: 'var(--accent-blue)' }}>
               {casualModeActive ? "Suggest a Fish 🐠" : "Aquadex Breeders Council Portal"}
             </h2>
-            <p style={{ fontSize: '0.8rem', color: 'rgba(255, 255, 255, 0.5)', marginTop: '0.2rem', marginBottom: '0.5rem' }}>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.2rem', marginBottom: '0.5rem' }}>
               {casualModeActive
                 ? "Know a cool fish we're missing? Add it to our community catalog \u2014 it only takes a minute!"
                 : "Review active species suggestions, cast curation votes, or propose new entries."}
@@ -210,7 +210,7 @@ export default function SuggestSpeciesModal({
           {!casualModeActive && (
             <div style={{
               display: "inline-flex",
-              background: "rgba(0, 0, 0, 0.35)",
+              background: "var(--bg-band)",
               border: "1px solid rgba(56, 189, 248, 0.15)",
               padding: "0.25rem",
               borderRadius: "50px",
@@ -226,7 +226,7 @@ export default function SuggestSpeciesModal({
                     : "transparent",
                   outline: "none",
                   borderRadius: "50px",
-                  color: activeTab === "council" ? "#fff" : "var(--text-secondary)",
+                  color: activeTab === "council" ? "var(--text-primary)" : "var(--text-secondary)",
                   padding: "0.45rem 1.25rem",
                   fontSize: "0.78rem",
                   fontWeight: "600",
@@ -250,7 +250,7 @@ export default function SuggestSpeciesModal({
                     : "transparent",
                   outline: "none",
                   borderRadius: "50px",
-                  color: activeTab === "propose" ? "#fff" : "var(--text-secondary)",
+                  color: activeTab === "propose" ? "var(--text-primary)" : "var(--text-secondary)",
                   padding: "0.45rem 1.25rem",
                   fontSize: "0.78rem",
                   fontWeight: "600",
@@ -286,64 +286,64 @@ export default function SuggestSpeciesModal({
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div>
-                  <label style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>Scientific Name*</label>
+                  <label style={{ fontSize: '0.75rem', fontWeight: 'bold', color: 'var(--text-muted)', display: 'block', marginBottom: '0.25rem' }}>Scientific Name*</label>
                   <input 
                     type="text" 
                     placeholder="e.g. Paracheirodon innesi"
                     value={formData.scientificName}
                     onChange={e => setFormData({ ...formData, scientificName: e.target.value })}
                     style={{
-                      width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)',
-                      padding: '0.45rem', borderRadius: '6px', color: '#fff', fontSize: '0.85rem', outline: 'none'
+                      width: '100%', background: 'rgba(var(--ink-rgb), 0.03)', border: '1px solid rgba(var(--ink-rgb), 0.15)',
+                      padding: '0.45rem', borderRadius: '6px', color: 'var(--text-primary)', fontSize: '0.85rem', outline: 'none'
                     }}
                   />
-                  {errors.scientificName && <span style={{ color: '#ef4444', fontSize: '0.7rem' }}>{errors.scientificName}</span>}
+                  {errors.scientificName && <span style={{ color: 'var(--accent-red)', fontSize: '0.7rem' }}>{errors.scientificName}</span>}
                 </div>
                 <div>
-                  <label style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>Common Name*</label>
+                  <label style={{ fontSize: '0.75rem', fontWeight: 'bold', color: 'var(--text-muted)', display: 'block', marginBottom: '0.25rem' }}>Common Name*</label>
                   <input 
                     type="text" 
                     placeholder="e.g. Neon Tetra"
                     value={formData.commonName}
                     onChange={e => setFormData({ ...formData, commonName: e.target.value })}
                     style={{
-                      width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)',
-                      padding: '0.45rem', borderRadius: '6px', color: '#fff', fontSize: '0.85rem', outline: 'none'
+                      width: '100%', background: 'rgba(var(--ink-rgb), 0.03)', border: '1px solid rgba(var(--ink-rgb), 0.15)',
+                      padding: '0.45rem', borderRadius: '6px', color: 'var(--text-primary)', fontSize: '0.85rem', outline: 'none'
                     }}
                   />
-                  {errors.commonName && <span style={{ color: '#ef4444', fontSize: '0.7rem' }}>{errors.commonName}</span>}
+                  {errors.commonName && <span style={{ color: 'var(--accent-red)', fontSize: '0.7rem' }}>{errors.commonName}</span>}
                 </div>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '0.5rem' }}>
                 <div>
-                  <label style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'block', marginBottom: '0.15rem' }}>Min Temp (°C)</label>
-                  <input type="number" step="0.1" value={formData.minTemp} onChange={e => setFormData({...formData, minTemp: e.target.value})} style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', padding: '0.3rem', borderRadius: '4px', color: '#fff', fontSize: '0.8rem', outline: 'none' }} />
+                  <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.15rem' }}>Min Temp (°C)</label>
+                  <input type="number" step="0.1" value={formData.minTemp} onChange={e => setFormData({...formData, minTemp: e.target.value})} style={{ width: '100%', background: 'rgba(var(--ink-rgb), 0.03)', border: '1px solid rgba(var(--ink-rgb), 0.15)', padding: '0.3rem', borderRadius: '4px', color: 'var(--text-primary)', fontSize: '0.8rem', outline: 'none' }} />
                 </div>
                 <div>
-                  <label style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'block', marginBottom: '0.15rem' }}>Max Temp (°C)</label>
-                  <input type="number" step="0.1" value={formData.maxTemp} onChange={e => setFormData({...formData, maxTemp: e.target.value})} style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', padding: '0.3rem', borderRadius: '4px', color: '#fff', fontSize: '0.8rem', outline: 'none' }} />
+                  <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.15rem' }}>Max Temp (°C)</label>
+                  <input type="number" step="0.1" value={formData.maxTemp} onChange={e => setFormData({...formData, maxTemp: e.target.value})} style={{ width: '100%', background: 'rgba(var(--ink-rgb), 0.03)', border: '1px solid rgba(var(--ink-rgb), 0.15)', padding: '0.3rem', borderRadius: '4px', color: 'var(--text-primary)', fontSize: '0.8rem', outline: 'none' }} />
                 </div>
                 <div>
-                  <label style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'block', marginBottom: '0.15rem' }}>Min pH</label>
-                  <input type="number" step="0.1" value={formData.minPh} onChange={e => setFormData({...formData, minPh: e.target.value})} style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', padding: '0.3rem', borderRadius: '4px', color: '#fff', fontSize: '0.8rem', outline: 'none' }} />
+                  <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.15rem' }}>Min pH</label>
+                  <input type="number" step="0.1" value={formData.minPh} onChange={e => setFormData({...formData, minPh: e.target.value})} style={{ width: '100%', background: 'rgba(var(--ink-rgb), 0.03)', border: '1px solid rgba(var(--ink-rgb), 0.15)', padding: '0.3rem', borderRadius: '4px', color: 'var(--text-primary)', fontSize: '0.8rem', outline: 'none' }} />
                 </div>
                 <div>
-                  <label style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'block', marginBottom: '0.15rem' }}>Max pH</label>
-                  <input type="number" step="0.1" value={formData.maxPh} onChange={e => setFormData({...formData, maxPh: e.target.value})} style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', padding: '0.3rem', borderRadius: '4px', color: '#fff', fontSize: '0.8rem', outline: 'none' }} />
+                  <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.15rem' }}>Max pH</label>
+                  <input type="number" step="0.1" value={formData.maxPh} onChange={e => setFormData({...formData, maxPh: e.target.value})} style={{ width: '100%', background: 'rgba(var(--ink-rgb), 0.03)', border: '1px solid rgba(var(--ink-rgb), 0.15)', padding: '0.3rem', borderRadius: '4px', color: 'var(--text-primary)', fontSize: '0.8rem', outline: 'none' }} />
                 </div>
               </div>
-              {(errors.temp || errors.ph) && <span style={{ color: '#ef4444', fontSize: '0.7rem' }}>{errors.temp || errors.ph}</span>}
+              {(errors.temp || errors.ph) && <span style={{ color: 'var(--accent-red)', fontSize: '0.7rem' }}>{errors.temp || errors.ph}</span>}
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '1rem' }}>
                 <div>
-                  <label style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>Care Level</label>
+                  <label style={{ fontSize: '0.75rem', fontWeight: 'bold', color: 'var(--text-muted)', display: 'block', marginBottom: '0.25rem' }}>Care Level</label>
                   <select 
                     value={formData.careLevel} 
                     onChange={e => setFormData({ ...formData, careLevel: Number(e.target.value) })}
                     style={{
-                      width: '100%', background: 'rgba(15, 23, 42, 0.95)', border: '1px solid rgba(255,255,255,0.1)',
-                      padding: '0.45rem', borderRadius: '6px', color: '#fff', fontSize: '0.85rem', outline: 'none'
+                      width: '100%', background: '#ffffff', border: '1px solid rgba(var(--ink-rgb), 0.15)',
+                      padding: '0.45rem', borderRadius: '6px', color: 'var(--text-primary)', fontSize: '0.85rem', outline: 'none'
                     }}
                   >
                     <option value={0}>Easy</option>
@@ -352,42 +352,42 @@ export default function SuggestSpeciesModal({
                   </select>
                 </div>
                 <div>
-                  <label style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>Reference URL</label>
+                  <label style={{ fontSize: '0.75rem', fontWeight: 'bold', color: 'var(--text-muted)', display: 'block', marginBottom: '0.25rem' }}>Reference URL</label>
                   <input 
                     type="url" 
                     placeholder="e.g. FishBase/WoRMS link"
                     value={formData.proofUrl}
                     onChange={e => setFormData({ ...formData, proofUrl: e.target.value })}
                     style={{
-                      width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)',
-                      padding: '0.45rem', borderRadius: '6px', color: '#fff', fontSize: '0.85rem', outline: 'none'
+                      width: '100%', background: 'rgba(var(--ink-rgb), 0.03)', border: '1px solid rgba(var(--ink-rgb), 0.15)',
+                      padding: '0.45rem', borderRadius: '6px', color: 'var(--text-primary)', fontSize: '0.85rem', outline: 'none'
                     }}
                   />
                 </div>
               </div>
 
               <div>
-                <label style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>Ecology Notes</label>
+                <label style={{ fontSize: '0.75rem', fontWeight: 'bold', color: 'var(--text-muted)', display: 'block', marginBottom: '0.25rem' }}>Ecology Notes</label>
                 <textarea 
                   rows="2"
                   placeholder="Habitats, parameters, dietary patterns or compatibility suggestions..."
                   value={formData.notes}
                   onChange={e => setFormData({ ...formData, notes: e.target.value })}
                   style={{
-                    width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)',
-                    padding: '0.45rem', borderRadius: '6px', color: '#fff', fontSize: '0.85rem', resize: 'none', outline: 'none'
+                    width: '100%', background: 'rgba(var(--ink-rgb), 0.03)', border: '1px solid rgba(var(--ink-rgb), 0.15)',
+                    padding: '0.45rem', borderRadius: '6px', color: 'var(--text-primary)', fontSize: '0.85rem', resize: 'none', outline: 'none'
                   }}
                 />
               </div>
 
-              {errors.api && <span style={{ color: '#ef4444', fontSize: '0.75rem', textAlign: 'center' }}>{errors.api}</span>}
+              {errors.api && <span style={{ color: 'var(--accent-red)', fontSize: '0.75rem', textAlign: 'center' }}>{errors.api}</span>}
 
               <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
                 <button 
                   type="button" 
                   onClick={onClose} 
                   disabled={isSubmitting}
-                  style={{ padding: '0.5rem 1.25rem', background: 'transparent', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: '#fff', cursor: 'pointer', fontSize: '0.85rem' }}
+                  style={{ padding: '0.5rem 1.25rem', background: 'transparent', border: '1px solid rgba(var(--ink-rgb), 0.2)', borderRadius: '6px', color: 'var(--text-primary)', cursor: 'pointer', fontSize: '0.85rem' }}
                 >
                   Cancel
                 </button>
@@ -396,14 +396,14 @@ export default function SuggestSpeciesModal({
                   disabled={isSubmitting}
                   style={{
                     padding: '0.5rem 1.5rem',
-                    background: '#38bdf8',
+                    background: 'var(--accent-blue-fill)',
                     border: 'none',
                     borderRadius: '6px',
-                    color: '#000',
+                    color: '#fff',
                     fontWeight: 'bold',
                     cursor: 'pointer',
                     fontSize: '0.85rem',
-                    boxShadow: '0 0 10px rgba(56, 189, 248, 0.25)',
+                    boxShadow: 'var(--shadow-md)',
                     display: 'flex',
                     alignItems: 'center',
                     gap: '0.5rem'

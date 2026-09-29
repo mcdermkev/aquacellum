@@ -12,8 +12,8 @@ import { getCurrentWallet } from "../../services/supabaseClient";
 
 const STATUS_LABELS = {
   idle: { label: "Offline", color: "#6b7280", icon: "⚫" },
-  active: { label: "Live", color: "#ef4444", icon: "🔴" },
-  disconnected: { label: "Disconnected", color: "#f59e0b", icon: "🟡" },
+  active: { label: "Live", color: "#b91c1c", icon: "🔴" },
+  disconnected: { label: "Disconnected", color: "#b45309", icon: "🟡" },
 };
 
 export function TankCamSetup({ tankId, tankName }) {
@@ -76,15 +76,15 @@ export function TankCamSetup({ tankId, tankName }) {
         style={{
           padding: "1rem",
           borderRadius: "10px",
-          background: "rgba(255,255,255,0.02)",
-          border: "1px solid rgba(255,255,255,0.06)",
+          background: "rgba(var(--ink-rgb), 0.03)",
+          border: "1px solid rgba(var(--ink-rgb), 0.11)",
           display: "flex",
           flexDirection: "column",
           gap: "0.75rem",
         }}
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <h4 style={{ margin: 0, fontSize: "0.85rem", color: "#fff" }}>📹 Tank Cam</h4>
+          <h4 style={{ margin: 0, fontSize: "0.85rem", color: "var(--text-primary)" }}>📹 Tank Cam</h4>
           <span style={{ fontSize: "0.7rem", color: statusInfo.color, fontWeight: 600 }}>
             {statusInfo.icon} {statusInfo.label}
           </span>
@@ -95,9 +95,9 @@ export function TankCamSetup({ tankId, tankName }) {
           style={{
             padding: "0.4rem 0.75rem",
             borderRadius: "6px",
-            border: "1px solid rgba(255,255,255,0.1)",
-            background: "rgba(255,255,255,0.04)",
-            color: "#fff",
+            border: "1px solid rgba(var(--ink-rgb), 0.15)",
+            background: "rgba(var(--ink-rgb), 0.04)",
+            color: "var(--text-primary)",
             fontSize: "0.7rem",
             cursor: "pointer",
             textAlign: "left",
@@ -135,7 +135,7 @@ export function TankCamSetup({ tankId, tankName }) {
             borderRadius: "6px",
             border: "1px solid rgba(239, 68, 68, 0.2)",
             background: "rgba(239, 68, 68, 0.05)",
-            color: "#f87171",
+            color: "var(--accent-red)",
             fontSize: "0.65rem",
             cursor: "pointer",
           }}
@@ -160,7 +160,7 @@ export function TankCamSetup({ tankId, tankName }) {
           gap: "0.75rem",
         }}
       >
-        <h4 style={{ margin: 0, fontSize: "0.85rem", color: "#34d399" }}>
+        <h4 style={{ margin: 0, fontSize: "0.85rem", color: "var(--accent-green)" }}>
           ✓ Tank Cam Created!
         </h4>
         <p style={{ margin: 0, fontSize: "0.7rem", color: "var(--text-secondary)" }}>
@@ -201,8 +201,8 @@ export function TankCamSetup({ tankId, tankName }) {
       style={{
         padding: "1rem",
         borderRadius: "10px",
-        background: "rgba(255,255,255,0.02)",
-        border: "1px solid rgba(255,255,255,0.06)",
+        background: "rgba(var(--ink-rgb), 0.03)",
+        border: "1px solid rgba(var(--ink-rgb), 0.11)",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
@@ -211,7 +211,7 @@ export function TankCamSetup({ tankId, tankName }) {
       }}
     >
       <span style={{ fontSize: "1.5rem" }}>📹</span>
-      <p style={{ margin: 0, fontSize: "0.8rem", color: "#fff" }}>Tank Cam</p>
+      <p style={{ margin: 0, fontSize: "0.8rem", color: "var(--text-primary)" }}>Tank Cam</p>
       <p style={{ margin: 0, fontSize: "0.7rem", color: "var(--text-muted)" }}>
         Point a webcam at your tank and share a live feed with the community. Always-on, ambient, meditative.
       </p>
@@ -233,7 +233,7 @@ export function TankCamSetup({ tankId, tankName }) {
         {createMutation.isPending ? "Setting up…" : "Enable Tank Cam"}
       </button>
       {createMutation.error && (
-        <p style={{ margin: 0, fontSize: "0.65rem", color: "#f87171" }}>
+        <p style={{ margin: 0, fontSize: "0.65rem", color: "var(--accent-red)" }}>
           {createMutation.error.message}
         </p>
       )}
@@ -254,9 +254,9 @@ function CredentialField({ label, value, sensitive = false, copied, onCopy }) {
             flex: 1,
             padding: "0.35rem 0.5rem",
             borderRadius: "4px",
-            background: "rgba(0,0,0,0.3)",
+            background: "var(--bg-band)",
             fontSize: "0.6rem",
-            color: "#e5e7eb",
+            color: "var(--text-primary)",
             fontFamily: "monospace",
             overflow: "hidden",
             textOverflow: "ellipsis",
@@ -271,7 +271,7 @@ function CredentialField({ label, value, sensitive = false, copied, onCopy }) {
             style={{
               padding: "0.25rem 0.4rem",
               borderRadius: "4px",
-              border: "1px solid rgba(255,255,255,0.1)",
+              border: "1px solid rgba(var(--ink-rgb), 0.15)",
               background: "transparent",
               color: "var(--text-muted)",
               fontSize: "0.6rem",
@@ -286,9 +286,9 @@ function CredentialField({ label, value, sensitive = false, copied, onCopy }) {
           style={{
             padding: "0.25rem 0.4rem",
             borderRadius: "4px",
-            border: "1px solid rgba(255,255,255,0.1)",
+            border: "1px solid rgba(var(--ink-rgb), 0.15)",
             background: copied === label ? "rgba(52,211,153,0.1)" : "transparent",
-            color: copied === label ? "#34d399" : "var(--text-muted)",
+            color: copied === label ? "var(--accent-green)" : "var(--text-muted)",
             fontSize: "0.6rem",
             cursor: "pointer",
           }}

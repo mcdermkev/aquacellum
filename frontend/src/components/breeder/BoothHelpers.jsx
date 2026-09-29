@@ -123,7 +123,7 @@ export function BoothHelpers({ onClose }) {
       role="dialog"
       aria-modal="true"
       aria-labelledby="booth-helpers-title"
-      style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(2,6,23,0.72)", display: "flex", alignItems: "flex-end", justifyContent: "center" }}
+      style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(11,37,48,0.45)", display: "flex", alignItems: "flex-end", justifyContent: "center" }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose?.(); }}
     >
       <div
@@ -131,8 +131,8 @@ export function BoothHelpers({ onClose }) {
         style={{ width: "100%", maxWidth: "520px", maxHeight: "92vh", overflowY: "auto", padding: "1.25rem", borderRadius: "18px 18px 0 0", display: "flex", flexDirection: "column", gap: "1rem" }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
-          <UsersThree size={26} weight="duotone" color="#7dd3fc" />
-          <h3 id="booth-helpers-title" style={{ color: "#fff", fontSize: "1.15rem", margin: 0, flex: 1 }}>Booth helpers</h3>
+          <UsersThree size={26} weight="duotone" color="var(--accent-blue)" />
+          <h3 id="booth-helpers-title" style={{ color: "var(--text-primary)", fontSize: "1.15rem", margin: 0, flex: 1 }}>Booth helpers</h3>
           <button ref={closeRef} type="button" className="btn-secondary" onClick={onClose} aria-label="Close" style={{ minWidth: TAP_MIN, minHeight: TAP_MIN }}>
             <X size={20} weight="bold" />
           </button>
@@ -144,7 +144,7 @@ export function BoothHelpers({ onClose }) {
         </p>
 
         {joined && (
-          <div role="status" style={{ display: "flex", gap: "0.5rem", alignItems: "center", color: "#86efac", fontSize: "1rem", fontWeight: 600 }}>
+          <div role="status" style={{ display: "flex", gap: "0.5rem", alignItems: "center", color: "var(--accent-green)", fontSize: "1rem", fontWeight: 600 }}>
             <CheckCircle size={22} weight="fill" /> {joined.name || shortWallet(joined.wallet)} joined your booth.
           </div>
         )}
@@ -152,7 +152,7 @@ export function BoothHelpers({ onClose }) {
         {invite && !expired ? (
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.6rem" }}>
             <img src={invite.qr} alt="Helper code. Have your helper scan this with their phone camera." width={260} height={260} style={{ borderRadius: "12px", background: "#fff", padding: "6px" }} />
-            <p style={{ color: "#fff", fontSize: "1rem", fontWeight: 600, margin: 0, textAlign: "center" }}>
+            <p style={{ color: "var(--text-primary)", fontSize: "1rem", fontWeight: 600, margin: 0, textAlign: "center" }}>
               Have your helper scan this with their phone camera.
             </p>
             <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", margin: 0 }} aria-live="polite">
@@ -173,13 +173,13 @@ export function BoothHelpers({ onClose }) {
         )}
 
         {error && (
-          <div role="alert" style={{ display: "flex", gap: "0.5rem", alignItems: "center", color: "#fca5a5", fontSize: "0.95rem" }}>
+          <div role="alert" style={{ display: "flex", gap: "0.5rem", alignItems: "center", color: "var(--accent-red)", fontSize: "0.95rem" }}>
             <Warning size={20} weight="duotone" /> {error}
           </div>
         )}
 
         <div>
-          <h4 style={{ color: "#fff", fontSize: "0.95rem", margin: "0 0 0.5rem 0" }}>Current helpers</h4>
+          <h4 style={{ color: "var(--text-primary)", fontSize: "0.95rem", margin: "0 0 0.5rem 0" }}>Current helpers</h4>
           {loading ? (
             <p style={{ color: "var(--text-muted)", margin: 0 }}>Loading…</p>
           ) : helpers.length === 0 ? (
@@ -190,7 +190,7 @@ export function BoothHelpers({ onClose }) {
                 const salesLine = formatHelperSales(h.cashSales, salesWindowHours);
                 return (
                 <li key={h.wallet} style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
-                  <span style={{ flex: 1, minWidth: 0, color: "#fff", fontSize: "0.95rem" }}>
+                  <span style={{ flex: 1, minWidth: 0, color: "var(--text-primary)", fontSize: "0.95rem" }}>
                     {h.name || "Helper"}{" "}
                     <span style={{ color: "var(--text-muted)", fontFamily: "'JetBrains Mono', monospace", fontSize: "0.8rem" }}>{shortWallet(h.wallet)}</span>
                     {salesLine && (
@@ -204,7 +204,7 @@ export function BoothHelpers({ onClose }) {
                     className="btn-secondary"
                     onClick={() => remove(h.wallet)}
                     aria-label={`Remove helper ${h.name || shortWallet(h.wallet)}`}
-                    style={{ minHeight: TAP_MIN, padding: "0 0.9rem", color: confirmRemove === h.wallet ? "#fca5a5" : undefined }}
+                    style={{ minHeight: TAP_MIN, padding: "0 0.9rem", color: confirmRemove === h.wallet ? "var(--accent-red)" : undefined }}
                   >
                     {confirmRemove === h.wallet ? "Tap again to remove" : "Remove"}
                   </button>

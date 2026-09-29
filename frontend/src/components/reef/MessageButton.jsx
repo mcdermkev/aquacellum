@@ -39,7 +39,7 @@ export function MessageButton({ targetWallet, onOpenConversation }) {
         borderRadius: "50px",
         border: "1px solid rgba(56, 189, 248, 0.25)",
         background: "rgba(56, 189, 248, 0.06)",
-        color: "#38bdf8",
+        color: "var(--accent-blue)",
         fontSize: "0.7rem",
         fontWeight: 600,
         cursor: loading ? "default" : "pointer",

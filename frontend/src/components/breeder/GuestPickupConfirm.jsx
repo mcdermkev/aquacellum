@@ -88,7 +88,7 @@ export function GuestPickupConfirm({ isOpen, onClose, onSuccess }) {
         {success ? (
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.75rem", padding: "1rem 0", textAlign: "center" }}>
             <span style={{ fontSize: "2rem" }} aria-hidden="true">✅</span>
-            <strong style={{ color: "#fff", fontSize: "0.95rem" }}>Handoff confirmed — you've been paid</strong>
+            <strong style={{ color: "var(--text-primary)", fontSize: "0.95rem" }}>Handoff confirmed — you've been paid</strong>
             <p style={{ margin: 0, fontSize: "0.78rem", color: "var(--text-secondary, #cbd5e1)" }}>
               The held funds have been released to your Stripe balance and the order is complete.
             </p>
@@ -99,7 +99,7 @@ export function GuestPickupConfirm({ isOpen, onClose, onSuccess }) {
             <p style={{ margin: 0, fontSize: "0.82rem", color: "var(--text-secondary, #cbd5e1)", lineHeight: 1.5 }}>
               Have the buyer open their order page and show the pickup code. Scan it or paste it below — confirming releases the payment to you.
             </p>
-            <div style={{ position: "relative", width: "100%", height: "150px", borderRadius: "8px", overflow: "hidden", background: "#0a0b0f", border: "1px solid var(--glass-border, rgba(255,255,255,.1))" }}>
+            <div style={{ position: "relative", width: "100%", height: "150px", borderRadius: "8px", overflow: "hidden", background: "#0a0b0f", border: "1px solid var(--glass-border, rgba(var(--ink-rgb), .1))" }}>
               <video ref={videoRef} autoPlay playsInline muted style={{ width: "100%", height: "100%", objectFit: "cover" }} />
             </div>
             <label style={{ fontSize: "0.75rem", color: "var(--text-muted, #94a3b8)" }}>
@@ -109,11 +109,11 @@ export function GuestPickupConfirm({ isOpen, onClose, onSuccess }) {
                 onChange={(e) => setPastedToken(e.target.value)}
                 rows={3}
                 placeholder="Paste the pickup code here"
-                style={{ width: "100%", marginTop: "0.35rem", fontFamily: "ui-monospace, monospace", fontSize: "0.72rem", padding: "0.6rem", borderRadius: "8px", background: "#0a0b0f", color: "#fff", border: "1px solid var(--glass-border, rgba(255,255,255,.12))", resize: "vertical" }}
+                style={{ width: "100%", marginTop: "0.35rem", fontFamily: "ui-monospace, monospace", fontSize: "0.72rem", padding: "0.6rem", borderRadius: "8px", background: "#fff", color: "var(--text-primary)", border: "1px solid var(--glass-border, rgba(var(--ink-rgb), .12))", resize: "vertical" }}
               />
             </label>
             {error && (
-              <div style={{ fontSize: "0.78rem", color: "#f87171", background: "rgba(248,113,113,.08)", border: "1px solid rgba(248,113,113,.25)", borderRadius: "8px", padding: "0.5rem 0.65rem" }}>
+              <div style={{ fontSize: "0.78rem", color: "var(--accent-red)", background: "rgba(248,113,113,.08)", border: "1px solid rgba(248,113,113,.25)", borderRadius: "8px", padding: "0.5rem 0.65rem" }}>
                 {error}
               </div>
             )}

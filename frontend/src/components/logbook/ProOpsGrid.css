@@ -39,12 +39,12 @@
 
 .ops-chip--active {
   background: rgba(248, 113, 113, 0.18);
-  color: #fff;
+  color: var(--text-primary);
   border-color: rgba(248, 113, 113, 0.5);
 }
 
 .ops-chip-count {
-  background: rgba(0, 0, 0, 0.3);
+  background: var(--bg-band);
   border-radius: 10px;
   padding: 0 0.4rem;
   font-weight: 700;
@@ -56,9 +56,9 @@
   max-width: 260px;
   padding: 0.4rem 0.7rem;
   border-radius: 8px;
-  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.1));
-  background: rgba(0, 0, 0, 0.25);
-  color: #fff;
+  border: 1px solid var(--glass-border, rgba(var(--ink-rgb), 0.1));
+  background: #fff;
+  color: var(--text-primary);
   font-size: 0.8rem;
   outline: none;
 }
@@ -75,14 +75,14 @@
   appearance: none;
   -webkit-appearance: none;
   -moz-appearance: none;
-  background-color: rgba(8, 25, 48, 0.92);
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-color: #fff;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235b7482' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 0.55rem center;
   background-size: 0.7rem;
   border: 1px solid rgba(168, 85, 247, 0.25);
   border-radius: 6px;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 0.78rem;
   padding: 0.35rem 1.5rem 0.35rem 0.55rem;
   cursor: pointer;
@@ -96,7 +96,7 @@
 .ops-sort select:focus,
 .ops-sort select:active {
   outline: none;
-  background-color: rgba(8, 25, 48, 0.98);
+  background-color: #fff;
   border-color: rgba(168, 85, 247, 0.6);
   box-shadow: 0 0 0 2px rgba(168, 85, 247, 0.2);
 }
@@ -113,8 +113,8 @@
   gap: 0.6rem;
   padding: 0.4rem 0.6rem;
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(var(--ink-rgb), 0.05);
+  background: rgba(var(--ink-rgb), 0.02);
   cursor: pointer;
   transition: border-color 0.15s ease, background 0.15s ease;
 }
@@ -138,7 +138,7 @@
 .ops-row--head:hover { background: transparent; border: none; }
 
 .ops-row--active { border-color: var(--accent-blue, #38bdf8); }
-.ops-row--dragover { border-color: #38bdf8; box-shadow: 0 0 16px rgba(56, 189, 248, 0.4); }
+.ops-row--dragover { border-color: #38bdf8; box-shadow: var(--shadow-md); }
 .ops-row--attention { border-left: 3px solid rgba(248, 113, 113, 0.5); }
 
 .ops-col-strip { height: 40px; border-radius: 8px; overflow: hidden; }
@@ -146,7 +146,7 @@
 .ops-col-time { font-size: 0.78rem; color: var(--text-secondary, #cbd5e1); }
 
 .ops-col-name { min-width: 0; display: flex; flex-direction: column; gap: 0.1rem; }
-.ops-name-line { display: flex; align-items: center; gap: 0.4rem; color: #fff; font-size: 0.88rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ops-name-line { display: flex; align-items: center; gap: 0.4rem; color: var(--text-primary); font-size: 0.88rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ops-breadcrumb { font-size: 0.68rem; color: var(--text-muted, #94a3b8); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .ops-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
@@ -159,8 +159,8 @@
   white-space: nowrap;
 }
 .ops-flag--ok { color: var(--accent-green, #34d399); background: rgba(52, 211, 153, 0.1); }
-.ops-flag--warn { color: #fbbf24; background: rgba(251, 191, 36, 0.12); }
-.ops-flag--alert { color: #f87171; background: rgba(248, 113, 113, 0.14); }
+.ops-flag--warn { color: var(--accent-amber); background: rgba(251, 191, 36, 0.12); }
+.ops-flag--alert { color: var(--accent-red); background: rgba(248, 113, 113, 0.14); }
 
 .ops-empty { color: var(--text-muted, #94a3b8); font-size: 0.85rem; text-align: center; padding: 2rem; }
 
@@ -173,7 +173,7 @@
 /* Grid ⇄ Cards toggle in the pro list header */
 .ops-viewtoggle {
   display: inline-flex;
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(var(--ink-rgb), 0.03);
   border: 1px solid rgba(168, 85, 247, 0.2);
   border-radius: 8px;
   padding: 2px;
@@ -193,7 +193,7 @@
 
 .ops-viewtoggle button.active {
   background: linear-gradient(135deg, rgba(168, 85, 247, 0.25), rgba(124, 58, 237, 0.15));
-  color: #fff;
+  color: var(--text-primary);
 }
 
 /* Today's worklist banner */
@@ -212,7 +212,7 @@
 .ops-worklist-title {
   font-size: 0.75rem;
   font-weight: 700;
-  color: #fff;
+  color: var(--text-primary);
   white-space: nowrap;
 }
 
@@ -230,7 +230,7 @@
   transition: background 0.15s ease, border-color 0.15s ease;
 }
 
-.ops-worklist-item strong { color: #fff; }
+.ops-worklist-item strong { color: var(--text-primary); }
 
 .ops-worklist-item:hover {
   background: rgba(56, 189, 248, 0.16);
@@ -240,6 +240,6 @@
 .ops-worklist-go {
   font-size: 0.7rem;
   font-weight: 700;
-  color: #7dd3fc;
+  color: var(--accent-blue);
   white-space: nowrap;
 }

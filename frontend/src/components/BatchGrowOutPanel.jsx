@@ -198,7 +198,7 @@ export function BatchGrowOutPanel({ walletAccount, casualModeActive }) {
       {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem", flexWrap: "wrap", gap: "0.5rem" }}>
         <div>
-          <h3 style={{ fontSize: "0.95rem", fontWeight: "700", color: "#fff", margin: "0 0 0.15rem" }}>
+          <h3 style={{ fontSize: "0.95rem", fontWeight: "700", color: "var(--text-primary)", margin: "0 0 0.15rem" }}>
             ⚡ Batch Operations
           </h3>
           <p style={{ fontSize: "0.72rem", color: "var(--text-muted)", margin: 0 }}>
@@ -216,8 +216,8 @@ export function BatchGrowOutPanel({ walletAccount, casualModeActive }) {
             <button key={s.id} onClick={() => setSortBy(s.id)} style={{
               padding: "4px 10px", borderRadius: "12px", fontSize: "0.65rem", fontWeight: "600",
               background: sortBy === s.id ? "rgba(139,92,246,0.12)" : "transparent",
-              border: `1px solid ${sortBy === s.id ? "rgba(139,92,246,0.3)" : "rgba(255,255,255,0.06)"}`,
-              color: sortBy === s.id ? "#a78bfa" : "var(--text-muted)", cursor: "pointer",
+              border: `1px solid ${sortBy === s.id ? "rgba(139,92,246,0.3)" : "rgba(var(--ink-rgb), 0.11)"}`,
+              color: sortBy === s.id ? "var(--accent-violet)" : "var(--text-muted)", cursor: "pointer",
             }}>
               {s.label}
             </button>
@@ -225,8 +225,8 @@ export function BatchGrowOutPanel({ walletAccount, casualModeActive }) {
           <button onClick={() => setFilterOverdue(!filterOverdue)} style={{
             padding: "4px 10px", borderRadius: "12px", fontSize: "0.65rem", fontWeight: "600",
             background: filterOverdue ? "rgba(251,191,36,0.12)" : "transparent",
-            border: `1px solid ${filterOverdue ? "rgba(251,191,36,0.3)" : "rgba(255,255,255,0.06)"}`,
-            color: filterOverdue ? "#fbbf24" : "var(--text-muted)", cursor: "pointer",
+            border: `1px solid ${filterOverdue ? "rgba(251,191,36,0.3)" : "rgba(var(--ink-rgb), 0.11)"}`,
+            color: filterOverdue ? "var(--accent-amber)" : "var(--text-muted)", cursor: "pointer",
           }}>
             ⏰ Overdue Only
           </button>
@@ -243,12 +243,12 @@ export function BatchGrowOutPanel({ walletAccount, casualModeActive }) {
       {selected.size > 0 && !canBulkManage && (
         <div style={{
           padding: "0.6rem 0.8rem", marginBottom: "0.6rem", borderRadius: "8px",
-          background: "rgba(255,255,255,0.02)", border: "1px dashed var(--glass-border)",
+          background: "rgba(var(--ink-rgb), 0.02)", border: "1px dashed var(--glass-border)",
           display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "wrap",
         }}>
           <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", lineHeight: 1.5 }}>
             {selected.size} selected — applying one action across several spawns at once unlocks with{" "}
-            <strong style={{ color: "#a78bfa" }}>{bulkUnlock.hint}</strong>. You can log a checkpoint on
+            <strong style={{ color: "var(--accent-violet)" }}>{bulkUnlock.hint}</strong>. You can log a checkpoint on
             any single spawn now, from its own tracker.
           </span>
         </div>
@@ -259,14 +259,14 @@ export function BatchGrowOutPanel({ walletAccount, casualModeActive }) {
           background: "rgba(139, 92, 246, 0.06)", border: "1px solid rgba(139, 92, 246, 0.2)",
           display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "wrap",
         }}>
-          <span style={{ fontSize: "0.75rem", fontWeight: "600", color: "#a78bfa" }}>
+          <span style={{ fontSize: "0.75rem", fontWeight: "600", color: "var(--accent-violet)" }}>
             {selected.size} selected
           </span>
           {!showBatchForm ? (
             <button onClick={() => setShowBatchForm(true)} style={{
               padding: "5px 12px", borderRadius: "6px", fontSize: "0.72rem", fontWeight: "600",
               background: "rgba(139,92,246,0.15)", border: "1px solid rgba(139,92,246,0.3)",
-              color: "#fff", cursor: "pointer",
+              color: "var(--text-primary)", cursor: "pointer",
             }}>
               Apply Batch Action
             </button>
@@ -275,7 +275,7 @@ export function BatchGrowOutPanel({ walletAccount, casualModeActive }) {
               <select
                 value={batchAction}
                 onChange={(e) => setBatchAction(e.target.value)}
-                style={{ padding: "4px 8px", borderRadius: "4px", fontSize: "0.72rem", background: "rgba(0,0,0,0.3)", border: "1px solid var(--glass-border)", color: "#fff" }}
+                style={{ padding: "4px 8px", borderRadius: "4px", fontSize: "0.72rem", background: "var(--bg-band)", border: "1px solid var(--glass-border)", color: "var(--text-primary)" }}
               >
                 {BATCH_ACTIONS.map(a => (
                   <option key={a.id} value={a.id}>{a.icon} {a.label}</option>
@@ -286,14 +286,14 @@ export function BatchGrowOutPanel({ walletAccount, casualModeActive }) {
                   type="number" min="1" value={batchCount}
                   onChange={(e) => setBatchCount(e.target.value)}
                   placeholder="Count"
-                  style={{ width: "60px", padding: "4px 6px", borderRadius: "4px", fontSize: "0.72rem", background: "rgba(0,0,0,0.3)", border: "1px solid var(--glass-border)", color: "#fff" }}
+                  style={{ width: "60px", padding: "4px 6px", borderRadius: "4px", fontSize: "0.72rem", background: "var(--bg-band)", border: "1px solid var(--glass-border)", color: "var(--text-primary)" }}
                 />
               )}
               <input
                 type="text" value={batchNote}
                 onChange={(e) => setBatchNote(e.target.value)}
                 placeholder="Note (optional)"
-                style={{ width: "120px", padding: "4px 6px", borderRadius: "4px", fontSize: "0.72rem", background: "rgba(0,0,0,0.3)", border: "1px solid var(--glass-border)", color: "#fff" }}
+                style={{ width: "120px", padding: "4px 6px", borderRadius: "4px", fontSize: "0.72rem", background: "var(--bg-band)", border: "1px solid var(--glass-border)", color: "var(--text-primary)" }}
               />
               <button onClick={handleBatchSubmit} disabled={batchBusy} className="btn-primary" style={{ padding: "4px 12px", fontSize: "0.72rem" }}>
                 {batchBusy ? "Saving..." : `Apply to ${selected.size}`}
@@ -348,17 +348,17 @@ export function BatchGrowOutPanel({ walletAccount, casualModeActive }) {
                   display: "grid", gridTemplateColumns: "32px 1fr 70px 60px 60px 55px 60px 60px",
                   gap: "4px", padding: "8px 12px", cursor: "pointer",
                   background: isSelected ? "rgba(139,92,246,0.06)" : "transparent",
-                  borderBottom: "1px solid rgba(255,255,255,0.03)",
+                  borderBottom: "1px solid rgba(var(--ink-rgb), 0.08)",
                   transition: "background 0.15s",
                 }}
-                onMouseEnter={(e) => { if (!isSelected) e.currentTarget.style.background = "rgba(255,255,255,0.02)"; }}
+                onMouseEnter={(e) => { if (!isSelected) e.currentTarget.style.background = "rgba(var(--ink-rgb), 0.02)"; }}
                 onMouseLeave={(e) => { if (!isSelected) e.currentTarget.style.background = "transparent"; }}
               >
                 <div style={{ display: "flex", alignItems: "center" }}>
                   <input type="checkbox" checked={isSelected} readOnly style={{ accentColor: "#a78bfa", pointerEvents: "none" }} />
                 </div>
                 <div style={{ overflow: "hidden" }}>
-                  <div style={{ fontSize: "0.78rem", fontWeight: "500", color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                  <div style={{ fontSize: "0.78rem", fontWeight: "500", color: "var(--text-primary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                     {speciesName}
                   </div>
                   <div style={{ fontSize: "0.6rem", color: "var(--text-muted)" }}>
@@ -368,19 +368,19 @@ export function BatchGrowOutPanel({ walletAccount, casualModeActive }) {
                 <div style={{ textAlign: "center", fontSize: "0.72rem", color: "var(--text-secondary)", alignSelf: "center" }}>
                   {formatDate(spawn.timestamp)}
                 </div>
-                <div style={{ textAlign: "center", fontSize: "0.78rem", fontWeight: "600", color: "#60a5fa", alignSelf: "center" }}>
+                <div style={{ textAlign: "center", fontSize: "0.78rem", fontWeight: "600", color: "var(--accent-blue)", alignSelf: "center" }}>
                   {m.maxFry || m.eggCount || "—"}
                 </div>
-                <div style={{ textAlign: "center", fontSize: "0.78rem", fontWeight: "600", color: "#34d399", alignSelf: "center" }}>
+                <div style={{ textAlign: "center", fontSize: "0.78rem", fontWeight: "600", color: "var(--accent-green)", alignSelf: "center" }}>
                   {m.alive}
                 </div>
-                <div style={{ textAlign: "center", fontSize: "0.72rem", fontWeight: "600", alignSelf: "center", color: m.survival === null ? "var(--text-muted)" : m.survival >= 80 ? "#34d399" : m.survival >= 50 ? "#fbbf24" : "#f87171" }}>
+                <div style={{ textAlign: "center", fontSize: "0.72rem", fontWeight: "600", alignSelf: "center", color: m.survival === null ? "var(--text-muted)" : m.survival >= 80 ? "var(--accent-green)" : m.survival >= 50 ? "var(--accent-amber)" : "var(--accent-red)" }}>
                   {m.survival !== null ? `${m.survival}%` : "—"}
                 </div>
                 <div style={{ textAlign: "center", fontSize: "0.72rem", color: "var(--text-muted)", alignSelf: "center" }}>
                   {m.checkpointCount}
                 </div>
-                <div style={{ textAlign: "center", fontSize: "0.68rem", alignSelf: "center", color: isOverdue ? "#fbbf24" : "var(--text-muted)" }}>
+                <div style={{ textAlign: "center", fontSize: "0.68rem", alignSelf: "center", color: isOverdue ? "var(--accent-amber)" : "var(--text-muted)" }}>
                   {m.daysSince === 0 ? "Today" : `${m.daysSince}d`}
                   {isOverdue && <span style={{ marginLeft: "2px" }}>⏰</span>}
                 </div>

@@ -106,7 +106,7 @@ export function BreederTools({
           }}
         >
           <span style={{ fontSize: "0.8rem", color: "var(--text-secondary)", lineHeight: 1.5 }}>
-            These are the <strong style={{ color: "#fff" }}>Pro</strong> breeding tools. They work
+            These are the <strong style={{ color: "var(--text-primary)" }}>Pro</strong> breeding tools. They work
             just fine here, but you won't see a tab for them while you're in the simpler view.
           </span>
           {onSwitchToPro && (
@@ -134,7 +134,7 @@ export function BreederTools({
           gap: "0.5rem",
           marginBottom: "1.5rem",
           padding: "0.35rem",
-          background: "rgba(255, 255, 255, 0.02)",
+          background: "rgba(var(--ink-rgb), 0.02)",
           border: "1px solid rgba(168, 85, 247, 0.12)",
           borderRadius: "12px",
           width: "fit-content",
@@ -156,12 +156,12 @@ export function BreederTools({
                 cursor: "pointer",
                 fontSize: "0.85rem",
                 fontWeight: isActive ? "600" : "400",
-                color: isActive ? "#fff" : "var(--text-muted)",
+                color: isActive ? "var(--accent-violet)" : "var(--text-muted)",
                 background: isActive
                   ? "linear-gradient(135deg, rgba(168, 85, 247, 0.25) 0%, rgba(124, 58, 237, 0.2) 100%)"
                   : "transparent",
                 boxShadow: isActive
-                  ? "0 0 12px rgba(168, 85, 247, 0.15)"
+                  ? "var(--glass-shadow)"
                   : "none",
                 transition: "all 0.2s ease",
               }}
@@ -180,7 +180,7 @@ export function BreederTools({
                       height: "8px",
                       borderRadius: "50%",
                       background: "var(--accent-green, #34d399)",
-                      boxShadow: "0 0 6px rgba(52, 211, 153, 0.6)",
+                      boxShadow: "none",
                     }}
                     aria-label={`${morphBadgeCount} new update${morphBadgeCount > 1 ? "s" : ""}`}
                   />
@@ -202,7 +202,7 @@ export function BreederTools({
 
       {activeSection === "program" && (
         <div className="glass-card" style={{ padding: "2rem", maxWidth: "680px", margin: "0 auto" }}>
-          <h2 style={{ fontSize: "1.5rem", color: "#fff", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          <h2 style={{ fontSize: "1.5rem", color: "var(--text-primary)", display: "flex", alignItems: "center", gap: "0.5rem" }}>
             📋 Breeding program
           </h2>
           <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", lineHeight: 1.6, marginTop: "0.5rem" }}>

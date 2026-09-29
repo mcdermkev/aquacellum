@@ -17,7 +17,7 @@ import { announce, prefersReducedMotion } from "../../utils/a11y";
  * and ParcelPresetEditor.
  *
  * Pin picking reuses the TideMap.jsx Mapbox GL JS load/init pattern (CDN
- * script injection, dark-v11 style, VITE_MAPBOX_TOKEN) rather than an npm
+ * script injection, light-v11 style, VITE_MAPBOX_TOKEN) rather than an npm
  * dependency — there is no existing shared Mapbox wrapper component to
  * extract from (grep-confirmed) and this stays small enough not to need one.
  * Degrades to manual lat/lng + address-text fields when the token is absent.
@@ -137,7 +137,7 @@ export function PickupSpotSetup({ walletAccount }) {
   };
 
   return (
-    <div className="sf-setup__field" style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "1rem", marginTop: "1rem" }}>
+    <div className="sf-setup__field" style={{ borderTop: "1px solid rgba(var(--ink-rgb), 0.06)", paddingTop: "1rem", marginTop: "1rem" }}>
       <label className="sf-setup__label">📍 Pickup spots</label>
       <p style={{ fontSize: "0.8rem", color: "var(--text-secondary)", margin: "0 0 0.75rem 0", lineHeight: 1.5 }}>
         Public meet spots for local pickup orders. The exact address and pin are shown to a buyer only after
@@ -196,9 +196,9 @@ function LocationRow({ location, isEditing, onEdit, onDelete, children }) {
     <div style={{ ...spotCard, display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.75rem", flexWrap: "wrap" }}>
       <div style={{ minWidth: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
-          <strong style={{ color: "#fff", fontSize: "0.85rem" }}>{location.label}</strong>
+          <strong style={{ color: "var(--text-primary)", fontSize: "0.85rem" }}>{location.label}</strong>
           {!location.active && (
-            <span style={{ fontSize: "0.6rem", padding: "0.1rem 0.4rem", borderRadius: "8px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.15)", color: "var(--text-muted)" }}>
+            <span style={{ fontSize: "0.6rem", padding: "0.1rem 0.4rem", borderRadius: "8px", background: "rgba(var(--ink-rgb), 0.05)", border: "1px solid rgba(var(--ink-rgb), 0.15)", color: "var(--text-muted)" }}>
               Inactive
             </span>
           )}
@@ -278,7 +278,7 @@ function LocationForm({ form, setForm, onSave, onCancel, saving }) {
 
 function AvailabilityEditor({ windows, onAdd, onUpdate, onRemove }) {
   return (
-    <div style={{ padding: "0.6rem 0.7rem", borderRadius: "8px", background: "rgba(255,255,255,0.02)", border: "1px solid var(--glass-border, rgba(255,255,255,0.12))" }}>
+    <div style={{ padding: "0.6rem 0.7rem", borderRadius: "8px", background: "rgba(var(--ink-rgb), 0.02)", border: "1px solid var(--glass-border, rgba(var(--ink-rgb), 0.12))" }}>
       <div style={{ fontSize: "0.72rem", color: "var(--text-secondary)", fontWeight: 600, marginBottom: "0.5rem" }}>
         Availability windows
       </div>
@@ -303,7 +303,7 @@ function AvailabilityWindowRow({ window, onChange, onRemove }) {
   const isRecurring = window.dow != null;
 
   return (
-    <div style={{ display: "flex", flexWrap: "wrap", gap: "0.35rem", alignItems: "center", padding: "0.4rem", borderRadius: "6px", background: "rgba(255,255,255,0.015)" }}>
+    <div style={{ display: "flex", flexWrap: "wrap", gap: "0.35rem", alignItems: "center", padding: "0.4rem", borderRadius: "6px", background: "rgba(var(--ink-rgb), 0.015)" }}>
       <select
         style={{ ...smallInput, width: "auto" }}
         value={isRecurring ? "recurring" : "one-off"}
@@ -387,7 +387,7 @@ function MapPinPicker({ lat, lng, onPick }) {
     const center = lat != null && lng != null ? [lng, lat] : [-98.5, 39.8]; // continental-US default
     const map = new window.mapboxgl.Map({
       container: mapContainer.current,
-      style: "mapbox://styles/mapbox/dark-v11",
+      style: "mapbox://styles/mapbox/light-v11",
       center,
       zoom: lat != null && lng != null ? 13 : 3,
     });
@@ -439,7 +439,7 @@ function MapPinPicker({ lat, lng, onPick }) {
   return (
     <div>
       <p style={{ fontSize: "0.68rem", color: "var(--text-muted)", margin: "0 0 0.35rem" }}>Tap the map to drop a pin</p>
-      <div ref={mapContainer} style={{ height: "220px", borderRadius: "8px", border: "1px solid var(--glass-border, rgba(255,255,255,0.12))" }} />
+      <div ref={mapContainer} style={{ height: "220px", borderRadius: "8px", border: "1px solid var(--glass-border, rgba(var(--ink-rgb), 0.12))" }} />
     </div>
   );
 }
@@ -459,9 +459,9 @@ function NumberField({ label, value, onChange }) {
   );
 }
 
-const spotCard = { padding: "0.65rem 0.75rem", borderRadius: "8px", background: "rgba(255,255,255,0.015)", border: "1px solid var(--glass-border, rgba(255,255,255,0.12))" };
-const input = { background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border, rgba(255,255,255,0.12))", borderRadius: "6px", padding: "0.5rem 0.6rem", color: "#fff", fontSize: "0.82rem", width: "100%", boxSizing: "border-box" };
-const smallInput = { background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border, rgba(255,255,255,0.12))", borderRadius: "6px", padding: "0.35rem 0.5rem", color: "#fff", fontSize: "0.75rem", boxSizing: "border-box" };
-const saveBtn = { display: "inline-flex", alignItems: "center", gap: "0.5rem", padding: "0.5rem 0.9rem", fontSize: "0.8rem", fontWeight: 600, background: "var(--accent-green, #34d399)", color: "#04231a", border: "none", borderRadius: "8px", cursor: "pointer", minHeight: "40px" };
+const spotCard = { padding: "0.65rem 0.75rem", borderRadius: "8px", background: "rgba(var(--ink-rgb), 0.015)", border: "1px solid var(--glass-border, rgba(var(--ink-rgb), 0.12))" };
+const input = { background: "rgba(var(--ink-rgb), 0.03)", border: "1px solid var(--glass-border, rgba(var(--ink-rgb), 0.12))", borderRadius: "6px", padding: "0.5rem 0.6rem", color: "var(--text-primary)", fontSize: "0.82rem", width: "100%", boxSizing: "border-box" };
+const smallInput = { background: "rgba(var(--ink-rgb), 0.03)", border: "1px solid var(--glass-border, rgba(var(--ink-rgb), 0.12))", borderRadius: "6px", padding: "0.35rem 0.5rem", color: "var(--text-primary)", fontSize: "0.75rem", boxSizing: "border-box" };
+const saveBtn = { display: "inline-flex", alignItems: "center", gap: "0.5rem", padding: "0.5rem 0.9rem", fontSize: "0.8rem", fontWeight: 600, background: "var(--accent-green, #34d399)", color: "#fff", border: "none", borderRadius: "8px", cursor: "pointer", minHeight: "40px" };
 const linkBtn = { background: "none", border: "none", color: "var(--accent-blue, #60a5fa)", fontSize: "0.75rem", cursor: "pointer", textDecoration: "underline", minHeight: "32px" };
-const addBtn = { alignSelf: "flex-start", padding: "0.5rem 0.9rem", minHeight: "44px", fontSize: "0.8rem", fontWeight: 600, background: "rgba(255,255,255,0.03)", border: "1px dashed var(--glass-border, rgba(255,255,255,0.12))", borderRadius: "8px", color: "var(--text-secondary)", cursor: "pointer" };
+const addBtn = { alignSelf: "flex-start", padding: "0.5rem 0.9rem", minHeight: "44px", fontSize: "0.8rem", fontWeight: 600, background: "rgba(var(--ink-rgb), 0.03)", border: "1px dashed var(--glass-border, rgba(var(--ink-rgb), 0.12))", borderRadius: "8px", color: "var(--text-secondary)", cursor: "pointer" };

@@ -88,7 +88,7 @@ export function ConnectWallet({ onConnected, onDisconnected, casualModeActive, t
             border: "1px solid rgba(248, 113, 113, 0.3)",
           }}
         >
-          <span style={{ fontSize: "0.875rem", color: "#f87171", fontWeight: 600 }}>
+          <span style={{ fontSize: "0.875rem", color: "var(--accent-red)", fontWeight: 600 }}>
             ⚠️ Connection Issue
           </span>
           <span style={{ fontSize: "0.8rem", color: "var(--text-secondary)" }}>
@@ -125,13 +125,13 @@ export function ConnectWallet({ onConnected, onDisconnected, casualModeActive, t
             gap: "0.6rem",
             padding: "0.35rem 0.75rem 0.35rem 0.35rem",
             borderRadius: "50px",
-            border: "1px solid rgba(255,255,255,0.08)",
-            background: "rgba(255,255,255,0.04)",
+            border: "1px solid rgba(var(--ink-rgb), 0.13)",
+            background: "rgba(var(--ink-rgb), 0.04)",
             cursor: "pointer",
             transition: "all 0.2s ease",
           }}
-          onMouseEnter={(e) => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)"; e.currentTarget.style.background = "rgba(255,255,255,0.06)"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)"; e.currentTarget.style.background = "rgba(255,255,255,0.04)"; }}
+          onMouseEnter={(e) => { e.currentTarget.style.borderColor = "rgba(var(--ink-rgb), 0.2)"; e.currentTarget.style.background = "rgba(var(--ink-rgb), 0.06)"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.borderColor = "rgba(var(--ink-rgb), 0.13)"; e.currentTarget.style.background = "rgba(var(--ink-rgb), 0.04)"; }}
           aria-label="User menu"
           aria-expanded={menuOpen}
         >
@@ -144,7 +144,7 @@ export function ConnectWallet({ onConnected, onDisconnected, casualModeActive, t
               background: avatarUrl
                 ? `url(${avatarUrl}) center/cover`
                 : "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-              border: "1.5px solid rgba(255,255,255,0.12)",
+              border: "1.5px solid rgba(var(--ink-rgb), 0.17)",
             }} />
             {/* Green status dot */}
             <span style={{
@@ -155,7 +155,7 @@ export function ConnectWallet({ onConnected, onDisconnected, casualModeActive, t
               height: "8px",
               borderRadius: "50%",
               background: "var(--accent-green)",
-              border: "1.5px solid rgba(15, 23, 42, 0.9)",
+              border: "1.5px solid var(--glass-border)",
               boxShadow: "0 0 4px var(--accent-green)",
             }} />
           </div>
@@ -164,7 +164,7 @@ export function ConnectWallet({ onConnected, onDisconnected, casualModeActive, t
           <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", minWidth: 0 }}>
             <span style={{
               fontSize: "0.75rem",
-              color: "#fff",
+              color: "var(--text-primary)",
               fontWeight: 600,
               whiteSpace: "nowrap",
               overflow: "hidden",
@@ -213,10 +213,10 @@ export function ConnectWallet({ onConnected, onDisconnected, casualModeActive, t
               minWidth: "180px",
               padding: "0.4rem",
               borderRadius: "var(--radius-sm)",
-              background: "rgba(15, 23, 42, 0.97)",
-              border: "1px solid rgba(255,255,255,0.12)",
+              background: "var(--bg-secondary)",
+              border: "1px solid rgba(var(--ink-rgb), 0.17)",
               backdropFilter: "blur(16px)",
-              boxShadow: "0 12px 40px rgba(0,0,0,0.7)",
+              boxShadow: "0 12px 40px rgba(var(--ink-rgb), 0.14)",
               zIndex: 9999,
               display: "flex",
               flexDirection: "column",
@@ -225,10 +225,10 @@ export function ConnectWallet({ onConnected, onDisconnected, casualModeActive, t
             {/* Profile header in dropdown */}
             <div style={{
               padding: "0.5rem 0.75rem",
-              borderBottom: "1px solid rgba(255,255,255,0.06)",
+              borderBottom: "1px solid rgba(var(--ink-rgb), 0.11)",
               marginBottom: "0.25rem",
             }}>
-              <div style={{ fontSize: "0.75rem", color: "#fff", fontWeight: 600 }}>
+              <div style={{ fontSize: "0.75rem", color: "var(--text-primary)", fontWeight: 600 }}>
                 {displayNameResolved || shortAddress(account)}
               </div>
               <div style={{ fontSize: "0.6rem", color: "var(--text-muted)", fontFamily: "monospace" }}>
@@ -263,7 +263,7 @@ export function ConnectWallet({ onConnected, onDisconnected, casualModeActive, t
                 width: "100%",
                 transition: "all 0.15s ease",
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.06)"; e.currentTarget.style.color = "#fff"; }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(var(--ink-rgb), 0.06)"; e.currentTarget.style.color = "var(--text-primary)"; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text-secondary)"; }}
             >
               👤 View Profile
@@ -318,7 +318,7 @@ export function ConnectWallet({ onConnected, onDisconnected, casualModeActive, t
               style={{
                 width: "14px",
                 height: "14px",
-                border: "2px solid rgba(255,255,255,0.2)",
+                border: "2px solid rgba(255, 255, 255, 0.3)",
                 borderTopColor: "#fff",
                 borderRadius: "50%",
                 animation: "shimmer 1s linear infinite",
@@ -351,7 +351,7 @@ export function ConnectWallet({ onConnected, onDisconnected, casualModeActive, t
         </button>
       )}
       {error && (
-        <span style={{ fontSize: "0.75rem", color: "#f87171", fontWeight: 500 }}>
+        <span style={{ fontSize: "0.75rem", color: "var(--accent-red)", fontWeight: 500 }}>
           {error}
         </span>
       )}

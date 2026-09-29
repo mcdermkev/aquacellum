@@ -142,7 +142,7 @@ export function ParcelPresetEditor({ walletAccount }) {
   });
 
   return (
-    <div className="sf-setup__field" style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "1rem", marginTop: "1rem" }}>
+    <div className="sf-setup__field" style={{ borderTop: "1px solid rgba(var(--ink-rgb), 0.06)", paddingTop: "1rem", marginTop: "1rem" }}>
       <label className="sf-setup__label">📦 Parcel presets</label>
       <p style={{ fontSize: "0.8rem", color: "var(--text-secondary)", margin: "0 0 0.75rem 0", lineHeight: 1.5 }}>
         Your reusable insulated-box configurations. Each listing's packing profile is checked against one of
@@ -218,9 +218,9 @@ function PresetRow({ preset, preview, isEditing, onEdit, onDelete, children }) {
     <div style={{ ...presetCard, display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.75rem", flexWrap: "wrap" }}>
       <div>
         <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
-          <strong style={{ color: "#fff", fontSize: "0.85rem" }}>{preset.label}</strong>
+          <strong style={{ color: "var(--text-primary)", fontSize: "0.85rem" }}>{preset.label}</strong>
           {preset.isDefault && (
-            <span style={{ fontSize: "0.6rem", padding: "0.1rem 0.4rem", borderRadius: "8px", background: "rgba(34,211,238,0.12)", border: "1px solid rgba(34,211,238,0.3)", color: "#22d3ee" }}>
+            <span style={{ fontSize: "0.6rem", padding: "0.1rem 0.4rem", borderRadius: "8px", background: "rgba(34,211,238,0.12)", border: "1px solid rgba(34,211,238,0.3)", color: "var(--accent-teal)" }}>
               Default
             </span>
           )}
@@ -270,7 +270,7 @@ function PresetForm({ form, set, onSave, onCancel, saving, canSave, preview }) {
         Use as my default preset
       </label>
 
-      <div style={{ padding: "0.5rem 0.65rem", borderRadius: "6px", background: "rgba(255,255,255,0.02)", border: "1px solid var(--glass-border, rgba(255,255,255,0.12))" }}>
+      <div style={{ padding: "0.5rem 0.65rem", borderRadius: "6px", background: "rgba(var(--ink-rgb), 0.02)", border: "1px solid var(--glass-border, rgba(var(--ink-rgb), 0.12))" }}>
         <CapacityPreview preview={preview} />
       </div>
 
@@ -293,8 +293,8 @@ function NumberField({ label, value, onChange }) {
   );
 }
 
-const presetCard = { padding: "0.65rem 0.75rem", borderRadius: "8px", background: "rgba(255,255,255,0.015)", border: "1px solid var(--glass-border, rgba(255,255,255,0.12))" };
-const input = { background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border, rgba(255,255,255,0.12))", borderRadius: "6px", padding: "0.5rem 0.6rem", color: "#fff", fontSize: "0.82rem", width: "100%", boxSizing: "border-box" };
-const saveBtn = { display: "inline-flex", alignItems: "center", gap: "0.5rem", padding: "0.5rem 0.9rem", fontSize: "0.8rem", fontWeight: 600, background: "var(--accent-green, #34d399)", color: "#04231a", border: "none", borderRadius: "8px", cursor: "pointer", minHeight: "40px" };
+const presetCard = { padding: "0.65rem 0.75rem", borderRadius: "8px", background: "rgba(var(--ink-rgb), 0.015)", border: "1px solid var(--glass-border, rgba(var(--ink-rgb), 0.12))" };
+const input = { background: "rgba(var(--ink-rgb), 0.03)", border: "1px solid var(--glass-border, rgba(var(--ink-rgb), 0.12))", borderRadius: "6px", padding: "0.5rem 0.6rem", color: "var(--text-primary)", fontSize: "0.82rem", width: "100%", boxSizing: "border-box" };
+const saveBtn = { display: "inline-flex", alignItems: "center", gap: "0.5rem", padding: "0.5rem 0.9rem", fontSize: "0.8rem", fontWeight: 600, background: "var(--accent-green, #34d399)", color: "#fff", border: "none", borderRadius: "8px", cursor: "pointer", minHeight: "40px" };
 const linkBtn = { background: "none", border: "none", color: "var(--accent-blue, #60a5fa)", fontSize: "0.75rem", cursor: "pointer", textDecoration: "underline", minHeight: "32px" };
-const addBtn = { alignSelf: "flex-start", padding: "0.5rem 0.9rem", minHeight: "44px", fontSize: "0.8rem", fontWeight: 600, background: "rgba(255,255,255,0.03)", border: "1px dashed var(--glass-border, rgba(255,255,255,0.12))", borderRadius: "8px", color: "var(--text-secondary)", cursor: "pointer" };
+const addBtn = { alignSelf: "flex-start", padding: "0.5rem 0.9rem", minHeight: "44px", fontSize: "0.8rem", fontWeight: 600, background: "rgba(var(--ink-rgb), 0.03)", border: "1px dashed var(--glass-border, rgba(var(--ink-rgb), 0.12))", borderRadius: "8px", color: "var(--text-secondary)", cursor: "pointer" };

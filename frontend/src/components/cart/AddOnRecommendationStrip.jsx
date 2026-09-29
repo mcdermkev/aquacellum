@@ -90,7 +90,7 @@ function AddOnCard({ row, onAdd, casualModeActive }) {
         background: "var(--glass-bg)",
         transition: "transform 0.3s cubic-bezier(0.4,0,0.2,1), box-shadow 0.3s cubic-bezier(0.4,0,0.2,1)",
       }}
-      onMouseEnter={(e) => { e.currentTarget.style.transform = "scale(1.03)"; e.currentTarget.style.boxShadow = "0 8px 24px rgba(0,0,0,0.35)"; }}
+      onMouseEnter={(e) => { e.currentTarget.style.transform = "scale(1.03)"; e.currentTarget.style.boxShadow = "var(--shadow-lg)"; }}
       onMouseLeave={(e) => { e.currentTarget.style.transform = "scale(1)"; e.currentTarget.style.boxShadow = "none"; }}
     >
       <div
@@ -98,7 +98,7 @@ function AddOnCard({ row, onAdd, casualModeActive }) {
           width: "100%",
           height: "72px",
           borderRadius: "8px",
-          background: "linear-gradient(135deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%)",
+          background: "linear-gradient(135deg, rgba(var(--ink-rgb), 0.03) 0%, rgba(var(--ink-rgb), 0.01) 100%)",
           border: "1px solid var(--glass-border)",
           display: "flex",
           alignItems: "center",
@@ -150,7 +150,7 @@ function AddOnCard({ row, onAdd, casualModeActive }) {
           borderRadius: "10px",
           background: row.addedBox ? "rgba(251, 191, 36, 0.1)" : "rgba(52, 211, 153, 0.1)",
           border: `1px solid ${row.addedBox ? "rgba(251, 191, 36, 0.3)" : "rgba(52, 211, 153, 0.3)"}`,
-          color: row.addedBox ? "var(--amber-400)" : "var(--emerald-400)",
+          color: row.addedBox ? "var(--accent-amber)" : "var(--accent-green)",
         }}
       >
         {row.addedBox ? <Warning size={11} weight="duotone" /> : <Package size={11} weight="duotone" />}
@@ -167,7 +167,7 @@ function AddOnCard({ row, onAdd, casualModeActive }) {
             fontSize: "0.62rem",
             color: row.hasBuyerTank === false
               ? "var(--text-muted)"
-              : row.tankFitVerdict === "ok" ? "var(--emerald-400)" : "var(--amber-400)",
+              : row.tankFitVerdict === "ok" ? "var(--accent-green)" : "var(--accent-amber)",
           }}
           title={row.topReason || undefined}
         >
@@ -187,8 +187,8 @@ function AddOnCard({ row, onAdd, casualModeActive }) {
           padding: "0.35rem 0.5rem",
           borderRadius: "8px",
           border: "none",
-          background: "linear-gradient(135deg, var(--teal-400), var(--violet-500))",
-          color: "#04120f",
+          background: "linear-gradient(135deg, var(--accent-teal), var(--accent-violet))",
+          color: "#fff",
           fontWeight: 700,
           fontSize: "0.7rem",
           cursor: "pointer",
@@ -196,7 +196,7 @@ function AddOnCard({ row, onAdd, casualModeActive }) {
           alignItems: "center",
           justifyContent: "center",
           gap: "0.25rem",
-          boxShadow: "0 0 12px rgba(45, 212, 191, 0.25)",
+          boxShadow: "var(--shadow-md)",
         }}
       >
         <Plus size={12} weight="bold" /> Add

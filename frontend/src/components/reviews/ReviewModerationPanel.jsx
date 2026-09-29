@@ -23,8 +23,8 @@ import { fetchReviewReports, moderateReview } from "../../services/reefTrustApi"
 import { ReviewStars } from "./ReviewStars";
 
 const ACTION_LABELS = {
-  dismiss: { label: "Dismiss report", icon: "✓", color: "#10b981" },
-  hide: { label: "Hide review", icon: "🙈", color: "#ef4444" },
+  dismiss: { label: "Dismiss report", icon: "✓", color: "#047857" },
+  hide: { label: "Hide review", icon: "🙈", color: "#b91c1c" },
 };
 
 function ReportedReviewCard({ item, onAction }) {
@@ -43,8 +43,8 @@ function ReportedReviewCard({ item, onAction }) {
       style={{
         padding: "1rem",
         borderRadius: "10px",
-        background: "rgba(255, 255, 255, 0.02)",
-        border: "1px solid rgba(255, 255, 255, 0.06)",
+        background: "rgba(var(--ink-rgb), 0.02)",
+        border: "1px solid rgba(var(--ink-rgb), 0.06)",
         marginBottom: "0.75rem",
       }}
     >
@@ -82,7 +82,7 @@ function ReportedReviewCard({ item, onAction }) {
           style={{
             padding: "0.75rem",
             borderRadius: "8px",
-            background: "rgba(0, 0, 0, 0.2)",
+            background: "var(--bg-band)",
             marginBottom: "0.75rem",
           }}
         >
@@ -167,7 +167,7 @@ export function ReviewModerationPanel({ onBack }) {
           >
             ← Back
           </button>
-          <h2 style={{ margin: 0, fontSize: "1.1rem", color: "#fff" }}>⭐ Review Reports</h2>
+          <h2 style={{ margin: 0, fontSize: "1.1rem", color: "var(--text-primary)" }}>⭐ Review Reports</h2>
         </div>
         <span
           style={{
@@ -190,8 +190,8 @@ export function ReviewModerationPanel({ onBack }) {
           marginBottom: "1rem",
           padding: "0.25rem",
           borderRadius: "8px",
-          background: "rgba(255, 255, 255, 0.03)",
-          border: "1px solid rgba(255, 255, 255, 0.06)",
+          background: "rgba(var(--ink-rgb), 0.03)",
+          border: "1px solid rgba(var(--ink-rgb), 0.06)",
         }}
       >
         {[
@@ -208,7 +208,7 @@ export function ReviewModerationPanel({ onBack }) {
               borderRadius: "6px",
               border: "none",
               background: filter === tab.key ? "rgba(56, 189, 248, 0.12)" : "transparent",
-              color: filter === tab.key ? "#fff" : "var(--text-muted)",
+              color: filter === tab.key ? "var(--text-primary)" : "var(--text-muted)",
               fontSize: "0.7rem",
               fontWeight: filter === tab.key ? 600 : 400,
               cursor: "pointer",
@@ -226,9 +226,9 @@ export function ReviewModerationPanel({ onBack }) {
           {error}. The queue count was not treated as zero.
         </div>
       ) : reports.length === 0 ? (
-        <div style={{ textAlign: "center", padding: "3rem", borderRadius: "12px", background: "rgba(255, 255, 255, 0.02)", border: "1px solid rgba(255, 255, 255, 0.05)" }}>
+        <div style={{ textAlign: "center", padding: "3rem", borderRadius: "12px", background: "rgba(var(--ink-rgb), 0.02)", border: "1px solid rgba(var(--ink-rgb), 0.05)" }}>
           <p style={{ fontSize: "2rem", margin: "0 0 0.5rem" }}>✅</p>
-          <p style={{ fontSize: "0.9rem", color: "#fff", fontWeight: 600, margin: 0 }}>Queue is clear</p>
+          <p style={{ fontSize: "0.9rem", color: "var(--text-primary)", fontWeight: 600, margin: 0 }}>Queue is clear</p>
           <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", margin: "0.25rem 0 0" }}>
             No {filter === "pending" ? "pending" : ""} review reports.
           </p>

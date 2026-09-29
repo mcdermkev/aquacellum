@@ -24,10 +24,10 @@ function IncomingCard({ specimen, casualModeActive, onMarkArrived, onAcclimate }
       borderRadius: "10px",
       border: nudge
         ? "1px solid rgba(251,191,36,0.3)"
-        : "1px solid rgba(255,255,255,0.08)",
+        : "1px solid rgba(var(--ink-rgb), 0.13)",
       background: nudge
         ? "rgba(251,191,36,0.04)"
-        : "rgba(255,255,255,0.02)",
+        : "rgba(var(--ink-rgb), 0.02)",
       display: "flex",
       alignItems: "center",
       gap: "0.75rem",
@@ -71,8 +71,8 @@ function IncomingCard({ specimen, casualModeActive, onMarkArrived, onAcclimate }
         }}>
           {/* Purchase type badge */}
           <span style={{
-            background: "rgba(255,255,255,0.06)",
-            border: "1px solid rgba(255,255,255,0.1)",
+            background: "rgba(var(--ink-rgb), 0.06)",
+            border: "1px solid rgba(var(--ink-rgb), 0.15)",
             borderRadius: "10px",
             padding: "0.05rem 0.4rem",
             fontSize: "0.65rem",
@@ -93,7 +93,7 @@ function IncomingCard({ specimen, casualModeActive, onMarkArrived, onAcclimate }
         {specimen.purchaseType === "shipping" && specimen.trackingNumber && (
           <div style={{
             fontSize: "0.65rem",
-            color: "var(--accent-cyan, #22d3ee)",
+            color: "var(--accent-teal)",
             marginTop: "0.2rem",
           }}>
             Tracking: {specimen.trackingNumber}
@@ -123,7 +123,7 @@ function IncomingCard({ specimen, casualModeActive, onMarkArrived, onAcclimate }
             background: "transparent",
             border: "1px solid rgba(34,211,238,0.35)",
             borderRadius: "8px",
-            color: "var(--accent-cyan, #22d3ee)",
+            color: "var(--accent-teal)",
             cursor: "pointer",
           }}
         >
@@ -156,10 +156,10 @@ function IncomingBatchCard({ order, casualModeActive, onBatchArrived, onAcclimat
       borderRadius: "10px",
       border: nudge
         ? "1px solid rgba(251,191,36,0.3)"
-        : "1px solid rgba(255,255,255,0.08)",
+        : "1px solid rgba(var(--ink-rgb), 0.13)",
       background: nudge
         ? "rgba(251,191,36,0.04)"
-        : "rgba(255,255,255,0.02)",
+        : "rgba(var(--ink-rgb), 0.02)",
       display: "flex",
       alignItems: "center",
       gap: "0.75rem",
@@ -221,7 +221,7 @@ function IncomingBatchCard({ order, casualModeActive, onBatchArrived, onAcclimat
             background: "transparent",
             border: "1px solid rgba(34,211,238,0.35)",
             borderRadius: "8px",
-            color: "var(--accent-cyan, #22d3ee)",
+            color: "var(--accent-teal)",
             cursor: "pointer",
           }}
         >
@@ -421,7 +421,7 @@ function IncomingSpecimens({
         <span style={{
           fontSize: "0.65rem",
           background: "rgba(34,211,238,0.1)",
-          color: "var(--accent-cyan, #22d3ee)",
+          color: "var(--accent-teal)",
           borderRadius: "10px",
           padding: "0.1rem 0.45rem",
           fontWeight: 600,

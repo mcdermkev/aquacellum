@@ -76,7 +76,7 @@ export function ProductDetailModal({
     return (
       <Modal isOpen={true} onClose={onClose} ariaLabel="Listing not found" className="glass-card">
         <div style={{ padding: "2.5rem", textAlign: "center" }}>
-          <h3 style={{ color: "#fff", marginBottom: "0.75rem" }}>Listing not found</h3>
+          <h3 style={{ color: "var(--text-primary)", marginBottom: "0.75rem" }}>Listing not found</h3>
           <p style={{ color: "var(--text-secondary)", fontSize: "0.85rem", marginBottom: "1.5rem" }}>
             This listing may have sold or been removed from the directory.
           </p>
@@ -99,7 +99,7 @@ export function ProductDetailModal({
     view.compatibility.verdict === "ok" ? "var(--accent-green)"
     : view.compatibility.verdict === "blocked" ? "var(--accent-red)"
     : view.compatibility.verdict === "no_tank" ? "var(--text-muted)"
-    : "#fbbf24"; // caution
+    : "#b45309"; // caution
   const compatIcon =
     view.compatibility.verdict === "ok" ? "✅"
     : view.compatibility.verdict === "blocked" ? "🚫"
@@ -119,7 +119,7 @@ export function ProductDetailModal({
           display: "flex", justifyContent: "space-between", alignItems: "center",
           padding: "1.25rem 1.5rem", borderBottom: "1px solid var(--glass-border)"
         }}>
-          <h3 style={{ fontSize: "1.15rem", color: "#fff", margin: 0, display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          <h3 style={{ fontSize: "1.15rem", color: "var(--text-primary)", margin: 0, display: "flex", alignItems: "center", gap: "0.5rem" }}>
             <span aria-hidden="true">{headerIcon}</span> {view.identity.commonName}
           </h3>
           <button
@@ -135,8 +135,8 @@ export function ProductDetailModal({
           {/* Gallery */}
           <div style={{
             height: "12rem", width: "100%", borderRadius: "0.75rem",
-            background: "linear-gradient(135deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%)",
-            border: "1px solid rgba(255,255,255,0.08)", display: "flex", alignItems: "center", justifyContent: "center",
+            background: "linear-gradient(135deg, rgba(var(--ink-rgb), 0.03) 0%, rgba(var(--ink-rgb), 0.01) 100%)",
+            border: "1px solid rgba(var(--ink-rgb), 0.13)", display: "flex", alignItems: "center", justifyContent: "center",
           }}>
             {fragPhoto ? (
               <img
@@ -166,32 +166,32 @@ export function ProductDetailModal({
           {/* Coral frag facts (fragListing.js) */}
           {view.frag && (
             <div className="glass-card" style={{ padding: "1rem", border: "1px solid rgba(244,114,182,0.3)" }}>
-              <h4 style={{ fontSize: "0.85rem", color: "#f9a8d4", margin: "0 0 0.6rem 0" }}>
+              <h4 style={{ fontSize: "0.85rem", color: "#be185d", margin: "0 0 0.6rem 0" }}>
                 <span aria-hidden="true">🪸</span> Frag Details
               </h4>
               <dl style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem", fontSize: "0.78rem", margin: 0 }}>
                 <div>
                   <dt style={{ color: "var(--text-muted)" }}>Size</dt>
-                  <dd style={{ color: "#fff", fontWeight: 600, margin: 0 }}>{fragSize || "Not stated"}</dd>
+                  <dd style={{ color: "var(--text-primary)", fontWeight: 600, margin: 0 }}>{fragSize || "Not stated"}</dd>
                 </div>
                 <div>
                   <dt style={{ color: "var(--text-muted)" }}>Mounted on</dt>
-                  <dd style={{ color: "#fff", fontWeight: 600, margin: 0 }}>{FRAG_MOUNT_LABELS[view.frag.mount] || "Not stated"}</dd>
+                  <dd style={{ color: "var(--text-primary)", fontWeight: 600, margin: 0 }}>{FRAG_MOUNT_LABELS[view.frag.mount] || "Not stated"}</dd>
                 </div>
                 <div>
                   <dt style={{ color: "var(--text-muted)" }}>Origin</dt>
-                  <dd style={{ color: "#fff", fontWeight: 600, margin: 0 }}>{FRAG_ORIGIN_LABELS[view.frag.origin] || "Not stated"}</dd>
+                  <dd style={{ color: "var(--text-primary)", fontWeight: 600, margin: 0 }}>{FRAG_ORIGIN_LABELS[view.frag.origin] || "Not stated"}</dd>
                 </div>
                 <div>
                   <dt style={{ color: "var(--text-muted)" }}>Photo</dt>
-                  <dd style={{ color: "#fff", fontWeight: 600, margin: 0 }}>
+                  <dd style={{ color: "var(--text-primary)", fontWeight: 600, margin: 0 }}>
                     {view.frag.wysiwyg ? "WYSIWYG: this exact frag" : "Representative of the colony"}
                   </dd>
                 </div>
                 {view.frag.grownUnder && (
                   <div style={{ gridColumn: "1 / -1" }}>
                     <dt style={{ color: "var(--text-muted)" }}>Grown under</dt>
-                    <dd style={{ color: "#fff", margin: 0 }}>{view.frag.grownUnder}</dd>
+                    <dd style={{ color: "var(--text-primary)", margin: 0 }}>{view.frag.grownUnder}</dd>
                   </div>
                 )}
               </dl>
@@ -226,7 +226,7 @@ export function ProductDetailModal({
                 ].filter(([, v]) => v).map(([label, value]) => (
                   <div key={label}>
                     <dt style={{ color: "var(--text-muted)" }}>{label}</dt>
-                    <dd style={{ color: "#fff", fontWeight: 600, margin: 0, textTransform: label === "Type" ? "none" : "capitalize" }}>{value}</dd>
+                    <dd style={{ color: "var(--text-primary)", fontWeight: 600, margin: 0, textTransform: label === "Type" ? "none" : "capitalize" }}>{value}</dd>
                   </div>
                 ))}
               </dl>
@@ -251,21 +251,21 @@ export function ProductDetailModal({
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem", fontSize: "0.78rem" }}>
               <div>
                 <span style={{ color: "var(--text-muted)", display: "block" }}>Min. Tank Size</span>
-                <strong style={{ color: "#fff" }}>{view.careRequirements.minTankSizeGallons != null ? `${view.careRequirements.minTankSizeGallons} gal` : "Unknown"}</strong>
+                <strong style={{ color: "var(--text-primary)" }}>{view.careRequirements.minTankSizeGallons != null ? `${view.careRequirements.minTankSizeGallons} gal` : "Unknown"}</strong>
               </div>
               <div>
                 <span style={{ color: "var(--text-muted)", display: "block" }}>Temperament</span>
-                <strong style={{ color: "#fff", textTransform: "capitalize" }}>{view.careRequirements.temperament.replace(/_/g, " ")}</strong>
+                <strong style={{ color: "var(--text-primary)", textTransform: "capitalize" }}>{view.careRequirements.temperament.replace(/_/g, " ")}</strong>
               </div>
               <div>
                 <span style={{ color: "var(--text-muted)", display: "block" }}>Temperature</span>
-                <strong style={{ color: "#fff" }}>
+                <strong style={{ color: "var(--text-primary)" }}>
                   {view.careRequirements.temperatureRangeCelsius ? `${view.careRequirements.temperatureRangeCelsius[0]}–${view.careRequirements.temperatureRangeCelsius[1]}°C` : "Unknown"}
                 </strong>
               </div>
               <div>
                 <span style={{ color: "var(--text-muted)", display: "block" }}>pH</span>
-                <strong style={{ color: "#fff" }}>
+                <strong style={{ color: "var(--text-primary)" }}>
                   {view.careRequirements.phRange ? `${view.careRequirements.phRange[0]}–${view.careRequirements.phRange[1]}` : "Unknown"}
                 </strong>
               </div>
@@ -282,7 +282,7 @@ export function ProductDetailModal({
                   : "This listing does not carry a DOA guarantee."}
               </span>
               <span style={{ color: "var(--text-secondary)" }}>
-                Health status: <strong style={{ color: "#fff", textTransform: "capitalize" }}>{view.sellerPolicies.healthStatus}</strong>
+                Health status: <strong style={{ color: "var(--text-primary)", textTransform: "capitalize" }}>{view.sellerPolicies.healthStatus}</strong>
               </span>
             </div>
           </div>
@@ -323,7 +323,7 @@ export function ProductDetailModal({
               no message body or mutation is replayed after authentication. */}
           {!isOwner && messageIntent && (
             <div className="glass-card" style={{ padding: "1rem", border: "1px solid rgba(56, 189, 248, 0.35)" }}>
-              <h4 style={{ color: "#fff", margin: "0 0 0.4rem" }}>Ask this breeder?</h4>
+              <h4 style={{ color: "var(--text-primary)", margin: "0 0 0.4rem" }}>Ask this breeder?</h4>
               <p style={{ color: "var(--text-secondary)", fontSize: "0.78rem", margin: "0 0 0.8rem" }}>
                 Continue to open a conversation about {view.identity.commonName}. Nothing will be sent until you write and submit a message.
               </p>

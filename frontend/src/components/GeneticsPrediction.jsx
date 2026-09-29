@@ -129,11 +129,11 @@ function PunnettGrid({ result, traitColor }) {
   };
 
   const typeTextColors = {
-    wild: "#9ca3af",
-    carrier: "#fbbf24",
-    expressing: "#34d399",
-    homozygous: "#a855f7",
-    partial: "#60a5fa",
+    wild: "#5b7482",
+    carrier: "#b45309",
+    expressing: "#047857",
+    homozygous: "#7e22ce",
+    partial: "#1d4ed8",
   };
 
   return (
@@ -152,7 +152,7 @@ function PunnettGrid({ result, traitColor }) {
             background: "rgba(244, 114, 182, 0.08)",
             border: "1px solid rgba(244, 114, 182, 0.2)",
           }}>
-            <span style={{ fontSize: "0.8rem", fontWeight: "700", color: "#f472b6", fontFamily: "'JetBrains Mono', monospace" }}>
+            <span style={{ fontSize: "0.8rem", fontWeight: "700", color: "#be185d", fontFamily: "'JetBrains Mono', monospace" }}>
               {allele}
             </span>
           </div>
@@ -169,7 +169,7 @@ function PunnettGrid({ result, traitColor }) {
             background: "rgba(96, 165, 250, 0.08)",
             border: "1px solid rgba(96, 165, 250, 0.2)",
           }}>
-            <span style={{ fontSize: "0.8rem", fontWeight: "700", color: "#60a5fa", fontFamily: "'JetBrains Mono', monospace" }}>
+            <span style={{ fontSize: "0.8rem", fontWeight: "700", color: "var(--accent-blue)", fontFamily: "'JetBrains Mono', monospace" }}>
               {result.sireAlleles[row]}
             </span>
           </div>
@@ -207,11 +207,11 @@ function PunnettGrid({ result, traitColor }) {
 // ─── Probability Bars ───────────────────────────────────────────────────────
 function ProbabilityBars({ summary, traitColor }) {
   const typeTextColors = {
-    wild: "#9ca3af",
-    carrier: "#fbbf24",
-    expressing: "#34d399",
-    homozygous: "#a855f7",
-    partial: "#60a5fa",
+    wild: "#5b7482",
+    carrier: "#b45309",
+    expressing: "#047857",
+    homozygous: "#7e22ce",
+    partial: "#1d4ed8",
   };
 
   return (
@@ -227,7 +227,7 @@ function ProbabilityBars({ summary, traitColor }) {
                 {item.probability}%
               </span>
             </div>
-            <div style={{ flex: 1, height: "8px", background: "rgba(255,255,255,0.04)", borderRadius: "4px", overflow: "hidden" }}>
+            <div style={{ flex: 1, height: "8px", background: "rgba(var(--ink-rgb), 0.04)", borderRadius: "4px", overflow: "hidden" }}>
               <div style={{
                 height: "100%",
                 width: `${item.probability}%`,
@@ -353,11 +353,11 @@ function calculateDihybrid(sireGeno1, damGeno1, inheritance1, sireGeno2, damGeno
 // ─── Dihybrid Grid Visual ───────────────────────────────────────────────────
 function DihybridGrid({ result, trait1, trait2 }) {
   const typeTextColors = {
-    wild: "#9ca3af",
-    carrier: "#fbbf24",
-    expressing: "#34d399",
-    homozygous: "#a855f7",
-    partial: "#60a5fa",
+    wild: "#5b7482",
+    carrier: "#b45309",
+    expressing: "#047857",
+    homozygous: "#7e22ce",
+    partial: "#1d4ed8",
   };
 
   const typeColors = {
@@ -396,7 +396,7 @@ function DihybridGrid({ result, trait1, trait2 }) {
             background: "rgba(244, 114, 182, 0.06)",
             border: "1px solid rgba(244, 114, 182, 0.15)",
           }}>
-            <span style={{ fontSize: "0.65rem", fontWeight: "700", color: "#f472b6", fontFamily: "'JetBrains Mono', monospace" }}>
+            <span style={{ fontSize: "0.65rem", fontWeight: "700", color: "#be185d", fontFamily: "'JetBrains Mono', monospace" }}>
               {formatGamete(gamete)}
             </span>
           </div>
@@ -413,7 +413,7 @@ function DihybridGrid({ result, trait1, trait2 }) {
             background: "rgba(96, 165, 250, 0.06)",
             border: "1px solid rgba(96, 165, 250, 0.15)",
           }}>
-            <span style={{ fontSize: "0.65rem", fontWeight: "700", color: "#60a5fa", fontFamily: "'JetBrains Mono', monospace" }}>
+            <span style={{ fontSize: "0.65rem", fontWeight: "700", color: "var(--accent-blue)", fontFamily: "'JetBrains Mono', monospace" }}>
               {formatGamete(result.sireGametes[row])}
             </span>
           </div>
@@ -423,8 +423,8 @@ function DihybridGrid({ result, trait1, trait2 }) {
             const outcome = result.grid[idx];
             // Use trait1 type for background color priority
             const bgColor = typeColors[outcome.trait1.type] || typeColors.wild;
-            const t1Color = typeTextColors[outcome.trait1.type] || "#9ca3af";
-            const t2Color = typeTextColors[outcome.trait2.type] || "#9ca3af";
+            const t1Color = typeTextColors[outcome.trait1.type] || "#5b7482";
+            const t2Color = typeTextColors[outcome.trait2.type] || "#5b7482";
             return (
               <div key={col} style={{
                 display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
@@ -455,7 +455,7 @@ function DihybridGrid({ result, trait1, trait2 }) {
       ))}
 
       {/* Legend */}
-      <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginTop: "8px", padding: "6px 8px", borderRadius: "6px", background: "rgba(255,255,255,0.02)" }}>
+      <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginTop: "8px", padding: "6px 8px", borderRadius: "6px", background: "rgba(var(--ink-rgb), 0.02)" }}>
         <span style={{ fontSize: "0.58rem", color: "var(--text-muted, #6b7280)", fontWeight: "600" }}>Key:</span>
         <span style={{ fontSize: "0.58rem", color: trait1.color, fontWeight: "600" }}>Top = {trait1.label}</span>
         <span style={{ fontSize: "0.58rem", color: trait2.color, fontWeight: "600" }}>Bottom = {trait2.label}</span>
@@ -467,11 +467,11 @@ function DihybridGrid({ result, trait1, trait2 }) {
 // ─── Dihybrid Probability Summary ───────────────────────────────────────────
 function DihybridProbabilityBars({ summary, trait1, trait2 }) {
   const typeTextColors = {
-    wild: "#9ca3af",
-    carrier: "#fbbf24",
-    expressing: "#34d399",
-    homozygous: "#a855f7",
-    partial: "#60a5fa",
+    wild: "#5b7482",
+    carrier: "#b45309",
+    expressing: "#047857",
+    homozygous: "#7e22ce",
+    partial: "#1d4ed8",
   };
 
   return (
@@ -481,7 +481,7 @@ function DihybridProbabilityBars({ summary, trait1, trait2 }) {
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
         {summary.map((item, i) => {
-          const barColor = typeTextColors[item.trait1.type] || "#9ca3af";
+          const barColor = typeTextColors[item.trait1.type] || "#5b7482";
           return (
             <div key={i} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               <div style={{ width: "46px", textAlign: "right" }}>
@@ -489,7 +489,7 @@ function DihybridProbabilityBars({ summary, trait1, trait2 }) {
                   {item.probability.toFixed(1)}%
                 </span>
               </div>
-              <div style={{ flex: 1, height: "7px", background: "rgba(255,255,255,0.04)", borderRadius: "4px", overflow: "hidden" }}>
+              <div style={{ flex: 1, height: "7px", background: "rgba(var(--ink-rgb), 0.04)", borderRadius: "4px", overflow: "hidden" }}>
                 <div style={{
                   height: "100%",
                   width: `${item.probability}%`,
@@ -541,7 +541,7 @@ export function GeneticsPrediction({ casualModeActive = false }) {
     <div style={{ marginTop: "1.5rem" }}>
       {/* Header */}
       <div style={{ marginBottom: "1.25rem" }}>
-        <h3 style={{ fontSize: "1.1rem", fontWeight: "700", color: "#fff", margin: "0 0 0.25rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+        <h3 style={{ fontSize: "1.1rem", fontWeight: "700", color: "var(--text-primary)", margin: "0 0 0.25rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
           <span>🧬</span> Genetics Prediction Calculator
         </h3>
         <p style={{ fontSize: "0.8rem", color: "var(--text-muted, #6b7280)", margin: 0, lineHeight: "1.5" }}>
@@ -554,7 +554,7 @@ export function GeneticsPrediction({ casualModeActive = false }) {
       {/* Mode Toggle: Monohybrid / Dihybrid */}
       <div style={{
         display: "flex", gap: "4px", marginBottom: "1.25rem",
-        padding: "4px", background: "rgba(255,255,255,0.02)",
+        padding: "4px", background: "rgba(var(--ink-rgb), 0.02)",
         border: "1px solid rgba(139, 92, 246, 0.12)", borderRadius: "10px",
         width: "fit-content",
       }}>
@@ -567,10 +567,10 @@ export function GeneticsPrediction({ casualModeActive = false }) {
             onClick={() => setMode(m.id)}
             style={{
               padding: "7px 14px", borderRadius: "7px", fontSize: "0.75rem", fontWeight: "600",
-              color: mode === m.id ? "#fff" : "var(--text-muted, #6b7280)",
+              color: mode === m.id ? "var(--accent-violet)" : "var(--text-muted, #6b7280)",
               background: mode === m.id ? "linear-gradient(135deg, rgba(139, 92, 246, 0.25), rgba(99, 102, 241, 0.2))" : "transparent",
               border: mode === m.id ? "1px solid rgba(139, 92, 246, 0.4)" : "1px solid transparent",
-              boxShadow: mode === m.id ? "0 0 10px rgba(139, 92, 246, 0.15)" : "none",
+              boxShadow: mode === m.id ? "var(--glass-shadow)" : "none",
               cursor: "pointer", transition: "all 0.2s",
             }}
           >
@@ -586,7 +586,7 @@ export function GeneticsPrediction({ casualModeActive = false }) {
         </span>
         <div style={{
           display: "flex", gap: "6px", flexWrap: "wrap",
-          padding: "0.5rem", background: "rgba(255,255,255,0.02)",
+          padding: "0.5rem", background: "rgba(var(--ink-rgb), 0.02)",
           border: "1px solid rgba(139, 92, 246, 0.1)", borderRadius: "10px",
         }}>
           {TRAIT_GENETICS.map((t) => (
@@ -595,7 +595,7 @@ export function GeneticsPrediction({ casualModeActive = false }) {
               onClick={() => { setSelectedTrait(t.id); setSireGenotype("heterozygous"); setDamGenotype("heterozygous"); }}
               style={{
                 padding: "6px 12px", borderRadius: "8px", fontSize: "0.72rem", fontWeight: "600",
-                color: selectedTrait === t.id ? "#fff" : "var(--text-muted, #6b7280)",
+                color: selectedTrait === t.id ? "var(--text-primary)" : "var(--text-muted, #6b7280)",
                 background: selectedTrait === t.id ? `${t.color}22` : "transparent",
                 border: `1px solid ${selectedTrait === t.id ? `${t.color}55` : "transparent"}`,
                 cursor: "pointer", transition: "all 0.2s",
@@ -615,7 +615,7 @@ export function GeneticsPrediction({ casualModeActive = false }) {
           </span>
           <div style={{
             display: "flex", gap: "6px", flexWrap: "wrap",
-            padding: "0.5rem", background: "rgba(255,255,255,0.02)",
+            padding: "0.5rem", background: "rgba(var(--ink-rgb), 0.02)",
             border: "1px solid rgba(52, 211, 153, 0.1)", borderRadius: "10px",
           }}>
             {TRAIT_GENETICS.filter((t) => t.id !== selectedTrait).map((t) => (
@@ -624,7 +624,7 @@ export function GeneticsPrediction({ casualModeActive = false }) {
                 onClick={() => { setSelectedTrait2(t.id); setSireGenotype2("heterozygous"); setDamGenotype2("heterozygous"); }}
                 style={{
                   padding: "6px 12px", borderRadius: "8px", fontSize: "0.72rem", fontWeight: "600",
-                  color: selectedTrait2 === t.id ? "#fff" : "var(--text-muted, #6b7280)",
+                  color: selectedTrait2 === t.id ? "var(--text-primary)" : "var(--text-muted, #6b7280)",
                   background: selectedTrait2 === t.id ? `${t.color}22` : "transparent",
                   border: `1px solid ${selectedTrait2 === t.id ? `${t.color}55` : "transparent"}`,
                   cursor: "pointer", transition: "all 0.2s",
@@ -708,7 +708,7 @@ export function GeneticsPrediction({ casualModeActive = false }) {
                 display: "flex", alignItems: "center", justifyContent: "center",
                 fontSize: "0.6rem", fontWeight: "700", color: "#fff",
               }}>♂</div>
-              <span style={{ fontSize: "0.8rem", fontWeight: "700", color: "#60a5fa" }}>
+              <span style={{ fontSize: "0.8rem", fontWeight: "700", color: "var(--accent-blue)" }}>
                 {casualModeActive ? "Dad" : "Sire"} Genotype
               </span>
             </div>
@@ -720,9 +720,9 @@ export function GeneticsPrediction({ casualModeActive = false }) {
                   style={{
                     padding: "8px 10px", borderRadius: "6px", fontSize: "0.75rem",
                     textAlign: "left", cursor: "pointer", transition: "all 0.2s",
-                    color: sireGenotype === opt.value ? "#fff" : "var(--text-muted, #6b7280)",
-                    background: sireGenotype === opt.value ? "rgba(96, 165, 250, 0.15)" : "rgba(255,255,255,0.02)",
-                    border: `1px solid ${sireGenotype === opt.value ? "rgba(96, 165, 250, 0.4)" : "rgba(255,255,255,0.06)"}`,
+                    color: sireGenotype === opt.value ? "var(--text-primary)" : "var(--text-muted, #6b7280)",
+                    background: sireGenotype === opt.value ? "rgba(96, 165, 250, 0.15)" : "rgba(var(--ink-rgb), 0.02)",
+                    border: `1px solid ${sireGenotype === opt.value ? "rgba(96, 165, 250, 0.4)" : "rgba(var(--ink-rgb), 0.11)"}`,
                   }}
                 >
                   <span style={{ fontFamily: "'JetBrains Mono', monospace", marginRight: "6px", fontWeight: "600" }}>{opt.shortLabel}</span>
@@ -745,7 +745,7 @@ export function GeneticsPrediction({ casualModeActive = false }) {
                 display: "flex", alignItems: "center", justifyContent: "center",
                 fontSize: "0.6rem", fontWeight: "700", color: "#fff",
               }}>♀</div>
-              <span style={{ fontSize: "0.8rem", fontWeight: "700", color: "#f472b6" }}>
+              <span style={{ fontSize: "0.8rem", fontWeight: "700", color: "#be185d" }}>
                 {casualModeActive ? "Mom" : "Dam"} Genotype
               </span>
             </div>
@@ -757,9 +757,9 @@ export function GeneticsPrediction({ casualModeActive = false }) {
                   style={{
                     padding: "8px 10px", borderRadius: "6px", fontSize: "0.75rem",
                     textAlign: "left", cursor: "pointer", transition: "all 0.2s",
-                    color: damGenotype === opt.value ? "#fff" : "var(--text-muted, #6b7280)",
-                    background: damGenotype === opt.value ? "rgba(244, 114, 182, 0.15)" : "rgba(255,255,255,0.02)",
-                    border: `1px solid ${damGenotype === opt.value ? "rgba(244, 114, 182, 0.4)" : "rgba(255,255,255,0.06)"}`,
+                    color: damGenotype === opt.value ? "var(--text-primary)" : "var(--text-muted, #6b7280)",
+                    background: damGenotype === opt.value ? "rgba(244, 114, 182, 0.15)" : "rgba(var(--ink-rgb), 0.02)",
+                    border: `1px solid ${damGenotype === opt.value ? "rgba(244, 114, 182, 0.4)" : "rgba(var(--ink-rgb), 0.11)"}`,
                   }}
                 >
                   <span style={{ fontFamily: "'JetBrains Mono', monospace", marginRight: "6px", fontWeight: "600" }}>{opt.shortLabel}</span>
@@ -791,7 +791,7 @@ export function GeneticsPrediction({ casualModeActive = false }) {
                   display: "flex", alignItems: "center", justifyContent: "center",
                   fontSize: "0.6rem", fontWeight: "700", color: "#fff",
                 }}>♂</div>
-                <span style={{ fontSize: "0.8rem", fontWeight: "700", color: "#60a5fa" }}>
+                <span style={{ fontSize: "0.8rem", fontWeight: "700", color: "var(--accent-blue)" }}>
                   {casualModeActive ? "Dad" : "Sire"} — {trait2.symbol}
                 </span>
               </div>
@@ -803,9 +803,9 @@ export function GeneticsPrediction({ casualModeActive = false }) {
                     style={{
                       padding: "8px 10px", borderRadius: "6px", fontSize: "0.75rem",
                       textAlign: "left", cursor: "pointer", transition: "all 0.2s",
-                      color: sireGenotype2 === opt.value ? "#fff" : "var(--text-muted, #6b7280)",
-                      background: sireGenotype2 === opt.value ? "rgba(96, 165, 250, 0.15)" : "rgba(255,255,255,0.02)",
-                      border: `1px solid ${sireGenotype2 === opt.value ? "rgba(96, 165, 250, 0.4)" : "rgba(255,255,255,0.06)"}`,
+                      color: sireGenotype2 === opt.value ? "var(--text-primary)" : "var(--text-muted, #6b7280)",
+                      background: sireGenotype2 === opt.value ? "rgba(96, 165, 250, 0.15)" : "rgba(var(--ink-rgb), 0.02)",
+                      border: `1px solid ${sireGenotype2 === opt.value ? "rgba(96, 165, 250, 0.4)" : "rgba(var(--ink-rgb), 0.11)"}`,
                     }}
                   >
                     <span style={{ fontFamily: "'JetBrains Mono', monospace", marginRight: "6px", fontWeight: "600" }}>{opt.shortLabel}</span>
@@ -828,7 +828,7 @@ export function GeneticsPrediction({ casualModeActive = false }) {
                   display: "flex", alignItems: "center", justifyContent: "center",
                   fontSize: "0.6rem", fontWeight: "700", color: "#fff",
                 }}>♀</div>
-                <span style={{ fontSize: "0.8rem", fontWeight: "700", color: "#f472b6" }}>
+                <span style={{ fontSize: "0.8rem", fontWeight: "700", color: "#be185d" }}>
                   {casualModeActive ? "Mom" : "Dam"} — {trait2.symbol}
                 </span>
               </div>
@@ -840,9 +840,9 @@ export function GeneticsPrediction({ casualModeActive = false }) {
                     style={{
                       padding: "8px 10px", borderRadius: "6px", fontSize: "0.75rem",
                       textAlign: "left", cursor: "pointer", transition: "all 0.2s",
-                      color: damGenotype2 === opt.value ? "#fff" : "var(--text-muted, #6b7280)",
-                      background: damGenotype2 === opt.value ? "rgba(244, 114, 182, 0.15)" : "rgba(255,255,255,0.02)",
-                      border: `1px solid ${damGenotype2 === opt.value ? "rgba(244, 114, 182, 0.4)" : "rgba(255,255,255,0.06)"}`,
+                      color: damGenotype2 === opt.value ? "var(--text-primary)" : "var(--text-muted, #6b7280)",
+                      background: damGenotype2 === opt.value ? "rgba(244, 114, 182, 0.15)" : "rgba(var(--ink-rgb), 0.02)",
+                      border: `1px solid ${damGenotype2 === opt.value ? "rgba(244, 114, 182, 0.4)" : "rgba(var(--ink-rgb), 0.11)"}`,
                     }}
                   >
                     <span style={{ fontFamily: "'JetBrains Mono', monospace", marginRight: "6px", fontWeight: "600" }}>{opt.shortLabel}</span>
@@ -858,7 +858,7 @@ export function GeneticsPrediction({ casualModeActive = false }) {
       {/* Results: Punnett Square + Probability Bars */}
       <div style={{
         padding: "1.25rem", borderRadius: "12px",
-        background: "rgba(255, 255, 255, 0.02)",
+        background: "rgba(var(--ink-rgb), 0.02)",
         border: "1px solid rgba(139, 92, 246, 0.12)",
       }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "4px" }}>
@@ -869,7 +869,7 @@ export function GeneticsPrediction({ casualModeActive = false }) {
             <span style={{
               fontSize: "0.62rem", padding: "3px 8px", borderRadius: "10px",
               background: "rgba(52, 211, 153, 0.08)", border: "1px solid rgba(52, 211, 153, 0.2)",
-              color: "#34d399", fontWeight: "600",
+              color: "var(--accent-green)", fontWeight: "600",
             }}>
               {trait.label}
             </span>

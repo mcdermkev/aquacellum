@@ -371,10 +371,10 @@ export function WantedBoard({
   const inputStyle = {
     width: "100%",
     padding: "0.6rem 0.85rem",
-    background: "rgba(0,0,0,0.3)",
+    background: "var(--bg-band)",
     border: "1px solid var(--glass-border)",
     borderRadius: "8px",
-    color: "#fff",
+    color: "var(--text-primary)",
     fontSize: "0.85rem",
     outline: "none",
     boxSizing: "border-box",
@@ -393,7 +393,7 @@ export function WantedBoard({
       {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.75rem" }}>
         <div>
-          <h3 style={{ margin: 0, fontSize: "1.1rem", color: "#fff" }}>
+          <h3 style={{ margin: 0, fontSize: "1.1rem", color: "var(--text-primary)" }}>
             {casualModeActive ? "Looking For" : "Wanted Specimens"}
           </h3>
           <p style={{ margin: "0.25rem 0 0", fontSize: "0.78rem", color: "var(--text-muted)" }}>
@@ -466,7 +466,7 @@ export function WantedBoard({
           </div>
 
           {formError && (
-            <p style={{ margin: 0, fontSize: "0.72rem", color: "#f87171" }}>{formError}</p>
+            <p style={{ margin: 0, fontSize: "0.72rem", color: "var(--accent-red)" }}>{formError}</p>
           )}
 
           <button
@@ -497,9 +497,9 @@ export function WantedBoard({
                   padding: "0.25rem 0.6rem",
                   borderRadius: "50px",
                   cursor: "pointer",
-                  background: active ? "rgba(56, 189, 248, 0.18)" : "rgba(255,255,255,0.04)",
-                  border: active ? "1px solid rgba(56, 189, 248, 0.4)" : "1px solid rgba(255,255,255,0.08)",
-                  color: active ? "#38bdf8" : "var(--text-secondary)",
+                  background: active ? "rgba(56, 189, 248, 0.18)" : "rgba(var(--ink-rgb), 0.04)",
+                  border: active ? "1px solid rgba(56, 189, 248, 0.4)" : "1px solid rgba(var(--ink-rgb), 0.13)",
+                  color: active ? "var(--accent-blue)" : "var(--text-secondary)",
                 }}
               >
                 {t.label} <span style={{ opacity: 0.7 }}>×{t.count}</span>
@@ -526,8 +526,8 @@ export function WantedBoard({
                   borderRadius: "6px",
                   cursor: "pointer",
                   background: sortMode === opt.id ? "rgba(56, 189, 248, 0.12)" : "transparent",
-                  border: sortMode === opt.id ? "1px solid rgba(56, 189, 248, 0.3)" : "1px solid rgba(255,255,255,0.08)",
-                  color: sortMode === opt.id ? "#38bdf8" : "var(--text-muted)",
+                  border: sortMode === opt.id ? "1px solid rgba(56, 189, 248, 0.3)" : "1px solid rgba(var(--ink-rgb), 0.13)",
+                  color: sortMode === opt.id ? "var(--accent-blue)" : "var(--text-muted)",
                   fontWeight: sortMode === opt.id ? 600 : 400,
                 }}
               >
@@ -538,7 +538,7 @@ export function WantedBoard({
           {speciesFilter && (
             <button
               onClick={() => setSpeciesFilter(null)}
-              style={{ fontSize: "0.68rem", background: "none", border: "none", color: "#38bdf8", cursor: "pointer" }}
+              style={{ fontSize: "0.68rem", background: "none", border: "none", color: "var(--accent-blue)", cursor: "pointer" }}
             >
               Clear filter ✕
             </button>
@@ -550,7 +550,7 @@ export function WantedBoard({
       {displayListings.length === 0 ? (
         <div
           className="glass-card"
-          style={{ padding: "2.5rem", textAlign: "center", border: "1px dashed rgba(255,255,255,0.1)" }}
+          style={{ padding: "2.5rem", textAlign: "center", border: "1px dashed rgba(var(--ink-rgb), 0.15)" }}
         >
           <span style={{ fontSize: "2rem", display: "block", marginBottom: "0.5rem" }}>🔍</span>
           <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", margin: 0 }}>
@@ -587,7 +587,7 @@ export function WantedBoard({
                     ? "1px solid rgba(34, 197, 94, 0.35)"
                     : isOwn
                     ? "1px solid rgba(56, 189, 248, 0.2)"
-                    : "1px solid rgba(255,255,255,0.06)",
+                    : "1px solid rgba(var(--ink-rgb), 0.11)",
                   background: matchesMe ? "rgba(34, 197, 94, 0.04)" : undefined,
                 }}
               >
@@ -600,8 +600,8 @@ export function WantedBoard({
                       borderRadius: "10px",
                       overflow: "hidden",
                       flexShrink: 0,
-                      background: "rgba(255,255,255,0.04)",
-                      border: "1px solid rgba(255,255,255,0.08)",
+                      background: "rgba(var(--ink-rgb), 0.04)",
+                      border: "1px solid rgba(var(--ink-rgb), 0.13)",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
@@ -624,19 +624,19 @@ export function WantedBoard({
                   {/* Content */}
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
-                      <strong style={{ color: "#fff", fontSize: "0.92rem" }}>{item.species_name}</strong>
+                      <strong style={{ color: "var(--text-primary)", fontSize: "0.92rem" }}>{item.species_name}</strong>
                       {budget && (
-                        <span style={chipStyle("rgba(34, 197, 94, 0.1)", "rgba(34, 197, 94, 0.25)", "#34d399")}>
+                        <span style={chipStyle("rgba(34, 197, 94, 0.1)", "rgba(34, 197, 94, 0.25)", "var(--accent-green)")}>
                           {budget}
                         </span>
                       )}
                       {count > 1 && (
-                        <span style={chipStyle("rgba(251, 146, 60, 0.1)", "rgba(251, 146, 60, 0.25)", "#fb923c")}>
+                        <span style={chipStyle("rgba(251, 146, 60, 0.1)", "rgba(251, 146, 60, 0.25)", "#c2410c")}>
                           {count} looking
                         </span>
                       )}
                       {matchesMe && (
-                        <span style={chipStyle("rgba(34, 197, 94, 0.15)", "rgba(34, 197, 94, 0.4)", "#4ade80")}>
+                        <span style={chipStyle("rgba(34, 197, 94, 0.15)", "rgba(34, 197, 94, 0.4)", "var(--accent-green)")}>
                           ✓ You list this
                         </span>
                       )}
@@ -656,19 +656,19 @@ export function WantedBoard({
                         onClick={() => handleFulfill(item)}
                         title="Mark as found"
                         aria-label="Mark as found"
-                        style={actionBtn("rgba(34, 197, 94, 0.1)", "rgba(34, 197, 94, 0.3)", "#34d399")}
+                        style={actionBtn("rgba(34, 197, 94, 0.1)", "rgba(34, 197, 94, 0.3)", "var(--accent-green)")}
                       >
                         ✓ Found
                       </button>
                     ) : canProtectedWrite && status === "sent" ? (
-                      <span style={{ fontSize: "0.72rem", color: "#4ade80", whiteSpace: "nowrap" }}>✓ Message sent</span>
+                      <span style={{ fontSize: "0.72rem", color: "var(--accent-green)", whiteSpace: "nowrap" }}>✓ Message sent</span>
                     ) : !isResponding ? (
                       <button
                         onClick={() => openResponder(item)}
                         style={actionBtn(
                           matchesMe ? "rgba(34, 197, 94, 0.15)" : "rgba(56, 189, 248, 0.08)",
                           matchesMe ? "rgba(34, 197, 94, 0.4)" : "rgba(56, 189, 248, 0.25)",
-                          matchesMe ? "#4ade80" : "#38bdf8"
+                          matchesMe ? "var(--accent-green)" : "var(--accent-blue)"
                         )}
                       >
                         {canProtectedWrite ? "💬 I have this" : "💬 Sign in to respond"}
@@ -688,7 +688,7 @@ export function WantedBoard({
                     />
                     <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.5rem", alignItems: "center" }}>
                       {status === "error" && (
-                        <span style={{ fontSize: "0.68rem", color: "#f87171", marginRight: "auto" }}>
+                        <span style={{ fontSize: "0.68rem", color: "var(--accent-red)", marginRight: "auto" }}>
                           Couldn't send — try again.
                         </span>
                       )}
@@ -697,7 +697,7 @@ export function WantedBoard({
                           setRespondingId(null);
                           setRespondText("");
                         }}
-                        style={actionBtn("transparent", "rgba(255,255,255,0.12)", "var(--text-muted)")}
+                        style={actionBtn("transparent", "rgba(var(--ink-rgb), 0.17)", "var(--text-muted)")}
                       >
                         Cancel
                       </button>
@@ -777,7 +777,7 @@ function SpeciesPicker({ selected, onSelect, onClear, results, searchTerm, setSe
           borderRadius: "8px",
         }}
       >
-        <span style={{ fontSize: "0.85rem", color: "#fff" }}>
+        <span style={{ fontSize: "0.85rem", color: "var(--text-primary)" }}>
           <strong>{selected.commonName || selected.scientificName}</strong>
           {selected.scientificName && selected.commonName && (
             <span style={{ color: "var(--text-muted)", fontStyle: "italic", marginLeft: "0.4rem", fontSize: "0.75rem" }}>
@@ -811,10 +811,10 @@ function SpeciesPicker({ selected, onSelect, onClear, results, searchTerm, setSe
         style={{
           width: "100%",
           padding: "0.6rem 0.85rem",
-          background: "rgba(0,0,0,0.3)",
+          background: "var(--bg-band)",
           border: "1px solid var(--glass-border)",
           borderRadius: "8px",
-          color: "#fff",
+          color: "var(--text-primary)",
           fontSize: "0.85rem",
           outline: "none",
           boxSizing: "border-box",
@@ -834,10 +834,10 @@ function SpeciesPicker({ selected, onSelect, onClear, results, searchTerm, setSe
             zIndex: 50,
             maxHeight: "240px",
             overflowY: "auto",
-            background: "rgba(15, 23, 42, 0.98)",
-            border: "1px solid rgba(255,255,255,0.1)",
+            background: "#ffffff",
+            border: "1px solid rgba(var(--ink-rgb), 0.15)",
             borderRadius: "10px",
-            boxShadow: "0 12px 40px rgba(0,0,0,0.5)",
+            boxShadow: "var(--shadow-lg)",
           }}
         >
           {results.slice(0, 8).map((species) => (
@@ -855,7 +855,7 @@ function SpeciesPicker({ selected, onSelect, onClear, results, searchTerm, setSe
                   setFocused(false);
                 }
               }}
-              style={{ padding: "0.5rem 0.6rem", borderRadius: "6px", cursor: "pointer", fontSize: "0.8rem", color: "#fff" }}
+              style={{ padding: "0.5rem 0.6rem", borderRadius: "6px", cursor: "pointer", fontSize: "0.8rem", color: "var(--text-primary)" }}
               onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(56, 189, 248, 0.1)")}
               onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
             >

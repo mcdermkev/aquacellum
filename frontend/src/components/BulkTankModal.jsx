@@ -23,12 +23,12 @@ const GAL_TO_L = 3.78541;
 const inputStyle = {
   width: "100%",
   padding: "0.5rem",
-  background: "rgba(255,255,255,0.03)",
+  background: "rgba(var(--ink-rgb), 0.03)",
   border: "1px solid var(--glass-border)",
-  color: "#fff",
+  color: "var(--text-primary)",
   borderRadius: "4px",
 };
-const selectStyle = { ...inputStyle, background: "rgba(8,12,20,0.9)" };
+const selectStyle = { ...inputStyle, background: "var(--bg-secondary)" };
 const labelStyle = { display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.25rem" };
 
 export function BulkTankModal({ walletAccount, locationGroups = [], onClose, onCreated }) {
@@ -121,7 +121,7 @@ export function BulkTankModal({ walletAccount, locationGroups = [], onClose, onC
       style={{
         position: "fixed",
         inset: 0,
-        background: "rgba(0, 0, 0, 0.75)",
+        background: "rgba(11, 37, 48, 0.45)",
         backdropFilter: "blur(8px)",
         display: "flex",
         alignItems: "center",
@@ -218,7 +218,7 @@ export function BulkTankModal({ walletAccount, locationGroups = [], onClose, onC
             style={{
               fontSize: "0.72rem",
               color: "var(--text-muted)",
-              background: "rgba(255,255,255,0.02)",
+              background: "rgba(var(--ink-rgb), 0.02)",
               border: "1px dashed var(--glass-border)",
               borderRadius: "6px",
               padding: "0.5rem 0.65rem",

@@ -28,7 +28,7 @@ import { buildGrowoutTimeline } from "../utils/growoutFunnel";
 const CHART_HEIGHT = 132;
 
 const CHECKPOINT_COLORS = {
-  fry_count: { fill: "#60a5fa", label: "Fry Count" },
+  fry_count: { fill: "#0284c7", label: "Fry Count" },
   cull: { fill: "#f87171", label: "Culled" },
   sold: { fill: "#fbbf24", label: "Sold" },
   loss: { fill: "#ef4444", label: "Loss" },
@@ -77,7 +77,7 @@ function CheckpointDot({ cx, cy, payload }) {
       cy={cy}
       r={3}
       fill={color}
-      stroke="rgba(14,11,26,0.8)"
+      stroke="#fff"
       strokeWidth={1}
     />
   );
@@ -101,13 +101,13 @@ function GrowOutTooltip({ active, payload }) {
   return (
     <div
       style={{
-        background: "rgba(15, 12, 31, 0.97)",
+        background: "var(--bg-secondary)",
         backdropFilter: "blur(12px)",
         border: "1px solid rgba(167, 139, 250, 0.25)",
         borderRadius: "8px",
         padding: "8px 12px",
         minWidth: "150px",
-        boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
+        boxShadow: "0 8px 24px rgba(var(--ink-rgb), 0.12)",
       }}
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px", gap: "12px" }}>
@@ -120,7 +120,7 @@ function GrowOutTooltip({ active, payload }) {
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "3px" }}>
         <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: meta?.fill || "#6b7280" }} />
-        <span style={{ fontSize: "0.72rem", fontWeight: "600", color: "#fff" }}>
+        <span style={{ fontSize: "0.72rem", fontWeight: "600", color: "var(--text-primary)" }}>
           {meta?.label || d.type}
         </span>
         {d.count > 0 && (
@@ -130,8 +130,8 @@ function GrowOutTooltip({ active, payload }) {
         )}
       </div>
       <div style={{ display: "flex", gap: "12px", fontSize: "0.65rem" }}>
-        <span style={{ color: "#60a5fa" }}>Alive: {d.alive}</span>
-        <span style={{ color: "#34d399" }}>Survival: {d.survivalRate}%</span>
+        <span style={{ color: "var(--accent-blue)" }}>Alive: {d.alive}</span>
+        <span style={{ color: "var(--accent-green)" }}>Survival: {d.survivalRate}%</span>
       </div>
     </div>
   );
@@ -151,7 +151,7 @@ export function GrowOutChart({ checkpoints, eggCount, spawnId }) {
           textAlign: "center",
           color: "var(--text-muted, #6b7280)",
           fontSize: "0.72rem",
-          background: "rgba(255,255,255,0.02)",
+          background: "rgba(var(--ink-rgb), 0.02)",
           borderRadius: "8px",
           border: "1px dashed rgba(139, 92, 246, 0.15)",
         }}
@@ -173,11 +173,11 @@ export function GrowOutChart({ checkpoints, eggCount, spawnId }) {
         </span>
         <div style={{ display: "flex", gap: "8px" }}>
           <span style={{ display: "flex", alignItems: "center", gap: "3px", fontSize: "0.6rem", color: "var(--text-muted, #6b7280)" }}>
-            <span style={{ width: "8px", height: "2px", background: "#60a5fa", borderRadius: "1px", display: "inline-block" }} />
+            <span style={{ width: "8px", height: "2px", background: "#0284c7", borderRadius: "1px", display: "inline-block" }} />
             Alive
           </span>
           <span style={{ display: "flex", alignItems: "center", gap: "3px", fontSize: "0.6rem", color: "var(--text-muted, #6b7280)" }}>
-            <span style={{ width: "8px", height: "2px", background: "#34d399", borderRadius: "1px", display: "inline-block", opacity: 0.6 }} />
+            <span style={{ width: "8px", height: "2px", background: "#059669", borderRadius: "1px", display: "inline-block", opacity: 0.6 }} />
             Survival %
           </span>
         </div>
@@ -187,12 +187,12 @@ export function GrowOutChart({ checkpoints, eggCount, spawnId }) {
         <ComposedChart data={data} margin={{ top: 12, right: 8, left: -8, bottom: 4 }}>
           <defs>
             <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#60a5fa" stopOpacity="0.25" />
-              <stop offset="100%" stopColor="#60a5fa" stopOpacity="0.02" />
+              <stop offset="0%" stopColor="#0284c7" stopOpacity="0.25" />
+              <stop offset="100%" stopColor="#0284c7" stopOpacity="0.02" />
             </linearGradient>
           </defs>
 
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(139, 92, 246, 0.06)" vertical={false} />
+          <CartesianGrid strokeDasharray="3 3" stroke="rgba(11,37,48,0.08)" vertical={false} />
 
           <XAxis
             dataKey="timestamp"
@@ -201,7 +201,7 @@ export function GrowOutChart({ checkpoints, eggCount, spawnId }) {
             domain={["dataMin", "dataMax"]}
             ticks={[data[0].timestamp, data[data.length - 1].timestamp]}
             tickFormatter={formatDate}
-            tick={{ fill: "rgba(156, 163, 175, 0.6)", fontSize: 8 }}
+            tick={{ fill: "#5b7482", fontSize: 8 }}
             tickLine={false}
             axisLine={false}
           />
@@ -210,7 +210,7 @@ export function GrowOutChart({ checkpoints, eggCount, spawnId }) {
           <YAxis
             yAxisId="left"
             domain={[0, maxValue]}
-            tick={{ fill: "rgba(156, 163, 175, 0.5)", fontSize: 8 }}
+            tick={{ fill: "#5b7482", fontSize: 8 }}
             tickLine={false}
             axisLine={false}
             width={30}
@@ -225,7 +225,7 @@ export function GrowOutChart({ checkpoints, eggCount, spawnId }) {
             yAxisId="left"
             type="monotone"
             dataKey="alive"
-            stroke="#60a5fa"
+            stroke="#0284c7"
             strokeWidth={1.5}
             fill={`url(#${gradId})`}
             dot={<CheckpointDot />}
@@ -237,7 +237,7 @@ export function GrowOutChart({ checkpoints, eggCount, spawnId }) {
             yAxisId="right"
             type="monotone"
             dataKey="survivalRate"
-            stroke="#34d399"
+            stroke="#059669"
             strokeWidth={1}
             strokeDasharray="3 3"
             strokeOpacity={0.5}

@@ -46,9 +46,9 @@ export function MintSpecimen({ contractAddress, walletAccount, casualModeActive 
   const inputStyle = {
     width: "100%",
     padding: "0.75rem",
-    background: "rgba(255, 255, 255, 0.03)",
+    background: "rgba(var(--ink-rgb), 0.03)",
     border: casualModeActive ? "1px solid var(--glass-border)" : "1px solid rgba(168, 85, 247, 0.3)",
-    color: "#fff",
+    color: "var(--text-primary)",
     borderRadius: "4px",
     outline: "none",
     transition: "all 0.2s"
@@ -399,12 +399,12 @@ export function MintSpecimen({ contractAddress, walletAccount, casualModeActive 
           ? "1px solid rgba(168, 85, 247, 0.22)" 
           : "1px solid var(--glass-border)",
         boxShadow: !casualModeActive
-          ? "0 8px 32px rgba(0, 0, 0, 0.4), 0 0 15px rgba(168, 85, 247, 0.1)"
+          ? "0 8px 32px rgba(11, 37, 48, 0.12), 0 0 15px rgba(168, 85, 247, 0.1)"
           : "var(--glass-shadow)",
         transition: "border-color 0.35s ease, box-shadow 0.35s ease"
       }}
     >
-      <h2 style={{ fontSize: "1.75rem", marginBottom: "0.25rem", color: "#fff" }}>Register Birth Certificate</h2>
+      <h2 style={{ fontSize: "1.75rem", marginBottom: "0.25rem", color: "var(--text-primary)" }}>Register Birth Certificate</h2>
       <p style={{ color: "var(--text-muted)", fontSize: "0.875rem", marginBottom: "2rem" }}>
         Record a successful birth and register a premium birth certificate linked to the Master Catalog.
       </p>
@@ -557,10 +557,10 @@ export function MintSpecimen({ contractAddress, walletAccount, casualModeActive 
                     cursor: "pointer",
                     fontSize: "0.8rem",
                     fontWeight: selected ? 600 : 400,
-                    color: selected ? "#fff" : "var(--text-muted)",
+                    color: selected ? "var(--text-primary)" : "var(--text-muted)",
                     background: selected
                       ? (casualModeActive ? "rgba(56, 189, 248, 0.18)" : "rgba(168, 85, 247, 0.22)")
-                      : "rgba(0,0,0,0.2)",
+                      : "var(--bg-band)",
                     border: selected
                       ? (casualModeActive ? "1px solid var(--accent-blue)" : "1px solid rgba(168, 85, 247, 0.5)")
                       : "1px solid var(--glass-border)",
@@ -586,7 +586,7 @@ export function MintSpecimen({ contractAddress, walletAccount, casualModeActive 
           <label style={{ display: "block", fontSize: "0.8rem", color: "var(--text-secondary)", marginBottom: "0.35rem" }}>
             Sex
           </label>
-          <div style={{ display: "flex", background: "rgba(0,0,0,0.2)", border: casualModeActive ? "1px solid var(--glass-border)" : "1px solid rgba(168, 85, 247, 0.3)", borderRadius: "6px", padding: "2px" }}>
+          <div style={{ display: "flex", background: "var(--bg-band)", border: casualModeActive ? "1px solid var(--glass-border)" : "1px solid rgba(168, 85, 247, 0.3)", borderRadius: "6px", padding: "2px" }}>
             {SEX_OPTIONS.map((option) => {
               const selected = formData.gender === option.value;
               return (
@@ -603,7 +603,7 @@ export function MintSpecimen({ contractAddress, walletAccount, casualModeActive 
                     cursor: "pointer",
                     fontSize: "0.8rem",
                     fontWeight: selected ? 600 : 400,
-                    color: selected ? "#fff" : "var(--text-muted)",
+                    color: selected ? "var(--text-primary)" : "var(--text-muted)",
                     background: selected
                       ? (casualModeActive ? "rgba(56, 189, 248, 0.18)" : "rgba(168, 85, 247, 0.22)")
                       : "transparent",
@@ -719,11 +719,11 @@ export function MintSpecimen({ contractAddress, walletAccount, casualModeActive 
               alignItems: "center",
               justifyContent: "space-between",
               gap: "0.75rem",
-              background: "rgba(255,255,255,0.015)",
+              background: "rgba(var(--ink-rgb), 0.015)",
               cursor: "default",
             }}
           >
-            <span style={{ color: "#fff", fontSize: "0.85rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            <span style={{ color: "var(--text-primary)", fontSize: "0.85rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {displayNameResolved || "—"}
             </span>
             <span
@@ -746,7 +746,7 @@ export function MintSpecimen({ contractAddress, walletAccount, casualModeActive 
             <label style={{ 
               flex: 1, 
               padding: "0.75rem", 
-              background: "rgba(255, 255, 255, 0.03)", 
+              background: "rgba(var(--ink-rgb), 0.03)", 
               border: !casualModeActive ? "1px dashed rgba(168, 85, 247, 0.4)" : "1px dashed var(--glass-border)", 
               borderRadius: "4px", 
               fontSize: "0.8rem", 
@@ -826,9 +826,9 @@ export function MintSpecimen({ contractAddress, walletAccount, casualModeActive 
                   }}
                   placeholder="ipfs://… or https://… — leave blank if none"
                   style={{
-                    width: "100%", padding: "0.75rem", background: "rgba(255,255,255,0.03)",
+                    width: "100%", padding: "0.75rem", background: "rgba(var(--ink-rgb), 0.03)",
                     border: metadataUriError ? "1px solid var(--accent-red)" : "1px solid var(--glass-border)",
-                    color: "#fff", borderRadius: "4px", fontFamily: "monospace", fontSize: "0.8rem",
+                    color: "var(--text-primary)", borderRadius: "4px", fontFamily: "monospace", fontSize: "0.8rem",
                   }}
                 />
                 {metadataUriError ? (
@@ -860,13 +860,13 @@ export function MintSpecimen({ contractAddress, walletAccount, casualModeActive 
           position: "fixed",
           bottom: "2rem",
           right: "2rem",
-          background: "rgba(10, 15, 30, 0.9)",
+          background: "#ffffff",
           backdropFilter: "blur(8px)",
           border: "1px solid var(--accent-red)",
-          color: "#fff",
+          color: "var(--text-primary)",
           padding: "1rem 1.5rem",
           borderRadius: "var(--radius-md)",
-          boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 0 15px rgba(248, 113, 113, 0.2)",
+          boxShadow: "var(--shadow-lg)",
           zIndex: 9999,
           display: "flex",
           alignItems: "center",

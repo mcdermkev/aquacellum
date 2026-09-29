@@ -222,7 +222,7 @@ export function EditListingModal({ isOpen, onClose, item, onSuccess }) {
         &times;
       </button>
 
-      <h3 style={{ fontSize: "1.5rem", color: "#fff", marginTop: "1rem" }}>
+      <h3 style={{ fontSize: "1.5rem", color: "var(--text-primary)", marginTop: "1rem" }}>
         Edit Listing
       </h3>
       <p style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>
@@ -263,12 +263,12 @@ export function EditListingModal({ isOpen, onClose, item, onSuccess }) {
                 {pedigreeLabel}
               </span>
             </div>
-            <strong style={{ color: "#fff", fontSize: "0.95rem" }}>{item.commonName}</strong>
+            <strong style={{ color: "var(--text-primary)", fontSize: "0.95rem" }}>{item.commonName}</strong>
             <span style={{ fontSize: "0.7rem", fontStyle: "italic", color: "var(--text-secondary)" }}>
               {item.scientificName}
             </span>
             <div style={{ display: "flex", gap: "0.35rem", marginTop: "0.25rem", alignItems: "center" }}>
-              <span style={{ fontSize: "0.55rem", padding: "0.1rem 0.35rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", borderRadius: "4px", color: "var(--text-muted)", fontFamily: "monospace" }}>
+              <span style={{ fontSize: "0.55rem", padding: "0.1rem 0.35rem", background: "rgba(var(--ink-rgb), 0.03)", border: "1px solid var(--glass-border)", borderRadius: "4px", color: "var(--text-muted)", fontFamily: "monospace" }}>
                 {item.isBatch ? `BATCH #${item.listingId}` : `CERT #${item.tokenId.toString().padStart(3, "0")}`}
               </span>
             </div>
@@ -317,7 +317,7 @@ export function EditListingModal({ isOpen, onClose, item, onSuccess }) {
                   height: "75px",
                   borderRadius: "6px",
                   border: "1px dashed var(--glass-border)",
-                  background: "rgba(255, 255, 255, 0.02)",
+                  background: "rgba(var(--ink-rgb), 0.02)",
                   display: "flex",
                   flexDirection: "column",
                   alignItems: "center",
@@ -376,7 +376,7 @@ export function EditListingModal({ isOpen, onClose, item, onSuccess }) {
             onChange={(e) => setPrice(e.target.value)}
             placeholder="e.g. 50.00"
             required
-            style={{ width: "100%", padding: "0.65rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px", outline: "none" }}
+            style={{ width: "100%", padding: "0.65rem", background: "rgba(var(--ink-rgb), 0.03)", border: "1px solid var(--glass-border)", color: "var(--text-primary)", borderRadius: "4px", outline: "none" }}
           />
         </div>
 

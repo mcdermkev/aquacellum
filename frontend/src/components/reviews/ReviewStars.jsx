@@ -28,12 +28,12 @@ export function ReviewStars({ average = 0, count = 0, size = 14, showCount = tru
     >
       <span style={{ display: "inline-flex", alignItems: "center" }} aria-hidden="true">
         {Array.from({ length: 5 }, (_, i) => {
-          if (i < fullStars) return <Star key={i} weight="fill" size={size} color="#fbbf24" />;
-          if (i === fullStars && hasHalfStar) return <StarHalf key={i} weight="fill" size={size} color="#fbbf24" />;
-          return <Star key={i} weight="regular" size={size} color="rgba(251,191,36,0.3)" />;
+          if (i < fullStars) return <Star key={i} weight="fill" size={size} color="var(--accent-amber)" />;
+          if (i === fullStars && hasHalfStar) return <StarHalf key={i} weight="fill" size={size} color="var(--accent-amber)" />;
+          return <Star key={i} weight="regular" size={size} color="rgba(180,83,9,0.35)" />;
         })}
       </span>
-      <span style={{ fontFamily: "monospace", fontSize: `${size * 0.75}px`, fontWeight: 600, color: "#fff" }}>
+      <span style={{ fontFamily: "monospace", fontSize: `${size * 0.75}px`, fontWeight: 600, color: "var(--text-primary)" }}>
         {average.toFixed(1)}
       </span>
       {showCount && (

@@ -73,7 +73,7 @@ export function ResetSection({ casualModeActive }) {
         }}
       >
         <span style={{ color: "var(--accent-red)", fontSize: "0.9rem" }}>⚠️</span>
-        <span style={{ fontSize: "0.75rem", color: "rgba(248, 113, 113, 0.9)", lineHeight: "1.4" }}>
+        <span style={{ fontSize: "0.75rem", color: "var(--accent-red)", lineHeight: "1.4" }}>
           This clears tanks, specimens, logs, XP, and preferences stored in <strong>this browser
           only</strong>. Your account stays open and anything already synced to the cloud returns on
           your next sign-in.
@@ -138,7 +138,7 @@ export function ResetSection({ casualModeActive }) {
         style={{
           margin: "1.25rem 0 0",
           paddingTop: "1rem",
-          borderTop: "1px solid rgba(255,255,255,0.06)",
+          borderTop: "1px solid rgba(var(--ink-rgb), 0.06)",
           fontSize: "0.75rem",
           color: "var(--text-muted)",
           lineHeight: 1.5,

@@ -51,13 +51,13 @@
 }
 
 .care-coach-title {
-  color: #fff;
+  color: var(--text-primary);
   font-size: 0.95rem;
 }
 
 .care-coach-streak {
   font-size: 0.68rem;
-  color: #fbbf24;
+  color: var(--accent-amber);
   background: rgba(251, 191, 36, 0.12);
   border: 1px solid rgba(251, 191, 36, 0.3);
   border-radius: 20px;
@@ -95,13 +95,13 @@
 
 .care-coach-cta:hover {
   transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(14, 165, 233, 0.45);
+  box-shadow: var(--shadow-md);
 }
 
 .care-coach-pts {
   font-size: 0.68rem;
   opacity: 0.9;
-  background: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.18); /* pill on the saturated CTA fill */
   border-radius: 12px;
   padding: 0.05rem 0.4rem;
 }

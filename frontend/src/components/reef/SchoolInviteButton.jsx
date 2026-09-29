@@ -70,7 +70,7 @@ export function SchoolInviteButton({ targetWallet }) {
           borderRadius: "50px",
           border: "1px solid rgba(168, 85, 247, 0.25)",
           background: "rgba(168, 85, 247, 0.06)",
-          color: "#a78bfa",
+          color: "var(--accent-violet)",
           fontSize: "0.7rem",
           fontWeight: 600,
           cursor: "pointer",
@@ -88,10 +88,10 @@ export function SchoolInviteButton({ targetWallet }) {
             right: 0,
             marginTop: "0.35rem",
             minWidth: "220px",
-            background: "rgba(15, 23, 42, 0.97)",
-            border: "1px solid rgba(255, 255, 255, 0.08)",
+            background: "var(--bg-secondary)",
+            border: "1px solid rgba(var(--ink-rgb), 0.13)",
             borderRadius: "10px",
-            boxShadow: "0 12px 40px rgba(0, 0, 0, 0.5)",
+            boxShadow: "var(--shadow-lg)",
             padding: "0.5rem",
             zIndex: 100,
             display: "flex",
@@ -114,8 +114,8 @@ export function SchoolInviteButton({ targetWallet }) {
                 border: "none",
                 background: sent[school.id]
                   ? "rgba(52, 211, 153, 0.08)"
-                  : "rgba(255, 255, 255, 0.03)",
-                color: sent[school.id] ? "#34d399" : "#fff",
+                  : "rgba(var(--ink-rgb), 0.03)",
+                color: sent[school.id] ? "var(--accent-green)" : "var(--text-primary)",
                 fontSize: "0.75rem",
                 textAlign: "left",
                 cursor: sent[school.id] ? "default" : "pointer",
@@ -136,7 +136,7 @@ export function SchoolInviteButton({ targetWallet }) {
           ))}
 
           {error && (
-            <p style={{ margin: "0.25rem 0 0", padding: "0 0.5rem", fontSize: "0.65rem", color: "#f87171" }}>
+            <p style={{ margin: "0.25rem 0 0", padding: "0 0.5rem", fontSize: "0.65rem", color: "var(--accent-red)" }}>
               {error}
             </p>
           )}

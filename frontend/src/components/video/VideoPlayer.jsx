@@ -274,7 +274,7 @@ export function VideoPlayer({
           position: "relative",
           width: "100%",
           paddingBottom: "56.25%",
-          background: "rgba(0, 0, 0, 0.3)",
+          background: "var(--bg-band)",
           borderRadius: "10px",
           overflow: "hidden",
           display: "flex",
@@ -302,9 +302,9 @@ export function VideoPlayer({
             style={{
               padding: "0.3rem 0.75rem",
               borderRadius: "6px",
-              border: "1px solid rgba(255, 255, 255, 0.15)",
-              background: "rgba(255, 255, 255, 0.05)",
-              color: "#fff",
+              border: "1px solid rgba(var(--ink-rgb), 0.2)",
+              background: "var(--bg-secondary)",
+              color: "var(--text-primary)",
               fontSize: "0.7rem",
               cursor: "pointer",
             }}

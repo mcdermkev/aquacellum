@@ -216,8 +216,8 @@ export function HatcheryLogs({ specCode, contractInstance, marketplaceAddress, w
           padding: "2rem", 
           textAlign: "center",
           borderRadius: "var(--radius-md)",
-          background: "rgba(255, 255, 255, 0.01)",
-          border: "1px solid rgba(255, 255, 255, 0.03)"
+          background: "rgba(var(--ink-rgb), 0.02)",
+          border: "1px solid rgba(var(--ink-rgb), 0.08)"
         }}
       >
         <div className="shimmer-placeholder" style={{ height: "40px", width: "60%", margin: "0 auto 1rem", borderRadius: "4px" }} />
@@ -234,8 +234,8 @@ export function HatcheryLogs({ specCode, contractInstance, marketplaceAddress, w
           padding: "2.5rem 2rem", 
           textAlign: "center",
           borderRadius: "var(--radius-md)",
-          background: "rgba(255, 255, 255, 0.01)",
-          border: "1px solid rgba(255, 255, 255, 0.03)"
+          background: "rgba(var(--ink-rgb), 0.02)",
+          border: "1px solid rgba(var(--ink-rgb), 0.08)"
         }}
       >
         <div style={{
@@ -251,7 +251,7 @@ export function HatcheryLogs({ specCode, contractInstance, marketplaceAddress, w
         }}>
           <span style={{ fontSize: "1.25rem", color: "var(--accent-amber)" }}>🪺</span>
         </div>
-        <h4 style={{ color: "#fff", fontSize: "1rem", fontWeight: "600", marginBottom: "0.5rem" }}>
+        <h4 style={{ color: "var(--text-primary)", fontSize: "1rem", fontWeight: "600", marginBottom: "0.5rem" }}>
           No Spawning History
         </h4>
         <p style={{ color: "var(--text-muted)", fontSize: "0.8rem", maxWidth: "340px", margin: "0 auto" }}>
@@ -295,8 +295,8 @@ export function HatcheryLogs({ specCode, contractInstance, marketplaceAddress, w
                 width: "12px",
                 height: "12px",
                 borderRadius: "50%",
-                background: "var(--accent-amber)",
-                boxShadow: "0 0 10px var(--accent-amber-glow)",
+                background: "var(--accent-amber-fill)",
+                boxShadow: "none",
                 border: "2px solid var(--bg-secondary)",
                 zIndex: 2
               }}
@@ -308,8 +308,8 @@ export function HatcheryLogs({ specCode, contractInstance, marketplaceAddress, w
               style={{ 
                 padding: "1.25rem 1.5rem",
                 borderRadius: "var(--radius-md)",
-                background: "rgba(255, 255, 255, 0.02)",
-                border: "1px solid rgba(255, 255, 255, 0.05)",
+                background: "rgba(var(--ink-rgb), 0.02)",
+                border: "1px solid rgba(var(--ink-rgb), 0.1)",
                 display: "flex",
                 flexDirection: "column",
                 gap: "0.75rem",
@@ -317,18 +317,18 @@ export function HatcheryLogs({ specCode, contractInstance, marketplaceAddress, w
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.borderColor = "rgba(251, 191, 36, 0.3)";
-                e.currentTarget.style.background = "rgba(255, 255, 255, 0.04)";
+                e.currentTarget.style.background = "rgba(var(--ink-rgb), 0.04)";
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.05)";
-                e.currentTarget.style.background = "rgba(255, 255, 255, 0.02)";
+                e.currentTarget.style.borderColor = "rgba(var(--ink-rgb), 0.1)";
+                e.currentTarget.style.background = "rgba(var(--ink-rgb), 0.02)";
               }}
             >
               {/* Card Header */}
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.5rem" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
                   <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", textTransform: "uppercase" }}>Breeder</span>
-                  <code style={{ fontSize: "0.8rem", color: "#fff", fontFamily: "monospace", background: "rgba(255,255,255,0.03)", padding: "0.15rem 0.4rem", borderRadius: "4px" }}>
+                  <code style={{ fontSize: "0.8rem", color: "var(--text-primary)", fontFamily: "monospace", background: "rgba(var(--ink-rgb), 0.03)", padding: "0.15rem 0.4rem", borderRadius: "4px" }}>
                     {truncateAddress(log.breeder)}
                   </code>
                 </div>
@@ -349,7 +349,7 @@ export function HatcheryLogs({ specCode, contractInstance, marketplaceAddress, w
                     borderRadius: "6px",
                     background: "rgba(251, 191, 36, 0.06)",
                     border: "1px solid hsla(35, 100%, 50%, 0.4)",
-                    boxShadow: "0 0 12px rgba(251, 191, 36, 0.15)",
+                    boxShadow: "none",
                     fontSize: "0.8rem",
                     fontWeight: "600",
                     color: "var(--accent-amber)"
@@ -379,7 +379,7 @@ export function HatcheryLogs({ specCode, contractInstance, marketplaceAddress, w
                         gap: "0.3rem",
                         transition: "var(--transition-smooth)"
                       }}
-                      onMouseEnter={(e) => e.currentTarget.style.color = "#fff"}
+                      onMouseEnter={(e) => e.currentTarget.style.color = "var(--text-primary)"}
                       onMouseLeave={(e) => e.currentTarget.style.color = "var(--accent-blue)"}
                     >
                       <span>📖</span>
@@ -430,7 +430,7 @@ export function HatcheryLogs({ specCode, contractInstance, marketplaceAddress, w
                       <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", display: "block", textTransform: "uppercase", fontWeight: "600" }}>
                         Batch Available via secure holding
                       </span>
-                      <strong style={{ fontSize: "0.9rem", color: "#fff", display: "inline-flex", alignItems: "center", gap: "0.25rem" }}>
+                      <strong style={{ fontSize: "0.9rem", color: "var(--text-primary)", display: "inline-flex", alignItems: "center", gap: "0.25rem" }}>
                         {/* Price goes through the canonical marketplace formatter
                             (catalogQuery.js), the same one the board, cart and
                             LocalBreederMap use. This read
@@ -452,10 +452,10 @@ export function HatcheryLogs({ specCode, contractInstance, marketplaceAddress, w
                     {/* Toggle Switch */}
                     <div style={{
                       display: "flex",
-                      background: "rgba(0,0,0,0.3)",
+                      background: "var(--bg-band)",
                       borderRadius: "6px",
                       padding: "2px",
-                      border: "1px solid rgba(255,255,255,0.04)"
+                      border: "1px solid rgba(var(--ink-rgb), 0.09)"
                     }}>
                       <button
                         onClick={() => setFulfillmentTypes(prev => ({ ...prev, [log.listing.listingId]: 0 }))}
@@ -500,7 +500,7 @@ export function HatcheryLogs({ specCode, contractInstance, marketplaceAddress, w
                     flexWrap: "wrap",
                     gap: "0.75rem",
                     width: "100%",
-                    borderTop: "1px solid rgba(255,255,255,0.03)",
+                    borderTop: "1px solid rgba(var(--ink-rgb), 0.08)",
                     paddingTop: "0.75rem"
                   }}>
                     <span style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>
@@ -519,10 +519,10 @@ export function HatcheryLogs({ specCode, contractInstance, marketplaceAddress, w
                         id={`buy-qty-${log.spawnId}`}
                         style={{
                           width: "55px",
-                          background: "rgba(0,0,0,0.3)",
-                          border: "1px solid rgba(255,255,255,0.08)",
+                          background: "var(--bg-band)",
+                          border: "1px solid rgba(var(--ink-rgb), 0.13)",
                           borderRadius: "4px",
-                          color: "#fff",
+                          color: "var(--text-primary)",
                           fontSize: "0.8rem",
                           padding: "0.25rem",
                           textAlign: "center",
@@ -534,9 +534,9 @@ export function HatcheryLogs({ specCode, contractInstance, marketplaceAddress, w
                         disabled={buyingMap[log.listing.listingId]}
                         className="btn-primary"
                         style={{
-                          background: "var(--accent-amber)",
-                          boxShadow: "0 0 10px var(--accent-amber-glow)",
-                          color: "#0f172a",
+                          background: "var(--accent-amber-fill)",
+                          boxShadow: "var(--glass-shadow)",
+                          color: "#0b2530",
                           fontSize: "0.75rem",
                           fontWeight: "700",
                           padding: "0.4rem 1rem",

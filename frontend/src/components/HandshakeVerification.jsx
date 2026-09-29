@@ -374,8 +374,8 @@ export function HandshakeVerification({
   const qrData = isCashHandshake && cashHandshakePayload
     ? JSON.stringify(cashHandshakePayload)
     : JSON.stringify({ purchaseId, pin, salt });
-  const qrColor = isCashHandshake ? "10b981" : "f59e0b";
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&color=${qrColor}&bgcolor=0f172a&data=${encodeURIComponent(qrData)}`;
+  const qrColor = isCashHandshake ? "047857" : "b45309";
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&color=${qrColor}&bgcolor=ffffff&data=${encodeURIComponent(qrData)}`;
 
   return (
     <div
@@ -390,7 +390,7 @@ export function HandshakeVerification({
       left: 0,
       right: 0,
       bottom: 0,
-      backgroundColor: "rgba(3, 7, 18, 0.85)",
+      backgroundColor: "rgba(11, 37, 48, 0.45)",
       backdropFilter: "blur(8px)",
       display: "flex",
       alignItems: "center",
@@ -413,7 +413,7 @@ export function HandshakeVerification({
           display: "flex",
           alignItems: "center",
           gap: "0.5rem",
-          boxShadow: "0 8px 24px rgba(0,0,0,0.5)",
+          boxShadow: "0 8px 24px rgba(var(--ink-rgb), 0.14)",
           backdropFilter: "blur(4px)",
           zIndex: 10000,
           border: toast.type === "error" ? "1px solid rgba(239, 68, 68, 0.3)" : "1px solid rgba(16, 185, 129, 0.3)"
@@ -428,9 +428,9 @@ export function HandshakeVerification({
         style={{
           width: "480px",
           maxWidth: "100%",
-          background: "rgba(15, 23, 42, 0.95)",
+          background: "var(--bg-secondary)",
           border: "1px solid rgba(251, 191, 36, 0.2)",
-          boxShadow: "0 24px 64px rgba(0, 0, 0, 0.8), inset 0 0 20px rgba(251, 191, 36, 0.05)",
+          boxShadow: "var(--shadow-lg)",
           borderRadius: "var(--radius-md)",
           padding: "1.75rem",
           display: "flex",
@@ -442,7 +442,7 @@ export function HandshakeVerification({
         {/* Header */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
-            <h2 style={{ color: "#fff", fontSize: "1.25rem", fontWeight: "700", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            <h2 style={{ color: "var(--text-primary)", fontSize: "1.25rem", fontWeight: "700", display: "flex", alignItems: "center", gap: "0.5rem" }}>
               <span style={{ color: "var(--accent-amber)" }}>🤝</span> In-Person Handshake Verification
             </h2>
             <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
@@ -453,8 +453,8 @@ export function HandshakeVerification({
             onClick={onClose}
             aria-label="Close handshake verification"
             style={{
-              background: "rgba(255,255,255,0.03)",
-              border: "1px solid rgba(255,255,255,0.08)",
+              background: "rgba(var(--ink-rgb), 0.03)",
+              border: "1px solid rgba(var(--ink-rgb), 0.13)",
               borderRadius: "50%",
               width: "28px",
               height: "28px",
@@ -465,7 +465,7 @@ export function HandshakeVerification({
               cursor: "pointer",
               transition: "all 0.2s"
             }}
-            onMouseEnter={(e) => e.currentTarget.style.color = "#fff"}
+            onMouseEnter={(e) => e.currentTarget.style.color = "var(--text-primary)"}
             onMouseLeave={(e) => e.currentTarget.style.color = "var(--text-muted)"}
           >
             ✕
@@ -475,10 +475,10 @@ export function HandshakeVerification({
         {/* Role Tabs */}
         <div style={{
           display: "flex",
-          background: "rgba(0,0,0,0.3)",
+          background: "var(--bg-band)",
           borderRadius: "6px",
           padding: "2px",
-          border: "1px solid rgba(255,255,255,0.04)"
+          border: "1px solid rgba(var(--ink-rgb), 0.09)"
         }}>
           <button
             onClick={() => setActiveRole("buyer")}
@@ -577,7 +577,7 @@ export function HandshakeVerification({
                       onChange={(e) => setIsCashHandshake(e.target.checked)}
                       style={{ cursor: "pointer" }}
                     />
-                    <label htmlFor="cash-handshake-verification-toggle" style={{ fontSize: "0.75rem", color: "#fff", cursor: "pointer", fontWeight: "600" }}>
+                    <label htmlFor="cash-handshake-verification-toggle" style={{ fontSize: "0.75rem", color: "var(--text-primary)", cursor: "pointer", fontWeight: "600" }}>
                       🤝 Enable [ Cash Handshake ] Bypass
                     </label>
                   </div>
@@ -586,8 +586,8 @@ export function HandshakeVerification({
                     fontSize: "0.7rem",
                     color: "var(--text-muted)",
                     padding: "0.5rem",
-                    background: "rgba(255, 255, 255, 0.02)",
-                    border: "1px solid rgba(255, 255, 255, 0.05)",
+                    background: "rgba(var(--ink-rgb), 0.02)",
+                    border: "1px solid rgba(var(--ink-rgb), 0.1)",
                     borderRadius: "4px",
                     textAlign: "center"
                   }}>
@@ -624,10 +624,10 @@ export function HandshakeVerification({
                     value={pin}
                     onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))}
                     style={{
-                      background: "rgba(0,0,0,0.3)",
+                      background: "var(--bg-band)",
                       border: "1px solid rgba(251, 191, 36, 0.2)",
                       borderRadius: "6px",
-                      color: "#fff",
+                      color: "var(--text-primary)",
                       fontSize: "1.25rem",
                       fontWeight: "700",
                       padding: "0.75rem",
@@ -639,7 +639,7 @@ export function HandshakeVerification({
                 </div>
 
                 {error && (
-                  <div style={{ color: "#ef4444", fontSize: "0.75rem", textAlign: "center" }}>
+                  <div style={{ color: "var(--accent-red)", fontSize: "0.75rem", textAlign: "center" }}>
                     ⚠️ {error}
                   </div>
                 )}
@@ -649,9 +649,9 @@ export function HandshakeVerification({
                   disabled={loading}
                   className="btn-primary"
                   style={{
-                    background: isCashHandshake ? "var(--accent-green)" : "var(--accent-amber)",
-                    boxShadow: isCashHandshake ? "0 0 16px var(--accent-green-glow)" : "0 0 16px var(--accent-amber-glow)",
-                    color: isCashHandshake ? "#fff" : "#0f172a",
+                    background: isCashHandshake ? "var(--accent-green-fill)" : "var(--accent-amber-fill)",
+                    boxShadow: "var(--glass-shadow)",
+                    color: isCashHandshake ? "#fff" : "#0b2530",
                     fontWeight: "700",
                     padding: "0.75rem",
                     border: "none",
@@ -675,7 +675,7 @@ export function HandshakeVerification({
                   borderTopColor: "var(--accent-amber)",
                   animation: "spin 1s linear infinite"
                 }} />
-                <h4 style={{ color: "#fff", margin: 0 }}>Securing Holding Deposit...</h4>
+                <h4 style={{ color: "var(--text-primary)", margin: 0 }}>Securing Holding Deposit...</h4>
                 <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", maxWidth: "260px" }}>
                   Please confirm the transaction in your account to lock funds.
                 </p>
@@ -685,11 +685,11 @@ export function HandshakeVerification({
             {step === "qr-display" && (
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "1.25rem", padding: "0.5rem 0" }}>
                 <div style={{
-                  background: "rgba(255,255,255,0.02)",
+                  background: "rgba(var(--ink-rgb), 0.02)",
                   border: "1px solid rgba(251, 191, 36, 0.3)",
                   borderRadius: "8px",
                   padding: "1rem",
-                  boxShadow: "0 0 20px rgba(251, 191, 36, 0.1)"
+                  boxShadow: "var(--glass-shadow)"
                 }}>
                   {/* Public QR API request with native SVG fallback */}
                   <img 
@@ -710,7 +710,7 @@ export function HandshakeVerification({
                       fallback.style.alignItems = "center";
                       fallback.style.justifyContent = "center";
                       fallback.style.gap = "0.5rem";
-                      fallback.innerHTML = `<span style="font-size: 2rem;">📳</span><span style="font-size: 0.7rem; color: #fff; font-weight: 700; text-transform: uppercase;">Offline QR Mode</span>`;
+                      fallback.innerHTML = `<span style="font-size: 2rem;">📳</span><span style="font-size: 0.7rem; color: #0b2530; font-weight: 700; text-transform: uppercase;">Offline QR Mode</span>`;
                       parent.appendChild(fallback);
                     }}
                   />
@@ -728,8 +728,8 @@ export function HandshakeVerification({
 
                 <div style={{
                   padding: "0.5rem 1rem",
-                  background: "rgba(255,255,255,0.03)",
-                  border: "1px solid rgba(255,255,255,0.05)",
+                  background: "rgba(var(--ink-rgb), 0.03)",
+                  border: "1px solid rgba(var(--ink-rgb), 0.1)",
                   borderRadius: "4px",
                   fontSize: "0.75rem",
                   color: "var(--text-muted)",
@@ -743,7 +743,7 @@ export function HandshakeVerification({
         ) : (
           /* Breeder Scanner Flow */
           <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-            <div style={{ position: "relative", width: "100%", height: "180px", borderRadius: "8px", overflow: "hidden", background: "#020617", border: "1px solid rgba(255,255,255,0.06)" }}>
+            <div style={{ position: "relative", width: "100%", height: "180px", borderRadius: "8px", overflow: "hidden", background: "#020617", border: "1px solid rgba(var(--ink-rgb), 0.11)" }}>
               {/* Mock camera stream */}
               <video 
                 ref={videoRef}
@@ -800,7 +800,7 @@ export function HandshakeVerification({
                   zIndex: 3
                 }}>
                   <span style={{ fontSize: "1.5rem" }}>📷</span>
-                  <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>Simulated Scanner Active</span>
+                  <span style={{ fontSize: "0.75rem", color: "rgba(255, 255, 255, 0.75)" }}>Simulated Scanner Active</span>
                 </div>
               )}
             </div>
@@ -816,10 +816,10 @@ export function HandshakeVerification({
                     value={scanPurchaseId}
                     onChange={(e) => setScanPurchaseId(e.target.value.replace(/\D/g, ""))}
                     style={{
-                      background: "rgba(0,0,0,0.3)",
-                      border: "1px solid rgba(255,255,255,0.08)",
+                      background: "var(--bg-band)",
+                      border: "1px solid rgba(var(--ink-rgb), 0.13)",
                       borderRadius: "6px",
-                      color: "#fff",
+                      color: "var(--text-primary)",
                       fontSize: "0.85rem",
                       padding: "0.5rem 0.75rem",
                       outline: "none"
@@ -835,10 +835,10 @@ export function HandshakeVerification({
                     value={scanPin}
                     onChange={(e) => setScanPin(e.target.value.replace(/\D/g, ""))}
                     style={{
-                      background: "rgba(0,0,0,0.3)",
-                      border: "1px solid rgba(255,255,255,0.08)",
+                      background: "var(--bg-band)",
+                      border: "1px solid rgba(var(--ink-rgb), 0.13)",
                       borderRadius: "6px",
-                      color: "#fff",
+                      color: "var(--text-primary)",
                       fontSize: "0.85rem",
                       padding: "0.5rem 0.75rem",
                       textAlign: "center",
@@ -853,8 +853,8 @@ export function HandshakeVerification({
               <div style={{
                 padding: "0.5rem 0.75rem",
                 borderRadius: "4px",
-                background: "rgba(255,255,255,0.02)",
-                border: "1px solid rgba(255,255,255,0.04)",
+                background: "rgba(var(--ink-rgb), 0.02)",
+                border: "1px solid rgba(var(--ink-rgb), 0.09)",
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center"
@@ -934,10 +934,10 @@ export function HandshakeVerification({
                     }
                   }}
                   style={{
-                    background: "rgba(0,0,0,0.3)",
-                    border: "1px solid rgba(255,255,255,0.08)",
+                    background: "var(--bg-band)",
+                    border: "1px solid rgba(var(--ink-rgb), 0.13)",
                     borderRadius: "6px",
-                    color: "#fff",
+                    color: "var(--text-primary)",
                     fontSize: "0.75rem",
                     padding: "0.5rem",
                     outline: "none",
@@ -949,13 +949,13 @@ export function HandshakeVerification({
               </div>
 
               {scanError && (
-                <div style={{ color: "#ef4444", fontSize: "0.75rem", textAlign: "center" }}>
+                <div style={{ color: "var(--accent-red)", fontSize: "0.75rem", textAlign: "center" }}>
                   ⚠️ {scanError}
                 </div>
               )}
 
               {scanSuccess && (
-                <div style={{ color: "#10b981", fontSize: "0.75rem", textAlign: "center" }}>
+                <div style={{ color: "var(--accent-green)", fontSize: "0.75rem", textAlign: "center" }}>
                   ✅ {scanSuccess}
                 </div>
               )}
@@ -967,8 +967,8 @@ export function HandshakeVerification({
                   disabled={loading}
                   className="btn-primary"
                   style={{
-                    background: "var(--accent-green)",
-                    boxShadow: "0 0 16px var(--accent-green-glow)",
+                    background: "var(--accent-green-fill)",
+                    boxShadow: "var(--glass-shadow)",
                     color: "#fff",
                     fontWeight: "700",
                     padding: "0.65rem",
@@ -986,8 +986,8 @@ export function HandshakeVerification({
                   disabled={loading}
                   className="btn-primary"
                   style={{
-                    background: "var(--accent-blue)",
-                    boxShadow: "0 0 16px var(--accent-blue-glow)",
+                    background: "var(--accent-blue-fill)",
+                    boxShadow: "var(--glass-shadow)",
                     color: "#fff",
                     fontWeight: "700",
                     padding: "0.65rem",

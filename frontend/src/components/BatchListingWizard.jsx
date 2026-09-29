@@ -295,7 +295,7 @@ export function BatchListingWizard({ isOpen, onClose, walletAccount, onSuccess }
         &times;
       </button>
 
-      <h3 style={{ fontSize: "1.5rem", color: "#fff", marginTop: "1rem" }}>
+      <h3 style={{ fontSize: "1.5rem", color: "var(--text-primary)", marginTop: "1rem" }}>
         List Fry Batch for Sale
       </h3>
       <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", marginBottom: "1.5rem" }}>
@@ -359,13 +359,13 @@ export function BatchListingWizard({ isOpen, onClose, walletAccount, onSuccess }
                 onClick={() => handleSelectSpawn(spawn)}
                 style={{
                   display: "flex", alignItems: "center", gap: "1rem",
-                  padding: "1rem", background: "rgba(255,255,255,0.02)",
+                  padding: "1rem", background: "rgba(var(--ink-rgb), 0.02)",
                   border: "1px solid var(--glass-border)", borderRadius: "10px",
                   cursor: "pointer", transition: "all 0.2s ease",
-                  textAlign: "left", width: "100%", color: "#fff"
+                  textAlign: "left", width: "100%", color: "var(--text-primary)"
                 }}
                 onMouseEnter={(e) => { e.currentTarget.style.borderColor = "rgba(139,92,246,0.4)"; e.currentTarget.style.background = "rgba(139,92,246,0.04)"; }}
-                onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--glass-border)"; e.currentTarget.style.background = "rgba(255,255,255,0.02)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--glass-border)"; e.currentTarget.style.background = "rgba(var(--ink-rgb), 0.02)"; }}
               >
                 <span style={{ fontSize: "1.5rem" }}>🐟</span>
                 <div style={{ flex: 1 }}>
@@ -395,7 +395,7 @@ export function BatchListingWizard({ isOpen, onClose, walletAccount, onSuccess }
           }}>
             <span style={{ fontSize: "1.2rem" }}>🐟</span>
             <div>
-              <div style={{ fontWeight: "600", fontSize: "0.85rem", color: "#fff" }}>{selectedSpawn.commonName}</div>
+              <div style={{ fontWeight: "600", fontSize: "0.85rem", color: "var(--text-primary)" }}>{selectedSpawn.commonName}</div>
               <div style={{ fontSize: "0.68rem", color: "var(--text-muted)" }}>Spawned {formatDate(selectedSpawn.timestamp)}</div>
             </div>
             <button
@@ -417,7 +417,7 @@ export function BatchListingWizard({ isOpen, onClose, walletAccount, onSuccess }
               value={quantity}
               onChange={(e) => setQuantity(e.target.value)}
               placeholder="e.g. 50"
-              style={{ width: "100%", padding: "0.65rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "6px", outline: "none" }}
+              style={{ width: "100%", padding: "0.65rem", background: "rgba(var(--ink-rgb), 0.03)", border: "1px solid var(--glass-border)", color: "var(--text-primary)", borderRadius: "6px", outline: "none" }}
             />
           </div>
 
@@ -433,7 +433,7 @@ export function BatchListingWizard({ isOpen, onClose, walletAccount, onSuccess }
               value={pricePerFish}
               onChange={(e) => setPricePerFish(e.target.value)}
               placeholder="e.g. 3.50"
-              style={{ width: "100%", padding: "0.65rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "6px", outline: "none" }}
+              style={{ width: "100%", padding: "0.65rem", background: "rgba(var(--ink-rgb), 0.03)", border: "1px solid var(--glass-border)", color: "var(--text-primary)", borderRadius: "6px", outline: "none" }}
             />
           </div>
 
@@ -456,7 +456,7 @@ export function BatchListingWizard({ isOpen, onClose, walletAccount, onSuccess }
               >
                 <span className="delivery-tile-icon">🚚</span>
                 <span className="delivery-tile-label">Shipping Available</span>
-                <span style={{ fontSize: "0.55rem", color: "#34d399", fontWeight: 600 }}>Recommended · reaches the most buyers</span>
+                <span style={{ fontSize: "0.55rem", color: "var(--accent-green)", fontWeight: 600 }}>Recommended · reaches the most buyers</span>
               </div>
             </div>
             <p style={{ fontSize: "0.65rem", color: "var(--text-muted)", margin: "0.4rem 0 0" }}>
@@ -486,18 +486,18 @@ export function BatchListingWizard({ isOpen, onClose, walletAccount, onSuccess }
               placeholder="e.g. Active, eating well, growing fast. Parents are proven breeders with vibrant coloration..."
               rows={3}
               maxLength={500}
-              style={{ width: "100%", padding: "0.65rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "6px", outline: "none", resize: "vertical", fontFamily: "inherit", fontSize: "0.85rem" }}
+              style={{ width: "100%", padding: "0.65rem", background: "rgba(var(--ink-rgb), 0.03)", border: "1px solid var(--glass-border)", color: "var(--text-primary)", borderRadius: "6px", outline: "none", resize: "vertical", fontFamily: "inherit", fontSize: "0.85rem" }}
             />
             <span style={{ fontSize: "0.6rem", color: "var(--text-muted)", float: "right" }}>{description.length}/500</span>
           </div>
 
           {/* --- Enhanced Fry Details Section --- */}
-          <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "1rem", marginTop: "0.25rem" }}>
+          <div style={{ borderTop: "1px solid rgba(var(--ink-rgb), 0.11)", paddingTop: "1rem", marginTop: "0.25rem" }}>
             <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", textTransform: "uppercase", fontWeight: "600", letterSpacing: "0.04em" }}>
               Fry Details (helps buyers decide)
             </span>
             {carePrefilled && (
-              <div style={{ fontSize: "0.65rem", color: "#34d399", marginTop: "0.35rem" }}>
+              <div style={{ fontSize: "0.65rem", color: "var(--accent-green)", marginTop: "0.35rem" }}>
                 ✨ Prefilled from {selectedSpawn.commonName} care data — edit anything.
               </div>
             )}
@@ -513,7 +513,7 @@ export function BatchListingWizard({ isOpen, onClose, walletAccount, onSuccess }
             <select
               value={lifeStage}
               onChange={(e) => setLifeStage(e.target.value)}
-              style={{ width: "100%", padding: "0.65rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "6px", outline: "none" }}
+              style={{ width: "100%", padding: "0.65rem", background: "rgba(var(--ink-rgb), 0.03)", border: "1px solid var(--glass-border)", color: "var(--text-primary)", borderRadius: "6px", outline: "none" }}
             >
               {LIFE_STAGE_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -550,12 +550,12 @@ export function BatchListingWizard({ isOpen, onClose, walletAccount, onSuccess }
                   value={fryAge}
                   onChange={(e) => setFryAge(e.target.value)}
                   placeholder="e.g. 4"
-                  style={{ flex: 1, padding: "0.65rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "6px", outline: "none" }}
+                  style={{ flex: 1, padding: "0.65rem", background: "rgba(var(--ink-rgb), 0.03)", border: "1px solid var(--glass-border)", color: "var(--text-primary)", borderRadius: "6px", outline: "none" }}
                 />
                 <select
                   value={fryAgeUnit}
                   onChange={(e) => setFryAgeUnit(e.target.value)}
-                  style={{ padding: "0.5rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "6px", outline: "none", fontSize: "0.75rem" }}
+                  style={{ padding: "0.5rem", background: "rgba(var(--ink-rgb), 0.03)", border: "1px solid var(--glass-border)", color: "var(--text-primary)", borderRadius: "6px", outline: "none", fontSize: "0.75rem" }}
                 >
                   <option value="days">days</option>
                   <option value="weeks">wks</option>
@@ -574,7 +574,7 @@ export function BatchListingWizard({ isOpen, onClose, walletAccount, onSuccess }
                 value={frySize}
                 onChange={(e) => setFrySize(e.target.value)}
                 placeholder="e.g. 0.75"
-                style={{ width: "100%", padding: "0.65rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "6px", outline: "none" }}
+                style={{ width: "100%", padding: "0.65rem", background: "rgba(var(--ink-rgb), 0.03)", border: "1px solid var(--glass-border)", color: "var(--text-primary)", borderRadius: "6px", outline: "none" }}
               />
             </div>
           </div>
@@ -589,7 +589,7 @@ export function BatchListingWizard({ isOpen, onClose, walletAccount, onSuccess }
               value={diet}
               onChange={(e) => setDiet(e.target.value)}
               placeholder="e.g. Baby brine shrimp, crushed flake"
-              style={{ width: "100%", padding: "0.65rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "6px", outline: "none" }}
+              style={{ width: "100%", padding: "0.65rem", background: "rgba(var(--ink-rgb), 0.03)", border: "1px solid var(--glass-border)", color: "var(--text-primary)", borderRadius: "6px", outline: "none" }}
             />
           </div>
 
@@ -610,9 +610,9 @@ export function BatchListingWizard({ isOpen, onClose, walletAccount, onSuccess }
                   onClick={() => setCareLevel(val)}
                   style={{
                     flex: 1, padding: "0.5rem 0.25rem", borderRadius: "6px", cursor: "pointer",
-                    background: careLevel === val ? color : "rgba(255,255,255,0.02)",
+                    background: careLevel === val ? color : "rgba(var(--ink-rgb), 0.02)",
                     border: `1px solid ${careLevel === val ? border : "var(--glass-border)"}`,
-                    color: careLevel === val ? "#fff" : "var(--text-muted)",
+                    color: careLevel === val ? "var(--text-primary)" : "var(--text-muted)",
                     fontSize: "0.7rem", fontWeight: careLevel === val ? "600" : "400",
                     transition: "all 0.15s ease", textAlign: "center"
                   }}
@@ -632,22 +632,22 @@ export function BatchListingWizard({ isOpen, onClose, walletAccount, onSuccess }
               <div>
                 <span style={{ fontSize: "0.6rem", color: "var(--text-muted)", display: "block", marginBottom: "0.2rem" }}>Temp (°F)</span>
                 <div style={{ display: "flex", gap: "0.2rem", alignItems: "center" }}>
-                  <input type="number" value={minTemp} onChange={(e) => setMinTemp(e.target.value)} placeholder="72" style={{ width: "100%", padding: "0.45rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px", outline: "none", fontSize: "0.75rem" }} />
+                  <input type="number" value={minTemp} onChange={(e) => setMinTemp(e.target.value)} placeholder="72" style={{ width: "100%", padding: "0.45rem", background: "rgba(var(--ink-rgb), 0.03)", border: "1px solid var(--glass-border)", color: "var(--text-primary)", borderRadius: "4px", outline: "none", fontSize: "0.75rem" }} />
                   <span style={{ color: "var(--text-muted)", fontSize: "0.7rem" }}>-</span>
-                  <input type="number" value={maxTemp} onChange={(e) => setMaxTemp(e.target.value)} placeholder="82" style={{ width: "100%", padding: "0.45rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px", outline: "none", fontSize: "0.75rem" }} />
+                  <input type="number" value={maxTemp} onChange={(e) => setMaxTemp(e.target.value)} placeholder="82" style={{ width: "100%", padding: "0.45rem", background: "rgba(var(--ink-rgb), 0.03)", border: "1px solid var(--glass-border)", color: "var(--text-primary)", borderRadius: "4px", outline: "none", fontSize: "0.75rem" }} />
                 </div>
               </div>
               <div>
                 <span style={{ fontSize: "0.6rem", color: "var(--text-muted)", display: "block", marginBottom: "0.2rem" }}>pH</span>
                 <div style={{ display: "flex", gap: "0.2rem", alignItems: "center" }}>
-                  <input type="number" step="0.1" value={minPh} onChange={(e) => setMinPh(e.target.value)} placeholder="6.5" style={{ width: "100%", padding: "0.45rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px", outline: "none", fontSize: "0.75rem" }} />
+                  <input type="number" step="0.1" value={minPh} onChange={(e) => setMinPh(e.target.value)} placeholder="6.5" style={{ width: "100%", padding: "0.45rem", background: "rgba(var(--ink-rgb), 0.03)", border: "1px solid var(--glass-border)", color: "var(--text-primary)", borderRadius: "4px", outline: "none", fontSize: "0.75rem" }} />
                   <span style={{ color: "var(--text-muted)", fontSize: "0.7rem" }}>-</span>
-                  <input type="number" step="0.1" value={maxPh} onChange={(e) => setMaxPh(e.target.value)} placeholder="7.5" style={{ width: "100%", padding: "0.45rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px", outline: "none", fontSize: "0.75rem" }} />
+                  <input type="number" step="0.1" value={maxPh} onChange={(e) => setMaxPh(e.target.value)} placeholder="7.5" style={{ width: "100%", padding: "0.45rem", background: "rgba(var(--ink-rgb), 0.03)", border: "1px solid var(--glass-border)", color: "var(--text-primary)", borderRadius: "4px", outline: "none", fontSize: "0.75rem" }} />
                 </div>
               </div>
               <div>
                 <span style={{ fontSize: "0.6rem", color: "var(--text-muted)", display: "block", marginBottom: "0.2rem" }}>Min Tank (gal)</span>
-                <input type="number" value={tankSizeMin} onChange={(e) => setTankSizeMin(e.target.value)} placeholder="10" style={{ width: "100%", padding: "0.45rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px", outline: "none", fontSize: "0.75rem" }} />
+                <input type="number" value={tankSizeMin} onChange={(e) => setTankSizeMin(e.target.value)} placeholder="10" style={{ width: "100%", padding: "0.45rem", background: "rgba(var(--ink-rgb), 0.03)", border: "1px solid var(--glass-border)", color: "var(--text-primary)", borderRadius: "4px", outline: "none", fontSize: "0.75rem" }} />
               </div>
             </div>
           </div>
@@ -661,7 +661,7 @@ export function BatchListingWizard({ isOpen, onClose, walletAccount, onSuccess }
               <select
                 value={healthStatus}
                 onChange={(e) => setHealthStatus(e.target.value)}
-                style={{ width: "100%", padding: "0.65rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "6px", outline: "none" }}
+                style={{ width: "100%", padding: "0.65rem", background: "rgba(var(--ink-rgb), 0.03)", border: "1px solid var(--glass-border)", color: "var(--text-primary)", borderRadius: "6px", outline: "none" }}
               >
                 <option value="healthy">Healthy — No Issues</option>
                 <option value="treated">Recently Treated</option>
@@ -678,9 +678,9 @@ export function BatchListingWizard({ isOpen, onClose, walletAccount, onSuccess }
                   onClick={() => setDoaGuarantee(true)}
                   style={{
                     flex: 1, padding: "0.5rem", borderRadius: "6px", cursor: "pointer",
-                    background: doaGuarantee ? "rgba(34,197,94,0.12)" : "rgba(255,255,255,0.02)",
+                    background: doaGuarantee ? "rgba(34,197,94,0.12)" : "rgba(var(--ink-rgb), 0.02)",
                     border: `1px solid ${doaGuarantee ? "rgba(34,197,94,0.4)" : "var(--glass-border)"}`,
-                    color: doaGuarantee ? "#34d399" : "var(--text-muted)",
+                    color: doaGuarantee ? "var(--accent-green)" : "var(--text-muted)",
                     fontSize: "0.7rem", fontWeight: doaGuarantee ? "600" : "400"
                   }}
                 >
@@ -691,9 +691,9 @@ export function BatchListingWizard({ isOpen, onClose, walletAccount, onSuccess }
                   onClick={() => setDoaGuarantee(false)}
                   style={{
                     flex: 1, padding: "0.5rem", borderRadius: "6px", cursor: "pointer",
-                    background: !doaGuarantee ? "rgba(248,113,113,0.12)" : "rgba(255,255,255,0.02)",
+                    background: !doaGuarantee ? "rgba(248,113,113,0.12)" : "rgba(var(--ink-rgb), 0.02)",
                     border: `1px solid ${!doaGuarantee ? "rgba(248,113,113,0.4)" : "var(--glass-border)"}`,
-                    color: !doaGuarantee ? "#f87171" : "var(--text-muted)",
+                    color: !doaGuarantee ? "var(--accent-red)" : "var(--text-muted)",
                     fontSize: "0.7rem", fontWeight: !doaGuarantee ? "600" : "400"
                   }}
                 >

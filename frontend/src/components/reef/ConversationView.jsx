@@ -83,7 +83,7 @@ export function ConversationView({ conversationId, otherWallet, otherProfile, li
         alignItems: "center",
         gap: "0.5rem",
         padding: "0.75rem 1rem",
-        borderBottom: "1px solid rgba(255, 255, 255, 0.06)",
+        borderBottom: "1px solid rgba(var(--ink-rgb), 0.11)",
         flexShrink: 0,
       }}>
         <button
@@ -108,7 +108,7 @@ export function ConversationView({ conversationId, otherWallet, otherProfile, li
             compact
           />
         ) : (
-          <span style={{ fontSize: "0.8rem", color: "#fff" }}>
+          <span style={{ fontSize: "0.8rem", color: "var(--text-primary)" }}>
             {otherWallet?.slice(0, 8)}…
           </span>
         )}
@@ -116,7 +116,7 @@ export function ConversationView({ conversationId, otherWallet, otherProfile, li
 
       {listingName && (
         <div style={{ padding: "0.55rem 1rem", background: "rgba(56, 189, 248, 0.08)", color: "var(--text-secondary)", fontSize: "0.72rem" }}>
-          Conversation opened about <strong style={{ color: "#fff" }}>{listingName}</strong>. Write and send your own message below.
+          Conversation opened about <strong style={{ color: "var(--text-primary)" }}>{listingName}</strong>. Write and send your own message below.
         </div>
       )}
 
@@ -160,16 +160,16 @@ export function ConversationView({ conversationId, otherWallet, otherProfile, li
                 borderRadius: isOwn ? "12px 12px 4px 12px" : "12px 12px 12px 4px",
                 background: isOwn
                   ? "linear-gradient(135deg, rgba(14, 165, 233, 0.2), rgba(3, 105, 161, 0.15))"
-                  : "rgba(255, 255, 255, 0.04)",
+                  : "rgba(var(--ink-rgb), 0.04)",
                 border: isOwn
                   ? "1px solid rgba(14, 165, 233, 0.2)"
-                  : "1px solid rgba(255, 255, 255, 0.06)",
+                  : "1px solid rgba(var(--ink-rgb), 0.11)",
                 maxWidth: "100%",
               }}>
                 <p style={{
                   margin: 0,
                   fontSize: "0.82rem",
-                  color: "#e5e7eb",
+                  color: "var(--text-primary)",
                   lineHeight: "1.5",
                   wordBreak: "break-word",
                   whiteSpace: "pre-wrap",
@@ -207,7 +207,7 @@ export function ConversationView({ conversationId, otherWallet, otherProfile, li
           display: "flex",
           gap: "0.5rem",
           padding: "0.75rem 1rem",
-          borderTop: "1px solid rgba(255, 255, 255, 0.06)",
+          borderTop: "1px solid rgba(var(--ink-rgb), 0.11)",
           flexShrink: 0,
         }}
       >
@@ -222,15 +222,15 @@ export function ConversationView({ conversationId, otherWallet, otherProfile, li
             flex: 1,
             padding: "0.55rem 0.75rem",
             borderRadius: "50px",
-            border: "1px solid rgba(255, 255, 255, 0.08)",
-            background: "rgba(255, 255, 255, 0.03)",
-            color: "#fff",
+            border: "1px solid rgba(var(--ink-rgb), 0.13)",
+            background: "rgba(var(--ink-rgb), 0.03)",
+            color: "var(--text-primary)",
             fontSize: "0.82rem",
             outline: "none",
             transition: "border-color 0.15s ease",
           }}
           onFocus={(e) => { e.target.style.borderColor = "rgba(56, 189, 248, 0.3)"; }}
-          onBlur={(e) => { e.target.style.borderColor = "rgba(255, 255, 255, 0.08)"; }}
+          onBlur={(e) => { e.target.style.borderColor = "rgba(var(--ink-rgb), 0.13)"; }}
           aria-label="Message input"
         />
         <button
@@ -242,7 +242,7 @@ export function ConversationView({ conversationId, otherWallet, otherProfile, li
             border: "none",
             background: sendEnabled
               ? "linear-gradient(135deg, #0ea5e9, #0369a1)"
-              : "rgba(255, 255, 255, 0.05)",
+              : "rgba(var(--ink-rgb), 0.05)",
             color: sendEnabled ? "#fff" : "var(--text-muted)",
             fontSize: "0.8rem",
             fontWeight: 600,

@@ -69,7 +69,7 @@ export function OrderAnalytics({ walletAccount, userTier, totalXp, casualModeAct
         }}
       >
         <div style={{ fontSize: "2.5rem", marginBottom: "0.75rem" }}>{feature.icon}</div>
-        <h4 style={{ color: "#fff", fontSize: "1.1rem", marginBottom: "0.5rem" }}>
+        <h4 style={{ color: "var(--text-primary)", fontSize: "1.1rem", marginBottom: "0.5rem" }}>
           {feature.label}
         </h4>
         <p style={{ color: "var(--text-muted)", fontSize: "0.82rem", maxWidth: "380px", margin: "0 auto 1.25rem", lineHeight: "1.5" }}>
@@ -85,7 +85,7 @@ export function OrderAnalytics({ walletAccount, userTier, totalXp, casualModeAct
           <div style={{
             height: "6px",
             borderRadius: "3px",
-            background: "rgba(255, 255, 255, 0.06)",
+            background: "rgba(var(--ink-rgb), 0.06)",
             overflow: "hidden",
           }}>
             <div style={{
@@ -116,8 +116,8 @@ export function OrderAnalytics({ walletAccount, userTier, totalXp, casualModeAct
                     style={{
                       padding: "0.2rem 0.5rem",
                       fontSize: "0.65rem",
-                      background: "rgba(255,255,255,0.03)",
-                      border: "1px solid rgba(255,255,255,0.06)",
+                      background: "rgba(var(--ink-rgb), 0.03)",
+                      border: "1px solid rgba(var(--ink-rgb), 0.11)",
                       borderRadius: "12px",
                       color: "var(--text-secondary)",
                     }}
@@ -200,10 +200,10 @@ export function OrderAnalytics({ walletAccount, userTier, totalXp, casualModeAct
               padding: "0.4rem 0.75rem",
               fontSize: "0.72rem",
               fontWeight: activeTab === tab.key ? "700" : "500",
-              background: activeTab === tab.key ? "rgba(139, 92, 246, 0.1)" : "rgba(255, 255, 255, 0.02)",
-              border: activeTab === tab.key ? "1px solid rgba(139, 92, 246, 0.3)" : "1px solid rgba(255, 255, 255, 0.06)",
+              background: activeTab === tab.key ? "rgba(139, 92, 246, 0.1)" : "rgba(var(--ink-rgb), 0.02)",
+              border: activeTab === tab.key ? "1px solid rgba(139, 92, 246, 0.3)" : "1px solid rgba(var(--ink-rgb), 0.11)",
               borderRadius: "20px",
-              color: activeTab === tab.key ? "var(--accent-purple, #a855f7)" : "var(--text-secondary)",
+              color: activeTab === tab.key ? "var(--accent-violet)" : "var(--text-secondary)",
               cursor: "pointer",
             }}
           >
@@ -219,8 +219,8 @@ export function OrderAnalytics({ walletAccount, userTier, totalXp, casualModeAct
               marginLeft: "auto",
               padding: "0.4rem 0.75rem",
               fontSize: "0.72rem",
-              background: "rgba(255, 255, 255, 0.02)",
-              border: "1px solid rgba(255, 255, 255, 0.08)",
+              background: "rgba(var(--ink-rgb), 0.02)",
+              border: "1px solid rgba(var(--ink-rgb), 0.13)",
               borderRadius: "20px",
               color: "var(--text-secondary)",
               cursor: "pointer",
@@ -235,11 +235,11 @@ export function OrderAnalytics({ walletAccount, userTier, totalXp, casualModeAct
       {activeTab === "overview" && (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: "0.75rem" }}>
           <StatCard label="Total Orders" value={localStats.totalOrders} icon="📋" />
-          <StatCard label="Completed" value={localStats.completedOrders} icon="✅" color="#34d399" />
-          <StatCard label="Revenue" value={`$${(localStats.totalRevenue / 100).toFixed(0)}`} icon="💰" color="#fbbf24" />
-          <StatCard label="Spent" value={`$${(localStats.totalSpent / 100).toFixed(0)}`} icon="🛒" color="#38bdf8" />
+          <StatCard label="Completed" value={localStats.completedOrders} icon="✅" color="var(--accent-green)" />
+          <StatCard label="Revenue" value={`$${(localStats.totalRevenue / 100).toFixed(0)}`} icon="💰" color="var(--accent-amber)" />
+          <StatCard label="Spent" value={`$${(localStats.totalSpent / 100).toFixed(0)}`} icon="🛒" color="var(--accent-blue)" />
           <StatCard label="Avg Ship Time" value={localStats.avgDispatchHours > 0 ? `${localStats.avgDispatchHours}h` : "—"} icon="🚚" />
-          <StatCard label="Disputes" value={localStats.disputedOrders} icon="⚠️" color={localStats.disputedOrders > 0 ? "#f87171" : undefined} />
+          <StatCard label="Disputes" value={localStats.disputedOrders} icon="⚠️" color={localStats.disputedOrders > 0 ? "var(--accent-red)" : undefined} />
         </div>
       )}
 
@@ -248,8 +248,8 @@ export function OrderAnalytics({ walletAccount, userTier, totalXp, casualModeAct
         <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: "0.75rem" }}>
             <StatCard label="Total Sales" value={sellerStats.total_orders} icon="🏷️" />
-            <StatCard label="Completed" value={sellerStats.completed_orders} icon="✅" color="#34d399" />
-            <StatCard label="Revenue" value={`$${(sellerStats.total_revenue_cents / 100).toFixed(2)}`} icon="💰" color="#fbbf24" />
+            <StatCard label="Completed" value={sellerStats.completed_orders} icon="✅" color="var(--accent-green)" />
+            <StatCard label="Revenue" value={`$${(sellerStats.total_revenue_cents / 100).toFixed(2)}`} icon="💰" color="var(--accent-amber)" />
             <StatCard label="Avg Order" value={`$${(sellerStats.avg_order_value_cents / 100).toFixed(2)}`} icon="📐" />
             <StatCard label="Avg Dispatch" value={sellerStats.avg_dispatch_hours > 0 ? `${sellerStats.avg_dispatch_hours}h` : "—"} icon="📦" />
             <StatCard label="Avg Delivery" value={sellerStats.avg_delivery_hours > 0 ? `${sellerStats.avg_delivery_hours}h` : "—"} icon="🏠" />
@@ -266,7 +266,7 @@ export function OrderAnalytics({ walletAccount, userTier, totalXp, casualModeAct
                   {sellerStats.avg_dispatch_hours <= 24 ? "🚀" : sellerStats.avg_dispatch_hours <= 48 ? "✈️" : "🐢"}
                 </div>
                 <div>
-                  <div style={{ fontWeight: "700", color: "#fff", fontSize: "0.9rem" }}>
+                  <div style={{ fontWeight: "700", color: "var(--text-primary)", fontSize: "0.9rem" }}>
                     {sellerStats.avg_dispatch_hours <= 24
                       ? "Lightning Fast"
                       : sellerStats.avg_dispatch_hours <= 48
@@ -293,9 +293,9 @@ export function OrderAnalytics({ walletAccount, userTier, totalXp, casualModeAct
       {activeTab === "buying" && buyerStats && (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: "0.75rem" }}>
           <StatCard label="Total Purchases" value={buyerStats.total_orders} icon="🛒" />
-          <StatCard label="Completed" value={buyerStats.completed_orders} icon="✅" color="#34d399" />
-          <StatCard label="Total Spent" value={`$${(buyerStats.total_spent_cents / 100).toFixed(2)}`} icon="💸" color="#38bdf8" />
-          <StatCard label="XP Earned" value={buyerStats.total_xp_earned?.toLocaleString() || "0"} icon="⭐" color="#fbbf24" />
+          <StatCard label="Completed" value={buyerStats.completed_orders} icon="✅" color="var(--accent-green)" />
+          <StatCard label="Total Spent" value={`$${(buyerStats.total_spent_cents / 100).toFixed(2)}`} icon="💸" color="var(--accent-blue)" />
+          <StatCard label="XP Earned" value={buyerStats.total_xp_earned?.toLocaleString() || "0"} icon="⭐" color="var(--accent-amber)" />
           <StatCard label="Unique Sellers" value={buyerStats.unique_sellers} icon="👥" />
           <StatCard label="Shipped Orders" value={buyerStats.shipping_orders} icon="📦" />
           <StatCard label="Batch Orders" value={buyerStats.batch_orders} icon="🐟" />
@@ -323,11 +323,11 @@ function StatCard({ label, value, icon, color }) {
         flexDirection: "column",
         alignItems: "center",
         gap: "0.3rem",
-        border: "1px solid rgba(255, 255, 255, 0.04)",
+        border: "1px solid rgba(var(--ink-rgb), 0.09)",
       }}
     >
       <span style={{ fontSize: "1.25rem" }}>{icon}</span>
-      <span style={{ fontSize: "1.1rem", fontWeight: "700", color: color || "#fff", fontFamily: "monospace" }}>
+      <span style={{ fontSize: "1.1rem", fontWeight: "700", color: color || "var(--text-primary)", fontFamily: "monospace" }}>
         {value}
       </span>
       <span style={{ fontSize: "0.62rem", color: "var(--text-muted)", textAlign: "center" }}>{label}</span>

@@ -20,8 +20,8 @@ function TankCamCard({ cam, onOpen }) {
     <button
       onClick={() => onOpen(cam)}
       style={{
-        background: "rgba(255,255,255,0.02)",
-        border: "1px solid rgba(255,255,255,0.06)",
+        background: "rgba(var(--ink-rgb), 0.03)",
+        border: "1px solid rgba(var(--ink-rgb), 0.11)",
         borderRadius: "12px",
         overflow: "hidden",
         cursor: "pointer",
@@ -31,7 +31,7 @@ function TankCamCard({ cam, onOpen }) {
         transition: "border-color 0.2s ease, transform 0.1s ease",
       }}
       onMouseEnter={(e) => { e.currentTarget.style.borderColor = "rgba(56,189,248,0.3)"; }}
-      onMouseLeave={(e) => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.06)"; }}
+      onMouseLeave={(e) => { e.currentTarget.style.borderColor = "rgba(var(--ink-rgb), 0.11)"; }}
       aria-label={`Watch ${cam.tank_name || "Tank Cam"} by ${cam.profiles?.display_name || "unknown"}`}
     >
       {/* Thumbnail */}
@@ -91,7 +91,7 @@ function TankCamCard({ cam, onOpen }) {
       <div style={{ padding: "0.6rem 0.75rem", display: "flex", flexDirection: "column", gap: "0.3rem" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
           {cam.tank_name && (
-            <span style={{ fontSize: "0.75rem", fontWeight: 600, color: "#fff" }}>
+            <span style={{ fontSize: "0.75rem", fontWeight: 600, color: "var(--text-primary)" }}>
               🐠 {cam.tank_name}
             </span>
           )}
@@ -123,7 +123,7 @@ export function TankCamDiscovery() {
   return (
     <section aria-label="Live Tank Cams">
       <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1rem" }}>
-        <h3 style={{ margin: 0, fontSize: "1rem", fontWeight: 700, color: "#fff" }}>
+        <h3 style={{ margin: 0, fontSize: "1rem", fontWeight: 700, color: "var(--text-primary)" }}>
           📹 Live Tank Cams
         </h3>
         {cams.length > 0 && (
@@ -133,7 +133,7 @@ export function TankCamDiscovery() {
             background: "rgba(239, 68, 68, 0.1)",
             border: "1px solid rgba(239, 68, 68, 0.2)",
             fontSize: "0.6rem",
-            color: "#f87171",
+            color: "var(--accent-red)",
           }}>
             {cams.length} live
           </span>
@@ -150,8 +150,8 @@ export function TankCamDiscovery() {
             textAlign: "center",
             padding: "2rem",
             borderRadius: "12px",
-            background: "rgba(255,255,255,0.02)",
-            border: "1px solid rgba(255,255,255,0.06)",
+            background: "rgba(var(--ink-rgb), 0.03)",
+            border: "1px solid rgba(var(--ink-rgb), 0.11)",
           }}
         >
           <p style={{ fontSize: "1.5rem", margin: "0 0 0.5rem" }}>📷</p>

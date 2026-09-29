@@ -51,7 +51,7 @@ export function getEasterEggConfig(key, evolved = false) {
       lore: "Nami, the Tidecaller from League of Legends, secretly blesses this species. Keep your tank parameters perfect and she may grant you the perfect water flow ✨",
       buttonText: "Receive Blessing",
       keywords: ["nami", "tidecaller", "league"],
-      color: "#38bdf8",
+      color: "var(--accent-blue)",
       bg: "rgba(14, 165, 233, 0.25)",
       border: "rgba(56, 189, 248, 0.6)",
       glow: "rgba(56, 189, 248, 0.4)"
@@ -724,7 +724,7 @@ export function BreedGallery({
   if (error) {
     return (
       <div className="glass-card" style={{ padding: "3rem", textAlign: "center", border: "1px solid rgba(239, 68, 68, 0.2)" }}>
-        <p style={{ color: "#ef4444" }}>{error}</p>
+        <p style={{ color: "var(--accent-red)" }}>{error}</p>
         <button onClick={() => refetchContractSpecies()} className="btn-secondary" style={{ marginTop: "1rem" }}>Retry</button>
       </div>
     );
@@ -769,7 +769,7 @@ export function BreedGallery({
             <button onClick={() => setSelectedBreed(null)} className="btn-secondary" style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem" }}>
               ← Back to Species List
             </button>
-            <h2 style={{ fontSize: "1.75rem", fontWeight: "700", color: "#fff", marginTop: "1rem", marginBottom: "0.25rem" }}>
+            <h2 style={{ fontSize: "1.75rem", fontWeight: "700", color: "var(--text-primary)", marginTop: "1rem", marginBottom: "0.25rem" }}>
               {selectedBreed.commonName} Catalog
             </h2>
             <p style={{ fontSize: "0.875rem", color: "var(--text-muted)", fontStyle: "italic", margin: 0 }}>
@@ -798,11 +798,11 @@ export function BreedGallery({
             </div>
             <div>
               <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", display: "block", textTransform: "uppercase" }}>Temperature</span>
-              <strong style={{ fontSize: "0.9rem", color: "#fff" }}>{formatTemperatureRange(selectedBreed.minTemp, selectedBreed.maxTemp, tempUnit, { dash: " - " })}</strong>
+              <strong style={{ fontSize: "0.9rem", color: "var(--text-primary)" }}>{formatTemperatureRange(selectedBreed.minTemp, selectedBreed.maxTemp, tempUnit, { dash: " - " })}</strong>
             </div>
             <div>
               <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", display: "block", textTransform: "uppercase" }}>pH Range</span>
-              <strong style={{ fontSize: "0.9rem", color: "#fff" }}>{selectedBreed.minPh} - {selectedBreed.maxPh}</strong>
+              <strong style={{ fontSize: "0.9rem", color: "var(--text-primary)" }}>{selectedBreed.minPh} - {selectedBreed.maxPh}</strong>
             </div>
             <div>
               <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", display: "block", textTransform: "uppercase" }}>Min Tank</span>
@@ -822,7 +822,7 @@ export function BreedGallery({
             overflow: "hidden",
             marginBottom: "2rem",
             position: "relative",
-            border: "1px solid rgba(255,255,255,0.08)",
+            border: "1px solid rgba(var(--ink-rgb), 0.13)",
           }}>
             <img
               src={fullProfile.masterPhotoUrl}
@@ -853,9 +853,9 @@ export function BreedGallery({
               gap: "0.75rem",
             }}>
               <span style={{
-                background: "rgba(56, 189, 248, 0.12)",
+                background: "rgba(255, 255, 255, 0.92)",
                 border: "1px solid rgba(56, 189, 248, 0.35)",
-                color: "#7dd3fc",
+                color: "var(--accent-blue)",
                 padding: "0.3rem 0.75rem",
                 borderRadius: "50px",
                 fontSize: "0.75rem",
@@ -883,7 +883,7 @@ export function BreedGallery({
                   gap: "0.25rem", 
                   padding: "0.25rem", 
                   borderRadius: "var(--radius-sm)",
-                  background: "rgba(255,255,255,0.01)"
+                  background: "rgba(var(--ink-rgb), 0.02)"
                 }}
               >
                 <button 
@@ -918,9 +918,9 @@ export function BreedGallery({
                       padding: "0.35rem 0.75rem",
                       fontSize: "0.75rem",
                       borderRadius: "4px",
-                      background: showMyFishOnly ? "var(--accent-blue-glow)" : "rgba(255,255,255,0.02)",
+                      background: showMyFishOnly ? "var(--accent-blue-glow)" : "rgba(var(--ink-rgb), 0.02)",
                       border: showMyFishOnly ? "1px solid var(--accent-blue)" : "1px solid var(--glass-border)",
-                      color: showMyFishOnly ? "#fff" : "var(--text-secondary)",
+                      color: showMyFishOnly ? "var(--accent-blue)" : "var(--text-secondary)",
                       cursor: "pointer",
                       transition: "all 0.2s"
                     }}
@@ -949,9 +949,9 @@ export function BreedGallery({
                     : selectedBreedSpecs
                   ).map((spec) => {
                     const statusBadgeColors = [
-                      { text: "#22c55e", bg: "rgba(34, 197, 94, 0.1)", border: "rgba(34, 197, 94, 0.2)" }, // Active
-                      { text: "#ef4444", bg: "rgba(239, 68, 68, 0.1)", border: "rgba(239, 68, 68, 0.2)" }, // Deceased
-                      { text: "#3b82f6", bg: "rgba(59, 130, 246, 0.1)", border: "rgba(59, 130, 246, 0.2)" }  // Rehomed
+                      { text: "#047857", bg: "rgba(34, 197, 94, 0.1)", border: "rgba(34, 197, 94, 0.2)" }, // Active
+                      { text: "#b91c1c", bg: "rgba(239, 68, 68, 0.1)", border: "rgba(239, 68, 68, 0.2)" }, // Deceased
+                      { text: "#1d4ed8", bg: "rgba(59, 130, 246, 0.1)", border: "rgba(59, 130, 246, 0.2)" }  // Rehomed
                     ];
                     const badge = statusBadgeColors[spec.status] || statusBadgeColors[0];
                     const birthDate = spec.birthTimestamp > 0 
@@ -977,12 +977,12 @@ export function BreedGallery({
                           const isPlant = isPlantEntry(specBreedData || {});
                           const badgeLabel = isPlant ? "🌿 Certified Master Flora" : "🛡️ Breeder-Verified Master Stock";
                           const badgeBg = isPlant
-                            ? "rgba(16, 185, 129, 0.18)"
-                            : "rgba(56, 189, 248, 0.12)";
+                            ? "rgba(236, 253, 245, 0.92)"
+                            : "rgba(240, 249, 255, 0.92)";
                           const badgeBorder = isPlant
                             ? "rgba(16, 185, 129, 0.45)"
                             : "rgba(56, 189, 248, 0.35)";
-                          const badgeColor = isPlant ? "#34d399" : "#7dd3fc";
+                          const badgeColor = isPlant ? "var(--accent-green)" : "var(--accent-blue)";
                           const fallbackSvg = isPlant ? (
                             <PlantSilhouetteSVG
                               specCode={specBreedData?.specCode || 9001}
@@ -999,13 +999,13 @@ export function BreedGallery({
                                height: "12rem", 
                                width: "100%",
                                borderRadius: "0.75rem", 
-                               background: "linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%)", 
+                               background: "linear-gradient(135deg, rgba(var(--ink-rgb), 0.03) 0%, rgba(var(--ink-rgb), 0.02) 100%)", 
                                backdropFilter: "blur(12px)",
-                               boxShadow: "inset 0 1px 1px rgba(255, 255, 255, 0.05), 0 4px 15px rgba(0, 0, 0, 0.1)",
+                               boxShadow: "inset 0 1px 1px rgba(255, 255, 255, 0.05), 0 4px 15px rgba(var(--ink-rgb), 0.04)",
                                marginBottom: "1rem",
                                position: "relative",
                                overflow: "hidden",
-                               border: "1px solid rgba(255, 255, 255, 0.08)",
+                               border: "1px solid rgba(var(--ink-rgb), 0.13)",
                                display: "flex",
                                alignItems: "center",
                                justifyContent: "center"
@@ -1059,7 +1059,7 @@ export function BreedGallery({
                           );
                         })()}
 
-                        <h3 style={{ fontSize: "1.1rem", fontWeight: "700", color: "#fff", marginBottom: "0.75rem", marginTop: 0 }}>
+                        <h3 style={{ fontSize: "1.1rem", fontWeight: "700", color: "var(--text-primary)", marginBottom: "0.75rem", marginTop: 0 }}>
                           {casualModeActive ? selectedBreed.commonName : `Cert. Serial No. ${spec.specimenId.toString().padStart(3, "0")}`}
                         </h3>
 
@@ -1085,7 +1085,7 @@ export function BreedGallery({
                                 borderRadius: "4px",
                                 background: "rgba(168, 85, 247, 0.08)",
                                 border: "1px solid rgba(168, 85, 247, 0.5)",
-                                color: "#c084fc",
+                                color: "var(--accent-violet)",
                                 outline: "none",
                                 width: "100px"
                               }}
@@ -1098,7 +1098,7 @@ export function BreedGallery({
                                 borderRadius: "3px",
                                 background: "rgba(52, 211, 153, 0.15)",
                                 border: "1px solid rgba(52, 211, 153, 0.4)",
-                                color: "#34d399",
+                                color: "var(--accent-green)",
                                 cursor: "pointer"
                               }}
                             >Save</button>
@@ -1110,7 +1110,7 @@ export function BreedGallery({
                                 borderRadius: "3px",
                                 background: "rgba(248, 113, 113, 0.1)",
                                 border: "1px solid rgba(248, 113, 113, 0.3)",
-                                color: "#f87171",
+                                color: "var(--accent-red)",
                                 cursor: "pointer"
                               }}
                             >Cancel</button>
@@ -1128,7 +1128,7 @@ export function BreedGallery({
                                   borderRadius: "4px",
                                   background: "rgba(168, 85, 247, 0.12)",
                                   border: "1px solid rgba(168, 85, 247, 0.35)",
-                                  color: "#c084fc",
+                                  color: "var(--accent-violet)",
                                   fontFamily: "monospace",
                                   letterSpacing: "0.04em",
                                   cursor: "pointer",
@@ -1160,7 +1160,7 @@ export function BreedGallery({
                           {proMode && (
                             <div style={{ display: "flex", justifyContent: "space-between" }}>
                               <span>Owner</span>
-                              <strong style={{ fontFamily: "monospace", color: "#fff" }}>
+                              <strong style={{ fontFamily: "monospace", color: "var(--text-primary)" }}>
                                 {spec.owner ? `${spec.owner.substring(0, 6)}...${spec.owner.substring(38)}` : "None"}
                               </strong>
                             </div>
@@ -1168,7 +1168,7 @@ export function BreedGallery({
                           {proMode && (
                             <div style={{ display: "flex", justifyContent: "space-between" }}>
                               <span>Breeder</span>
-                              <strong style={{ fontFamily: "monospace", color: "#fff" }}>
+                              <strong style={{ fontFamily: "monospace", color: "var(--text-primary)" }}>
                                 {spec.breeder && spec.breeder !== ZeroAddress 
                                   ? `${spec.breeder.substring(0, 6)}...${spec.breeder.substring(38)}` 
                                   : "Wild-Caught"}
@@ -1177,7 +1177,7 @@ export function BreedGallery({
                           )}
                           <div style={{ display: "flex", justifyContent: "space-between" }}>
                             <span>{casualModeActive ? "Date Added" : "Birth/Hatch Date"}</span>
-                            <strong style={{ color: "#fff" }}>{birthDate}</strong>
+                            <strong style={{ color: "var(--text-primary)" }}>{birthDate}</strong>
                           </div>
                           {casualModeActive && (
                             <div style={{ display: "flex", gap: "0.35rem", flexWrap: "wrap", marginTop: "0.25rem" }}>
@@ -1187,7 +1187,7 @@ export function BreedGallery({
                                 borderRadius: "20px",
                                 background: "rgba(34, 197, 94, 0.12)",
                                 border: "1px solid rgba(34, 197, 94, 0.3)",
-                                color: "#4ade80",
+                                color: "var(--accent-green)",
                                 fontWeight: "700"
                               }}>✅ Registry Verified</span>
                               {spec.status === 0 && (
@@ -1197,7 +1197,7 @@ export function BreedGallery({
                                   borderRadius: "20px",
                                   background: "rgba(56, 189, 248, 0.12)",
                                   border: "1px solid rgba(56, 189, 248, 0.3)",
-                                  color: "#7dd3fc",
+                                  color: "var(--accent-blue)",
                                   fontWeight: "700"
                                 }}>🐠 Tank-Bred Premium Stock</span>
                               )}
@@ -1237,8 +1237,8 @@ export function BreedGallery({
                 </div>
               )
             ) : selectedSubTab === "hatchery" ? (
-              <div className="glass-card" style={{ padding: "1.5rem 2rem", background: "rgba(255,255,255,0.01)", border: "1px solid rgba(255,255,255,0.04)" }}>
-                <h3 style={{ fontSize: "1.15rem", fontWeight: "600", color: "#fff", marginBottom: "1.5rem", fontFamily: "'Outfit', sans-serif" }}>
+              <div className="glass-card" style={{ padding: "1.5rem 2rem", background: "rgba(var(--ink-rgb), 0.02)", border: "1px solid rgba(var(--ink-rgb), 0.09)" }}>
+                <h3 style={{ fontSize: "1.15rem", fontWeight: "600", color: "var(--text-primary)", marginBottom: "1.5rem", fontFamily: "'Outfit', sans-serif" }}>
                   Hatchery Insights & Spawning Records
                 </h3>
                 <HatcheryLogs 
@@ -1250,8 +1250,8 @@ export function BreedGallery({
                 />
               </div>
             ) : (
-              <div className="glass-card" style={{ padding: "1.5rem 2rem", background: "rgba(255,255,255,0.01)", border: "1px solid rgba(255,255,255,0.04)" }}>
-                <h3 style={{ fontSize: "1.15rem", fontWeight: "600", color: "#fff", marginBottom: "1.5rem", fontFamily: "'Outfit', sans-serif" }}>
+              <div className="glass-card" style={{ padding: "1.5rem 2rem", background: "rgba(var(--ink-rgb), 0.02)", border: "1px solid rgba(var(--ink-rgb), 0.09)" }}>
+                <h3 style={{ fontSize: "1.15rem", fontWeight: "600", color: "var(--text-primary)", marginBottom: "1.5rem", fontFamily: "'Outfit', sans-serif" }}>
                   Active Marketplace Listings
                 </h3>
                 <MarketplaceBoard 
@@ -1278,14 +1278,14 @@ export function BreedGallery({
               className="glass-card" 
               style={{ 
                 padding: "1.5rem", 
-                background: "rgba(255,255,255,0.02)",
-                border: "1px solid rgba(255,255,255,0.05)",
+                background: "rgba(var(--ink-rgb), 0.02)",
+                border: "1px solid rgba(var(--ink-rgb), 0.1)",
                 display: "flex",
                 flexDirection: "column",
                 gap: "1.25rem"
               }}
             >
-              <h3 style={{ fontSize: "1.2rem", fontWeight: "700", color: "#fff", margin: 0, display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <h3 style={{ fontSize: "1.2rem", fontWeight: "700", color: "var(--text-primary)", margin: 0, display: "flex", alignItems: "center", gap: "0.5rem" }}>
                 <span>🎮</span> {casualModeActive ? "Tank Match" : "Simulate My Tank"}
               </h3>
 
@@ -1296,7 +1296,7 @@ export function BreedGallery({
                   alignItems: "center", 
                   gap: "1rem", 
                   padding: "1rem", 
-                  background: "rgba(0,0,0,0.2)", 
+                  background: "var(--bg-band)", 
                   borderRadius: "var(--radius-sm)",
                   border: `1px solid ${color}30`
                 }}
@@ -1309,7 +1309,7 @@ export function BreedGallery({
                       cy="50" 
                       r={radius} 
                       fill="none" 
-                      stroke="rgba(255,255,255,0.04)" 
+                      stroke="rgba(11,37,48,0.09)" 
                       strokeWidth={strokeWidth} 
                     />
                     <circle 
@@ -1342,7 +1342,7 @@ export function BreedGallery({
                         : (casualModeActive ? "⚠️ Proceed with caution" : "Caution")}
                   </strong>
                   {casualModeActive && verdict === "ok" && score === 100 && (
-                    <span style={{ display: "inline-block", marginTop: "0.4rem", fontSize: "0.6rem", padding: "0.2rem 0.6rem", borderRadius: "20px", background: "rgba(34,197,94,0.15)", border: "1px solid rgba(34,197,94,0.4)", color: "#4ade80", fontWeight: "700", letterSpacing: "0.03em" }}>
+                    <span style={{ display: "inline-block", marginTop: "0.4rem", fontSize: "0.6rem", padding: "0.2rem 0.6rem", borderRadius: "20px", background: "rgba(34,197,94,0.15)", border: "1px solid rgba(34,197,94,0.4)", color: "var(--accent-green)", fontWeight: "700", letterSpacing: "0.03em" }}>
                       [ Perfect Aquarium Fit ]
                     </span>
                   )}
@@ -1369,13 +1369,13 @@ export function BreedGallery({
               )}
 
               {/* Sliders Container */}
-              <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem", borderTop: "1px solid rgba(255,255,255,0.05)", paddingTop: "1.25rem" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem", borderTop: "1px solid rgba(var(--ink-rgb), 0.1)", paddingTop: "1.25rem" }}>
                 
                 {/* Tank Size Slider */}
                 <div>
                   <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.75rem", marginBottom: "0.4rem" }}>
                     <span style={{ color: "var(--text-secondary)" }}>Tank Size</span>
-                    <strong style={{ color: "#fff" }}>{simVolume} Gal</strong>
+                    <strong style={{ color: "var(--text-primary)" }}>{simVolume} Gal</strong>
                   </div>
                   <input 
                     type="range" 
@@ -1397,7 +1397,7 @@ export function BreedGallery({
                 <div>
                   <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.75rem", marginBottom: "0.4rem" }}>
                     <span style={{ color: "var(--text-secondary)" }}>Water pH</span>
-                    <strong style={{ color: "#fff" }}>{simPh}</strong>
+                    <strong style={{ color: "var(--text-primary)" }}>{simPh}</strong>
                   </div>
                   <input 
                     type="range" 
@@ -1419,7 +1419,7 @@ export function BreedGallery({
                 <div>
                   <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.75rem", marginBottom: "0.4rem" }}>
                     <span style={{ color: "var(--text-secondary)" }}>Temperature</span>
-                    <strong style={{ color: "#fff" }}>{tempScale.convert(simTemp).toFixed(1)} {tempScale.suffix}</strong>
+                    <strong style={{ color: "var(--text-primary)" }}>{tempScale.convert(simTemp).toFixed(1)} {tempScale.suffix}</strong>
                   </div>
                   <input 
                     type="range" 
@@ -1447,14 +1447,14 @@ export function BreedGallery({
               className="glass-card" 
               style={{ 
                 padding: "1.25rem", 
-                background: "rgba(255,255,255,0.01)",
-                border: "1px solid rgba(255,255,255,0.03)",
+                background: "rgba(var(--ink-rgb), 0.02)",
+                border: "1px solid rgba(var(--ink-rgb), 0.08)",
                 display: "flex",
                 flexDirection: "column",
                 gap: "0.75rem"
               }}
             >
-              <h4 style={{ fontSize: "0.85rem", fontWeight: "700", color: "#fff", textTransform: "uppercase", letterSpacing: "0.05em", margin: 0 }}>
+              <h4 style={{ fontSize: "0.85rem", fontWeight: "700", color: "var(--text-primary)", textTransform: "uppercase", letterSpacing: "0.05em", margin: 0 }}>
                 Parameter Check
               </h4>
               <ul style={{ listStyle: "none", fontSize: "0.75rem", display: "flex", flexDirection: "column", gap: "0.5rem", padding: 0, margin: 0 }}>
@@ -1492,14 +1492,14 @@ export function BreedGallery({
               className="glass-card" 
               style={{ 
                 padding: "1.25rem", 
-                background: "rgba(255,255,255,0.01)",
-                border: "1px solid rgba(255,255,255,0.03)",
+                background: "rgba(var(--ink-rgb), 0.02)",
+                border: "1px solid rgba(var(--ink-rgb), 0.08)",
                 display: "flex",
                 flexDirection: "column",
                 gap: "0.75rem"
               }}
             >
-              <h4 style={{ fontSize: "0.85rem", fontWeight: "700", color: "#fff", textTransform: "uppercase", letterSpacing: "0.05em", margin: 0 }}>
+              <h4 style={{ fontSize: "0.85rem", fontWeight: "700", color: "var(--text-primary)", textTransform: "uppercase", letterSpacing: "0.05em", margin: 0 }}>
                 Verified Safe Companions
               </h4>
               {(() => {
@@ -1537,7 +1537,7 @@ export function BreedGallery({
                       overflowX: "auto",
                       paddingBottom: "0.5rem",
                       scrollbarWidth: "thin",
-                      scrollbarColor: "rgba(255,255,255,0.1) transparent"
+                      scrollbarColor: "rgba(var(--ink-rgb), 0.15) transparent"
                     }}
                   >
                     {companions.map((comp) => (
@@ -1548,8 +1548,8 @@ export function BreedGallery({
                           padding: "0.5rem", 
                           background: isPlantEntry(comp)
                             ? "rgba(16, 185, 129, 0.04)"
-                            : "rgba(255,255,255,0.02)", 
-                          border: `1px solid ${isPlantEntry(comp) ? "rgba(16,185,129,0.15)" : "rgba(255,255,255,0.05)"}`, 
+                            : "rgba(var(--ink-rgb), 0.02)", 
+                          border: `1px solid ${isPlantEntry(comp) ? "rgba(16,185,129,0.15)" : "rgba(var(--ink-rgb), 0.1)"}`, 
                           borderRadius: "6px",
                           display: "flex",
                           flexDirection: "column",
@@ -1564,13 +1564,13 @@ export function BreedGallery({
                             <FishSilhouetteSVG specimenId={comp.specCode} />
                           )}
                         </div>
-                        <span style={{ fontSize: "0.7rem", fontWeight: "600", color: isPlantEntry(comp) ? "#34d399" : "#fff", display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", width: "100%" }} title={comp.commonName}>
+                        <span style={{ fontSize: "0.7rem", fontWeight: "600", color: isPlantEntry(comp) ? "var(--accent-green)" : "var(--text-primary)", display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", width: "100%" }} title={comp.commonName}>
                           {comp.commonName}
                         </span>
                         <span style={{ fontSize: "0.55rem", color: "var(--text-muted)", fontStyle: "italic", display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", width: "100%" }} title={comp.scientificName}>
                           {comp.scientificName}
                         </span>
-                        <span style={{ fontSize: "0.55rem", color: isPlantEntry(comp) ? "#34d399" : "var(--accent-blue)", marginTop: "0.15rem" }}>
+                        <span style={{ fontSize: "0.55rem", color: isPlantEntry(comp) ? "var(--accent-green)" : "var(--accent-blue)", marginTop: "0.15rem" }}>
                           {isPlantEntry(comp) ? "🌿 Flora" : `pH ${comp.tankMetrics?.phRange?.[0]}-${comp.tankMetrics?.phRange?.[1]}`}
                         </span>
                       </div>
@@ -1589,8 +1589,8 @@ export function BreedGallery({
               flex: "1 1 100%", 
               minWidth: "320px",
               order: 1,
-              background: "rgba(255, 255, 255, 0.02)", 
-              border: "1px solid rgba(255, 255, 255, 0.06)", 
+              background: "rgba(var(--ink-rgb), 0.02)", 
+              border: "1px solid rgba(var(--ink-rgb), 0.11)", 
               padding: "1.25rem", 
               borderRadius: "1rem",
               display: "flex",
@@ -1598,7 +1598,7 @@ export function BreedGallery({
               gap: "1.25rem"
             }}
           >
-            <h3 style={{ fontSize: "1.2rem", fontWeight: "700", color: "#fff", margin: 0, display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            <h3 style={{ fontSize: "1.2rem", fontWeight: "700", color: "var(--text-primary)", margin: 0, display: "flex", alignItems: "center", gap: "0.5rem" }}>
               <span>📋</span> Species Care Guide
             </h3>
 
@@ -1798,7 +1798,7 @@ export function BreedGallery({
           {toastMessage}
         </div>
       )}
-      <h2 style={{ fontSize: "1.75rem", fontWeight: "700", color: "#fff", marginBottom: "0.5rem", marginTop: 0 }}>
+      <h2 style={{ fontSize: "1.75rem", fontWeight: "700", color: "var(--text-primary)", marginBottom: "0.5rem", marginTop: 0 }}>
         Breed & Species Catalog
       </h2>
       <p style={{ color: "var(--text-muted)", fontSize: "0.875rem", marginBottom: "2rem" }}>
@@ -1818,11 +1818,11 @@ export function BreedGallery({
         <div 
           style={{ 
             display: "inline-flex", 
-            background: "rgba(0, 0, 0, 0.25)", 
+            background: "var(--bg-band)", 
             border: "1px solid var(--glass-border)", 
             padding: "0.25rem", 
             borderRadius: "50px",
-            boxShadow: "inset 0 1px 2px rgba(0, 0, 0, 0.5)",
+            boxShadow: "inset 0 1px 2px rgba(var(--ink-rgb), 0.14)",
             margin: 0
           }}
         >
@@ -1842,7 +1842,7 @@ export function BreedGallery({
                     : "transparent",
                   outline: "none",
                   borderRadius: "50px",
-                  color: (viewMode === "contract" && showMyTankSpeciesOnly) ? "#fff" : "var(--text-secondary)",
+                  color: (viewMode === "contract" && showMyTankSpeciesOnly) ? "var(--accent-blue)" : "var(--text-secondary)",
                   padding: "0.45rem 1.25rem",
                   fontSize: "0.78rem",
                   fontWeight: "600",
@@ -1852,7 +1852,7 @@ export function BreedGallery({
                   alignItems: "center",
                   gap: "0.4rem",
                   border: (viewMode === "contract" && showMyTankSpeciesOnly) ? "1px solid rgba(56, 189, 248, 0.3)" : "1px solid transparent",
-                  boxShadow: (viewMode === "contract" && showMyTankSpeciesOnly) ? "0 0 10px rgba(56, 189, 248, 0.15)" : "none"
+                  boxShadow: (viewMode === "contract" && showMyTankSpeciesOnly) ? "var(--glass-shadow)" : "none"
                 }}
               >
                 🐠 My Tank Species ({residingSpecies.length})
@@ -1871,7 +1871,7 @@ export function BreedGallery({
                     : "transparent",
                   outline: "none",
                   borderRadius: "50px",
-                  color: (viewMode === "contract" && !showMyTankSpeciesOnly) ? "#fff" : "var(--text-secondary)",
+                  color: (viewMode === "contract" && !showMyTankSpeciesOnly) ? "var(--accent-blue)" : "var(--text-secondary)",
                   padding: "0.45rem 1.25rem",
                   fontSize: "0.78rem",
                   fontWeight: "600",
@@ -1881,7 +1881,7 @@ export function BreedGallery({
                   alignItems: "center",
                   gap: "0.4rem",
                   border: (viewMode === "contract" && !showMyTankSpeciesOnly) ? "1px solid rgba(56, 189, 248, 0.3)" : "1px solid transparent",
-                  boxShadow: (viewMode === "contract" && !showMyTankSpeciesOnly) ? "0 0 10px rgba(56, 189, 248, 0.15)" : "none"
+                  boxShadow: (viewMode === "contract" && !showMyTankSpeciesOnly) ? "var(--glass-shadow)" : "none"
                 }}
               >
                 🌐 All Catalog Breeds ({speciesList.length})
@@ -1899,7 +1899,7 @@ export function BreedGallery({
                     : "transparent",
                   outline: "none",
                   borderRadius: "50px",
-                  color: (viewMode === "global") ? "#fff" : "var(--text-secondary)",
+                  color: (viewMode === "global") ? "var(--accent-blue)" : "var(--text-secondary)",
                   padding: "0.45rem 1.25rem",
                   fontSize: "0.78rem",
                   fontWeight: "600",
@@ -1909,7 +1909,7 @@ export function BreedGallery({
                   alignItems: "center",
                   gap: "0.4rem",
                   border: (viewMode === "global") ? "1px solid rgba(56, 189, 248, 0.3)" : "1px solid transparent",
-                  boxShadow: (viewMode === "global") ? "0 0 10px rgba(56, 189, 248, 0.15)" : "none"
+                  boxShadow: (viewMode === "global") ? "var(--glass-shadow)" : "none"
                 }}
               >
                 🌍 Global Database
@@ -1930,7 +1930,7 @@ export function BreedGallery({
                     : "transparent",
                   outline: "none",
                   borderRadius: "50px",
-                  color: (viewMode === "contract") ? "#fff" : "var(--text-secondary)",
+                  color: (viewMode === "contract") ? "var(--accent-blue)" : "var(--text-secondary)",
                   padding: "0.45rem 1.25rem",
                   fontSize: "0.78rem",
                   fontWeight: "600",
@@ -1940,7 +1940,7 @@ export function BreedGallery({
                   alignItems: "center",
                   gap: "0.4rem",
                   border: (viewMode === "contract") ? "1px solid rgba(56, 189, 248, 0.3)" : "1px solid transparent",
-                  boxShadow: (viewMode === "contract") ? "0 0 10px rgba(56, 189, 248, 0.15)" : "none"
+                  boxShadow: (viewMode === "contract") ? "var(--glass-shadow)" : "none"
                 }}
               >
                 🐠 My Collection ({residingSpecies.length})
@@ -1958,7 +1958,7 @@ export function BreedGallery({
                     : "transparent",
                   outline: "none",
                   borderRadius: "50px",
-                  color: (viewMode === "global") ? "#fff" : "var(--text-secondary)",
+                  color: (viewMode === "global") ? "var(--accent-blue)" : "var(--text-secondary)",
                   padding: "0.45rem 1.25rem",
                   fontSize: "0.78rem",
                   fontWeight: "600",
@@ -1968,7 +1968,7 @@ export function BreedGallery({
                   alignItems: "center",
                   gap: "0.4rem",
                   border: (viewMode === "global") ? "1px solid rgba(56, 189, 248, 0.3)" : "1px solid transparent",
-                  boxShadow: (viewMode === "global") ? "0 0 10px rgba(56, 189, 248, 0.15)" : "none"
+                  boxShadow: (viewMode === "global") ? "var(--glass-shadow)" : "none"
                 }}
               >
                 🌐 All Species
@@ -1993,7 +1993,7 @@ export function BreedGallery({
                   : "transparent",
                 outline: "none",
                 borderRadius: "50px",
-                color: (viewMode === "curation") ? "#fff" : "var(--text-secondary)",
+                color: (viewMode === "curation") ? "var(--accent-blue)" : "var(--text-secondary)",
                 padding: "0.45rem 1.25rem",
                 fontSize: "0.78rem",
                 fontWeight: "600",
@@ -2003,7 +2003,7 @@ export function BreedGallery({
                 alignItems: "center",
                 gap: "0.4rem",
                 border: (viewMode === "curation") ? "1px solid rgba(56, 189, 248, 0.3)" : "1px solid transparent",
-                boxShadow: (viewMode === "curation") ? "0 0 10px rgba(56, 189, 248, 0.15)" : "none"
+                boxShadow: (viewMode === "curation") ? "var(--glass-shadow)" : "none"
               }}
             >
               🛠️ Curation Queue
@@ -2030,10 +2030,10 @@ export function BreedGallery({
               style={{ 
                 width: "100%", 
                 padding: "0.6rem 2.5rem 0.6rem 1rem", 
-                background: "rgba(255, 255, 255, 0.03)", 
+                background: "rgba(var(--ink-rgb), 0.03)", 
                 border: `1px solid ${isParsing ? 'rgba(56, 189, 248, 0.4)' : 'var(--glass-border)'}`, 
                 borderRadius: "50px", 
-                color: "#fff", 
+                color: "var(--text-primary)", 
                 fontSize: "0.875rem",
                 outline: "none",
                 transition: "border-color 0.2s"
@@ -2042,7 +2042,7 @@ export function BreedGallery({
               onBlur={(e) => { if (!isParsing) e.target.style.borderColor = "var(--glass-border)"; }}
             />
             {isParsing && (
-              <span style={{ position: "absolute", right: "38px", top: "50%", transform: "translateY(-50%)", fontSize: "0.65rem", color: "rgba(56, 189, 248, 0.7)" }}>
+              <span style={{ position: "absolute", right: "38px", top: "50%", transform: "translateY(-50%)", fontSize: "0.65rem", color: "var(--accent-blue)" }}>
                 🔱
               </span>
             )}
@@ -2096,22 +2096,22 @@ export function BreedGallery({
                 padding: "0.6rem 1.25rem",
                 borderRadius: "50px",
                 border: "1px solid rgba(56, 189, 248, 0.3)",
-                color: "#38bdf8",
+                color: "var(--accent-blue)",
                 fontSize: "0.875rem",
                 fontWeight: "700",
                 cursor: "pointer",
                 whiteSpace: "nowrap",
                 background: "rgba(56, 189, 248, 0.05)",
-                boxShadow: "0 0 8px rgba(56, 189, 248, 0.15)",
+                boxShadow: "none",
                 outline: "none"
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.background = "rgba(56, 189, 248, 0.12)";
-                e.currentTarget.style.boxShadow = "0 0 12px rgba(56, 189, 248, 0.3)";
+                e.currentTarget.style.boxShadow = "var(--glass-shadow)";
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.background = "rgba(56, 189, 248, 0.05)";
-                e.currentTarget.style.boxShadow = "0 0 8px rgba(56, 189, 248, 0.15)";
+                e.currentTarget.style.boxShadow = "none";
               }}
             >
               ⚡ Suggest Species
@@ -2242,34 +2242,34 @@ export function BreedGallery({
                   style={{
                     background: isBadgeSelected 
                       ? "linear-gradient(135deg, rgba(56, 189, 248, 0.15) 0%, rgba(14, 165, 233, 0.25) 100%)" 
-                      : "rgba(255, 255, 255, 0.03)",
+                      : "rgba(var(--ink-rgb), 0.03)",
                     border: isBadgeSelected 
                       ? "1px solid rgba(56, 189, 248, 0.45)" 
-                      : "1px solid rgba(255, 255, 255, 0.06)",
-                    color: isBadgeSelected ? "#fff" : "var(--text-secondary)",
+                      : "1px solid rgba(var(--ink-rgb), 0.11)",
+                    color: isBadgeSelected ? "var(--accent-blue)" : "var(--text-secondary)",
                     padding: "0.25rem 0.65rem",
                     borderRadius: "50px",
                     fontSize: "0.7rem",
                     fontWeight: "500",
                     cursor: "pointer",
                     transition: "all 0.25s ease",
-                    boxShadow: isBadgeSelected ? "0 0 10px rgba(56, 189, 248, 0.2)" : "0 2px 8px rgba(0,0,0,0.1)"
+                    boxShadow: isBadgeSelected ? "var(--glass-shadow)" : "0 1px 2px rgba(var(--ink-rgb), 0.05)"
                   }}
                   onMouseEnter={(e) => {
                     if (!isBadgeSelected) {
                       e.currentTarget.style.background = "rgba(56, 189, 248, 0.08)";
                       e.currentTarget.style.borderColor = "rgba(56, 189, 248, 0.3)";
-                      e.currentTarget.style.color = "#7dd3fc";
+                      e.currentTarget.style.color = "var(--accent-blue)";
                       e.currentTarget.style.boxShadow = "0 4px 12px rgba(56, 189, 248, 0.15)";
                     }
                     e.currentTarget.style.transform = "translateY(-1px)";
                   }}
                   onMouseLeave={(e) => {
                     if (!isBadgeSelected) {
-                      e.currentTarget.style.background = "rgba(255, 255, 255, 0.03)";
-                      e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.06)";
+                      e.currentTarget.style.background = "rgba(var(--ink-rgb), 0.03)";
+                      e.currentTarget.style.borderColor = "rgba(var(--ink-rgb), 0.11)";
                       e.currentTarget.style.color = "var(--text-secondary)";
-                      e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.1)";
+                      e.currentTarget.style.boxShadow = "0 2px 8px rgba(var(--ink-rgb), 0.04)";
                     }
                     e.currentTarget.style.transform = "translateY(0)";
                   }}
@@ -2301,7 +2301,7 @@ export function BreedGallery({
         </div>
       ) : error ? (
         <div className="glass-card" style={{ padding: "3rem", textAlign: "center", border: "1px solid rgba(239, 68, 68, 0.2)" }}>
-          <p style={{ color: "#ef4444" }}>{error}</p>
+          <p style={{ color: "var(--accent-red)" }}>{error}</p>
           <button onClick={refetchContractSpecies} className="btn-secondary" style={{ marginTop: "1rem" }}>Retry</button>
         </div>
       ) : filteredSpecies.length === 0 ? (
@@ -2348,7 +2348,7 @@ export function BreedGallery({
           >
             <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
               <span style={{ fontSize: "1.1rem" }}>🎛️</span>
-              <span style={{ fontSize: "0.85rem", fontWeight: "600", color: "#fff", letterSpacing: "0.03em" }}>
+              <span style={{ fontSize: "0.85rem", fontWeight: "600", color: "var(--text-primary)", letterSpacing: "0.03em" }}>
                 {casualModeActive ? "Filter Fish" : "Filters & Refinement"}
               </span>
               {(filters.type !== "All" || filters.difficulty !== "All" || filters.tempBucket !== "All" || filters.phBucket !== "All") && (
@@ -2397,13 +2397,13 @@ export function BreedGallery({
               display: "flex", 
               flexWrap: "wrap",
               gap: "1.5rem",
-              background: "rgba(255,255,255,0.01)",
-              border: "1px solid rgba(255,255,255,0.06)",
+              background: "rgba(var(--ink-rgb), 0.02)",
+              border: "1px solid rgba(var(--ink-rgb), 0.11)",
               borderRadius: "var(--radius-sm)"
             }}
           >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "0.75rem", width: "100%" }}>
-              <span style={{ fontSize: "0.8rem", fontWeight: "700", color: "#fff", letterSpacing: "0.05em" }}>FILTERS</span>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid rgba(var(--ink-rgb), 0.1)", paddingBottom: "0.75rem", width: "100%" }}>
+              <span style={{ fontSize: "0.8rem", fontWeight: "700", color: "var(--text-primary)", letterSpacing: "0.05em" }}>FILTERS</span>
               <button 
                 onClick={resetFilters} 
                 style={{ 
@@ -2642,10 +2642,10 @@ export function BreedGallery({
                 <div className="glass-card" style={{ 
                   padding: "5rem 2rem", 
                   textAlign: "center", 
-                  background: "linear-gradient(135deg, rgba(6, 20, 38, 0.6) 0%, rgba(8, 12, 20, 0.8) 100%)",
+                  background: "linear-gradient(135deg, rgba(5, 150, 105, 0.06) 0%, var(--bg-secondary) 100%)",
                   border: "1px dashed rgba(16, 185, 129, 0.3)",
                   borderRadius: "20px",
-                  boxShadow: "0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255,255,255,0.05)",
+                  boxShadow: "var(--glass-shadow)",
                   maxWidth: "600px",
                   margin: "2rem auto"
                 }}>
@@ -2659,17 +2659,17 @@ export function BreedGallery({
                     alignItems: "center",
                     justifyContent: "center",
                     margin: "0 auto 1.5rem",
-                    boxShadow: "0 0 20px rgba(16, 185, 129, 0.15)"
+                    boxShadow: "none"
                   }}>
                     <span style={{ fontSize: "2.5rem" }}>🐠</span>
                   </div>
                   <h3 style={{ 
-                    color: "#fff", 
+                    color: "var(--accent-green)", 
                     fontSize: "1.5rem", 
                     fontWeight: "700", 
                     marginBottom: "0.75rem",
                     letterSpacing: "-0.01em",
-                    background: "linear-gradient(90deg, #10b981, #34d399)",
+                    background: "linear-gradient(90deg, #047857, #059669)",
                     WebkitBackgroundClip: "text",
                     WebkitTextFillColor: "transparent"
                   }}>
@@ -2690,16 +2690,16 @@ export function BreedGallery({
                       border: "1px solid rgba(52, 211, 153, 0.4)",
                       color: "#fff",
                       cursor: "pointer",
-                      boxShadow: "0 4px 15px rgba(16, 185, 129, 0.3), 0 0 0 1px rgba(16, 185, 129, 0.2)",
+                      boxShadow: "0 4px 12px rgba(5, 150, 105, 0.22)",
                       transition: "all 0.25s ease"
                     }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.transform = "translateY(-2px)";
-                      e.currentTarget.style.boxShadow = "0 6px 20px rgba(16, 185, 129, 0.45), 0 0 0 2px rgba(16, 185, 129, 0.3)";
+                      e.currentTarget.style.boxShadow = "0 6px 16px rgba(5, 150, 105, 0.3)";
                     }}
                     onMouseLeave={(e) => {
                       e.currentTarget.style.transform = "translateY(0)";
-                      e.currentTarget.style.boxShadow = "0 4px 15px rgba(16, 185, 129, 0.3), 0 0 0 1px rgba(16, 185, 129, 0.2)";
+                      e.currentTarget.style.boxShadow = "0 4px 12px rgba(5, 150, 105, 0.22)";
                     }}
                   >
                     Register First Specimen 🐠
@@ -2743,9 +2743,9 @@ export function BreedGallery({
                         borderRadius: "20px",
                         background: "rgba(56, 189, 248, 0.15)",
                         border: "1px solid rgba(56, 189, 248, 0.5)",
-                        color: "#38bdf8",
+                        color: "var(--accent-blue)",
                         cursor: "pointer",
-                        boxShadow: "0 0 10px rgba(56, 189, 248, 0.1)"
+                        boxShadow: "none"
                       }}
                     >
                       Browse All Catalog Breeds 🌐
@@ -2790,9 +2790,9 @@ export function BreedGallery({
                         borderRadius: "20px",
                         background: "rgba(56, 189, 248, 0.15)",
                         border: "1px solid rgba(56, 189, 248, 0.5)",
-                        color: "#38bdf8",
+                        color: "var(--accent-blue)",
                         cursor: "pointer",
-                        boxShadow: "0 0 10px rgba(56, 189, 248, 0.1)"
+                        boxShadow: "none"
                       }}
                     >
                       Propose new species suggestion 🐠
@@ -2810,7 +2810,7 @@ export function BreedGallery({
                   width: "100%",
                   position: "relative",
                   scrollbarWidth: "thin",
-                  scrollbarColor: "rgba(255,255,255,0.1) transparent"
+                  scrollbarColor: "rgba(var(--ink-rgb), 0.15) transparent"
                 }}
               >
                 <div
@@ -2890,18 +2890,18 @@ export function BreedGallery({
             position: "fixed",
             bottom: "2rem",
             right: "2rem",
-            background: "rgba(14, 20, 36, 0.95)",
+            background: "var(--bg-secondary)",
             border: "1px solid var(--accent-blue)",
             borderRadius: "var(--radius-sm)",
             padding: "1rem 1.25rem",
-            boxShadow: "0 8px 32px rgba(0, 0, 0, 0.6)",
+            boxShadow: "0 8px 32px rgba(var(--ink-rgb), 0.14)",
             zIndex: 10000,
             display: "flex",
             flexDirection: "column",
             animation: "shimmer 3s ease-in-out infinite",
           }}
         >
-          <strong style={{ color: "#fff", display: "block", fontSize: "0.85rem", marginBottom: "0.25rem" }}>CURATION QUEUE</strong>
+          <strong style={{ color: "var(--text-primary)", display: "block", fontSize: "0.85rem", marginBottom: "0.25rem" }}>CURATION QUEUE</strong>
           <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>{notification.message}</span>
         </div>
       )}
@@ -2913,7 +2913,7 @@ export function BreedGallery({
           left: 0,
           right: 0,
           bottom: 0,
-          background: "rgba(10, 15, 30, 0.8)",
+          background: "rgba(11, 37, 48, 0.45)",
           backdropFilter: "blur(12px)",
           display: "flex",
           alignItems: "center",
@@ -2925,7 +2925,7 @@ export function BreedGallery({
             maxWidth: "480px",
             width: "100%",
             padding: "2rem",
-            background: "rgba(14, 20, 36, 0.95)",
+            background: "var(--bg-secondary)",
             border: `1px solid ${activeLoreEgg.border}`,
             borderRadius: "1rem",
             boxShadow: `0 20px 50px ${activeLoreEgg.glow}`,
@@ -2951,7 +2951,7 @@ export function BreedGallery({
               {activeLoreEgg.emoji}
             </div>
             
-            <h3 style={{ fontSize: "1.5rem", fontWeight: "800", color: "#fff", margin: 0 }}>
+            <h3 style={{ fontSize: "1.5rem", fontWeight: "800", color: "var(--text-primary)", margin: 0 }}>
               {activeLoreEgg.title}
             </h3>
             
@@ -2960,7 +2960,7 @@ export function BreedGallery({
             </p>
 
             {activeLoreEgg.key === "magikarp_pokemon" && evolutionError && (
-              <p style={{ color: "#ef4444", fontSize: "0.8rem", margin: "0.5rem 0", lineHeight: "1.4" }}>
+              <p style={{ color: "var(--accent-red)", fontSize: "0.8rem", margin: "0.5rem 0", lineHeight: "1.4" }}>
                 ⚠️ {evolutionError}
               </p>
             )}
@@ -3080,7 +3080,7 @@ export function BreedGallery({
           <h2 style={{ color: "#fff", marginTop: "2rem", fontWeight: "900", letterSpacing: "0.1em", fontSize: "2rem", textShadow: "0 0 10px #f97316" }}>
             EVOLVING...
           </h2>
-          <p style={{ color: "#94a3b8", fontSize: "0.9rem", marginTop: "0.5rem" }}>
+          <p style={{ color: "rgba(255, 255, 255, 0.75)", fontSize: "0.9rem", marginTop: "0.5rem" }}>
             The water parameters are perfect. Biological code restructure initiated!
           </p>
 

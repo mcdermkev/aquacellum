@@ -14,7 +14,7 @@ function dexBorderColor(percent) {
   if (percent >= 75) return "rgba(255, 215, 0, 0.3)";   // gold
   if (percent >= 50) return "rgba(192, 192, 210, 0.3)";  // silver
   if (percent >= 25) return "rgba(205, 127, 50, 0.3)";   // bronze
-  return "rgba(255, 255, 255, 0.06)";                     // default
+  return "rgba(var(--ink-rgb), 0.06)";                     // default
 }
 
 function dexBoxShadow(percent) {

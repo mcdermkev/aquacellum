@@ -181,8 +181,8 @@ export function DiscoverySection({ casualModeActive }) {
                         gap: 12,
                         padding: "10px 12px",
                         borderRadius: 8,
-                        border: "1px solid rgba(255,255,255,0.08)",
-                        background: "rgba(255,255,255,0.02)",
+                        border: "1px solid rgba(var(--ink-rgb), 0.08)",
+                        background: "rgba(var(--ink-rgb), 0.02)",
                       }}
                     >
                       <span style={{ minWidth: 0 }}>

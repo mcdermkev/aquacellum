@@ -11,11 +11,11 @@ import { ProfileCard } from "./ProfileCard";
 import { supabase, getCurrentWallet, isSupabaseConfigured } from "../../services/supabaseClient";
 
 const CATEGORIES = [
-  { id: "care_tip", label: "💡 Care Tip", color: "#38bdf8" },
-  { id: "warning", label: "⚠️ Warning", color: "#f87171" },
-  { id: "breeding_note", label: "🥚 Breeding", color: "#34d399" },
-  { id: "compatibility", label: "🤝 Compatibility", color: "#a855f7" },
-  { id: "behavior", label: "👁️ Behavior", color: "#fbbf24" },
+  { id: "care_tip", label: "💡 Care Tip", color: "#0369a1" },
+  { id: "warning", label: "⚠️ Warning", color: "#b91c1c" },
+  { id: "breeding_note", label: "🥚 Breeding", color: "#047857" },
+  { id: "compatibility", label: "🤝 Compatibility", color: "#6d28d9" },
+  { id: "behavior", label: "👁️ Behavior", color: "#b45309" },
 ];
 
 function getCategoryInfo(id) {
@@ -44,8 +44,8 @@ function InsightCard({ insight, onVote }) {
       style={{
         padding: "0.75rem",
         borderRadius: "10px",
-        background: "rgba(255, 255, 255, 0.02)",
-        border: "1px solid rgba(255, 255, 255, 0.06)",
+        background: "rgba(var(--ink-rgb), 0.03)",
+        border: "1px solid rgba(var(--ink-rgb), 0.11)",
         display: "flex",
         gap: "0.6rem",
       }}
@@ -181,7 +181,7 @@ function InsightComposer({ specCode, onSubmit }) {
               borderRadius: "50px",
               border: category === cat.id
                 ? `1px solid ${cat.color}`
-                : "1px solid rgba(255, 255, 255, 0.08)",
+                : "1px solid rgba(var(--ink-rgb), 0.13)",
               background: category === cat.id ? `${cat.color}15` : "transparent",
               color: category === cat.id ? cat.color : "var(--text-muted)",
               fontSize: "0.6rem",
@@ -205,9 +205,9 @@ function InsightComposer({ specCode, onSubmit }) {
             flex: 1,
             padding: "0.5rem 0.65rem",
             borderRadius: "8px",
-            border: "1px solid rgba(255, 255, 255, 0.08)",
-            background: "rgba(255, 255, 255, 0.03)",
-            color: "#fff",
+            border: "1px solid rgba(var(--ink-rgb), 0.13)",
+            background: "rgba(var(--ink-rgb), 0.03)",
+            color: "var(--text-primary)",
             fontSize: "0.8rem",
             lineHeight: "1.5",
             fontFamily: "inherit",
@@ -216,7 +216,7 @@ function InsightComposer({ specCode, onSubmit }) {
             minHeight: "50px",
           }}
           onFocus={(e) => { e.target.style.borderColor = "rgba(56, 189, 248, 0.3)"; }}
-          onBlur={(e) => { e.target.style.borderColor = "rgba(255, 255, 255, 0.08)"; }}
+          onBlur={(e) => { e.target.style.borderColor = "rgba(var(--ink-rgb), 0.13)"; }}
           onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey && body.trim()) { e.preventDefault(); handleSubmit(); } }}
         />
         <button
@@ -226,7 +226,7 @@ function InsightComposer({ specCode, onSubmit }) {
             padding: "0.45rem 0.7rem",
             borderRadius: "8px",
             border: "none",
-            background: body.trim() ? "linear-gradient(135deg, #0ea5e9, #0369a1)" : "rgba(255,255,255,0.05)",
+            background: body.trim() ? "linear-gradient(135deg, #0ea5e9, #0369a1)" : "rgba(var(--ink-rgb), 0.05)",
             color: body.trim() ? "#fff" : "var(--text-muted)",
             fontSize: "0.7rem",
             fontWeight: 600,

@@ -143,24 +143,24 @@ export function LivingTankPreview() {
       : "Alert — murky water, sluggish fish";
 
   const statusColor =
-    ambient.status === "ok" ? "#34d399" : ambient.status === "drifting" ? "#fbbf24" : "#f87171";
+    ambient.status === "ok" ? "var(--accent-green)" : ambient.status === "drifting" ? "var(--accent-amber)" : "var(--accent-red)";
 
   return (
     <div
       style={{
         minHeight: "100vh",
-        background: "radial-gradient(1200px 600px at 50% -10%, #0b2135 0%, #050b14 60%, #03070e 100%)",
-        color: "#e6eef7",
+        background: "var(--bg-primary)",
+        color: "var(--text-primary)",
         padding: "2rem max(1.5rem, (100vw - 1100px) / 2)",
         fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif",
       }}
     >
       <header style={{ marginBottom: "1.5rem" }}>
-        <div style={{ fontSize: "0.7rem", letterSpacing: "0.12em", textTransform: "uppercase", color: "#5b9bd5" }}>
+        <div style={{ fontSize: "0.7rem", letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--accent-blue)" }}>
           Logbook Rework · Task 3 Prototype
         </div>
         <h1 style={{ fontSize: "1.6rem", margin: "0.25rem 0 0.4rem" }}>Living Tank engine</h1>
-        <p style={{ margin: 0, color: "rgba(230,238,247,0.6)", fontSize: "0.9rem", maxWidth: 640 }}>
+        <p style={{ margin: 0, color: "var(--text-muted)", fontSize: "0.9rem", maxWidth: 640 }}>
           The same tank rendered as three variants. Drag the health slider to watch the water
           communicate status — clarity, tint, and fish liveliness all respond. Enable your OS
           "reduce motion" setting to see the static fallback.
@@ -175,26 +175,26 @@ export function LivingTankPreview() {
           gap: "1.5rem",
           alignItems: "center",
           padding: "1rem 1.25rem",
-          background: "rgba(255,255,255,0.03)",
-          border: "1px solid rgba(255,255,255,0.08)",
+          background: "var(--bg-secondary)",
+          border: "1px solid var(--glass-border)",
           borderRadius: 12,
           marginBottom: "2rem",
         }}
       >
         <label style={{ display: "flex", flexDirection: "column", gap: "0.35rem", minWidth: 240, flex: 1 }}>
-          <span style={{ fontSize: "0.75rem", color: "rgba(230,238,247,0.7)" }}>
+          <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>
             Tank health: <strong style={{ color: statusColor }}>{score}</strong> · {statusCopy}
           </span>
           <input type="range" min={0} max={100} value={score} onChange={(e) => setScore(Number(e.target.value))} />
         </label>
 
         <label style={{ display: "flex", flexDirection: "column", gap: "0.35rem", minWidth: 200, flex: 1 }}>
-          <span style={{ fontSize: "0.75rem", color: "rgba(230,238,247,0.7)" }}>Fish count: <strong>{fishCount}</strong></span>
+          <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>Fish count: <strong>{fishCount}</strong></span>
           <input type="range" min={0} max={20} value={fishCount} onChange={(e) => setFishCount(Number(e.target.value))} />
         </label>
 
         <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
-          <span style={{ fontSize: "0.75rem", color: "rgba(230,238,247,0.7)" }}>Water type</span>
+          <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>Water type</span>
           <div style={{ display: "flex", gap: "0.35rem" }}>
             {TYPES.map((t) => (
               <button
@@ -205,9 +205,9 @@ export function LivingTankPreview() {
                   fontSize: "0.75rem",
                   borderRadius: 8,
                   cursor: "pointer",
-                  border: tankType === t.value ? "1px solid #38bdf8" : "1px solid rgba(255,255,255,0.12)",
-                  background: tankType === t.value ? "rgba(56,189,248,0.15)" : "transparent",
-                  color: tankType === t.value ? "#7dd3fc" : "rgba(230,238,247,0.7)",
+                  border: tankType === t.value ? "1px solid var(--accent-blue-fill)" : "1px solid rgba(var(--ink-rgb), 0.12)",
+                  background: tankType === t.value ? "var(--accent-blue-glow)" : "transparent",
+                  color: tankType === t.value ? "var(--accent-blue)" : "var(--text-secondary)",
                 }}
               >
                 {t.label}
@@ -259,7 +259,7 @@ export function LivingTankPreview() {
             { label: "Alert (20)", s: 20 },
           ].map((c) => (
             <div key={c.label}>
-              <div style={{ fontSize: "0.72rem", color: "rgba(230,238,247,0.6)", marginBottom: "0.4rem" }}>{c.label}</div>
+              <div style={{ fontSize: "0.72rem", color: "var(--text-muted)", marginBottom: "0.4rem" }}>{c.label}</div>
               <LivingTank
                 tank={tank}
                 health={{ status: livingTankAmbient(c.s).status, ambient: livingTankAmbient(c.s) }}
@@ -275,7 +275,7 @@ export function LivingTankPreview() {
       <section style={{ marginTop: "2rem" }}>
         <SectionTitle>Casual Tank Gallery (live component · mock tanks · varying health)</SectionTitle>
         {tapped && (
-          <p style={{ fontSize: "0.75rem", color: "#7dd3fc", margin: "0 0 0.5rem" }}>
+          <p style={{ fontSize: "0.75rem", color: "var(--accent-blue)", margin: "0 0 0.5rem" }}>
             Tapped <strong>{tapped}</strong> — opens the detail panel in the real app.
           </p>
         )}
@@ -331,7 +331,7 @@ export function LivingTankPreview() {
 
 function SectionTitle({ children }) {
   return (
-    <h2 style={{ fontSize: "0.8rem", fontWeight: 600, color: "rgba(230,238,247,0.75)", margin: "0 0 0.6rem", letterSpacing: "0.02em" }}>
+    <h2 style={{ fontSize: "0.8rem", fontWeight: 600, color: "var(--text-secondary)", margin: "0 0 0.6rem", letterSpacing: "0.02em" }}>
       {children}
     </h2>
   );

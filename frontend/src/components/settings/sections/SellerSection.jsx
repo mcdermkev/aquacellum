@@ -91,10 +91,10 @@ export function SellerSection({ casualModeActive }) {
               textAlign: "left",
               font: "inherit",
               color: "inherit",
-              border: "1px solid rgba(255,255,255,0.08)",
+              border: "1px solid rgba(var(--ink-rgb), 0.08)",
               borderRadius: 8,
               padding: "10px 12px",
-              background: "rgba(255,255,255,0.02)",
+              background: "rgba(var(--ink-rgb), 0.02)",
               cursor: "pointer",
             }}
           >
@@ -131,7 +131,7 @@ export function SellerSection({ casualModeActive }) {
         style={{
           marginTop: "1.5rem",
           paddingTop: "1.25rem",
-          borderTop: "1px solid rgba(255,255,255,0.06)",
+          borderTop: "1px solid rgba(var(--ink-rgb), 0.06)",
         }}
       >
         <SubsectionLabel>{casualModeActive ? "Away mode" : "Vacation mode"}</SubsectionLabel>

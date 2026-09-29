@@ -250,12 +250,12 @@ export function ShowcaseVideoGallery({ roomId, ownerAddress, enabled }) {
 
   return (
     <div className="glass-card" style={{ padding: "1rem" }}>
-      <h4 style={{ color: "#fff", marginTop: 0 }}>7. Signed room video gallery</h4>
+      <h4 style={{ color: "var(--text-primary)", marginTop: 0 }}>7. Signed room video gallery</h4>
       <p style={{ color: "var(--text-secondary)" }}>
         MP4 sources stay private, are validated by the durable worker, and receive signed Mux playback only.
         Gallery entries are room-level and capped at 20.
       </p>
-      {!enabled && <p style={{ color: "#fbbf24" }}>Signed room video is not configured in this environment.</p>}
+      {!enabled && <p style={{ color: "var(--accent-amber)" }}>Signed room video is not configured in this environment.</p>}
       <input type="file" accept="video/mp4,.mp4" disabled={!enabled || phase === "uploading" || phase === "finalizing"}
         onChange={(event) => { setFile(event.target.files?.[0] || null); setError(null); }} />
       <button type="button" className="btn-secondary" style={{ marginLeft: ".6rem" }}
@@ -266,7 +266,7 @@ export function ShowcaseVideoGallery({ roomId, ownerAddress, enabled }) {
           setPhase("recovery-required"); setError(errorMessage(failure));
         })}>Finalize observed upload</button>}
       <p style={{ color: "var(--text-muted)", fontSize: ".8rem" }}>Video state: <strong>{phase}</strong> · {videos.length}/20 retained assets</p>
-      {error && <p role="alert" style={{ color: "#f87171" }}>{error}</p>}
+      {error && <p role="alert" style={{ color: "var(--accent-red)" }}>{error}</p>}
       <button type="button" className="btn-secondary" onClick={() => refresh().catch((failure) => setError(errorMessage(failure)))}>Refresh videos</button>
 
       {videos.map((video, index) => {

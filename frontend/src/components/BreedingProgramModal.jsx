@@ -52,13 +52,13 @@ const CONFIRM_THRESHOLD = 20;
 const inputStyle = {
   width: "100%",
   padding: "0.45rem",
-  background: "rgba(255,255,255,0.03)",
+  background: "rgba(var(--ink-rgb), 0.03)",
   border: "1px solid var(--glass-border)",
-  color: "#fff",
+  color: "var(--text-primary)",
   borderRadius: "4px",
   fontSize: "0.8rem",
 };
-const selectStyle = { ...inputStyle, background: "rgba(8,12,20,0.9)" };
+const selectStyle = { ...inputStyle, background: "var(--bg-secondary)" };
 const numStyle = { ...inputStyle, textAlign: "center" };
 const thStyle = { padding: "0.35rem 0.4rem", fontSize: "0.68rem", color: "var(--text-muted)", textAlign: "left", fontWeight: 600 };
 const tdStyle = { padding: "0.3rem 0.4rem", verticalAlign: "middle" };
@@ -175,7 +175,7 @@ export function BreedingProgramModal({ walletAccount, catalog = [], casualModeAc
       style={{
         position: "fixed",
         inset: 0,
-        background: "rgba(0, 0, 0, 0.75)",
+        background: "rgba(11, 37, 48, 0.45)",
         backdropFilter: "blur(8px)",
         display: "flex",
         alignItems: "center",
@@ -351,7 +351,7 @@ export function BreedingProgramModal({ walletAccount, catalog = [], casualModeAc
             marginTop: "0.85rem",
             padding: "0.7rem 0.85rem",
             borderRadius: "var(--radius-sm)",
-            background: "rgba(255,255,255,0.02)",
+            background: "rgba(var(--ink-rgb), 0.02)",
             border: "1px dashed var(--glass-border)",
             fontSize: "0.72rem",
             color: "var(--text-muted)",

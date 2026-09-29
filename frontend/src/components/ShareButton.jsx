@@ -55,7 +55,7 @@ export function ShareButton({ generateCard, title, text, label = "Share", size =
         fontWeight: "600",
         background: feedback ? "rgba(52, 211, 153, 0.1)" : "rgba(139, 92, 246, 0.06)",
         border: `1px solid ${feedback ? "rgba(52, 211, 153, 0.3)" : "rgba(139, 92, 246, 0.15)"}`,
-        color: feedback ? "#34d399" : "#a78bfa",
+        color: feedback ? "var(--accent-green)" : "var(--accent-violet)",
         cursor: sharing ? "wait" : "pointer",
         transition: "all 0.2s",
         opacity: sharing ? 0.6 : 1,

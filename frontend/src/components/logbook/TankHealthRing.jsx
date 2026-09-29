@@ -14,7 +14,8 @@ import React from "react";
 export function TankHealthRing({ health, size = 56, label = true }) {
   const score = Math.max(0, Math.min(100, Number(health?.score ?? 70)));
   const status = health?.status || "ok";
-  const color = status === "ok" ? "#34d399" : status === "drifting" ? "#fbbf24" : "#f87171";
+  // Hex (not CSS vars): used as an SVG stroke attribute and as text. Text-safe shades on white.
+  const color = status === "ok" ? "#047857" : status === "drifting" ? "#b45309" : "#b91c1c";
   const statusWord = status === "ok" ? "Thriving" : status === "drifting" ? "Needs a look" : "Needs care";
 
   const stroke = 5;
@@ -25,7 +26,7 @@ export function TankHealthRing({ health, size = 56, label = true }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden="true" style={{ flexShrink: 0 }}>
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth={stroke} />
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(11,37,48,0.10)" strokeWidth={stroke} />
         <circle
           cx={size / 2}
           cy={size / 2}
@@ -43,7 +44,7 @@ export function TankHealthRing({ health, size = 56, label = true }) {
           y="50%"
           dominantBaseline="central"
           textAnchor="middle"
-          fill="#fff"
+          fill="#0b2530"
           fontSize={size * 0.3}
           fontWeight="700"
         >

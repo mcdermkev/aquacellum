@@ -78,7 +78,7 @@ export function SpecimenLineage({ contractAddress, walletAccount, preselectedTok
   return (
     <div style={{ maxWidth: "1000px", margin: "0 auto" }}>
       <div className="glass-card" style={{ padding: "2rem", marginBottom: "2rem" }}>
-        <h2 style={{ fontSize: "1.75rem", marginBottom: "0.25rem", color: "#fff" }}>Ancestry Family Tree Lookup</h2>
+        <h2 style={{ fontSize: "1.75rem", marginBottom: "0.25rem", color: "var(--text-primary)" }}>Ancestry Family Tree Lookup</h2>
         <p style={{ color: "var(--text-muted)", fontSize: "0.875rem", marginBottom: "1.5rem" }}>
           Lookup and trace the ancestry family tree of any registered birth certificate.
         </p>
@@ -91,7 +91,7 @@ export function SpecimenLineage({ contractAddress, walletAccount, preselectedTok
             <select
               value={specimenOptions.some((s) => s.id.toString() === tokenId.toString()) ? tokenId : ""}
               onChange={handlePickSpecimen}
-              style={{ width: "100%", padding: "0.75rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px" }}
+              style={{ width: "100%", padding: "0.75rem", background: "rgba(var(--ink-rgb), 0.03)", border: "1px solid var(--glass-border)", color: "var(--text-primary)", borderRadius: "4px" }}
             >
               <option value="" style={{ background: "var(--bg-secondary)" }}>Select a specimen…</option>
               {specimenOptions.map((spec) => (
@@ -113,7 +113,7 @@ export function SpecimenLineage({ contractAddress, walletAccount, preselectedTok
             onChange={(e) => setTokenId(e.target.value)}
             placeholder="Enter Certificate Serial No. (e.g. 001)"
             required
-            style={{ flex: 1, padding: "0.75rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px" }}
+            style={{ flex: 1, padding: "0.75rem", background: "rgba(var(--ink-rgb), 0.03)", border: "1px solid var(--glass-border)", color: "var(--text-primary)", borderRadius: "4px" }}
           />
           <button type="submit" className="btn-primary" disabled={loading}>
             {loading ? "Searching..." : "Generate Family Tree"}
@@ -143,7 +143,7 @@ export function SpecimenLineage({ contractAddress, walletAccount, preselectedTok
                 style={{
                   fontSize: "0.65rem", padding: "4px 10px", borderRadius: "8px",
                   background: "rgba(96, 165, 250, 0.08)", border: "1px solid rgba(96, 165, 250, 0.2)",
-                  color: "#60a5fa", fontWeight: "600", cursor: "pointer", transition: "all 0.2s",
+                  color: "var(--accent-blue)", fontWeight: "600", cursor: "pointer", transition: "all 0.2s",
                   display: "flex", alignItems: "center", gap: "4px",
                 }}
                 onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(96, 165, 250, 0.15)"; }}
@@ -156,7 +156,7 @@ export function SpecimenLineage({ contractAddress, walletAccount, preselectedTok
                 style={{
                   fontSize: "0.65rem", padding: "4px 10px", borderRadius: "8px",
                   background: "rgba(167, 139, 250, 0.08)", border: "1px solid rgba(167, 139, 250, 0.2)",
-                  color: "#a78bfa", fontWeight: "600", cursor: "pointer", transition: "all 0.2s",
+                  color: "var(--accent-violet)", fontWeight: "600", cursor: "pointer", transition: "all 0.2s",
                   display: "flex", alignItems: "center", gap: "4px",
                 }}
                 onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(167, 139, 250, 0.15)"; }}
@@ -170,7 +170,7 @@ export function SpecimenLineage({ contractAddress, walletAccount, preselectedTok
                 borderRadius: "12px",
                 background: "rgba(52, 211, 153, 0.08)",
                 border: "1px solid rgba(52, 211, 153, 0.2)",
-                color: "#34d399",
+                color: "var(--accent-green)",
                 fontWeight: "600",
               }}>
                 {PEDIGREE_DEPTH} Generations

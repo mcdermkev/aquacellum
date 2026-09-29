@@ -205,8 +205,8 @@ export function AquariumsSection({
             style={{
               padding: "0.75rem 1rem",
               borderRadius: 10,
-              background: "rgba(255,255,255,0.02)",
-              border: "1px solid rgba(255,255,255,0.08)",
+              background: "rgba(var(--ink-rgb), 0.02)",
+              border: "1px solid rgba(var(--ink-rgb), 0.08)",
               fontSize: 12,
               color: "var(--text-muted)",
               lineHeight: 1.5,
@@ -284,10 +284,10 @@ function optionStyle(selected) {
     textAlign: "left",
     font: "inherit",
     color: "inherit",
-    border: `1px solid ${selected ? "#38bdf8" : "rgba(255,255,255,0.08)"}`,
+    border: `1px solid ${selected ? "var(--accent-blue)" : "rgba(var(--ink-rgb), 0.08)"}`,
     borderRadius: 8,
     padding: "10px 12px",
-    background: selected ? "rgba(56, 189, 248, 0.08)" : "rgba(255,255,255,0.02)",
+    background: selected ? "rgba(56, 189, 248, 0.08)" : "rgba(var(--ink-rgb), 0.02)",
     cursor: selected ? "default" : "pointer",
   };
 }
@@ -297,7 +297,7 @@ function optionTitleStyle(selected) {
     display: "block",
     fontSize: 13,
     fontWeight: 600,
-    color: selected ? "#38bdf8" : "var(--text-primary)",
+    color: selected ? "var(--accent-blue)" : "var(--text-primary)",
   };
 }
 

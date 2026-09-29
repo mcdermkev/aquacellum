@@ -27,9 +27,9 @@ const TRANSACTION_ICONS = {
 
 const TRANSACTION_COLORS = {
   distribution: "var(--accent-green, #34d399)",
-  checkout_applied: "var(--accent-cyan, #22d3ee)",
+  checkout_applied: "var(--accent-teal)",
   expired: "var(--text-muted, #64748b)",
-  manual_adjustment: "var(--accent-purple, #a855f7)",
+  manual_adjustment: "var(--accent-violet)",
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -74,13 +74,13 @@ export function RewardCreditsCard({ casualModeActive = true, compact = false }) 
         style={{
           padding: compact ? "0.75rem" : "1rem 1.25rem",
           borderRadius: "var(--radius-sm)",
-          border: "1px solid rgba(255,255,255,0.06)",
-          background: "rgba(255,255,255,0.02)",
+          border: "1px solid rgba(var(--ink-rgb), 0.11)",
+          background: "rgba(var(--ink-rgb), 0.02)",
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
           <span style={{ fontSize: "1rem" }}>⭐</span>
-          <span style={{ fontSize: "0.8rem", fontWeight: "700", color: "#fff" }}>{rewardsLabel}</span>
+          <span style={{ fontSize: "0.8rem", fontWeight: "700", color: "var(--text-primary)" }}>{rewardsLabel}</span>
         </div>
         <div style={{ padding: "0.75rem 0", fontSize: "0.7rem", color: "var(--text-muted)" }}>
           Loading...
@@ -108,7 +108,7 @@ export function RewardCreditsCard({ casualModeActive = true, compact = false }) 
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
           <span style={{ fontSize: "1rem" }}>⭐</span>
-          <h4 style={{ margin: 0, fontSize: "0.8rem", fontWeight: "700", color: "#fff" }}>
+          <h4 style={{ margin: 0, fontSize: "0.8rem", fontWeight: "700", color: "var(--text-primary)" }}>
             {rewardsLabel}
           </h4>
         </div>
@@ -141,7 +141,7 @@ export function RewardCreditsCard({ casualModeActive = true, compact = false }) 
           fontSize: compact ? "1.3rem" : "1.6rem",
           fontWeight: "900",
           fontFamily: "'Outfit', sans-serif",
-          color: credits > 0 ? "#a855f7" : "var(--text-muted)",
+          color: credits > 0 ? "var(--accent-violet)" : "var(--text-muted)",
         }}>
           ${credits.toFixed(2)}
         </span>
@@ -173,8 +173,8 @@ export function RewardCreditsCard({ casualModeActive = true, compact = false }) 
       <div style={{
         padding: "0.4rem 0.6rem",
         borderRadius: "6px",
-        background: "rgba(255,255,255,0.02)",
-        border: "1px solid rgba(255,255,255,0.05)",
+        background: "rgba(var(--ink-rgb), 0.02)",
+        border: "1px solid rgba(var(--ink-rgb), 0.1)",
         fontSize: "0.65rem",
         color: "var(--text-muted)",
         display: "flex",
@@ -229,7 +229,7 @@ export function RewardCreditsCard({ casualModeActive = true, compact = false }) 
                 justifyContent: "space-between",
                 alignItems: "center",
                 padding: "0.3rem 0",
-                borderBottom: "1px solid rgba(255,255,255,0.03)",
+                borderBottom: "1px solid rgba(var(--ink-rgb), 0.08)",
                 fontSize: "0.68rem",
               }}
             >

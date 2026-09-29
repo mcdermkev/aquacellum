@@ -123,7 +123,7 @@ export function SteveShowcasePreview() {
     <div className="glass-card" style={{ ...panel, padding: "clamp(.8rem, 2vw, 1.4rem)" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "1rem", flexWrap: "wrap" }}>
         <div>
-          <h2 style={{ color: "#fff", margin: ".2rem 0" }}>{preview?.title || "Your fish room"}</h2>
+          <h2 style={{ color: "var(--text-primary)", margin: ".2rem 0" }}>{preview?.title || "Your fish room"}</h2>
           <p style={{ color: "var(--text-secondary)", margin: 0 }}>
             {preview?.description || "A live view of your tanks and fish, straight from My Aquariums."}
           </p>
@@ -152,7 +152,7 @@ export function SteveShowcasePreview() {
                 style={{
                   position: "relative", width: "46px", height: "26px", borderRadius: "999px",
                   border: "1px solid var(--glass-border)", cursor: visBusy ? "wait" : "pointer",
-                  background: isPublic ? "var(--accent-green, #34d399)" : "rgba(255,255,255,0.12)",
+                  background: isPublic ? "var(--accent-green-fill)" : "rgba(var(--ink-rgb), 0.12)",
                   transition: "background .2s", opacity: visBusy ? 0.6 : 1, flexShrink: 0,
                 }}
               >
@@ -176,7 +176,7 @@ export function SteveShowcasePreview() {
             : isPublic
               ? <>Your showcase is live at <code>/showcase/{SHOWCASE_SLUG}</code>. Anyone with the link can view it.</>
               : "Your showcase is private — only you can see it. Flip the switch to publish it."}
-          {visError && <span role="alert" style={{ color: "#f87171", marginLeft: ".5rem" }}>{visError}</span>}
+          {visError && <span role="alert" style={{ color: "var(--accent-red)", marginLeft: ".5rem" }}>{visError}</span>}
         </p>
       )}
 
@@ -184,7 +184,7 @@ export function SteveShowcasePreview() {
         {phase === "loading" && <p style={{ color: "var(--text-secondary)" }}>Loading your room…</p>}
 
         {phase === "sign-in" && (
-          <p style={{ color: "#fbbf24" }}>Sign in to see your fish room.</p>
+          <p style={{ color: "var(--accent-amber)" }}>Sign in to see your fish room.</p>
         )}
 
         {phase === "empty" && (
@@ -194,7 +194,7 @@ export function SteveShowcasePreview() {
         )}
 
         {phase === "error" && (
-          <p role="alert" style={{ color: "#f87171" }}>{error}</p>
+          <p role="alert" style={{ color: "var(--accent-red)" }}>{error}</p>
         )}
 
         {phase === "ready" && (

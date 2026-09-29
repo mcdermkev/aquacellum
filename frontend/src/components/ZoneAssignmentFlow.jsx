@@ -125,7 +125,7 @@ export function ZoneAssignmentFlow({
     <div style={{
       padding: "1.5rem",
       borderRadius: "16px",
-      background: "rgba(7, 5, 15, 0.8)",
+      background: "#ffffff",
       border: "1px solid rgba(139, 92, 246, 0.12)",
       backdropFilter: "blur(12px)",
       maxWidth: "420px",
@@ -141,7 +141,7 @@ export function ZoneAssignmentFlow({
               margin: "0 0 0.4rem",
               fontSize: "1.1rem",
               fontWeight: "800",
-              color: "#fff",
+              color: "var(--text-primary)",
               fontFamily: "'Outfit', sans-serif",
             }}>
               {isTransfer ? "Transfer Your Zone" : "Join Your Regional Zone"}
@@ -178,7 +178,7 @@ export function ZoneAssignmentFlow({
                 borderRadius: "10px",
                 background: "linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(56, 189, 248, 0.15))",
                 border: "1px solid rgba(139, 92, 246, 0.3)",
-                color: "#fff",
+                color: "var(--text-primary)",
                 fontSize: "0.85rem",
                 fontWeight: "700",
                 cursor: "pointer",
@@ -196,7 +196,7 @@ export function ZoneAssignmentFlow({
                   padding: "0.6rem 1rem",
                   borderRadius: "10px",
                   background: "transparent",
-                  border: "1px solid rgba(255,255,255,0.08)",
+                  border: "1px solid rgba(var(--ink-rgb), 0.13)",
                   color: "var(--text-muted)",
                   fontSize: "0.78rem",
                   cursor: "pointer",
@@ -233,7 +233,7 @@ export function ZoneAssignmentFlow({
         <>
           <div style={{ textAlign: "center", marginBottom: "1rem" }}>
             <span style={{ fontSize: "1.8rem", display: "block", marginBottom: "0.4rem" }}>🏆</span>
-            <h3 style={{ margin: "0 0 0.3rem", fontSize: "1rem", fontWeight: "800", color: "#fff" }}>
+            <h3 style={{ margin: "0 0 0.3rem", fontSize: "1rem", fontWeight: "800", color: "var(--text-primary)" }}>
               Zone Found!
             </h3>
           </div>
@@ -261,7 +261,7 @@ export function ZoneAssignmentFlow({
                 🗺️
               </div>
               <div>
-                <div style={{ fontSize: "0.88rem", fontWeight: "700", color: "#fff" }}>
+                <div style={{ fontSize: "0.88rem", fontWeight: "700", color: "var(--text-primary)" }}>
                   {zoneData.displayName}
                 </div>
                 <div style={{ fontSize: "0.65rem", color: "var(--text-muted)" }}>
@@ -288,7 +288,7 @@ export function ZoneAssignmentFlow({
                 padding: "0.65rem",
                 borderRadius: "8px",
                 background: "transparent",
-                border: "1px solid rgba(255,255,255,0.1)",
+                border: "1px solid rgba(var(--ink-rgb), 0.15)",
                 color: "var(--text-muted)",
                 fontSize: "0.78rem",
                 cursor: "pointer",
@@ -304,7 +304,7 @@ export function ZoneAssignmentFlow({
                 borderRadius: "8px",
                 background: "linear-gradient(135deg, rgba(251, 191, 36, 0.15), rgba(139, 92, 246, 0.12))",
                 border: "1px solid rgba(251, 191, 36, 0.25)",
-                color: "#fff",
+                color: "var(--text-primary)",
                 fontSize: "0.82rem",
                 fontWeight: "700",
                 cursor: "pointer",
@@ -338,7 +338,7 @@ export function ZoneAssignmentFlow({
       {step === STEP.SUCCESS && zoneData && (
         <div style={{ textAlign: "center", padding: "1rem 0" }}>
           <span style={{ fontSize: "2.5rem", display: "block", marginBottom: "0.6rem" }}>🎉</span>
-          <h3 style={{ margin: "0 0 0.4rem", fontSize: "1.05rem", fontWeight: "800", color: "#fff" }}>
+          <h3 style={{ margin: "0 0 0.4rem", fontSize: "1.05rem", fontWeight: "800", color: "var(--text-primary)" }}>
             Welcome to {zoneData.displayName}!
           </h3>
           <p style={{ fontSize: "0.8rem", color: "var(--text-secondary)", lineHeight: "1.5", margin: "0 0 1rem" }}>
@@ -366,7 +366,7 @@ export function ZoneAssignmentFlow({
         <>
           <div style={{ textAlign: "center", marginBottom: "1rem" }}>
             <span style={{ fontSize: "1.8rem", display: "block", marginBottom: "0.4rem" }}>⚠️</span>
-            <h3 style={{ margin: "0 0 0.3rem", fontSize: "1rem", fontWeight: "700", color: "#fff" }}>
+            <h3 style={{ margin: "0 0 0.3rem", fontSize: "1rem", fontWeight: "700", color: "var(--text-primary)" }}>
               Zone Assignment Failed
             </h3>
             <p style={{ fontSize: "0.78rem", color: "var(--accent-red, #f87171)", lineHeight: "1.5", margin: 0 }}>
@@ -383,7 +383,7 @@ export function ZoneAssignmentFlow({
                   padding: "0.65rem",
                   borderRadius: "8px",
                   background: "transparent",
-                  border: "1px solid rgba(255,255,255,0.1)",
+                  border: "1px solid rgba(var(--ink-rgb), 0.15)",
                   color: "var(--text-muted)",
                   fontSize: "0.78rem",
                   cursor: "pointer",
@@ -400,7 +400,7 @@ export function ZoneAssignmentFlow({
                 borderRadius: "8px",
                 background: "rgba(56, 189, 248, 0.1)",
                 border: "1px solid rgba(56, 189, 248, 0.2)",
-                color: "#fff",
+                color: "var(--text-primary)",
                 fontSize: "0.82rem",
                 fontWeight: "600",
                 cursor: "pointer",

@@ -54,7 +54,7 @@ const MUTATION_BLOCKING_PHASES = new Set([
 ]);
 
 const panel = { padding: "1.15rem", border: "1px solid var(--glass-border)", borderRadius: "12px" };
-const inputStyle = { width: "100%", minHeight: "42px", padding: "0.55rem 0.7rem", color: "#fff", background: "rgba(255,255,255,0.04)", border: "1px solid var(--glass-border)", borderRadius: "8px" };
+const inputStyle = { width: "100%", minHeight: "42px", padding: "0.55rem 0.7rem", color: "var(--text-primary)", background: "rgba(var(--ink-rgb), 0.04)", border: "1px solid var(--glass-border)", borderRadius: "8px" };
 
 function messageFor(error) {
   if (error?.code === "durable_mapping_missing") return error.message;
@@ -815,14 +815,14 @@ export function ShowcaseOwnerBuilder() {
   if (!ready || phase === "auth-loading" || phase === "session-loading") return <div className="glass-card" style={panel}>Loading authenticated showcase tools…</div>;
   if (phase === "sign-in-required") return (
     <div className="glass-card" style={panel}>
-      <h3 style={{ color: "#fff", marginTop: 0 }}>Privy sign-in required</h3>
+      <h3 style={{ color: "var(--text-primary)", marginTop: 0 }}>Privy sign-in required</h3>
       <p style={{ color: "var(--text-secondary)" }}>MetaMask-only and signed-out sessions cannot access owner showcase mutations.</p>
       <button type="button" className="btn-primary" onClick={connectPrivy}>Sign in with Privy</button>
     </div>
   );
   if (phase === "wrong-wallet") return (
     <div className="glass-card" style={{ ...panel, borderColor: "rgba(248,113,113,.45)" }}>
-      <h3 style={{ color: "#f87171", marginTop: 0 }}>Wrong owner wallet</h3>
+      <h3 style={{ color: "var(--accent-red)", marginTop: 0 }}>Wrong owner wallet</h3>
       <p style={{ color: "var(--text-secondary)" }}>Connected: <code>{normalizedAccount}</code></p>
       <p style={{ color: "var(--text-secondary)" }}>Required: <code>{STEVE_WALLET}</code></p>
     </div>
@@ -833,33 +833,33 @@ export function ShowcaseOwnerBuilder() {
       <div className="glass-card" style={panel}>
         <div style={{ display: "flex", justifyContent: "space-between", gap: "1rem", flexWrap: "wrap" }}>
           <div>
-            <h3 style={{ color: "#fff", margin: "0 0 .35rem" }}>Steve Showcase Owner Builder</h3>
+            <h3 style={{ color: "var(--text-primary)", margin: "0 0 .35rem" }}>Steve Showcase Owner Builder</h3>
             <div style={{ color: "var(--text-muted)", fontSize: ".78rem" }}>Authenticated owner: <code>{normalizedAccount}</code></div>
           </div>
           <button type="button" className="btn-secondary" onClick={refreshOwnerState} disabled={phase === "bootstrapping"}>Refresh server state</button>
         </div>
         <p style={{ color: "var(--text-secondary)", marginBottom: 0 }}>State: <strong>{phase}</strong>. The room remains private while editing.</p>
-        {error && <p role="alert" style={{ color: "#f87171", marginBottom: 0 }}>{error}</p>}
+        {error && <p role="alert" style={{ color: "var(--accent-red)", marginBottom: 0 }}>{error}</p>}
       </div>
 
       {!walletLinked && (
         <div className="glass-card" style={panel}>
-          <h4 style={{ color: "#fff", marginTop: 0 }}>1. Link the verified wallet claim</h4>
+          <h4 style={{ color: "var(--text-primary)", marginTop: 0 }}>1. Link the verified wallet claim</h4>
           <p style={{ color: "var(--text-secondary)" }}>This is an explicit, owner-authorized action. It does not enroll a dataset or create a room.</p>
           <button type="button" className="btn-primary" onClick={handleLinkWallet} disabled={!bootstrap || identityMutationBlocked}>Link this wallet</button>
         </div>
       )}
 
       <div className="glass-card" style={panel}>
-        <h4 style={{ color: "#fff", marginTop: 0 }}>2. Confirm your showcase tanks</h4>
+        <h4 style={{ color: "var(--text-primary)", marginTop: 0 }}>2. Confirm your showcase tanks</h4>
         <p style={{ color: "var(--text-secondary)" }}>Only active raw Dexie rows owned by the authenticated wallet are shown. Nothing is selected by label. Select the tanks you want to show.</p>
-        {tanks.length === 0 ? <p style={{ color: "#fbbf24" }}>No owner-scoped active local tanks were found on this browser.</p> : tanks.map((tank) => (
-          <label key={tank.id} style={{ display: "flex", alignItems: "center", gap: ".65rem", padding: ".55rem 0", color: "#fff" }}>
+        {tanks.length === 0 ? <p style={{ color: "var(--accent-amber)" }}>No owner-scoped active local tanks were found on this browser.</p> : tanks.map((tank) => (
+          <label key={tank.id} style={{ display: "flex", alignItems: "center", gap: ".65rem", padding: ".55rem 0", color: "var(--text-primary)" }}>
             <input type="checkbox" checked={selectedSet.has(String(tank.id))} disabled={!!datasetState?.selectedTankIds} onChange={() => toggleTank(tank.id)} />
             <span>{tank.name} <small style={{ color: "var(--text-muted)" }}>local #{tank.id}</small></span>
           </label>
         ))}
-        <p style={{ color: selectedIds.length >= 1 ? "#34d399" : "#fbbf24" }}>{selectedIds.length} of {tanks.length} selected</p>
+        <p style={{ color: selectedIds.length >= 1 ? "var(--accent-green)" : "var(--accent-amber)" }}>{selectedIds.length} of {tanks.length} selected</p>
         <label style={{ display: "flex", gap: ".55rem", color: "var(--text-secondary)" }}>
           <input type="checkbox" checked={selectionConfirmed} onChange={(event) => {
             setSelectionConfirmed(event.target.checked);
@@ -882,16 +882,16 @@ export function ShowcaseOwnerBuilder() {
         <p style={{ color: "var(--text-muted)", fontSize: ".8rem", marginBottom: 0 }}>
           The visual preview reads this device only. It does not create IDs, import, publish, or assign reference media.
         </p>
-        {localPreviewError && <p role="alert" style={{ color: "#f87171", marginBottom: 0 }}>{localPreviewError}</p>}
+        {localPreviewError && <p role="alert" style={{ color: "var(--accent-red)", marginBottom: 0 }}>{localPreviewError}</p>}
       </div>
 
       {localPreview && (
         <div className="glass-card" style={{ ...panel, padding: "clamp(.8rem, 2vw, 1.4rem)" }}>
           <div style={{ marginBottom: "1rem" }}>
-            <div style={{ color: "#34d399", fontSize: ".78rem", fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase" }}>
+            <div style={{ color: "var(--accent-green)", fontSize: ".78rem", fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase" }}>
               Private device preview — not imported or published
             </div>
-            <h2 style={{ color: "#fff", margin: ".35rem 0" }}>{localPreview.title}</h2>
+            <h2 style={{ color: "var(--text-primary)", margin: ".35rem 0" }}>{localPreview.title}</h2>
             <p style={{ color: "var(--text-secondary)", margin: 0 }}>{localPreview.description}</p>
             <p style={{ color: "var(--text-muted)", fontSize: ".82rem", marginBottom: 0 }}>
               Showing {localPreview.tanks.length} real My Aquariums tanks and their active local fish. Existing device photos appear automatically; missing media stays missing.
@@ -907,14 +907,14 @@ export function ShowcaseOwnerBuilder() {
 
       {openConflicts.length > 0 && (
         <div className="glass-card" style={{ ...panel, borderColor: "rgba(248,113,113,.45)" }}>
-          <h4 style={{ color: "#f87171", marginTop: 0 }}>Identity conflict — stopped</h4>
+          <h4 style={{ color: "var(--accent-red)", marginTop: 0 }}>Identity conflict — stopped</h4>
           {openConflicts.map((conflict) => <div key={conflict.conflictId} style={{ color: "var(--text-secondary)" }}>{conflict.reason} ({conflict.candidateCount} candidates)</div>)}
         </div>
       )}
 
       {walletLinked && datasetState?.finalizeResult?.eligible && !room && !identityMutationBlocked && (
         <div className="glass-card" style={panel}>
-          <h4 style={{ color: "#fff", marginTop: 0 }}>3. Create the lifetime room</h4>
+          <h4 style={{ color: "var(--text-primary)", marginTop: 0 }}>3. Create the lifetime room</h4>
           <RoomFields draft={roomDraft} onChange={setRoomDraft} />
           <button type="button" className="btn-primary" style={{ marginTop: ".8rem" }} onClick={handleCreateRoom}>Re-read, then create once</button>
         </div>
@@ -922,8 +922,8 @@ export function ShowcaseOwnerBuilder() {
 
       {room && (
         <div className="glass-card" style={panel}>
-          <h4 style={{ color: "#fff", marginTop: 0 }}>4. Private room</h4>
-          <p style={{ color: room.visibility === "private" ? "#34d399" : "#fbbf24" }}>Visibility: {room.visibility} · room revision {room.revision}</p>
+          <h4 style={{ color: "var(--text-primary)", marginTop: 0 }}>4. Private room</h4>
+          <p style={{ color: room.visibility === "private" ? "var(--accent-green)" : "var(--accent-amber)" }}>Visibility: {room.visibility} · room revision {room.revision}</p>
           {room.visibility !== "private" ? (
             <button type="button" className="btn-primary" onClick={() => handleVisibility("private")}>Make private</button>
           ) : (
@@ -937,7 +937,7 @@ export function ShowcaseOwnerBuilder() {
 
       {room?.visibility === "private" && datasetState?.identityPackage && !identityMutationBlocked && (
         <div className="glass-card" style={panel}>
-          <h4 style={{ color: "#fff", marginTop: 0 }}>5. Place server-eligible tanks</h4>
+          <h4 style={{ color: "var(--text-primary)", marginTop: 0 }}>5. Place server-eligible tanks</h4>
           <p style={{ color: "var(--text-secondary)" }}>Only canonical IDs returned as <code>eligible: true</code> by the latest room read can be placed. Each label requires approval.</p>
           {[...permittedEntityIds].map((tankId) => {
             const draft = placementDrafts[tankId] || { label: "", slug: "", approved: false };
@@ -957,18 +957,18 @@ export function ShowcaseOwnerBuilder() {
               </div>
             );
           })}
-          {permittedEntityIds.size === 0 && <p style={{ color: "#fbbf24" }}>No selected tank is currently server-eligible. Refresh identity state; do not place guessed IDs.</p>}
+          {permittedEntityIds.size === 0 && <p style={{ color: "var(--accent-amber)" }}>No selected tank is currently server-eligible. Refresh identity state; do not place guessed IDs.</p>}
         </div>
       )}
 
       {room?.visibility === "private" && (
         <div className="glass-card" style={panel}>
-          <h4 style={{ color: "#fff", marginTop: 0 }}>6. Private processed room image</h4>
+          <h4 style={{ color: "var(--text-primary)", marginTop: 0 }}>6. Private processed room image</h4>
           <p style={{ color: "var(--text-secondary)" }}>
             The source uploads to the private processing pipeline. Only the approved, metadata-stripped
             WebP derivative is previewed here through a fresh owner-authenticated, no-store byte request.
           </p>
-          {!bootstrap?.capabilities?.media && <p style={{ color: "#fbbf24" }}>Private room media is not enabled in this environment.</p>}
+          {!bootstrap?.capabilities?.media && <p style={{ color: "var(--accent-amber)" }}>Private room media is not enabled in this environment.</p>}
           <input
             key={mediaStatus?.assetId || "new-hero"}
             type="file"
@@ -993,7 +993,7 @@ export function ShowcaseOwnerBuilder() {
             Media state: <strong>{mediaPhase}</strong>
             {mediaStatus?.assetId && <> · asset <code>{mediaStatus.assetId}</code> · revision {mediaStatus.revision ?? "unknown"}</>}
           </p>
-          {mediaError && <p role="alert" style={{ color: "#f87171" }}>{mediaError}</p>}
+          {mediaError && <p role="alert" style={{ color: "var(--accent-red)" }}>{mediaError}</p>}
           {mediaStatus?.assetId && (
             <button type="button" className="btn-secondary" onClick={handleRefreshMedia}
               disabled={["status-loading", "publishing", "revoking"].includes(mediaPhase)}>
@@ -1008,7 +1008,7 @@ export function ShowcaseOwnerBuilder() {
                 alt={heroAltText.trim() || "Private processed room preview"}
                 style={{ width: "100%", maxHeight: "520px", objectFit: "cover", borderRadius: "10px", border: "1px solid var(--glass-border)" }}
               />
-              <p style={{ color: "#34d399" }}>Private derivative verified. This blob URL exists only in this browser session and is revoked on every state change.</p>
+              <p style={{ color: "var(--accent-green)" }}>Private derivative verified. This blob URL exists only in this browser session and is revoked on every state change.</p>
               <label style={{ color: "var(--text-secondary)", display: "block" }}>
                 Approved public alt text
                 <input style={inputStyle} maxLength={500} value={heroAltText}
@@ -1062,15 +1062,15 @@ export function ShowcaseOwnerBuilder() {
 
       {room && (
         <div className="glass-card" style={panel}>
-          <h4 style={{ color: "#fff", marginTop: 0 }}>8. Exact server publication preview</h4>
-          {(roomState.blockers || []).length > 0 && <p style={{ color: "#f87171" }}>Blockers: {(roomState.blockers || []).join(", ")}</p>}
+          <h4 style={{ color: "var(--text-primary)", marginTop: 0 }}>8. Exact server publication preview</h4>
+          {(roomState.blockers || []).length > 0 && <p style={{ color: "var(--accent-red)" }}>Blockers: {(roomState.blockers || []).join(", ")}</p>}
           {!publicationPlacementsReady && room.visibility === "private" && (
-            <p style={{ color: "#fbbf24" }}>Publication requires exactly the confirmed canonical tanks, all server-eligible and placed with public placement visibility.</p>
+            <p style={{ color: "var(--accent-amber)" }}>Publication requires exactly the confirmed canonical tanks, all server-eligible and placed with public placement visibility.</p>
           )}
           <button type="button" className="btn-secondary" disabled={identityMutationBlocked || !publicationPlacementsReady} onClick={handlePreview}>Load fresh server preview</button>
           {preview && (
             <>
-              <pre style={{ maxHeight: "420px", overflow: "auto", whiteSpace: "pre-wrap", color: "#cbd5e1", background: "rgba(0,0,0,.25)", padding: ".8rem", borderRadius: "8px" }}>{JSON.stringify(preview, null, 2)}</pre>
+              <pre style={{ maxHeight: "420px", overflow: "auto", whiteSpace: "pre-wrap", color: "var(--text-secondary)", background: "var(--bg-band)", padding: ".8rem", borderRadius: "8px" }}>{JSON.stringify(preview, null, 2)}</pre>
               {room.visibility === "private" && (
                 <>
                   <label style={{ display: "flex", gap: ".55rem", color: "var(--text-secondary)" }}>

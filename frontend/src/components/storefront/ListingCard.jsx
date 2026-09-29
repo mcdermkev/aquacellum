@@ -13,9 +13,9 @@ import { FishSilhouetteSVG } from "../SilhouetteSVG";
 const IPFS_GATEWAY = "https://gateway.pinata.cloud/ipfs";
 
 const PEDIGREE_STYLES = {
-  "wild-caught": { label: "Wild", bg: "rgba(251,191,36,0.12)", border: "rgba(251,191,36,0.35)", color: "#fbbf24" },
-  "purebred": { label: "Purebred", bg: "rgba(52,211,153,0.12)", border: "rgba(52,211,153,0.35)", color: "#34d399" },
-  "F1-hybrid": { label: "F1 Hybrid", bg: "rgba(96,165,250,0.12)", border: "rgba(96,165,250,0.35)", color: "#60a5fa" },
+  "wild-caught": { label: "Wild", bg: "rgba(251,191,36,0.12)", border: "rgba(251,191,36,0.35)", color: "var(--accent-amber)" },
+  "purebred": { label: "Purebred", bg: "rgba(52,211,153,0.12)", border: "rgba(52,211,153,0.35)", color: "var(--accent-green)" },
+  "F1-hybrid": { label: "F1 Hybrid", bg: "rgba(96,165,250,0.12)", border: "rgba(96,165,250,0.35)", color: "var(--accent-blue)" },
 };
 
 export function ListingCard({ listing, onOpenListing, casualMode = true, commerceDisabled = false }) {

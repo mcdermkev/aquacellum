@@ -26,11 +26,11 @@ const VERTICAL_SPACING = 24;
 
 // Generation colors
 const COLORS = {
-  target: { gradient: ["#34d399", "#06b6d4"], border: "rgba(52,211,153,0.5)", glow: "rgba(52,211,153,0.15)" },
-  sire: { gradient: ["#60a5fa", "#3b82f6"], border: "rgba(96,165,250,0.5)", glow: "rgba(96,165,250,0.12)" },
-  dam: { gradient: ["#f472b6", "#a855f7"], border: "rgba(244,114,182,0.5)", glow: "rgba(244,114,182,0.12)" },
-  grandparent: { gradient: ["#a78bfa", "#7c3aed"], border: "rgba(167,139,250,0.4)", glow: "rgba(167,139,250,0.08)" },
-  unknown: { gradient: ["#4b5563", "#374151"], border: "rgba(75,85,99,0.4)", glow: "none" },
+  target: { label: "#047857", gradient: ["#34d399", "#06b6d4"], border: "rgba(52,211,153,0.5)", glow: "rgba(52,211,153,0.15)" },
+  sire: { label: "#1d4ed8", gradient: ["#60a5fa", "#3b82f6"], border: "rgba(96,165,250,0.5)", glow: "rgba(96,165,250,0.12)" },
+  dam: { label: "#be185d", gradient: ["#f472b6", "#a855f7"], border: "rgba(244,114,182,0.5)", glow: "rgba(244,114,182,0.12)" },
+  grandparent: { label: "#6d28d9", gradient: ["#a78bfa", "#7c3aed"], border: "rgba(167,139,250,0.4)", glow: "rgba(167,139,250,0.08)" },
+  unknown: { label: "#5b7482", gradient: ["#4b5563", "#374151"], border: "rgba(75,85,99,0.4)", glow: "none" },
 };
 
 // ─── Tooltip Component ──────────────────────────────────────────────────────
@@ -50,7 +50,7 @@ function Tooltip({ node, position }) {
         left: position.x,
         top: position.y - 10,
         transform: "translate(-50%, -100%)",
-        background: "rgba(15, 12, 31, 0.97)",
+        background: "#ffffff",
         backdropFilter: "blur(16px)",
         border: "1px solid rgba(167, 139, 250, 0.3)",
         borderRadius: "12px",
@@ -59,7 +59,7 @@ function Tooltip({ node, position }) {
         maxWidth: "280px",
         zIndex: 1000,
         pointerEvents: "none",
-        boxShadow: "0 20px 40px rgba(0,0,0,0.5), 0 0 20px rgba(139,92,246,0.1)",
+        boxShadow: "var(--shadow-lg)",
         animation: "tooltip-appear 0.2s ease-out",
       }}
     >
@@ -75,7 +75,7 @@ function Tooltip({ node, position }) {
             borderRadius: "3px",
             background: "rgba(168, 85, 247, 0.15)",
             border: "1px solid rgba(168, 85, 247, 0.4)",
-            color: "#c084fc",
+            color: "var(--accent-violet)",
             fontFamily: "'JetBrains Mono', monospace",
             letterSpacing: "0.04em"
           }}>
@@ -83,29 +83,29 @@ function Tooltip({ node, position }) {
           </span>
         </div>
       )}
-      <div style={{ fontSize: "0.9rem", fontWeight: "700", color: "#fff", marginBottom: "2px" }}>
+      <div style={{ fontSize: "0.9rem", fontWeight: "700", color: "var(--text-primary)", marginBottom: "2px" }}>
         {node.speciesName || "Unknown Species"}
       </div>
       {node.scientificName && (
-        <div style={{ fontSize: "0.72rem", fontStyle: "italic", color: "rgba(167,139,250,0.8)", marginBottom: "6px" }}>
+        <div style={{ fontSize: "0.72rem", fontStyle: "italic", color: "var(--accent-violet)", marginBottom: "6px" }}>
           {node.scientificName}
         </div>
       )}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px 12px", marginTop: "8px", borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "8px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px 12px", marginTop: "8px", borderTop: "1px solid rgba(var(--ink-rgb), 0.11)", paddingTop: "8px" }}>
         <div>
           <div style={{ fontSize: "0.58rem", color: "var(--text-muted, #6b7280)", textTransform: "uppercase" }}>Hatched</div>
-          <div style={{ fontSize: "0.7rem", color: "#e0e0e0" }}>{formatDate(node.birthTimestamp)}</div>
+          <div style={{ fontSize: "0.7rem", color: "var(--text-primary)" }}>{formatDate(node.birthTimestamp)}</div>
         </div>
         <div>
           <div style={{ fontSize: "0.58rem", color: "var(--text-muted, #6b7280)", textTransform: "uppercase" }}>Status</div>
-          <div style={{ fontSize: "0.7rem", color: node.status === 0 ? "#34d399" : node.status === 1 ? "#f87171" : "#fbbf24" }}>
+          <div style={{ fontSize: "0.7rem", color: node.status === 0 ? "var(--accent-green)" : node.status === 1 ? "var(--accent-red)" : "var(--accent-amber)" }}>
             {node.status === 0 ? "Active" : node.status === 1 ? "Deceased" : "Rehomed"}
           </div>
         </div>
         {node.breeder && (
           <div style={{ gridColumn: "1 / -1" }}>
             <div style={{ fontSize: "0.58rem", color: "var(--text-muted, #6b7280)", textTransform: "uppercase" }}>Registrant</div>
-            <div style={{ fontSize: "0.68rem", color: "#e0e0e0", fontFamily: "monospace" }}>
+            <div style={{ fontSize: "0.68rem", color: "var(--text-primary)", fontFamily: "monospace" }}>
               {node.breeder.substring(0, 6)}...{node.breeder.slice(-4)}
             </div>
           </div>
@@ -119,7 +119,7 @@ function Tooltip({ node, position }) {
         transform: "translateX(-50%) rotate(45deg)",
         width: "12px",
         height: "12px",
-        background: "rgba(15, 12, 31, 0.97)",
+        background: "#ffffff",
         borderRight: "1px solid rgba(167, 139, 250, 0.3)",
         borderBottom: "1px solid rgba(167, 139, 250, 0.3)",
       }} />
@@ -185,8 +185,8 @@ function TreeNode({ node, x, y, colorScheme, label, index, onHover, onClick, isC
         width={NODE_WIDTH}
         height={NODE_HEIGHT}
         rx={NODE_RADIUS}
-        fill={isEmpty ? "rgba(30, 27, 45, 0.6)" : "rgba(14, 11, 26, 0.85)"}
-        stroke={isEmpty ? "rgba(75, 85, 99, 0.3)" : colors.border}
+        fill={isEmpty ? "#f5f9fa" : "#ffffff"}
+        stroke={isEmpty ? "rgba(11, 37, 48, 0.2)" : colors.border}
         strokeWidth={hovered ? "2" : "1"}
         strokeDasharray={isEmpty ? "4 4" : "none"}
         style={{
@@ -219,43 +219,43 @@ function TreeNode({ node, x, y, colorScheme, label, index, onHover, onClick, isC
       {/* Content */}
       {isEmpty ? (
         <>
-          <text x={x + NODE_WIDTH / 2} y={y + 32} textAnchor="middle" fill="rgba(156, 163, 175, 0.5)" fontSize="11" fontWeight="600">
+          <text x={x + NODE_WIDTH / 2} y={y + 32} textAnchor="middle" fill="#5b7482" fontSize="11" fontWeight="600">
             {label}
           </text>
-          <text x={x + NODE_WIDTH / 2} y={y + 52} textAnchor="middle" fill="rgba(107, 114, 128, 0.6)" fontSize="10">
+          <text x={x + NODE_WIDTH / 2} y={y + 52} textAnchor="middle" fill="#5b7482" fontSize="10">
             Unknown Ancestry
           </text>
-          <text x={x + NODE_WIDTH / 2} y={y + 70} textAnchor="middle" fill="rgba(107, 114, 128, 0.3)" fontSize="16">
+          <text x={x + NODE_WIDTH / 2} y={y + 70} textAnchor="middle" fill="rgba(11, 37, 48, 0.3)" fontSize="16">
             ?
           </text>
         </>
       ) : (
         <>
           {/* Role label */}
-          <text x={x + 12} y={y + 18} fill={colors.gradient[0]} fontSize="9" fontWeight="700" letterSpacing="0.08em" textTransform="uppercase" opacity="0.8">
+          <text x={x + 12} y={y + 18} fill={colors.label} fontSize="9" fontWeight="700" letterSpacing="0.08em" textTransform="uppercase">
             {label}
           </text>
 
           {/* Certificate number */}
-          <text x={x + NODE_WIDTH - 12} y={y + 18} textAnchor="end" fill="rgba(167, 139, 250, 0.7)" fontSize="9" fontFamily="'JetBrains Mono', monospace">
+          <text x={x + NODE_WIDTH - 12} y={y + 18} textAnchor="end" fill="#6d28d9" fontSize="9" fontFamily="'JetBrains Mono', monospace">
             #{node.id?.toString().padStart(3, "0")}
           </text>
 
           {/* Breeder Stock Tag */}
           {node.breederStockTag && (
-            <text x={x + NODE_WIDTH - 12} y={y + 30} textAnchor="end" fill="#c084fc" fontSize="8" fontWeight="700" fontFamily="'JetBrains Mono', monospace">
+            <text x={x + NODE_WIDTH - 12} y={y + 30} textAnchor="end" fill="#6d28d9" fontSize="8" fontWeight="700" fontFamily="'JetBrains Mono', monospace">
               {node.breederStockTag}
             </text>
           )}
 
           {/* Species name */}
-          <text x={x + 12} y={y + 38} fill="#ffffff" fontSize="12" fontWeight="700" fontFamily="'Inter', sans-serif">
+          <text x={x + 12} y={y + 38} fill="#0b2530" fontSize="12" fontWeight="700" fontFamily="'Inter', sans-serif">
             {truncateText(node.speciesName || "Unknown", 18)}
           </text>
 
           {/* Scientific name */}
           {node.scientificName && (
-            <text x={x + 12} y={y + 54} fill="rgba(167,139,250,0.6)" fontSize="9" fontStyle="italic">
+            <text x={x + 12} y={y + 54} fill="#6d28d9" fontSize="9" fontStyle="italic">
               {truncateText(node.scientificName, 24)}
             </text>
           )}
@@ -275,7 +275,7 @@ function TreeNode({ node, x, y, colorScheme, label, index, onHover, onClick, isC
             x={x + 36}
             y={y + 73}
             textAnchor="middle"
-            fill={node.status === 0 ? "#34d399" : node.status === 1 ? "#f87171" : "#fbbf24"}
+            fill={node.status === 0 ? "#047857" : node.status === 1 ? "#b91c1c" : "#b45309"}
             fontSize="8"
             fontWeight="600"
           >
@@ -456,7 +456,7 @@ export function PedigreeTree({ tree, onNodeClick, onExport }) {
             style={{
               fontSize: "0.62rem",
               fontWeight: "700",
-              color: "rgba(167, 139, 250, 0.6)",
+              color: "var(--accent-violet)",
               textTransform: "uppercase",
               letterSpacing: "0.1em",
               flex: 1,
@@ -495,7 +495,7 @@ export function PedigreeTree({ tree, onNodeClick, onExport }) {
 
         {/* Background grid pattern */}
         <pattern id="pedigree-grid" width="40" height="40" patternUnits="userSpaceOnUse">
-          <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(139, 92, 246, 0.04)" strokeWidth="0.5" />
+          <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(11, 37, 48, 0.05)" strokeWidth="0.5" />
         </pattern>
         <rect width="100%" height="100%" fill="url(#pedigree-grid)" />
 
@@ -583,7 +583,7 @@ export function PedigreeTree({ tree, onNodeClick, onExport }) {
             onClick={() => toggleCollapse("sire")}
           >
             <circle cx={gen1X + nodeW + 14} cy={sireY + nodeH / 2} r="10" fill="rgba(96,165,250,0.1)" stroke="rgba(96,165,250,0.3)" strokeWidth="1" />
-            <text x={gen1X + nodeW + 14} y={sireY + nodeH / 2 + 4} textAnchor="middle" fontSize="10" fill="rgba(96,165,250,0.8)">
+            <text x={gen1X + nodeW + 14} y={sireY + nodeH / 2 + 4} textAnchor="middle" fontSize="10" fill="#1d4ed8">
               {collapsed.sire ? "+" : "−"}
             </text>
           </g>
@@ -594,7 +594,7 @@ export function PedigreeTree({ tree, onNodeClick, onExport }) {
             onClick={() => toggleCollapse("dam")}
           >
             <circle cx={gen1X + nodeW + 14} cy={damY + nodeH / 2} r="10" fill="rgba(244,114,182,0.1)" stroke="rgba(244,114,182,0.3)" strokeWidth="1" />
-            <text x={gen1X + nodeW + 14} y={damY + nodeH / 2 + 4} textAnchor="middle" fontSize="10" fill="rgba(244,114,182,0.8)">
+            <text x={gen1X + nodeW + 14} y={damY + nodeH / 2 + 4} textAnchor="middle" fontSize="10" fill="#be185d">
               {collapsed.dam ? "+" : "−"}
             </text>
           </g>

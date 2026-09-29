@@ -40,7 +40,7 @@ export function ModeSegmentedControl({ casualModeActive, onToggle }) {
         style={{
           display: "flex",
           alignItems: "center",
-          background: "rgba(255, 255, 255, 0.02)",
+          background: "rgba(var(--ink-rgb), 0.02)",
           border: casualModeActive 
             ? "1px solid rgba(56, 189, 248, 0.2)" 
             : "1px solid rgba(168, 85, 247, 0.25)",
@@ -49,8 +49,8 @@ export function ModeSegmentedControl({ casualModeActive, onToggle }) {
           position: "relative",
           width: "100%",
           boxShadow: casualModeActive
-            ? "0 0 20px rgba(56, 189, 248, 0.06), inset 0 1px 2px rgba(0,0,0,0.3)"
-            : "0 0 20px rgba(168, 85, 247, 0.08), inset 0 1px 2px rgba(0,0,0,0.3)",
+            ? "0 0 20px rgba(56, 189, 248, 0.06), inset 0 1px 2px rgba(11, 37, 48, 0.09)"
+            : "0 0 20px rgba(168, 85, 247, 0.08), inset 0 1px 2px rgba(11, 37, 48, 0.09)",
           transition: "border-color 0.35s ease, box-shadow 0.35s ease",
           backdropFilter: "blur(8px)",
         }}
@@ -75,7 +75,7 @@ export function ModeSegmentedControl({ casualModeActive, onToggle }) {
             fontSize: "0.8rem",
             fontWeight: casualModeActive ? "700" : "500",
             fontFamily: "'Plus Jakarta Sans', sans-serif",
-            color: casualModeActive ? "#fff" : "var(--text-muted)",
+            color: casualModeActive ? "var(--text-primary)" : "var(--text-muted)",
             background: casualModeActive 
               ? "linear-gradient(135deg, rgba(56, 189, 248, 0.25) 0%, rgba(14, 165, 233, 0.15) 100%)"
               : "transparent",
@@ -112,7 +112,7 @@ export function ModeSegmentedControl({ casualModeActive, onToggle }) {
             fontSize: "0.8rem",
             fontWeight: !casualModeActive ? "700" : "500",
             fontFamily: "'Plus Jakarta Sans', sans-serif",
-            color: !casualModeActive ? "#fff" : "var(--text-muted)",
+            color: !casualModeActive ? "var(--text-primary)" : "var(--text-muted)",
             background: !casualModeActive 
               ? "linear-gradient(135deg, rgba(168, 85, 247, 0.25) 0%, rgba(139, 92, 246, 0.15) 100%)"
               : "transparent",
@@ -137,15 +137,15 @@ export function ModeSegmentedControl({ casualModeActive, onToggle }) {
           top: "calc(100% + 8px)",
           left: "50%",
           transform: "translateX(-50%)",
-          background: "rgba(14, 20, 36, 0.95)",
-          border: "1px solid rgba(255, 255, 255, 0.12)",
+          background: "#ffffff",
+          border: "1px solid rgba(var(--ink-rgb), 0.17)",
           borderRadius: "8px",
           padding: "0.6rem 1rem",
           fontSize: "0.75rem",
           color: "var(--text-secondary)",
           whiteSpace: "nowrap",
           zIndex: 100,
-          boxShadow: "0 8px 24px rgba(0, 0, 0, 0.5)",
+          boxShadow: "var(--shadow-lg)",
           animation: "fadeInBadge 0.3s ease-out forwards",
         }}>
           {hintText}

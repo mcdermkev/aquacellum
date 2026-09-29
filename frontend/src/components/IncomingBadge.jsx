@@ -24,9 +24,9 @@ function IncomingBadge({ count = 0, hasNudge = false }) {
         fontWeight: 700,
         lineHeight: 1,
         background: hasNudge
-          ? "var(--accent-amber, #fbbf24)"
-          : "var(--accent-cyan, #22d3ee)",
-        color: hasNudge ? "#1a1a2e" : "#0f172a",
+          ? "var(--accent-amber-fill)"
+          : "var(--accent-teal)",
+        color: hasNudge ? "#0b2530" : "#fff",
         animation: hasNudge ? "incomingPulse 2s ease-in-out infinite" : "none",
       }}
       aria-label={`${count} incoming`}

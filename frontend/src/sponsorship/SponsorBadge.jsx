@@ -29,11 +29,11 @@ export function SponsorBadge({ sponsor, product, productLink, tagline, surface, 
     alignItems: "center",
     gap: "0.4rem",
     fontSize: "0.7rem",
-    color: "rgba(255, 255, 255, 0.5)",
+    color: "var(--text-secondary)",
     padding: "0.25rem 0.6rem",
     borderRadius: "12px",
-    background: "rgba(255, 255, 255, 0.03)",
-    border: "1px solid rgba(255, 255, 255, 0.06)",
+    background: "rgba(var(--ink-rgb), 0.03)",
+    border: "1px solid rgba(var(--ink-rgb), 0.11)",
     transition: "all 0.2s ease",
     textDecoration: "none",
     cursor: productLink ? "pointer" : "default"
@@ -66,7 +66,7 @@ export function SponsorBadge({ sponsor, product, productLink, tagline, surface, 
       )}
       <span>
         {tagline || `Recommended by ${sponsor.brand}`}
-        {product && <strong style={{ color: "rgba(255, 255, 255, 0.7)", marginLeft: "0.25rem" }}>{product}</strong>}
+        {product && <strong style={{ color: "var(--text-secondary)", marginLeft: "0.25rem" }}>{product}</strong>}
       </span>
     </>
   );
@@ -82,12 +82,12 @@ export function SponsorBadge({ sponsor, product, productLink, tagline, surface, 
         onMouseEnter={(e) => {
           e.currentTarget.style.background = "rgba(56, 189, 248, 0.06)";
           e.currentTarget.style.borderColor = "rgba(56, 189, 248, 0.15)";
-          e.currentTarget.style.color = "rgba(255, 255, 255, 0.7)";
+          e.currentTarget.style.color = "var(--text-secondary)";
         }}
         onMouseLeave={(e) => {
           e.currentTarget.style.background = style.background;
-          e.currentTarget.style.borderColor = style.border?.replace("1px solid ", "") || "rgba(255, 255, 255, 0.06)";
-          e.currentTarget.style.color = "rgba(255, 255, 255, 0.5)";
+          e.currentTarget.style.borderColor = style.border?.replace("1px solid ", "") || "rgba(var(--ink-rgb), 0.11)";
+          e.currentTarget.style.color = "var(--text-secondary)";
         }}
       >
         {content}

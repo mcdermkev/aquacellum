@@ -10,7 +10,7 @@
 .care-guide-title {
   font-size: 0.85rem;
   font-weight: 700;
-  color: #fff;
+  color: var(--text-primary);
   margin-bottom: 0.6rem;
 }
 
@@ -21,8 +21,8 @@
 }
 
 .cg-card {
-  background: rgba(0, 0, 0, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: var(--bg-band);
+  border: 1px solid rgba(var(--ink-rgb), 0.05);
   border-radius: 10px;
   padding: 0.6rem 0.7rem;
 }
@@ -35,11 +35,11 @@
   margin-bottom: 0.4rem;
 }
 
-.cg-name { color: #fff; font-size: 0.85rem; }
+.cg-name { color: var(--text-primary); font-size: 0.85rem; }
 
 .cg-level {
   font-size: 0.62rem;
-  color: #4ade80;
+  color: var(--accent-green);
   background: rgba(34, 197, 94, 0.12);
   border: 1px solid rgba(34, 197, 94, 0.3);
   border-radius: 20px;
@@ -56,8 +56,8 @@
 .cg-chip {
   font-size: 0.7rem;
   color: var(--text-secondary, #cbd5e1);
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(var(--ink-rgb), 0.04);
+  border: 1px solid rgba(var(--ink-rgb), 0.06);
   border-radius: 8px;
   padding: 0.2rem 0.5rem;
   white-space: nowrap;
@@ -75,7 +75,7 @@
   padding: 0.3rem 0.55rem;
   font-size: 0.7rem;
   font-weight: 600;
-  color: #34d399;
+  color: var(--accent-green);
   background: rgba(52, 211, 153, 0.08);
   border: 1px solid rgba(52, 211, 153, 0.25);
   border-radius: 7px;

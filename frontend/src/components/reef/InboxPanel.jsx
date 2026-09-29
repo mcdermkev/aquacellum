@@ -137,14 +137,14 @@ export function InboxPanel({ casualModeActive = false, initialView = null, pendi
               width: "360px",
               maxHeight: "500px",
               borderRadius: "14px",
-              background: "rgba(15, 23, 42, 0.98)",
-              border: "1px solid rgba(255, 255, 255, 0.08)",
-              boxShadow: "0 16px 64px rgba(0, 0, 0, 0.5)",
+              background: "var(--bg-secondary)",
+              border: "1px solid rgba(var(--ink-rgb), 0.13)",
+              boxShadow: "var(--shadow-lg)",
               zIndex: 9000,
               overflow: "hidden",
             }}
           >
-            <div style={{ padding: "0.5rem 0.75rem", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+            <div style={{ padding: "0.5rem 0.75rem", borderBottom: "1px solid rgba(var(--ink-rgb), 0.1)" }}>
               <button
                 onClick={() => setActiveConvo(null)}
                 style={{ background: "none", border: "none", color: "var(--text-secondary)", fontSize: "0.7rem", cursor: "pointer", padding: "0.2rem 0" }}
@@ -183,9 +183,9 @@ export function InboxPanel({ casualModeActive = false, initialView = null, pendi
             width: "360px",
             maxHeight: "500px",
             borderRadius: "14px",
-            background: "rgba(15, 23, 42, 0.98)",
-            border: "1px solid rgba(255, 255, 255, 0.08)",
-            boxShadow: "0 16px 64px rgba(0, 0, 0, 0.5)",
+            background: "var(--bg-secondary)",
+            border: "1px solid rgba(var(--ink-rgb), 0.13)",
+            boxShadow: "var(--shadow-lg)",
             zIndex: 9000,
             display: "flex",
             flexDirection: "column",
@@ -196,7 +196,7 @@ export function InboxPanel({ casualModeActive = false, initialView = null, pendi
           {/* Sub-tabs */}
           <div style={{
             display: "flex",
-            borderBottom: "1px solid rgba(255, 255, 255, 0.06)",
+            borderBottom: "1px solid rgba(var(--ink-rgb), 0.11)",
             padding: "0.5rem 0.5rem 0",
             alignItems: "center",
           }}>
@@ -207,7 +207,7 @@ export function InboxPanel({ casualModeActive = false, initialView = null, pendi
                 padding: "0.5rem 0.5rem 0.6rem",
                 border: "none",
                 background: "none",
-                color: activeInboxTab === "notifications" ? "#fff" : "var(--text-muted)",
+                color: activeInboxTab === "notifications" ? "var(--text-primary)" : "var(--text-muted)",
                 fontSize: "0.75rem",
                 fontWeight: activeInboxTab === "notifications" ? 600 : 400,
                 cursor: "pointer",
@@ -228,7 +228,7 @@ export function InboxPanel({ casualModeActive = false, initialView = null, pendi
                 padding: "0.5rem 0.5rem 0.6rem",
                 border: "none",
                 background: "none",
-                color: activeInboxTab === "messages" ? "#fff" : "var(--text-muted)",
+                color: activeInboxTab === "messages" ? "var(--text-primary)" : "var(--text-muted)",
                 fontSize: "0.75rem",
                 fontWeight: activeInboxTab === "messages" ? 600 : 400,
                 cursor: "pointer",
@@ -251,7 +251,7 @@ export function InboxPanel({ casualModeActive = false, initialView = null, pendi
                 borderRadius: "6px",
                 border: "none",
                 background: showPreferences ? "rgba(56, 189, 248, 0.1)" : "transparent",
-                color: showPreferences ? "#fff" : "var(--text-muted)",
+                color: showPreferences ? "var(--text-primary)" : "var(--text-muted)",
                 fontSize: "0.8rem",
                 cursor: "pointer",
                 display: "flex",
@@ -282,7 +282,7 @@ export function InboxPanel({ casualModeActive = false, initialView = null, pendi
                 <div style={{ display: "flex", justifyContent: "flex-end", padding: "0.4rem 0.75rem 0" }}>
                   <button
                     onClick={() => markAllRead.mutate()}
-                    style={{ background: "none", border: "none", color: "#38bdf8", fontSize: "0.6rem", cursor: "pointer" }}
+                    style={{ background: "none", border: "none", color: "var(--accent-blue)", fontSize: "0.6rem", cursor: "pointer" }}
                   >
                     Mark all read
                   </button>
@@ -308,14 +308,14 @@ export function InboxPanel({ casualModeActive = false, initialView = null, pendi
                         gap: "0.6rem",
                         padding: "0.65rem 0.75rem",
                         border: "none",
-                        borderBottom: "1px solid rgba(255, 255, 255, 0.03)",
+                        borderBottom: "1px solid rgba(var(--ink-rgb), 0.08)",
                         background: notif.is_read ? "transparent" : "rgba(56, 189, 248, 0.03)",
                         cursor: "pointer",
                         textAlign: "left",
                         transition: "background 0.1s ease",
                         width: "100%",
                       }}
-                      onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255, 255, 255, 0.03)"; }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(var(--ink-rgb), 0.03)"; }}
                       onMouseLeave={(e) => { e.currentTarget.style.background = notif.is_read ? "transparent" : "rgba(56, 189, 248, 0.03)"; }}
                       role="menuitem"
                     >
@@ -324,7 +324,7 @@ export function InboxPanel({ casualModeActive = false, initialView = null, pendi
                         <p style={{
                           margin: 0, fontSize: "0.72rem",
                           fontWeight: notif.is_read ? 400 : 600,
-                          color: notif.is_read ? "var(--text-secondary)" : "#fff",
+                          color: notif.is_read ? "var(--text-secondary)" : "var(--text-primary)",
                           lineHeight: 1.4,
                         }}>
                           {notif.title}
@@ -375,20 +375,20 @@ export function InboxPanel({ casualModeActive = false, initialView = null, pendi
                           gap: "0.6rem",
                           padding: "0.6rem 0.75rem",
                           border: "none",
-                          borderBottom: "1px solid rgba(255, 255, 255, 0.03)",
+                          borderBottom: "1px solid rgba(var(--ink-rgb), 0.08)",
                           background: convo.has_unread ? "rgba(56, 189, 248, 0.03)" : "transparent",
                           cursor: "pointer",
                           textAlign: "left",
                           width: "100%",
                           transition: "background 0.1s ease",
                         }}
-                        onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255, 255, 255, 0.03)"; }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(var(--ink-rgb), 0.03)"; }}
                         onMouseLeave={(e) => { e.currentTarget.style.background = convo.has_unread ? "rgba(56, 189, 248, 0.03)" : "transparent"; }}
                       >
                         {/* Avatar */}
                         <div style={{
                           width: "32px", height: "32px", borderRadius: "50%",
-                          background: "rgba(255, 255, 255, 0.06)",
+                          background: "rgba(var(--ink-rgb), 0.06)",
                           display: "flex", alignItems: "center", justifyContent: "center",
                           fontSize: "0.8rem", flexShrink: 0,
                           overflow: "hidden",
@@ -403,7 +403,7 @@ export function InboxPanel({ casualModeActive = false, initialView = null, pendi
                           <p style={{
                             margin: 0, fontSize: "0.75rem",
                             fontWeight: convo.has_unread ? 600 : 400,
-                            color: convo.has_unread ? "#fff" : "var(--text-secondary)",
+                            color: convo.has_unread ? "var(--text-primary)" : "var(--text-secondary)",
                           }}>
                             {other.display_name || `${(other.wallet_address || "").slice(0, 6)}...`}
                           </p>
@@ -446,8 +446,8 @@ function InboxButton({ totalUnread, isOpen, onClick }) {
         width: "34px",
         height: "34px",
         borderRadius: "8px",
-        border: isOpen ? "1px solid rgba(56, 189, 248, 0.25)" : "1px solid rgba(255, 255, 255, 0.08)",
-        background: isOpen ? "rgba(56, 189, 248, 0.08)" : "rgba(255, 255, 255, 0.03)",
+        border: isOpen ? "1px solid rgba(56, 189, 248, 0.25)" : "1px solid rgba(var(--ink-rgb), 0.13)",
+        background: isOpen ? "rgba(56, 189, 248, 0.08)" : "rgba(var(--ink-rgb), 0.03)",
         color: "var(--text-muted)",
         cursor: "pointer",
         fontSize: "1rem",
@@ -457,8 +457,8 @@ function InboxButton({ totalUnread, isOpen, onClick }) {
         justifyContent: "center",
         padding: 0,
       }}
-      onMouseEnter={(e) => { e.currentTarget.style.color = "#fff"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)"; }}
-      onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)"; e.currentTarget.style.borderColor = isOpen ? "rgba(56, 189, 248, 0.25)" : "rgba(255,255,255,0.08)"; }}
+      onMouseEnter={(e) => { e.currentTarget.style.color = "var(--text-primary)"; e.currentTarget.style.borderColor = "rgba(var(--ink-rgb), 0.2)"; }}
+      onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)"; e.currentTarget.style.borderColor = isOpen ? "rgba(56, 189, 248, 0.25)" : "rgba(var(--ink-rgb), 0.13)"; }}
       title="Inbox"
       aria-label={`Inbox${totalUnread > 0 ? `, ${totalUnread} unread` : ""}`}
       aria-expanded={isOpen}

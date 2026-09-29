@@ -133,8 +133,8 @@ export function AccountSection({ casualModeActive }) {
                 minHeight: 40,
                 padding: "0.5rem 0.7rem",
                 borderRadius: 8,
-                border: "1px solid rgba(255,255,255,0.15)",
-                background: "rgba(0,0,0,0.25)",
+                border: "1px solid rgba(var(--ink-rgb), 0.15)",
+                background: "#fff",
                 color: "var(--text-primary)",
                 fontSize: "0.85rem",
               }}
@@ -230,8 +230,8 @@ function ReadOnlyRow({ label, value, note, mono = false }) {
         padding: "0.6rem 0.85rem",
         marginBottom: "0.5rem",
         borderRadius: 8,
-        background: "rgba(255,255,255,0.02)",
-        border: "1px solid rgba(255,255,255,0.06)",
+        background: "rgba(var(--ink-rgb), 0.02)",
+        border: "1px solid rgba(var(--ink-rgb), 0.06)",
       }}
     >
       <div style={{ display: "flex", justifyContent: "space-between", gap: "1rem", alignItems: "baseline" }}>

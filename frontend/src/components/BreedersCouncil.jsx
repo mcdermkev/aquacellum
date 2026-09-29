@@ -17,33 +17,33 @@ export function BreederProfileCard({ profile, companion }) {
       case "God-Tier":
         return {
           border: "1px solid #ffd700",
-          boxShadow: "0 0 20px #ffd700, inset 0 0 10px #ffd700",
-          background: "linear-gradient(135deg, rgba(255, 215, 0, 0.25), rgba(0, 0, 0, 0.85))",
+          boxShadow: "0 0 0 3px rgba(255, 215, 0, 0.25), 0 8px 24px rgba(11, 37, 48, 0.10)",
+          background: "linear-gradient(135deg, rgba(255, 215, 0, 0.25), #ffffff)",
           animation: "godTierPulse 2s infinite alternate"
         };
       case "Master":
         return {
           border: "1px solid #d500f9",
-          boxShadow: "0 0 15px #d500f9, inset 0 0 5px #d500f9",
-          background: "linear-gradient(135deg, rgba(213,0,249,0.15), rgba(0,0,0,0.6))"
+          boxShadow: "0 0 0 2px rgba(213, 0, 249, 0.18), 0 8px 24px rgba(11, 37, 48, 0.10)",
+          background: "linear-gradient(135deg, rgba(213,0,249,0.12), #ffffff)"
         };
       case "Gold":
         return {
           border: "1px solid #ffd700",
-          boxShadow: "0 0 12px #ffd700, inset 0 0 4px #ffd700",
-          background: "linear-gradient(135deg, rgba(255,215,0,0.12), rgba(0,0,0,0.6))"
+          boxShadow: "0 0 0 2px rgba(255, 215, 0, 0.2), 0 8px 24px rgba(11, 37, 48, 0.10)",
+          background: "linear-gradient(135deg, rgba(255,215,0,0.14), #ffffff)"
         };
       case "Silver":
         return {
           border: "1px solid #b0bec5",
-          boxShadow: "0 0 8px #b0bec5",
-          background: "linear-gradient(135deg, rgba(176,190,197,0.1), rgba(0,0,0,0.6))"
+          boxShadow: "var(--glass-shadow)",
+          background: "linear-gradient(135deg, rgba(176,190,197,0.18), #ffffff)"
         };
       default: // Bronze / Base Tier Setup
         return {
           border: "1px solid #cd7f32",
-          boxShadow: "0 0 5px #cd7f32",
-          background: "linear-gradient(135deg, rgba(205,127,50,0.08), rgba(0,0,0,0.6))"
+          boxShadow: "var(--glass-shadow)",
+          background: "linear-gradient(135deg, rgba(205,127,50,0.12), #ffffff)"
         };
     }
   };
@@ -58,7 +58,7 @@ export function BreederProfileCard({ profile, companion }) {
       fontFamily: 'monospace',
       maxWidth: '360px',
       backdropFilter: 'blur(10px)',
-      color: '#ffffff',
+      color: 'var(--text-primary)',
       transition: 'all 0.4s ease',
       margin: '0 auto 2rem auto',
       textAlign: 'left'
@@ -71,17 +71,17 @@ export function BreederProfileCard({ profile, companion }) {
           fontSize: '10px',
           padding: '2px 6px',
           borderRadius: '4px',
-          background: 'rgba(255,255,255,0.1)',
+          background: 'rgba(var(--ink-rgb), 0.1)',
           textTransform: 'uppercase'
         }}>
           {companion.currentTier === "God-Tier" ? "👑 God-Tier" : `${companion.currentTier} Rank`}
         </span>
       </div>
 
-      <div style={{ fontSize: '12px', opacity: 0.8, borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '8px' }}>
+      <div style={{ fontSize: '12px', opacity: 0.8, borderTop: '1px solid rgba(var(--ink-rgb), 0.15)', paddingTop: '8px' }}>
         <div>✦ Level: {profile.level} Breeder</div>
         <div>✦ Showcase Metrics: Active Council Contributor</div>
-        <div style={{ display: 'flex', gap: '8px', marginTop: '6px', fontSize: '10px', color: '#00e5ff' }}>
+        <div style={{ display: 'flex', gap: '8px', marginTop: '6px', fontSize: '10px', color: 'var(--accent-teal)' }}>
           <span>🐟 Discus Mastery</span>
           <span>•</span>
           <span>💧 99.8% Tank Metric Stability</span>
@@ -118,10 +118,10 @@ const TERMINAL = ["promoted", "rejected"];
 
 function statusColors(status) {
   switch (status) {
-    case "promoted": return { bg: "rgba(52, 211, 153, 0.15)", fg: "#34d399" };
-    case "approved": return { bg: "rgba(56, 189, 248, 0.15)", fg: "#38bdf8" };
-    case "rejected": return { bg: "rgba(239, 68, 68, 0.15)", fg: "#f87171" };
-    default:         return { bg: "rgba(251, 191, 36, 0.15)", fg: "#fbbf24" };
+    case "promoted": return { bg: "rgba(52, 211, 153, 0.15)", fg: "var(--accent-green)" };
+    case "approved": return { bg: "rgba(56, 189, 248, 0.15)", fg: "var(--accent-blue)" };
+    case "rejected": return { bg: "rgba(239, 68, 68, 0.15)", fg: "var(--accent-red)" };
+    default:         return { bg: "rgba(251, 191, 36, 0.15)", fg: "var(--accent-amber)" };
   }
 }
 
@@ -249,14 +249,14 @@ export function BreedersCouncil({
         width: "100%",
         padding: isModalView ? "1rem 0" : "3rem",
         borderRadius: "12px",
-        color: "#fff",
+        color: "var(--text-primary)",
         textAlign: "center",
       }}>
         {companionData && companionData.eggState >= 2 && (
           <BreederProfileCard profile={profile} companion={companionData} />
         )}
 
-        <h2 style={{ fontSize: "1.8rem", fontWeight: "900", margin: "0 0 0.5rem 0", color: "#f8fafc" }}>
+        <h2 style={{ fontSize: "1.8rem", fontWeight: "900", margin: "0 0 0.5rem 0", color: "var(--text-primary)" }}>
           Breeders Council
         </h2>
 
@@ -284,7 +284,7 @@ export function BreedersCouncil({
 
         {suggestions.length > 0 && (
           <div style={{ maxWidth: "760px", margin: "0 auto 2.5rem auto", textAlign: "left" }}>
-            <h3 style={{ fontSize: "1rem", fontWeight: 700, color: "#fff", marginBottom: "0.75rem" }}>
+            <h3 style={{ fontSize: "1rem", fontWeight: 700, color: "var(--text-primary)", marginBottom: "0.75rem" }}>
               Open proposals
             </h3>
             <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
@@ -292,8 +292,8 @@ export function BreedersCouncil({
                 const c = statusColors(item.status);
                 return (
                   <div key={item.id} style={{
-                    background: "rgba(255,255,255,0.02)",
-                    border: "1px solid rgba(255,255,255,0.06)",
+                    background: "rgba(var(--ink-rgb), 0.02)",
+                    border: "1px solid rgba(var(--ink-rgb), 0.11)",
                     borderRadius: "8px",
                     padding: "0.85rem 1rem",
                     display: "flex",
@@ -327,10 +327,10 @@ export function BreedersCouncil({
         {/* Glowing Neon Coming Soon Micro-Panel */}
         <div style={{
           maxWidth: "600px", margin: "0 auto", padding: "1.75rem",
-          background: "rgba(10, 15, 30, 0.4)",
+          background: "var(--bg-secondary)",
           border: "1px solid rgba(255, 215, 0, 0.15)",
           borderRadius: "10px",
-          boxShadow: "0 0 15px rgba(255, 215, 0, 0.08), inset 0 0 10px rgba(0, 242, 254, 0.05)",
+          boxShadow: "var(--glass-shadow)",
           position: "relative", overflow: "hidden",
         }}>
           <div style={{
@@ -338,13 +338,13 @@ export function BreedersCouncil({
             background: "linear-gradient(90deg, transparent, rgba(255, 215, 0, 0.4), transparent)",
           }} />
           <span style={{
-            fontSize: "0.75rem", fontWeight: "bold", letterSpacing: "0.15em", color: "#fbbf24",
+            fontSize: "0.75rem", fontWeight: "bold", letterSpacing: "0.15em", color: "var(--accent-amber)",
             background: "rgba(251, 191, 36, 0.1)", padding: "0.25rem 0.75rem",
             borderRadius: "12px", display: "inline-block", marginBottom: "0.75rem",
           }}>
             COMING SOON • PHASE 4
           </span>
-          <h3 style={{ fontSize: "1.1rem", fontWeight: "800", color: "#fff", margin: "0 0 0.5rem 0" }}>
+          <h3 style={{ fontSize: "1.1rem", fontWeight: "800", color: "var(--text-primary)", margin: "0 0 0.5rem 0" }}>
             Elite Breeder Guild & Curation Council Hub
           </h3>
           <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)", lineHeight: "1.5", margin: 0 }}>
@@ -364,7 +364,7 @@ export function BreedersCouncil({
       width: "100%",
       padding: isModalView ? "0.5rem 0" : "2.5rem",
       borderRadius: "12px",
-      color: "#fff",
+      color: "var(--text-primary)",
     }}>
       {companionData && companionData.eggState >= 2 && (
         <div style={{ display: "flex", justifyContent: "center", marginBottom: "2rem" }}>
@@ -378,8 +378,7 @@ export function BreedersCouncil({
       }}>
         <div>
           <h2 style={{
-            fontSize: "1.8rem", fontWeight: "900", margin: 0, color: "#fbbf24",
-            textShadow: "0 0 10px rgba(251, 191, 36, 0.3)",
+            fontSize: "1.8rem", fontWeight: "900", margin: 0, color: "var(--accent-amber)",
           }}>
             🏛️ Breeders Council
           </h2>
@@ -395,7 +394,7 @@ export function BreedersCouncil({
           background: "rgba(251, 191, 36, 0.1)",
           border: "1px solid rgba(251, 191, 36, 0.3)",
           padding: "0.5rem 1rem", borderRadius: "6px", fontSize: "0.85rem",
-          color: "#fbbf24", fontWeight: "bold", textTransform: "capitalize",
+          color: "var(--accent-amber)", fontWeight: "bold", textTransform: "capitalize",
         }}>
           {roles.filter((r) => CURATION_ROLES.includes(r)).join(" • ")}
         </div>
@@ -404,7 +403,7 @@ export function BreedersCouncil({
       {actionError && (
         <div style={{
           background: "rgba(239, 68, 68, 0.12)", border: "1px solid rgba(239, 68, 68, 0.35)",
-          color: "#fca5a5", borderRadius: "8px", padding: "0.75rem 1rem",
+          color: "var(--accent-red)", borderRadius: "8px", padding: "0.75rem 1rem",
           fontSize: "0.85rem", marginBottom: "1rem",
         }}>
           {actionError}
@@ -413,14 +412,14 @@ export function BreedersCouncil({
       {actionNotice && (
         <div style={{
           background: "rgba(52, 211, 153, 0.12)", border: "1px solid rgba(52, 211, 153, 0.35)",
-          color: "#6ee7b7", borderRadius: "8px", padding: "0.75rem 1rem",
+          color: "var(--accent-green)", borderRadius: "8px", padding: "0.75rem 1rem",
           fontSize: "0.85rem", marginBottom: "1rem",
         }}>
           {actionNotice}
         </div>
       )}
 
-      <h3 style={{ fontSize: "1.2rem", fontWeight: "700", marginBottom: "1rem", color: "#fff" }}>
+      <h3 style={{ fontSize: "1.2rem", fontWeight: "700", marginBottom: "1rem", color: "var(--text-primary)" }}>
         Ecosystem Live Analytics
       </h3>
       <div style={{
@@ -428,14 +427,14 @@ export function BreedersCouncil({
         gap: "1.25rem", marginBottom: "2.5rem",
       }}>
         {[
-          { label: "Cached Species", value: stats.totalSpecies, color: "#38bdf8" },
-          { label: "Marketplace Listings", value: stats.totalListings, color: "#34d399" },
-          { label: "Registered Aquariums", value: stats.totalTanks, color: "#a78bfa" },
-          { label: "Awaiting Your Vote", value: pending.length, color: "#fbbf24" },
-          { label: "Approved, Not Published", value: approved.length, color: "#f472b6" },
+          { label: "Cached Species", value: stats.totalSpecies, color: "var(--accent-blue)" },
+          { label: "Marketplace Listings", value: stats.totalListings, color: "var(--accent-green)" },
+          { label: "Registered Aquariums", value: stats.totalTanks, color: "var(--accent-violet)" },
+          { label: "Awaiting Your Vote", value: pending.length, color: "var(--accent-amber)" },
+          { label: "Approved, Not Published", value: approved.length, color: "#be185d" },
         ].map((card) => (
           <div key={card.label} style={{
-            background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)",
+            background: "rgba(var(--ink-rgb), 0.02)", border: "1px solid rgba(var(--ink-rgb), 0.11)",
             borderRadius: "8px", padding: "1.25rem",
           }}>
             <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>{card.label}</span>
@@ -449,17 +448,17 @@ export function BreedersCouncil({
       </div>
 
       <div style={{
-        background: "rgba(255,255,255,0.01)", border: "1px solid rgba(255,255,255,0.04)",
+        background: "rgba(var(--ink-rgb), 0.02)", border: "1px solid rgba(var(--ink-rgb), 0.09)",
         borderRadius: "10px", padding: "1.5rem",
       }}>
-        <h3 style={{ fontSize: "1.2rem", fontWeight: "700", marginBottom: "1rem", color: "#fff" }}>
+        <h3 style={{ fontSize: "1.2rem", fontWeight: "700", marginBottom: "1rem", color: "var(--text-primary)" }}>
           Curation Queue
         </h3>
 
         {suggestionsQuery?.isLoading ? (
           <p style={{ color: "var(--text-muted)", fontSize: "0.9rem", margin: 0 }}>Loading the shared queue…</p>
         ) : suggestionsQuery?.error ? (
-          <p style={{ color: "#f87171", fontSize: "0.9rem", margin: 0 }}>
+          <p style={{ color: "var(--accent-red)", fontSize: "0.9rem", margin: 0 }}>
             Could not load the queue: {suggestionsQuery.error.message}
           </p>
         ) : suggestions.length === 0 ? (
@@ -478,14 +477,14 @@ export function BreedersCouncil({
 
               return (
                 <div key={item.id} style={{
-                  background: "rgba(255,255,255,0.02)",
-                  border: "1px solid rgba(255,255,255,0.06)",
+                  background: "rgba(var(--ink-rgb), 0.02)",
+                  border: "1px solid rgba(var(--ink-rgb), 0.11)",
                   borderRadius: "8px", padding: "1.2rem",
                   display: "flex", justifyContent: "space-between",
                   alignItems: "flex-start", flexWrap: "wrap", gap: "1rem",
                 }}>
                   <div style={{ flex: "1 1 320px" }}>
-                    <h4 style={{ margin: "0 0 0.25rem 0", color: "#fff", fontSize: "1.1rem" }}>
+                    <h4 style={{ margin: "0 0 0.25rem 0", color: "var(--text-primary)", fontSize: "1.1rem" }}>
                       {item.common_name}{" "}
                       <span style={{ fontStyle: "italic", fontSize: "0.85rem", color: "var(--text-muted)" }}>
                         ({item.scientific_name})
@@ -502,7 +501,7 @@ export function BreedersCouncil({
                       </span>
                     </div>
 
-                    <div style={{ fontSize: "0.8rem", color: "#cbd5e1", marginTop: "0.5rem" }}>
+                    <div style={{ fontSize: "0.8rem", color: "var(--text-secondary)", marginTop: "0.5rem" }}>
                       {requirementLabel(item)}
                     </div>
                     <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginTop: "0.25rem" }}>
@@ -512,7 +511,7 @@ export function BreedersCouncil({
 
                     {needsProfile && item.status !== "promoted" && (
                       <div style={{
-                        marginTop: "0.6rem", fontSize: "0.75rem", color: "#fbbf24",
+                        marginTop: "0.6rem", fontSize: "0.75rem", color: "var(--accent-amber)",
                         background: "rgba(251,191,36,0.08)",
                         border: "1px solid rgba(251,191,36,0.25)",
                         borderRadius: "6px", padding: "0.5rem 0.65rem", lineHeight: 1.5,
@@ -527,14 +526,14 @@ export function BreedersCouncil({
                     )}
 
                     {item.notes && (
-                      <p style={{ fontSize: "0.8rem", color: "rgba(255,255,255,0.6)", margin: "0.5rem 0 0 0" }}>
+                      <p style={{ fontSize: "0.8rem", color: "var(--text-secondary)", margin: "0.5rem 0 0 0" }}>
                         Notes: {item.notes}
                       </p>
                     )}
                     {item.proof_url && (
                       <div style={{ marginTop: "0.4rem" }}>
                         <a href={item.proof_url} target="_blank" rel="noopener noreferrer"
-                          style={{ fontSize: "0.75rem", color: "#38bdf8", textDecoration: "underline" }}>
+                          style={{ fontSize: "0.75rem", color: "var(--accent-blue)", textDecoration: "underline" }}>
                           View reference source
                         </a>
                       </div>
@@ -544,7 +543,7 @@ export function BreedersCouncil({
                         <a
                           href={`https://sepolia.basescan.org/tx/${item.promotion_tx_hash}`}
                           target="_blank" rel="noopener noreferrer"
-                          style={{ fontSize: "0.75rem", color: "#34d399", textDecoration: "underline" }}
+                          style={{ fontSize: "0.75rem", color: "var(--accent-green)", textDecoration: "underline" }}
                         >
                           View publication transaction
                         </a>
@@ -575,7 +574,7 @@ export function BreedersCouncil({
                           )}
                           style={{
                             padding: "0.4rem 1rem", fontSize: "0.8rem",
-                            border: "1px solid rgba(239, 68, 68, 0.4)", color: "#f87171",
+                            border: "1px solid rgba(239, 68, 68, 0.4)", color: "var(--accent-red)",
                             cursor: busy ? "wait" : "pointer", background: "none",
                             borderRadius: "4px", opacity: busy ? 0.6 : 1,
                           }}
@@ -591,8 +590,8 @@ export function BreedersCouncil({
                             "Approve vote recorded."
                           )}
                           style={{
-                            padding: "0.4rem 1rem", fontSize: "0.8rem", background: "#34d399",
-                            color: "#000", border: "none", borderRadius: "4px",
+                            padding: "0.4rem 1rem", fontSize: "0.8rem", background: "var(--accent-green-fill)",
+                            color: "#fff", border: "none", borderRadius: "4px",
                             cursor: busy ? "wait" : "pointer", fontWeight: "bold",
                             opacity: busy ? 0.6 : 1,
                           }}
@@ -619,8 +618,8 @@ export function BreedersCouncil({
                         )}
                         style={{
                           padding: "0.45rem 1rem", fontSize: "0.8rem",
-                          background: needsProfile ? "rgba(255,255,255,0.06)" : "#38bdf8",
-                          color: needsProfile ? "var(--text-muted)" : "#04121f",
+                          background: needsProfile ? "rgba(var(--ink-rgb), 0.06)" : "var(--accent-blue-fill)",
+                          color: needsProfile ? "var(--text-muted)" : "#fff",
                           border: "none", borderRadius: "4px", fontWeight: "bold",
                           cursor: busy ? "wait" : needsProfile ? "not-allowed" : "pointer",
                           opacity: busy ? 0.6 : 1,

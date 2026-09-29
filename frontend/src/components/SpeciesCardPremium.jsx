@@ -259,7 +259,7 @@ export function SpeciesCardPremium({
             fontWeight: "700",
             padding: "0.2rem 0.6rem",
             borderRadius: "20px",
-            color: "#fcd34d",
+            color: "var(--accent-amber)",
             background: "rgba(251, 191, 36, 0.14)",
             border: "1px solid rgba(251, 191, 36, 0.35)",
             backdropFilter: "blur(8px)",

@@ -10,10 +10,10 @@ import { useUpcomingTides, useMyTides, useRsvp } from "../../hooks/useTides";
 import { ProfileCard } from "./ProfileCard";
 
 const TIDE_TYPE_LABELS = {
-  expo: { label: "Expo", icon: "📍", color: "#10b981" },
+  expo: { label: "Expo", icon: "📍", color: "#047857" },
   virtual: { label: "Virtual", icon: "🎥", color: "#6366f1" },
-  challenge: { label: "Challenge", icon: "🏆", color: "#f59e0b" },
-  auction: { label: "Auction", icon: "🔨", color: "#ef4444" },
+  challenge: { label: "Challenge", icon: "🏆", color: "#b45309" },
+  auction: { label: "Auction", icon: "🔨", color: "#b91c1c" },
 };
 
 function CountdownTimer({ targetTime }) {
@@ -97,7 +97,7 @@ function TideCard({ tide, onSelect }) {
         <div className="tide-card__header">
           <span
             className="tide-card__type-badge"
-            style={{ backgroundColor: typeInfo.color }}
+            style={{ backgroundColor: typeInfo.color, color: "#fff" }}
           >
             {typeInfo.icon} {typeInfo.label}
           </span>

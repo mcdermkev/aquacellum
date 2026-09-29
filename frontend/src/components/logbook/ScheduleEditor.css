@@ -1,9 +1,9 @@
 /* ScheduleEditor — per-tank cadence editor (Task 8 polish). */
 
 .sched-editor {
-  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.12));
+  border: 1px solid var(--glass-border, rgba(var(--ink-rgb), 0.12));
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgba(var(--ink-rgb), 0.02);
   overflow: hidden;
 }
 
@@ -20,7 +20,7 @@
   color: inherit;
 }
 .sched-head-left { display: flex; align-items: center; gap: 0.5rem; }
-.sched-head-left strong { color: #fff; font-size: 0.85rem; }
+.sched-head-left strong { color: var(--text-primary); font-size: 0.85rem; }
 .sched-chevron { color: var(--text-muted, #94a3b8); transition: transform 0.2s ease; }
 .sched-chevron.open { transform: rotate(180deg); }
 
@@ -34,22 +34,22 @@
   gap: 0.5rem;
   padding: 0.4rem 0.55rem;
   border-radius: 8px;
-  background: rgba(0, 0, 0, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: var(--bg-band);
+  border: 1px solid rgba(var(--ink-rgb), 0.05);
 }
 .sched-row--off { opacity: 0.6; }
 
 .sched-toggle { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; }
-.sched-toggle input { width: 15px; height: 15px; accent-color: #38bdf8; cursor: pointer; }
-.sched-label { color: #fff; font-size: 0.8rem; }
+.sched-toggle input { width: 15px; height: 15px; accent-color: var(--accent-blue-fill); cursor: pointer; }
+.sched-label { color: var(--text-primary); font-size: 0.8rem; }
 
 .sched-cadence { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.72rem; color: var(--text-muted, #94a3b8); white-space: nowrap; }
 .sched-cadence input {
   width: 46px;
-  background: rgba(0, 0, 0, 0.3);
-  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.12));
+  background: #fff;
+  border: 1px solid var(--glass-border, rgba(var(--ink-rgb), 0.12));
   border-radius: 6px;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 0.78rem;
   padding: 0.2rem 0.35rem;
   text-align: center;

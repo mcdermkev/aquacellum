@@ -1553,13 +1553,13 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
             display: "flex",
             flexDirection: "column",
             gap: "0.4rem",
-            background: "rgba(8,25,48,0.98)",
+            background: "#ffffff",
             border: "1px solid var(--glass-border)",
             borderRadius: "8px",
             padding: "0.45rem",
             maxHeight: "calc(100vh - 16px)",
             overflowY: "auto",
-            boxShadow: "0 12px 30px rgba(0,0,0,0.6)",
+            boxShadow: "var(--shadow-lg)",
           }}
         >
           <span style={{ fontSize: "0.62rem", textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-muted)", padding: "0.15rem 0.25rem" }}>
@@ -1591,7 +1591,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                     borderRadius: "6px",
                     border: `1px solid ${isCurrent ? "rgba(168, 85, 247, 0.4)" : "rgba(56, 189, 248, 0.2)"}`,
                     background: isCurrent ? "rgba(168, 85, 247, 0.12)" : "rgba(56, 189, 248, 0.05)",
-                    color: isCurrent ? "#e9d5ff" : "#bae6fd",
+                    color: isCurrent ? "var(--accent-violet)" : "var(--accent-blue)",
                     cursor: isCurrent ? "default" : "pointer",
                   }}
                 >
@@ -1614,8 +1614,8 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                 padding: "0.4rem 0.6rem",
                 fontSize: "0.72rem",
                 borderRadius: "6px",
-                border: "1px dashed rgba(255,255,255,0.18)",
-                background: "rgba(255,255,255,0.03)",
+                border: "1px dashed rgba(var(--ink-rgb), 0.23)",
+                background: "rgba(var(--ink-rgb), 0.03)",
                 color: "var(--text-secondary)",
                 cursor: "pointer",
               }}
@@ -1624,7 +1624,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
             </button>
           )}
 
-          <div style={{ height: "1px", background: "rgba(255,255,255,0.07)", margin: "0.15rem 0" }} />
+          <div style={{ height: "1px", background: "rgba(var(--ink-rgb), 0.07)", margin: "0.15rem 0" }} />
 
           <button
             type="button"
@@ -1693,14 +1693,14 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                   setActiveTank(fullTank);
                 }}
                 style={{
-                  border: hasAlert ? "1px dashed var(--accent-red)" : "1px dashed rgba(255, 255, 255, 0.12)",
-                  background: hasAlert ? "rgba(248, 113, 113, 0.02)" : "rgba(255, 255, 255, 0.01)"
+                  border: hasAlert ? "1px dashed var(--accent-red)" : "1px dashed rgba(var(--ink-rgb), 0.17)",
+                  background: hasAlert ? "rgba(248, 113, 113, 0.02)" : "rgba(var(--ink-rgb), 0.01)"
                 }}
               >
                 <div style={{ display: "flex", flex: "1", flexDirection: "column", gap: "0.25rem" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
                     <span style={{ fontSize: "0.7rem", color: "var(--accent-blue)" }}>[{CONTAINMENT_TYPES[child.containment]}]</span>
-                    <strong style={{ color: "#fff", fontSize: "0.85rem" }}>{child.name}</strong>
+                    <strong style={{ color: "var(--text-primary)", fontSize: "0.85rem" }}>{child.name}</strong>
                     {!casualModeActive && <span style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>ID: {child.id}</span>}
                   </div>
                   <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", fontSize: "0.75rem" }}>
@@ -1890,7 +1890,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
           ) : (
             <div className="vertical-tank-rows">
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
-                <h3 style={{ fontSize: "1.25rem", color: "#fff" }}>{casualModeActive ? "🐠 My Tanks" : "Aquarium Containment Systems"}</h3>
+                <h3 style={{ fontSize: "1.25rem", color: "var(--text-primary)" }}>{casualModeActive ? "🐠 My Tanks" : "Aquarium Containment Systems"}</h3>
                 <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
                   {!casualModeActive && (
                     <div className="ops-viewtoggle" role="radiogroup" aria-label="List view">
@@ -1917,7 +1917,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                     <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>
                       {casualModeActive ? "🐠" : "🧪"}
                     </div>
-                    <h2 style={{ color: "#fff", marginBottom: "0.75rem", fontSize: "1.4rem" }}>
+                    <h2 style={{ color: "var(--text-primary)", marginBottom: "0.75rem", fontSize: "1.4rem" }}>
                       {casualModeActive
                         ? "Welcome to Aquadex!"
                         : "Welcome to Aquadex"}
@@ -2060,7 +2060,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                             <span className="badge badge-green" style={{ fontSize: "0.6rem" }}>
                               {tankTypeLabel(tank.tankType)}
                             </span>
-                            <h4 style={{ color: "#fff", fontSize: "1.1rem" }}>{tank.name}</h4>
+                            <h4 style={{ color: "var(--text-primary)", fontSize: "1.1rem" }}>{tank.name}</h4>
                             {!casualModeActive && <span className="mono-id-chip">UNIT #{tank.id}</span>}
                           </div>
                           {!casualModeActive && (
@@ -2089,7 +2089,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                             keeper rather than a preference they could state, and
                             switching to Pro silently changed their units. */}
                         <div style={{ textAlign: "right" }}>
-                          <strong style={{ fontSize: "1.05rem", color: "#fff" }}>
+                          <strong style={{ fontSize: "1.05rem", color: "var(--text-primary)" }}>
                             {formatVolume(tank.volumeLiters, volumeUnit)}
                           </strong>
                           <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", display: "block" }}>
@@ -2100,7 +2100,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
 
                       {/* Middle grid */}
                       {casualModeActive ? (
-                        <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: "1rem", fontSize: "0.85rem", background: "rgba(0,0,0,0.15)", padding: "0.75rem", borderRadius: "8px" }}>
+                        <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: "1rem", fontSize: "0.85rem", background: "var(--bg-band)", padding: "0.75rem", borderRadius: "8px" }}>
                           <div>
                             <span style={{ color: "var(--text-muted)", fontSize: "0.75rem", display: "block" }}>Inhabitants</span>
                             <strong style={{ color: "var(--accent-green)" }}>{getSpecimenCount(tank)} Fish</strong>
@@ -2119,7 +2119,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                           </div>
                         </div>
                       ) : (
-                        <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: "1rem", marginTop: "1.0rem", borderTop: "1px solid rgba(255, 255, 255, 0.04)", paddingTop: "0.75rem" }}>
+                        <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: "1rem", marginTop: "1.0rem", borderTop: "1px solid rgba(var(--ink-rgb), 0.09)", paddingTop: "0.75rem" }}>
                           <div>
                             <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: "0.4rem" }}>Inhabitants</span>
                             <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", flexWrap: "wrap" }}>
@@ -2184,7 +2184,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                         style={{
                           marginTop: "0.75rem",
                           paddingTop: "0.6rem",
-                          borderTop: "1px solid rgba(255, 255, 255, 0.04)",
+                          borderTop: "1px solid rgba(var(--ink-rgb), 0.09)",
                           display: "flex",
                           justifyContent: "flex-end",
                         }}
@@ -2197,7 +2197,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                           aria-expanded={cardMenu?.tankId === tank.id}
                           title="Tank options"
                           onClick={(e) => { e.stopPropagation(); toggleCardMenu(e, tank.id); }}
-                          style={{ background: "rgba(255,255,255,0.05)", border: "1px solid var(--glass-border)", borderRadius: "6px", color: "#fff", width: "34px", height: "28px", cursor: "pointer", fontSize: "1.1rem", lineHeight: 1 }}
+                          style={{ background: "rgba(var(--ink-rgb), 0.05)", border: "1px solid var(--glass-border)", borderRadius: "6px", color: "var(--text-primary)", width: "34px", height: "28px", cursor: "pointer", fontSize: "1.1rem", lineHeight: 1 }}
                         >
                           ⋯
                         </button>
@@ -2238,7 +2238,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
               style={{
                 position: "fixed",
                 inset: 0,
-                background: "rgba(0, 0, 0, 0.6)",
+                background: "rgba(11, 37, 48, 0.45)",
                 backdropFilter: "blur(4px)",
                 zIndex: 999,
                 opacity: 1,
@@ -2250,15 +2250,9 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
               border: casualModeActive
                 ? "1px solid rgba(56, 189, 248, 0.22)"
                 : "1px solid rgba(168, 85, 247, 0.3)",
-              boxShadow: casualModeActive
-                ? "0 0 24px rgba(56, 189, 248, 0.07), inset 0 0 60px rgba(14, 165, 233, 0.03)"
-                : "0 0 28px rgba(168, 85, 247, 0.1), inset 0 0 60px rgba(139, 92, 246, 0.04)",
-              background: casualModeActive
-                ? "rgba(8, 25, 48, 0.98)"
-                : "rgba(14, 8, 30, 0.98)",
-              "--sheet-bg": casualModeActive
-                ? "rgba(8, 25, 48, 0.95)"
-                : "rgba(14, 8, 30, 0.95)",
+              boxShadow: "var(--shadow-lg)",
+              background: "#ffffff",
+              "--sheet-bg": "rgba(255, 255, 255, 0.97)",
               position: "sticky",
               top: "1rem",
               maxHeight: "calc(100vh - 2rem)",
@@ -2273,7 +2267,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                   width: "40px",
                   height: "4px",
                   borderRadius: "2px",
-                  background: "rgba(255, 255, 255, 0.3)",
+                  background: "rgba(var(--ink-rgb), 0.3)",
                   margin: "0 auto 1rem",
                   cursor: "grab",
                 }}
@@ -2317,7 +2311,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                   position: "absolute",
                   top: "0.75rem",
                   right: "0.75rem",
-                  background: "rgba(0, 0, 0, 0.6)",
+                  background: "rgba(11, 37, 48, 0.6)",
                   border: "1px solid var(--glass-border)",
                   color: "#fff",
                   borderRadius: "50%",
@@ -2416,14 +2410,14 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                       position: 'absolute',
                       bottom: '38px',
                       right: '0',
-                      background: 'rgba(8, 12, 20, 0.95)',
-                      color: '#00e5ff',
-                      border: '1px solid rgba(0,229,255,0.3)',
+                      background: '#ffffff',
+                      color: 'var(--accent-teal)',
+                      border: '1px solid var(--glass-border)',
                       borderRadius: '6px',
                       padding: '6px 12px',
                       fontSize: '11px',
                       whiteSpace: 'nowrap',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+                      boxShadow: 'var(--shadow-md)',
                       zIndex: 20,
                       pointerEvents: 'none'
                     }}>
@@ -2438,17 +2432,17 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
               <div className="qr-anchor-tag" title={`UNIT #${activeTank.id}`}>
                 {/* Real QR code rendered as canvas-to-image */}
                 <TankQRCode tankId={activeTank.id} size={40} />
-                <span style={{ fontSize: "0.55rem", fontWeight: "700", color: "var(--bg-primary)" }}>UNIT #{activeTank.id}</span>
+                <span style={{ fontSize: "0.55rem", fontWeight: "700", color: "var(--text-primary)" }}>UNIT #{activeTank.id}</span>
               </div>
 
               <div style={{ position: "absolute", bottom: "1rem", left: "1rem", zIndex: "2" }}>
                 <span className="badge badge-green" style={{ marginBottom: "0.25rem" }}>
                   {tankTypeLabel(activeTank.tankType)} {casualModeActive ? "Tank" : CONTAINMENT_TYPES[activeTank.containment]}
                 </span>
-                <h3 style={{ color: "#fff", fontSize: "1.5rem" }}>{activeTank.name}</h3>
+                <h3 style={{ color: "#fff", fontSize: "1.5rem", textShadow: "0 1px 3px rgba(11, 37, 48, 0.55)" }}>{activeTank.name}</h3>
                 {!casualModeActive && (
                   <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
-                    <span style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
+                    <span style={{ fontSize: "0.85rem", color: "rgba(255, 255, 255, 0.92)", textShadow: "0 1px 3px rgba(11, 37, 48, 0.55)" }}>
                       📍 {[activeTank.facility, activeTank.room, activeTank.rack].filter(Boolean).join(" › ") || "Unassigned"}
                     </span>
                     {/* Group picker — the drag-onto-a-chip shortcut needs a keyboard
@@ -2459,10 +2453,10 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                       onClick={(e) => e.stopPropagation()}
                       onChange={(e) => handleAssignTankToGroup(activeTank.id, e.target.value || UNASSIGNED)}
                       style={{
-                        background: "rgba(8,25,48,0.85)",
+                        background: "#ffffff",
                         border: "1px solid var(--glass-border)",
                         borderRadius: "50px",
-                        color: "#fff",
+                        color: "var(--text-primary)",
                         fontSize: "0.7rem",
                         padding: "0.2rem 0.5rem",
                         cursor: "pointer",
@@ -2498,7 +2492,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
               alignItems: "center",
               gap: "0.75rem",
               padding: "0.75rem 1rem",
-              background: "rgba(255, 255, 255, 0.02)",
+              background: "rgba(var(--ink-rgb), 0.02)",
               border: "1px solid var(--glass-border)",
               borderRadius: "8px",
               margin: "1rem 0"
@@ -2509,7 +2503,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
               <button
                 type="button"
                 onClick={() => setDetailSubTab("social")}
-                style={{ order: 2, marginLeft: "auto", display: "flex", alignItems: "center", gap: "0.35rem", padding: "0.4rem 0.8rem", fontSize: "0.8rem", background: "rgba(255, 255, 255, 0.03)", border: "1px solid var(--glass-border)", borderRadius: "6px", color: "#fff", cursor: "pointer" }}
+                style={{ order: 2, marginLeft: "auto", display: "flex", alignItems: "center", gap: "0.35rem", padding: "0.4rem 0.8rem", fontSize: "0.8rem", background: "rgba(var(--ink-rgb), 0.03)", border: "1px solid var(--glass-border)", borderRadius: "6px", color: "var(--text-primary)", cursor: "pointer" }}
                 aria-label={casualModeActive ? "Share tank on The Reef" : "Share to Social Feed"}
               >
                 📢 <span>Share</span>
@@ -2566,10 +2560,10 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                     gap: "0.5rem",
                     padding: "0.4rem 1rem",
                     fontSize: "0.8rem",
-                    background: "rgba(255, 255, 255, 0.03)",
+                    background: "rgba(var(--ink-rgb), 0.03)",
                     border: "1px solid var(--glass-border)",
                     borderRadius: "6px",
-                    color: "#fff",
+                    color: "var(--text-primary)",
                     cursor: "pointer"
                   }}
                 >
@@ -2970,7 +2964,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                           <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>💧 Water Type</span>
                         </div>
-                        <strong style={{ fontSize: "1.25rem", color: "#fff", display: "block", marginTop: "0.5rem" }}>
+                        <strong style={{ fontSize: "1.25rem", color: "var(--text-primary)", display: "block", marginTop: "0.5rem" }}>
                           {tankKindLabel(activeTank)}
                         </strong>
                         <span style={{ fontSize: "0.65rem", color: "var(--text-muted)" }}>{tankTypeLabel(activeTank.tankType)} ecosystem</span>
@@ -3011,7 +3005,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                           <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>📐 Tank Volume</span>
                         </div>
-                        <strong style={{ fontSize: "1.25rem", color: "#fff", display: "block", marginTop: "0.5rem" }}>
+                        <strong style={{ fontSize: "1.25rem", color: "var(--text-primary)", display: "block", marginTop: "0.5rem" }}>
                           {formatVolume(activeTank.volumeLiters, volumeUnit)}
                         </strong>
                         <span style={{ fontSize: "0.65rem", color: "var(--text-muted)" }}>
@@ -3023,7 +3017,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                       <div className="telemetry-tile-premium" style={{ borderLeft: "3px solid var(--accent-amber)", gridColumn: "span 2", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "1rem" }}>
                         <div style={{ display: "flex", flexDirection: "column" }}>
                           <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>🐠 Current Population</span>
-                          <strong style={{ fontSize: "1.25rem", color: "#fff", display: "block", marginTop: "0.4rem" }}>
+                          <strong style={{ fontSize: "1.25rem", color: "var(--text-primary)", display: "block", marginTop: "0.4rem" }}>
                             {getSpecimenCount(activeTank)} Fish
                           </strong>
                           <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", marginTop: "0.15rem" }}>Total specimens in this tank</span>
@@ -3090,7 +3084,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                             preference existed. Picking a single unit drops the
                             secondary rather than restyling the tile.
                           */}
-                          <strong style={{ fontSize: "1.25rem", color: "#fff" }}>
+                          <strong style={{ fontSize: "1.25rem", color: "var(--text-primary)" }}>
                             {activeTank.latestLog ? (() => {
                               const celsius = activeTank.latestLog.tempCelsiusX10 / 10;
                               const primary = showCelsius(tempUnit)
@@ -3132,7 +3126,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                               </span>
                             )}
                           </div>
-                          <strong style={{ fontSize: "1.25rem", color: "#fff" }}>
+                          <strong style={{ fontSize: "1.25rem", color: "var(--text-primary)" }}>
                             {activeTank.latestLog ? (activeTank.latestLog.phX10 / 10).toFixed(1) : "N/A"}
                           </strong>
                           <span style={{ fontSize: "0.65rem", color: "var(--text-muted)" }}>Ideal range: {minSafePh.toFixed(1)} - {maxSafePh.toFixed(1)} pH</span>
@@ -3376,7 +3370,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                       gap: "0.75rem",
                     }}>
                       <div>
-                        <p style={{ margin: 0, fontSize: "0.8rem", color: "#fff", fontWeight: 500 }}>
+                        <p style={{ margin: 0, fontSize: "0.8rem", color: "var(--text-primary)", fontWeight: 500 }}>
                           {casualModeActive ? "🪸 Share this tank on The Reef" : "Post to Social Feed"}
                         </p>
                         <p style={{ margin: "0.15rem 0 0", fontSize: "0.65rem", color: "var(--text-muted)" }}>
@@ -3427,21 +3421,21 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                           const isExpert = comment.isExpertAudit || comment.category === "lab-audit";
                           
                           let badgeColor = "var(--text-secondary)";
-                          let badgeBg = "rgba(255, 255, 255, 0.05)";
+                          let badgeBg = "rgba(var(--ink-rgb), 0.05)";
                           let badgeBorder = "1px solid var(--glass-border)";
                           let badgeLabel = "Hobbyist";
 
                           if (isExpert) {
-                            badgeColor = "#ffd700";
+                            badgeColor = "#a16207";
                             badgeBg = "rgba(255, 215, 0, 0.15)";
-                            badgeBorder = "1px solid #ffd700";
+                            badgeBorder = "1px solid rgba(161, 98, 7, 0.4)";
                             // Self-described, not platform-verified — see the role
                             // chip in the composer below for why the wording changed
                             // (§9.28). The stored role key is unchanged.
                             badgeLabel = "⭐ Experienced Breeder";
                           } else if (comment.role === "hobbyist") {
                             badgeColor = "var(--text-secondary)";
-                            badgeBg = "rgba(255, 255, 255, 0.05)";
+                            badgeBg = "rgba(var(--ink-rgb), 0.05)";
                             badgeBorder = "1px solid var(--glass-border)";
                             badgeLabel = "Hobbyist";
                           } else {
@@ -3451,11 +3445,11 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                               tier = comment.role.split("-")[0];
                             }
                             const colorMap = {
-                              bronze: "#cd7f32",
-                              silver: "#c0c0c0",
-                              gold: "#ffd700",
-                              master: "#a855f7",
-                              god: "#f43f5e"
+                              bronze: "#9a5b1f",
+                              silver: "#5b6b78",
+                              gold: "#a16207",
+                              master: "#6d28d9",
+                              god: "#be123c"
                             };
                             const bgMap = {
                               bronze: "rgba(205, 127, 50, 0.15)",
@@ -3464,7 +3458,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                               master: "rgba(168, 85, 247, 0.15)",
                               god: "rgba(244, 63, 94, 0.15)"
                             };
-                            const color = colorMap[tier] || "#a855f7";
+                            const color = colorMap[tier] || "#6d28d9";
                             badgeColor = color;
                             badgeBg = bgMap[tier] || "rgba(168, 85, 247, 0.15)";
                             badgeBorder = `1px solid ${color}44`;
@@ -3481,7 +3475,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                           } : {
                             padding: "0.75rem",
                             borderRadius: "8px",
-                            background: "rgba(255, 255, 255, 0.02)",
+                            background: "rgba(var(--ink-rgb), 0.02)",
                             border: "1px solid var(--glass-border)"
                           };
 
@@ -3506,8 +3500,8 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                                       fontSize: "0.6rem",
                                       padding: "0.1rem 0.35rem",
                                       borderRadius: "4px",
-                                      background: "rgba(255,255,255,0.03)",
-                                      border: "1px solid rgba(255,255,255,0.08)",
+                                      background: "rgba(var(--ink-rgb), 0.03)",
+                                      border: "1px solid rgba(var(--ink-rgb), 0.13)",
                                       color: "var(--text-muted)",
                                       textTransform: "uppercase"
                                     }}>
@@ -3519,7 +3513,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                                   {getRelativeTime(comment.timestamp)}
                                 </span>
                               </div>
-                              <p style={{ fontSize: "0.85rem", color: isExpert ? "#fff" : "var(--text-primary)", lineHeight: "1.35", margin: 0 }}>
+                              <p style={{ fontSize: "0.85rem", color: isExpert ? "var(--text-primary)" : "var(--text-primary)", lineHeight: "1.35", margin: 0 }}>
                                 {comment.text}
                               </p>
                               {comment.telemetry && (
@@ -3636,9 +3630,9 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                               style={{
                                 width: "65px",
                                 padding: "0.2rem 0.4rem",
-                                background: "rgba(0,0,0,0.35)",
+                                background: "var(--bg-band)",
                                 border: "1px solid var(--glass-border)",
-                                color: "#fff",
+                                color: "var(--text-primary)",
                                 borderRadius: "4px",
                                 fontSize: "0.75rem",
                                 outline: "none"
@@ -3652,9 +3646,9 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                               onChange={(e) => setSpawnStage(e.target.value)}
                               style={{
                                 padding: "0.2rem 0.4rem",
-                                background: "rgba(0,0,0,0.35)",
+                                background: "var(--bg-band)",
                                 border: "1px solid var(--glass-border)",
-                                color: "#fff",
+                                color: "var(--text-primary)",
                                 borderRadius: "4px",
                                 fontSize: "0.75rem",
                                 outline: "none",
@@ -3685,7 +3679,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                                 fontSize: "0.65rem",
                                 background: "rgba(168, 85, 247, 0.12)",
                                 border: "1px solid rgba(168, 85, 247, 0.3)",
-                                color: "#a855f7",
+                                color: "var(--accent-violet)",
                                 borderRadius: "20px",
                                 cursor: "pointer"
                               }}
@@ -3707,9 +3701,9 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                           style={{
                             width: "100%",
                             padding: "0.5rem",
-                            background: "rgba(255, 255, 255, 0.03)",
+                            background: "rgba(var(--ink-rgb), 0.03)",
                             border: "1px solid var(--glass-border)",
-                            color: "#fff",
+                            color: "var(--text-primary)",
                             borderRadius: "4px",
                             fontSize: "0.8rem",
                             resize: "none"
@@ -3720,7 +3714,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                       {/* Broadcast to Reef Toggle */}
                       <div className="broadcast-toggle-container">
                         <div style={{ display: "flex", flexDirection: "column" }}>
-                          <span style={{ fontSize: "0.75rem", color: "#fff", fontWeight: 500 }}>Broadcast to The Reef 🪸</span>
+                          <span style={{ fontSize: "0.75rem", color: "var(--text-primary)", fontWeight: 500 }}>Broadcast to The Reef 🪸</span>
                           <span style={{ fontSize: "0.6rem", color: "var(--text-muted)" }}>Publish globally to other breeders</span>
                         </div>
                         <label className="broadcast-switch">
@@ -3840,7 +3834,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                       opacity: 0.7,
                       transition: "opacity 0.2s ease",
                     }}
-                    onMouseEnter={(e) => { e.currentTarget.style.opacity = "1"; e.currentTarget.style.color = "#f87171"; }}
+                    onMouseEnter={(e) => { e.currentTarget.style.opacity = "1"; e.currentTarget.style.color = "var(--accent-red)"; }}
                     onMouseLeave={(e) => { e.currentTarget.style.opacity = "0.7"; e.currentTarget.style.color = "var(--text-muted)"; }}
                   >
                     {casualModeActive ? "🗑️ Archive this tank..." : "DECOMMISSION UNIT..."}
@@ -3852,7 +3846,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                     border: "1px solid rgba(248, 113, 113, 0.2)",
                     borderRadius: "8px",
                   }}>
-                    <p style={{ fontSize: "0.78rem", color: "#f87171", marginBottom: "0.5rem", lineHeight: 1.4 }}>
+                    <p style={{ fontSize: "0.78rem", color: "var(--accent-red)", marginBottom: "0.5rem", lineHeight: 1.4 }}>
                       {getSpecimenCount(activeTank) > 0
                         ? (casualModeActive
                           ? `⚠️ This tank has ${getSpecimenCount(activeTank)} fish! Archiving will hide it from your dashboard. Fish records are preserved.`
@@ -3895,8 +3889,8 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                           padding: "0.4rem 0.8rem",
                           fontSize: "0.75rem",
                           borderRadius: "6px",
-                          border: "1px solid rgba(255,255,255,0.12)",
-                          background: "rgba(255,255,255,0.05)",
+                          border: "1px solid rgba(var(--ink-rgb), 0.17)",
+                          background: "rgba(var(--ink-rgb), 0.05)",
                           color: "var(--text-muted)",
                           cursor: "pointer",
                         }}
@@ -3928,7 +3922,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
         <div className="sliding-drawer-backdrop" onClick={() => setAddFishOpen(false)}>
           <div className="sliding-drawer-content" onClick={(e) => e.stopPropagation()}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.25rem" }}>
-              <h3 style={{ margin: 0, fontSize: "1.05rem", color: "#fff" }}>
+              <h3 style={{ margin: 0, fontSize: "1.05rem", color: "var(--text-primary)" }}>
                 {casualModeActive ? "🐟 Add Fish to Tank" : "🐟 Register Specimen"}
               </h3>
               <button
@@ -3941,7 +3935,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
             </div>
 
             {addFishError && (
-              <div style={{ padding: "0.6rem 0.75rem", marginBottom: "1rem", background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: "6px", color: "#fca5a5", fontSize: "0.8rem" }}>
+              <div style={{ padding: "0.6rem 0.75rem", marginBottom: "1rem", background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: "6px", color: "var(--accent-red)", fontSize: "0.8rem" }}>
                 {addFishError}
               </div>
             )}
@@ -3956,7 +3950,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                   value={addFishSearch}
                   onChange={(e) => setAddFishSearch(e.target.value)}
                   placeholder="Type a common or scientific name..."
-                  style={{ width: "100%", padding: "0.75rem", background: "rgba(8,12,20,0.9)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px" }}
+                  style={{ width: "100%", padding: "0.75rem", background: "#ffffff", border: "1px solid var(--glass-border)", color: "var(--text-primary)", borderRadius: "4px" }}
                 />
               </div>
 
@@ -3987,11 +3981,11 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                             alignItems: "center",
                             textAlign: "left",
                             padding: "0.6rem 0.75rem",
-                            background: selected ? "rgba(56,189,248,0.15)" : "rgba(0,0,0,0.2)",
+                            background: selected ? "rgba(56,189,248,0.15)" : "var(--bg-band)",
                             border: selected ? "1px solid var(--accent-blue)" : "1px solid var(--glass-border)",
                             borderRadius: "6px",
                             cursor: "pointer",
-                            color: "#fff"
+                            color: "var(--text-primary)"
                           }}
                         >
                           <span>
@@ -4013,14 +4007,14 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                   <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.35rem" }}>
                     Quantity
                   </label>
-                  <div style={{ display: "flex", alignItems: "center", background: "rgba(0,0,0,0.2)", border: "1px solid var(--glass-border)", borderRadius: "6px", overflow: "hidden", height: "42px" }}>
+                  <div style={{ display: "flex", alignItems: "center", background: "var(--bg-band)", border: "1px solid var(--glass-border)", borderRadius: "6px", overflow: "hidden", height: "42px" }}>
                     <button
                       type="button"
                       onClick={() => setAddFishQty(prev => Math.max(1, prev - 1))}
                       style={{
                         background: "none",
                         border: "none",
-                        color: "#fff",
+                        color: "var(--text-primary)",
                         width: "36px",
                         height: "100%",
                         cursor: "pointer",
@@ -4028,7 +4022,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                         fontWeight: "600",
                         transition: "background 0.2s"
                       }}
-                      onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}
+                      onMouseEnter={(e) => e.currentTarget.style.background = "rgba(var(--ink-rgb), 0.05)"}
                       onMouseLeave={(e) => e.currentTarget.style.background = "none"}
                     >
                       -
@@ -4042,7 +4036,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                         flex: 1,
                         background: "none",
                         border: "none",
-                        color: "#fff",
+                        color: "var(--text-primary)",
                         textAlign: "center",
                         fontSize: "0.9rem",
                         fontWeight: "600",
@@ -4056,7 +4050,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                       style={{
                         background: "none",
                         border: "none",
-                        color: "#fff",
+                        color: "var(--text-primary)",
                         width: "36px",
                         height: "100%",
                         cursor: "pointer",
@@ -4064,7 +4058,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                         fontWeight: "600",
                         transition: "background 0.2s"
                       }}
-                      onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}
+                      onMouseEnter={(e) => e.currentTarget.style.background = "rgba(var(--ink-rgb), 0.05)"}
                       onMouseLeave={(e) => e.currentTarget.style.background = "none"}
                     >
                       +
@@ -4081,7 +4075,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                       canonical stored value. It used to write the literal
                       "Not Sure", which no other writer produced and which three
                       readers then had to special-case alongside "Unsexed". */}
-                  <div style={{ display: "flex", background: "rgba(0,0,0,0.2)", border: "1px solid var(--glass-border)", borderRadius: "6px", padding: "2px", height: "42px" }}>
+                  <div style={{ display: "flex", background: "var(--bg-band)", border: "1px solid var(--glass-border)", borderRadius: "6px", padding: "2px", height: "42px" }}>
                     {SEX_OPTIONS.map((option) => {
                       const g = option.value;
                       const sel = addFishGender === g;
@@ -4092,10 +4086,10 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                           onClick={() => setAddFishGender(g)}
                           style={{
                             flex: 1,
-                            background: sel ? (g === SEX.MALE ? "rgba(56, 189, 248, 0.18)" : g === SEX.FEMALE ? "rgba(244, 63, 94, 0.18)" : "rgba(255, 255, 255, 0.1)") : "none",
+                            background: sel ? (g === SEX.MALE ? "rgba(56, 189, 248, 0.18)" : g === SEX.FEMALE ? "rgba(244, 63, 94, 0.18)" : "rgba(var(--ink-rgb), 0.1)") : "none",
                             border: "none",
                             borderRadius: "4px",
-                            color: sel ? (g === SEX.MALE ? "#38bdf8" : g === SEX.FEMALE ? "#f43f5e" : "#fff") : "var(--text-secondary)",
+                            color: sel ? (g === SEX.MALE ? "var(--accent-blue)" : g === SEX.FEMALE ? "#be123c" : "var(--text-primary)") : "var(--text-secondary)",
                             fontSize: "0.72rem",
                             fontWeight: "600",
                             cursor: "pointer",
@@ -4145,8 +4139,8 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                     width: "100%",
                     minHeight: "42px",
                     padding: "0.55rem 0.7rem",
-                    color: "#fff",
-                    background: "rgba(0,0,0,0.2)",
+                    color: "var(--text-primary)",
+                    background: "var(--bg-band)",
                     border: "1px solid var(--glass-border)",
                     borderRadius: "6px",
                     fontSize: "0.85rem",
@@ -4188,10 +4182,10 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                           flex: "1 1 auto",
                           minHeight: "38px",
                           padding: "0.4rem 0.75rem",
-                          background: sel ? "rgba(56, 189, 248, 0.18)" : "rgba(0,0,0,0.2)",
+                          background: sel ? "rgba(56, 189, 248, 0.18)" : "var(--bg-band)",
                           border: sel ? "1px solid var(--accent-blue)" : "1px solid var(--glass-border)",
                           borderRadius: "6px",
-                          color: sel ? "#fff" : "var(--text-secondary)",
+                          color: sel ? "var(--text-primary)" : "var(--text-secondary)",
                           fontSize: "0.75rem",
                           fontWeight: sel ? 600 : 400,
                           cursor: "pointer",
@@ -4215,7 +4209,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
               <div style={{
                 fontSize: "0.68rem",
                 color: "var(--text-muted)",
-                background: "rgba(255,255,255,0.02)",
+                background: "rgba(var(--ink-rgb), 0.02)",
                 border: "1px solid var(--glass-border)",
                 borderRadius: "6px",
                 padding: "0.5rem 0.65rem",
@@ -4260,7 +4254,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
         <div className="sliding-drawer-backdrop" onClick={() => setQuickLogOpen(false)}>
           <div className="sliding-drawer-content" onClick={(e) => e.stopPropagation()}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.25rem" }}>
-              <h3 style={{ fontSize: "1.5rem", color: "#fff" }}>
+              <h3 style={{ fontSize: "1.5rem", color: "var(--text-primary)" }}>
                 {quickLogMode === "water_test" ? (casualModeActive ? "Log Water Test" : "Detailed Water Test") : `Bulk ${BULK_ACTION_LABELS[bulkLogAction]?.label || "Action"}`}
               </h3>
               <button 
@@ -4284,7 +4278,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
               <span style={{ display: "block", fontSize: "0.7rem", color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "0.5rem", fontWeight: "600" }}>
                 Log Scope
               </span>
-              <div style={{ display: "flex", gap: "0.35rem", background: "rgba(255,255,255,0.02)", padding: "0.25rem", borderRadius: "8px", border: "1px solid var(--glass-border)" }}>
+              <div style={{ display: "flex", gap: "0.35rem", background: "rgba(var(--ink-rgb), 0.02)", padding: "0.25rem", borderRadius: "8px", border: "1px solid var(--glass-border)" }}>
                 {[
                   { key: "single", label: "Single Tank" },
                   { key: "rack",   label: "Entire Rack" },
@@ -4305,7 +4299,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                       borderRadius: "6px",
                       cursor: "pointer",
                       background: bulkLogScope === opt.key ? (casualModeActive ? "rgba(56, 189, 248, 0.18)" : "rgba(168, 85, 247, 0.18)") : "transparent",
-                      color: bulkLogScope === opt.key ? (casualModeActive ? "var(--accent-blue)" : "#c084fc") : "var(--text-muted)",
+                      color: bulkLogScope === opt.key ? (casualModeActive ? "var(--accent-blue)" : "var(--accent-violet)") : "var(--text-muted)",
                       transition: "all 0.15s ease"
                     }}
                   >
@@ -4327,7 +4321,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                       <select 
                         value={quickLogTankId} 
                         onChange={(e) => setQuickLogTankId(e.target.value)}
-                        style={{ width: "100%", padding: "0.75rem", background: "rgba(8,12,20,0.9)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px" }}
+                        style={{ width: "100%", padding: "0.75rem", background: "#ffffff", border: "1px solid var(--glass-border)", color: "var(--text-primary)", borderRadius: "4px" }}
                       >
                         {tanks.map(t => (
                           <option key={`opt-${t.id}`} value={t.id}>{t.name} (ID: {t.id})</option>
@@ -4342,7 +4336,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                       <select
                         value={bulkTargetValue}
                         onChange={(e) => setBulkTargetValue(e.target.value)}
-                        style={{ width: "100%", padding: "0.75rem", background: "rgba(8,12,20,0.9)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px" }}
+                        style={{ width: "100%", padding: "0.75rem", background: "#ffffff", border: "1px solid var(--glass-border)", color: "var(--text-primary)", borderRadius: "4px" }}
                       >
                         {bulkTargetOptions.map(name => (
                           <option key={name} value={name}>{name}</option>
@@ -4382,9 +4376,9 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                           borderRadius: "6px",
                           cursor: "pointer",
                           textAlign: "left",
-                          background: bulkLogAction === key ? (casualModeActive ? "rgba(56, 189, 248, 0.12)" : "rgba(168, 85, 247, 0.12)") : "rgba(255,255,255,0.02)",
+                          background: bulkLogAction === key ? (casualModeActive ? "rgba(56, 189, 248, 0.12)" : "rgba(168, 85, 247, 0.12)") : "rgba(var(--ink-rgb), 0.02)",
                           borderColor: bulkLogAction === key ? (casualModeActive ? "rgba(56, 189, 248, 0.4)" : "rgba(168, 85, 247, 0.4)") : "var(--glass-border)",
-                          color: bulkLogAction === key ? (casualModeActive ? "var(--accent-blue)" : "#c084fc") : "var(--text-secondary)",
+                          color: bulkLogAction === key ? (casualModeActive ? "var(--accent-blue)" : "var(--accent-violet)") : "var(--text-secondary)",
                           transition: "all 0.15s ease"
                         }}
                       >
@@ -4440,7 +4434,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                     onChange={(e) => setBulkLogDetail(e.target.value)}
                     placeholder={BULK_ACTION_LABELS[bulkLogAction]?.defaultDetail}
                     rows="2"
-                    style={{ width: "100%", padding: "0.5rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px", resize: "none", fontSize: "0.85rem" }}
+                    style={{ width: "100%", padding: "0.5rem", background: "rgba(var(--ink-rgb), 0.03)", border: "1px solid var(--glass-border)", color: "var(--text-primary)", borderRadius: "4px", resize: "none", fontSize: "0.85rem" }}
                   />
                   {/* Save as template */}
                   {bulkLogDetail.trim() && (
@@ -4456,7 +4450,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                             value={templateName}
                             onChange={(e) => setTemplateName(e.target.value)}
                             placeholder="Template name…"
-                            style={{ flex: 1, padding: "0.35rem 0.5rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px", fontSize: "0.75rem" }}
+                            style={{ flex: 1, padding: "0.35rem 0.5rem", background: "rgba(var(--ink-rgb), 0.03)", border: "1px solid var(--glass-border)", color: "var(--text-primary)", borderRadius: "4px", fontSize: "0.75rem" }}
                           />
                           <button type="button" onClick={saveTemplate} className={casualModeActive ? "btn-primary" : "btn-primary-pro"} style={{ padding: "0.35rem 0.75rem", fontSize: "0.72rem" }}>Save</button>
                           <button type="button" onClick={() => { setShowSaveTemplate(false); setTemplateName(""); }} style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: "0.85rem" }}>×</button>
@@ -4531,7 +4525,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
 
                 <form onSubmit={(e) => handleLogSubmit(e, quickLogTankId)} style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
                   {bulkLogScope === "single" && residingSpecies.length > 0 && (
-                    <div style={{ padding: "0.5rem 0.75rem", background: "rgba(255,255,255,0.02)", border: "1px solid var(--glass-border)", borderRadius: "6px" }}>
+                    <div style={{ padding: "0.5rem 0.75rem", background: "rgba(var(--ink-rgb), 0.02)", border: "1px solid var(--glass-border)", borderRadius: "6px" }}>
                       <span style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.4rem", fontWeight: "600" }}>
                         Quick-Insert Residing Species:
                       </span>
@@ -4551,7 +4545,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                               fontSize: "0.7rem",
                               background: "rgba(56, 189, 248, 0.12)",
                               border: "1px solid rgba(56, 189, 248, 0.3)",
-                              color: "#38bdf8",
+                              color: "var(--accent-blue)",
                               borderRadius: "20px",
                               cursor: "pointer"
                             }}
@@ -4569,7 +4563,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                       <select 
                         value={quickLogTankId} 
                         onChange={(e) => setQuickLogTankId(e.target.value)}
-                        style={{ width: "100%", padding: "0.75rem", background: "rgba(8,12,20,0.9)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px" }}
+                        style={{ width: "100%", padding: "0.75rem", background: "#ffffff", border: "1px solid var(--glass-border)", color: "var(--text-primary)", borderRadius: "4px" }}
                       >
                         {tanks.map(t => (
                           <option key={`opt-${t.id}`} value={t.id}>{t.name} (ID: {t.id})</option>
@@ -4584,7 +4578,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                       <select
                         value={bulkTargetValue}
                         onChange={(e) => setBulkTargetValue(e.target.value)}
-                        style={{ width: "100%", padding: "0.75rem", background: "rgba(8,12,20,0.9)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px" }}
+                        style={{ width: "100%", padding: "0.75rem", background: "#ffffff", border: "1px solid var(--glass-border)", color: "var(--text-primary)", borderRadius: "4px" }}
                       >
                         {bulkTargetOptions.map(name => (
                           <option key={name} value={name}>{name}</option>
@@ -4650,7 +4644,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                     <div>
                       <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.75rem", marginBottom: "0.25rem" }}>
                         <span style={{ color: "var(--text-secondary)" }}>Temp (°C)</span>
-                        <strong style={{ color: isInsideEnvelope(Number(formData.temp), minSafeTemp, maxSafeTemp) ? "#4ade80" : "#f87171" }}>
+                        <strong style={{ color: isInsideEnvelope(Number(formData.temp), minSafeTemp, maxSafeTemp) ? "var(--accent-green)" : "var(--accent-red)" }}>
                           {formData.temp}°C {isInsideEnvelope(Number(formData.temp), minSafeTemp, maxSafeTemp) ? "(Ideal)" : "(Warning)"}
                         </strong>
                       </div>
@@ -4675,7 +4669,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                     <div>
                       <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.75rem", marginBottom: "0.25rem" }}>
                         <span style={{ color: "var(--text-secondary)" }}>pH Level</span>
-                        <strong style={{ color: isInsideEnvelope(Number(formData.ph), minSafePh, maxSafePh) ? "#4ade80" : "#f87171" }}>
+                        <strong style={{ color: isInsideEnvelope(Number(formData.ph), minSafePh, maxSafePh) ? "var(--accent-green)" : "var(--accent-red)" }}>
                           {formData.ph} {isInsideEnvelope(Number(formData.ph), minSafePh, maxSafePh) ? "(Ideal)" : "(Warning)"}
                         </strong>
                       </div>
@@ -4708,7 +4702,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                         value={formData.ammonia}
                         onChange={(e) => setFormData({ ...formData, ammonia: e.target.value })}
                         required
-                        style={{ width: "100%", padding: "0.5rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px" }}
+                        style={{ width: "100%", padding: "0.5rem", background: "rgba(var(--ink-rgb), 0.03)", border: "1px solid var(--glass-border)", color: "var(--text-primary)", borderRadius: "4px" }}
                       />
                     </div>
                     <div>
@@ -4719,7 +4713,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                         value={formData.nitrite}
                         onChange={(e) => setFormData({ ...formData, nitrite: e.target.value })}
                         required
-                        style={{ width: "100%", padding: "0.5rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px" }}
+                        style={{ width: "100%", padding: "0.5rem", background: "rgba(var(--ink-rgb), 0.03)", border: "1px solid var(--glass-border)", color: "var(--text-primary)", borderRadius: "4px" }}
                       />
                     </div>
                     <div>
@@ -4730,7 +4724,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                         value={formData.nitrate}
                         onChange={(e) => setFormData({ ...formData, nitrate: e.target.value })}
                         required
-                        style={{ width: "100%", padding: "0.5rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px" }}
+                        style={{ width: "100%", padding: "0.5rem", background: "rgba(var(--ink-rgb), 0.03)", border: "1px solid var(--glass-border)", color: "var(--text-primary)", borderRadius: "4px" }}
                       />
                     </div>
                   </div>
@@ -4746,7 +4740,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                     <div>
                       <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.75rem", marginBottom: "0.25rem" }}>
                         <span style={{ color: "var(--text-secondary)" }}>GH (dGH)</span>
-                        <strong style={{ color: isInsideEnvelope(Number(formData.gh), minSafeGh, maxSafeGh) ? "#4ade80" : "#f87171" }}>
+                        <strong style={{ color: isInsideEnvelope(Number(formData.gh), minSafeGh, maxSafeGh) ? "var(--accent-green)" : "var(--accent-red)" }}>
                           {formData.gh} {isInsideEnvelope(Number(formData.gh), minSafeGh, maxSafeGh) ? "(Ideal)" : "(Warning)"}
                         </strong>
                       </div>
@@ -4772,7 +4766,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                     <div>
                       <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.75rem", marginBottom: "0.25rem" }}>
                         <span style={{ color: "var(--text-secondary)" }}>KH (dKH)</span>
-                        <strong style={{ color: isInsideEnvelope(Number(formData.kh), minSafeKh, maxSafeKh) ? "#4ade80" : "#f87171" }}>
+                        <strong style={{ color: isInsideEnvelope(Number(formData.kh), minSafeKh, maxSafeKh) ? "var(--accent-green)" : "var(--accent-red)" }}>
                           {formData.kh} {isInsideEnvelope(Number(formData.kh), minSafeKh, maxSafeKh) ? "(Ideal)" : "(Warning)"}
                         </strong>
                       </div>
@@ -4798,7 +4792,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                     <div>
                       <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.75rem", marginBottom: "0.25rem" }}>
                         <span style={{ color: "var(--text-secondary)" }}>Alkalinity (ppm)</span>
-                        <strong style={{ color: isInsideEnvelope(Number(formData.tal), minSafeTal, maxSafeTal) ? "#4ade80" : "#f87171" }}>
+                        <strong style={{ color: isInsideEnvelope(Number(formData.tal), minSafeTal, maxSafeTal) ? "var(--accent-green)" : "var(--accent-red)" }}>
                           {formData.tal} {isInsideEnvelope(Number(formData.tal), minSafeTal, maxSafeTal) ? "(Ideal)" : "(Warning)"}
                         </strong>
                       </div>
@@ -4831,7 +4825,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                       onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                       placeholder="Notes on maintenance, cleaning, behavior..."
                       rows="3"
-                      style={{ width: "100%", padding: "0.5rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px", resize: "none" }}
+                      style={{ width: "100%", padding: "0.5rem", background: "rgba(var(--ink-rgb), 0.03)", border: "1px solid var(--glass-border)", color: "var(--text-primary)", borderRadius: "4px", resize: "none" }}
                     />
                   </div>
 
@@ -4884,7 +4878,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
           color: "#fff",
           padding: "0.75rem 1.5rem",
           borderRadius: "8px",
-          boxShadow: "0 0 15px rgba(56, 189, 248, 0.4)",
+          boxShadow: "var(--shadow-md)",
           border: "1px solid rgba(56, 189, 248, 0.4)",
           zIndex: 9999,
           fontSize: "0.85rem",
@@ -4901,7 +4895,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
           style={{
             position: "fixed",
             inset: 0,
-            background: "rgba(0, 0, 0, 0.6)",
+            background: "rgba(11, 37, 48, 0.45)",
             backdropFilter: "blur(6px)",
             zIndex: 10001,
             display: "flex",
@@ -4920,7 +4914,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
             style={{
               width: "100%",
               maxWidth: "380px",
-              background: "var(--bg-secondary, #0f172a)",
+              background: "var(--bg-secondary, #ffffff)",
               border: `1px solid ${confirmDialog.danger ? "rgba(248, 113, 113, 0.3)" : "rgba(56, 189, 248, 0.3)"}`,
               borderRadius: "14px",
               padding: "1.25rem",
@@ -4928,12 +4922,12 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
               flexDirection: "column",
               gap: "0.85rem",
               boxShadow: confirmDialog.danger
-                ? "0 8px 32px rgba(0, 0, 0, 0.5), 0 0 20px rgba(248, 113, 113, 0.15)"
-                : "0 8px 32px rgba(0, 0, 0, 0.5), 0 0 20px rgba(56, 189, 248, 0.15)",
+                ? "0 8px 32px rgba(11, 37, 48, 0.15), 0 0 20px rgba(248, 113, 113, 0.15)"
+                : "0 8px 32px rgba(11, 37, 48, 0.15), 0 0 20px rgba(56, 189, 248, 0.15)",
               animation: "modalPopIn 0.2s cubic-bezier(0.32, 0.72, 0, 1) forwards",
             }}
           >
-            <span style={{ fontSize: "0.95rem", fontWeight: "700", color: "#fff" }}>
+            <span style={{ fontSize: "0.95rem", fontWeight: "700", color: "var(--text-primary)" }}>
               {confirmDialog.title}
             </span>
             <p style={{ margin: 0, fontSize: "0.82rem", lineHeight: 1.5, color: "var(--text-muted, #94a3b8)" }}>
@@ -4966,7 +4960,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                       background: choice.danger
                         ? "rgba(248, 113, 113, 0.08)"
                         : "rgba(56, 189, 248, 0.08)",
-                      color: "#fff",
+                      color: "var(--text-primary)",
                       cursor: "pointer",
                       textAlign: "left",
                     }}
@@ -4990,9 +4984,9 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                     fontSize: "0.78rem",
                     fontWeight: 600,
                     borderRadius: "8px",
-                    border: "1px solid rgba(255, 255, 255, 0.12)",
-                    background: "rgba(255, 255, 255, 0.04)",
-                    color: "#e2e8f0",
+                    border: "1px solid rgba(var(--ink-rgb), 0.17)",
+                    background: "rgba(var(--ink-rgb), 0.04)",
+                    color: "var(--text-primary)",
                     cursor: "pointer",
                   }}
                 >
@@ -5010,9 +5004,9 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                     fontSize: "0.78rem",
                     fontWeight: 600,
                     borderRadius: "8px",
-                    border: "1px solid rgba(255, 255, 255, 0.12)",
-                    background: "rgba(255, 255, 255, 0.04)",
-                    color: "#e2e8f0",
+                    border: "1px solid rgba(var(--ink-rgb), 0.17)",
+                    background: "rgba(var(--ink-rgb), 0.04)",
+                    color: "var(--text-primary)",
                     cursor: "pointer",
                   }}
                 >
@@ -5033,7 +5027,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                     borderRadius: "8px",
                     border: confirmDialog.danger ? "1px solid rgba(248, 113, 113, 0.4)" : "1px solid rgba(56, 189, 248, 0.4)",
                     background: confirmDialog.danger ? "rgba(248, 113, 113, 0.15)" : "rgba(56, 189, 248, 0.15)",
-                    color: confirmDialog.danger ? "#f87171" : "#38bdf8",
+                    color: confirmDialog.danger ? "var(--accent-red)" : "var(--accent-blue)",
                     cursor: "pointer",
                   }}
                 >
@@ -5056,7 +5050,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
         <div style={{
           position: "fixed",
           inset: 0,
-          background: "rgba(0, 0, 0, 0.6)",
+          background: "rgba(11, 37, 48, 0.45)",
           backdropFilter: "blur(6px)",
           zIndex: 10000,
           display: "flex",
@@ -5081,11 +5075,11 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
             display: "flex",
             flexDirection: "column",
             gap: "0.75rem",
-            boxShadow: "0 -8px 32px rgba(0, 0, 0, 0.5)",
+            boxShadow: "0 -8px 32px rgba(11, 37, 48, 0.15)",
             animation: "sheetSlideUp 0.25s cubic-bezier(0.32, 0.72, 0, 1) forwards"
           }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span style={{ fontSize: "0.85rem", fontWeight: "600", color: "#fff" }}>
+              <span style={{ fontSize: "0.85rem", fontWeight: "600", color: "var(--text-primary)" }}>
                 {inlineDetailType === "feed" 
                   ? (casualModeActive ? "🥣 What did you feed?" : "🥣 Custom Feeding Details")
                   : inlineDetailType === "population"
@@ -5122,7 +5116,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                           fontSize: "0.85rem"
                         }}
                       >
-                        <span style={{ color: "#fff", fontWeight: "500", display: "inline-flex", alignItems: "center", gap: "0.4rem" }}>
+                        <span style={{ color: "var(--text-primary)", fontWeight: "500", display: "inline-flex", alignItems: "center", gap: "0.4rem" }}>
                           🐠 {spec.commonName}
                           {/* isKnownSex, not `!== "Not Sure"`: that older check let a
                               fish stored as "Unsexed" through and then fell to the
@@ -5133,7 +5127,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                               padding: "0.02rem 0.25rem",
                               borderRadius: "4px",
                               background: normalizeSex(spec.gender) === SEX.MALE ? "rgba(56, 189, 248, 0.15)" : "rgba(244, 63, 94, 0.15)",
-                              color: normalizeSex(spec.gender) === SEX.MALE ? "#38bdf8" : "#f43f5e",
+                              color: normalizeSex(spec.gender) === SEX.MALE ? "var(--accent-blue)" : "#be123c",
                               border: normalizeSex(spec.gender) === SEX.MALE ? "1px solid rgba(56, 189, 248, 0.25)" : "1px solid rgba(244, 63, 94, 0.25)",
                               fontWeight: "600",
                             }}>
@@ -5147,7 +5141,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                           style={{
                             background: "rgba(56, 189, 248, 0.08)",
                             border: "1px solid rgba(56, 189, 248, 0.25)",
-                            color: "#38bdf8",
+                            color: "var(--accent-blue)",
                             padding: "0.25rem 0.65rem",
                             borderRadius: "6px",
                             cursor: "pointer",
@@ -5173,7 +5167,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                   {/* Segmented Add / Remove Control */}
                   <div style={{
                     display: "flex",
-                    background: "rgba(255, 255, 255, 0.03)",
+                    background: "rgba(var(--ink-rgb), 0.03)",
                     border: "1px solid var(--glass-border)",
                     borderRadius: "8px",
                     padding: "2px"
@@ -5234,16 +5228,16 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                             style={{
                               width: "100%",
                               padding: "0.6rem 0.75rem",
-                              background: "rgba(0, 0, 0, 0.3)",
+                              background: "var(--bg-band)",
                               border: "1px solid var(--glass-border)",
                               borderRadius: "6px",
-                              color: "#fff",
+                              color: "var(--text-primary)",
                               fontSize: "0.85rem",
                               outline: "none"
                             }}
                           >
                             {contractSpecies.map(s => (
-                              <option key={s.speciesId} value={s.speciesId} style={{ background: "#0e1424", color: "#fff" }}>
+                              <option key={s.speciesId} value={s.speciesId} style={{ background: "var(--bg-secondary)", color: "var(--text-primary)" }}>
                                 {s.commonName} ({s.scientificName})
                               </option>
                             ))}
@@ -5257,11 +5251,11 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                           <label style={{ display: "block", fontSize: "0.7rem", color: "var(--text-secondary)", marginBottom: "0.25rem" }}>
                             Quantity
                           </label>
-                          <div style={{ display: "flex", alignItems: "center", background: "rgba(0,0,0,0.2)", border: "1px solid var(--glass-border)", borderRadius: "6px", overflow: "hidden", height: "36px" }}>
+                          <div style={{ display: "flex", alignItems: "center", background: "var(--bg-band)", border: "1px solid var(--glass-border)", borderRadius: "6px", overflow: "hidden", height: "36px" }}>
                             <button
                               type="button"
                               onClick={() => setProPopQty(prev => Math.max(1, prev - 1))}
-                              style={{ background: "none", border: "none", color: "#fff", width: "30px", height: "100%", cursor: "pointer", fontSize: "1rem", fontWeight: "600" }}
+                              style={{ background: "none", border: "none", color: "var(--text-primary)", width: "30px", height: "100%", cursor: "pointer", fontSize: "1rem", fontWeight: "600" }}
                             >
                               -
                             </button>
@@ -5270,12 +5264,12 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                               min="1"
                               value={proPopQty}
                               onChange={(e) => setProPopQty(Math.max(1, parseInt(e.target.value) || 1))}
-                              style={{ flex: 1, background: "none", border: "none", color: "#fff", textAlign: "center", fontSize: "0.85rem", outline: "none", width: "100%" }}
+                              style={{ flex: 1, background: "none", border: "none", color: "var(--text-primary)", textAlign: "center", fontSize: "0.85rem", outline: "none", width: "100%" }}
                             />
                             <button
                               type="button"
                               onClick={() => setProPopQty(prev => prev + 1)}
-                              style={{ background: "none", border: "none", color: "#fff", width: "30px", height: "100%", cursor: "pointer", fontSize: "1rem", fontWeight: "600" }}
+                              style={{ background: "none", border: "none", color: "var(--text-primary)", width: "30px", height: "100%", cursor: "pointer", fontSize: "1rem", fontWeight: "600" }}
                             >
                               +
                             </button>
@@ -5287,7 +5281,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                           <label style={{ display: "block", fontSize: "0.7rem", color: "var(--text-secondary)", marginBottom: "0.25rem" }}>
                             Gender
                           </label>
-                          <div style={{ display: "flex", background: "rgba(0,0,0,0.2)", border: "1px solid var(--glass-border)", borderRadius: "6px", padding: "2px", height: "36px" }}>
+                          <div style={{ display: "flex", background: "var(--bg-band)", border: "1px solid var(--glass-border)", borderRadius: "6px", padding: "2px", height: "36px" }}>
                             {SEX_OPTIONS.map((option) => {
                               const g = option.value;
                               const sel = proPopGender === g;
@@ -5300,10 +5294,10 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                                   aria-label={sexOptionLabel(option, { casual: casualModeActive })}
                                   style={{
                                     flex: 1,
-                                    background: sel ? (g === SEX.MALE ? "rgba(56, 189, 248, 0.18)" : g === SEX.FEMALE ? "rgba(244, 63, 94, 0.18)" : "rgba(255, 255, 255, 0.1)") : "none",
+                                    background: sel ? (g === SEX.MALE ? "rgba(56, 189, 248, 0.18)" : g === SEX.FEMALE ? "rgba(244, 63, 94, 0.18)" : "rgba(var(--ink-rgb), 0.1)") : "none",
                                     border: "none",
                                     borderRadius: "4px",
-                                    color: sel ? (g === SEX.MALE ? "#38bdf8" : g === SEX.FEMALE ? "#f43f5e" : "#fff") : "var(--text-secondary)",
+                                    color: sel ? (g === SEX.MALE ? "var(--accent-blue)" : g === SEX.FEMALE ? "#be123c" : "var(--text-primary)") : "var(--text-secondary)",
                                     fontSize: "0.68rem",
                                     fontWeight: "600",
                                     cursor: "pointer",
@@ -5343,13 +5337,13 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                               justifyContent: "space-between",
                               alignItems: "center",
                               padding: "0.5rem 0.65rem",
-                              background: "rgba(255, 255, 255, 0.01)",
+                              background: "rgba(var(--ink-rgb), 0.01)",
                               borderRadius: "6px",
                               border: "1px solid var(--glass-border)",
                               fontSize: "0.8rem"
                             }}
                           >
-                            <span style={{ color: "#fff", fontWeight: "500", display: "inline-flex", alignItems: "center", gap: "0.3rem" }}>
+                            <span style={{ color: "var(--text-primary)", fontWeight: "500", display: "inline-flex", alignItems: "center", gap: "0.3rem" }}>
                               🐠 {spec.commonName}
                               <span style={{ fontSize: "0.65rem", color: "var(--text-muted)" }}>#{spec.id}</span>
                               {/* Same fix as above: unsexed fish used to render ♀. */}
@@ -5359,7 +5353,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                                   padding: "0 0.15rem",
                                   borderRadius: "3px",
                                   background: normalizeSex(spec.gender) === SEX.MALE ? "rgba(56, 189, 248, 0.12)" : "rgba(244, 63, 94, 0.12)",
-                                  color: normalizeSex(spec.gender) === SEX.MALE ? "#38bdf8" : "#f43f5e",
+                                  color: normalizeSex(spec.gender) === SEX.MALE ? "var(--accent-blue)" : "#be123c",
                                   border: normalizeSex(spec.gender) === SEX.MALE ? "1px solid rgba(56, 189, 248, 0.2)" : "1px solid rgba(244, 63, 94, 0.2)"
                                 }}>
                                   {sexSymbol(spec.gender)}
@@ -5372,7 +5366,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                               style={{
                                 background: "rgba(239, 68, 68, 0.08)",
                                 border: "1px solid rgba(239, 68, 68, 0.25)",
-                                color: "#f87171",
+                                color: "var(--accent-red)",
                                 padding: "0.2rem 0.5rem",
                                 borderRadius: "4px",
                                 cursor: "pointer",
@@ -5408,10 +5402,10 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                   style={{
                     width: "100%",
                     padding: "0.75rem 1rem",
-                    background: "rgba(0, 0, 0, 0.3)",
+                    background: "var(--bg-band)",
                     border: "1px solid var(--glass-border)",
                     borderRadius: "8px",
-                    color: "#fff",
+                    color: "var(--text-primary)",
                     fontSize: "0.9rem",
                     outline: "none",
                     minHeight: "48px"
@@ -5435,7 +5429,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
         <div style={{
           position: "fixed",
           inset: 0,
-          background: "rgba(0, 0, 0, 0.75)",
+          background: "rgba(11, 37, 48, 0.45)",
           backdropFilter: "blur(8px)",
           zIndex: 20000,
           display: "flex",
@@ -5448,21 +5442,21 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
           <div style={{
             width: "100%",
             maxWidth: "400px",
-            background: "rgba(10, 15, 30, 0.95)",
-            border: "1px solid rgba(255, 255, 255, 0.08)",
+            background: "#ffffff",
+            border: "1px solid rgba(var(--ink-rgb), 0.13)",
             borderRadius: "16px",
             padding: "1.5rem",
             display: "flex",
             flexDirection: "column",
             gap: "1rem",
-            boxShadow: "0 10px 40px rgba(0, 0, 0, 0.8)",
+            boxShadow: "var(--shadow-lg)",
             textAlign: "center"
           }}
             onClick={(e) => e.stopPropagation()}
           >
             <div>
               <span style={{ fontSize: "2.5rem", display: "block", marginBottom: "0.5rem" }}>👋</span>
-              <h3 style={{ color: "#fff", fontSize: "1.2rem", margin: "0 0 0.25rem 0" }}>Say Farewell to {farewellSpecimen.commonName}</h3>
+              <h3 style={{ color: "var(--text-primary)", fontSize: "1.2rem", margin: "0 0 0.25rem 0" }}>Say Farewell to {farewellSpecimen.commonName}</h3>
               <p style={{ fontSize: "0.8rem", color: "var(--text-secondary)", margin: 0 }}>
                 Choose how you would like to record the departure of this fish.
                 Its birth certificate is kept either way.
@@ -5513,7 +5507,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                       background: `rgba(${rgb}, 0.06)`,
                       border: `1px solid rgba(${rgb}, 0.25)`,
                       borderRadius: "10px",
-                      color: "#fff",
+                      color: "var(--text-primary)",
                       cursor: "pointer",
                       fontSize: "0.85rem",
                       fontWeight: "600",
@@ -5576,10 +5570,10 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                   justifyContent: "flex-start",
                   gap: "0.75rem",
                   padding: "0.85rem 1rem",
-                  background: "rgba(255, 255, 255, 0.02)",
-                  border: "1px solid rgba(255, 255, 255, 0.12)",
+                  background: "rgba(var(--ink-rgb), 0.02)",
+                  border: "1px solid rgba(var(--ink-rgb), 0.17)",
                   borderRadius: "10px",
-                  color: "#fff",
+                  color: "var(--text-primary)",
                   cursor: "pointer",
                   fontSize: "0.85rem",
                   fontWeight: "600",
@@ -5587,12 +5581,12 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                   transition: "all 0.2s"
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.background = "rgba(255, 255, 255, 0.06)";
-                  e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.25)";
+                  e.currentTarget.style.background = "rgba(var(--ink-rgb), 0.06)";
+                  e.currentTarget.style.borderColor = "rgba(var(--ink-rgb), 0.3)";
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "rgba(255, 255, 255, 0.02)";
-                  e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.12)";
+                  e.currentTarget.style.background = "rgba(var(--ink-rgb), 0.02)";
+                  e.currentTarget.style.borderColor = "rgba(var(--ink-rgb), 0.17)";
                 }}
               >
                 <span style={{ fontSize: "1.2rem" }}>📦</span>

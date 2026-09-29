@@ -102,10 +102,10 @@ export function ReactionBar({ currentId, compact = false }) {
               borderRadius: "50px",
               border: isActive
                 ? "1px solid rgba(56, 189, 248, 0.4)"
-                : "1px solid rgba(255, 255, 255, 0.08)",
+                : "1px solid rgba(var(--ink-rgb), 0.13)",
               background: isActive
                 ? "rgba(56, 189, 248, 0.1)"
-                : "rgba(255, 255, 255, 0.03)",
+                : "rgba(var(--ink-rgb), 0.03)",
               cursor: walletAddress ? "pointer" : "default",
               fontSize: "0.8rem",
               transition: "all 0.15s ease",
@@ -115,13 +115,13 @@ export function ReactionBar({ currentId, compact = false }) {
               if (walletAddress) {
                 e.currentTarget.style.background = isActive
                   ? "rgba(56, 189, 248, 0.15)"
-                  : "rgba(255, 255, 255, 0.06)";
+                  : "rgba(var(--ink-rgb), 0.06)";
               }
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.background = isActive
                 ? "rgba(56, 189, 248, 0.1)"
-                : "rgba(255, 255, 255, 0.03)";
+                : "rgba(var(--ink-rgb), 0.03)";
             }}
           >
             <span>{emoji}</span>

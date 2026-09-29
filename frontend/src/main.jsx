@@ -70,8 +70,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         appId={privyAppId}
         config={{
           appearance: {
-            theme: 'dark',
-            accentColor: '#38bdf8',
+            theme: 'light',
+            accentColor: '#0284c7',
           },
           embeddedWallets: {
             createOnLogin: 'users-without-wallets',

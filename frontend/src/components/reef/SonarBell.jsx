@@ -60,8 +60,8 @@ export function SonarBell() {
           width: "34px",
           height: "34px",
           borderRadius: "8px",
-          border: isOpen ? "1px solid rgba(56, 189, 248, 0.25)" : "1px solid rgba(255, 255, 255, 0.08)",
-          background: isOpen ? "rgba(56, 189, 248, 0.08)" : "rgba(255, 255, 255, 0.03)",
+          border: isOpen ? "1px solid rgba(56, 189, 248, 0.25)" : "1px solid rgba(var(--ink-rgb), 0.13)",
+          background: isOpen ? "rgba(56, 189, 248, 0.08)" : "rgba(var(--ink-rgb), 0.03)",
           color: "var(--text-muted)",
           cursor: "pointer",
           fontSize: "1rem",
@@ -71,8 +71,8 @@ export function SonarBell() {
           justifyContent: "center",
           padding: 0
         }}
-        onMouseEnter={(e) => { e.currentTarget.style.color = "#fff"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)"; }}
-        onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)"; e.currentTarget.style.borderColor = isOpen ? "rgba(56, 189, 248, 0.25)" : "rgba(255,255,255,0.08)"; }}
+        onMouseEnter={(e) => { e.currentTarget.style.color = "var(--text-primary)"; e.currentTarget.style.borderColor = "rgba(var(--ink-rgb), 0.2)"; }}
+        onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)"; e.currentTarget.style.borderColor = isOpen ? "rgba(56, 189, 248, 0.25)" : "rgba(var(--ink-rgb), 0.13)"; }}
         title="Notifications"
         aria-label={`Notifications${unreadCount > 0 ? `, ${unreadCount} unread` : ""}`}
         aria-expanded={isOpen}
@@ -117,9 +117,9 @@ export function SonarBell() {
             maxHeight: "400px",
             overflowY: "auto",
             borderRadius: "12px",
-            background: "rgba(15, 23, 42, 0.98)",
-            border: "1px solid rgba(255, 255, 255, 0.08)",
-            boxShadow: "0 16px 64px rgba(0, 0, 0, 0.5)",
+            background: "var(--bg-secondary)",
+            border: "1px solid rgba(var(--ink-rgb), 0.13)",
+            boxShadow: "var(--shadow-lg)",
             zIndex: 9000,
             display: "flex",
             flexDirection: "column",
@@ -133,9 +133,9 @@ export function SonarBell() {
             justifyContent: "space-between",
             alignItems: "center",
             padding: "0.75rem 1rem",
-            borderBottom: "1px solid rgba(255, 255, 255, 0.05)",
+            borderBottom: "1px solid rgba(var(--ink-rgb), 0.1)",
           }}>
-            <span style={{ fontSize: "0.8rem", fontWeight: 600, color: "#fff" }}>
+            <span style={{ fontSize: "0.8rem", fontWeight: 600, color: "var(--text-primary)" }}>
               Notifications
             </span>
             {unreadCount > 0 && (
@@ -175,7 +175,7 @@ export function SonarBell() {
                     gap: "0.6rem",
                     padding: "0.65rem 1rem",
                     border: "none",
-                    borderBottom: "1px solid rgba(255, 255, 255, 0.03)",
+                    borderBottom: "1px solid rgba(var(--ink-rgb), 0.08)",
                     background: notif.is_read
                       ? "transparent"
                       : "rgba(56, 189, 248, 0.03)",
@@ -184,7 +184,7 @@ export function SonarBell() {
                     transition: "background 0.1s ease",
                     width: "100%",
                   }}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255, 255, 255, 0.03)"; }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(var(--ink-rgb), 0.03)"; }}
                   onMouseLeave={(e) => { e.currentTarget.style.background = notif.is_read ? "transparent" : "rgba(56, 189, 248, 0.03)"; }}
                   role="menuitem"
                 >
@@ -199,7 +199,7 @@ export function SonarBell() {
                       margin: 0,
                       fontSize: "0.75rem",
                       fontWeight: notif.is_read ? 400 : 600,
-                      color: notif.is_read ? "var(--text-secondary)" : "#fff",
+                      color: notif.is_read ? "var(--text-secondary)" : "var(--text-primary)",
                       lineHeight: "1.4",
                     }}>
                       {notif.title}

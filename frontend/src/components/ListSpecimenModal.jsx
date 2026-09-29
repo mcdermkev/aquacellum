@@ -51,7 +51,7 @@ function ConfidencePill({ known }) {
         marginLeft: "0.4rem",
         background: known ? "rgba(52,211,153,0.12)" : "rgba(251,191,36,0.12)",
         border: `1px solid ${known ? "rgba(52,211,153,0.35)" : "rgba(251,191,36,0.35)"}`,
-        color: known ? "#34d399" : "#fbbf24",
+        color: known ? "var(--accent-green)" : "var(--accent-amber)",
         whiteSpace: "nowrap",
       }}
     >
@@ -634,7 +634,7 @@ export function ListSpecimenModal({
           &times;
         </button>
 
-        <h3 style={{ fontSize: "1.5rem", color: "#fff", marginTop: "1rem" }}>
+        <h3 style={{ fontSize: "1.5rem", color: "var(--text-primary)", marginTop: "1rem" }}>
           List Specimen for Sale
         </h3>
         <p style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>
@@ -671,7 +671,7 @@ export function ListSpecimenModal({
         {step === 1 && (
           preselectedListSpecimen ? (
             <div style={{ textAlign: "center", padding: "2.5rem 1rem", display: "flex", flexDirection: "column", gap: "0.75rem", alignItems: "center" }}>
-              <div style={{ width: "24px", height: "24px", border: "2px solid rgba(255,255,255,0.1)", borderTopColor: "var(--accent-blue)", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+              <div style={{ width: "24px", height: "24px", border: "2px solid rgba(var(--ink-rgb), 0.15)", borderTopColor: "var(--accent-blue)", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
               <span style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
                 Retrieving registry certificate details...
               </span>
@@ -707,14 +707,14 @@ export function ListSpecimenModal({
                         style={{
                           display: "flex", alignItems: "center", gap: "0.75rem",
                           padding: "0.6rem 0.75rem", borderRadius: "8px", textAlign: "left",
-                          background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)",
-                          color: "#fff", cursor: checking ? "default" : "pointer"
+                          background: "rgba(var(--ink-rgb), 0.03)", border: "1px solid var(--glass-border)",
+                          color: "var(--text-primary)", cursor: checking ? "default" : "pointer"
                         }}
                       >
                         <img
                           src={photoUrl}
                           alt={spec.commonName}
-                          style={{ width: "40px", height: "40px", borderRadius: "6px", objectFit: "cover", flexShrink: 0, background: "rgba(255,255,255,0.05)" }}
+                          style={{ width: "40px", height: "40px", borderRadius: "6px", objectFit: "cover", flexShrink: 0, background: "rgba(var(--ink-rgb), 0.05)" }}
                           onError={(e) => {
                             e.target.src = "https://images.unsplash.com/photo-1522069169874-c58ec4b76be5?auto=format&fit=crop&w=80&h=80&q=80";
                           }}
@@ -729,7 +729,7 @@ export function ListSpecimenModal({
                           </span>
                         </div>
                         {checking && tokenId === String(spec.id) && (
-                          <div style={{ width: "16px", height: "16px", border: "2px solid rgba(255,255,255,0.15)", borderTopColor: "var(--accent-blue)", borderRadius: "50%", animation: "spin 0.8s linear infinite", flexShrink: 0 }} />
+                          <div style={{ width: "16px", height: "16px", border: "2px solid rgba(var(--ink-rgb), 0.2)", borderTopColor: "var(--accent-blue)", borderRadius: "50%", animation: "spin 0.8s linear infinite", flexShrink: 0 }} />
                         )}
                       </button>
                     );
@@ -757,7 +757,7 @@ export function ListSpecimenModal({
                   onChange={(e) => setTokenId(e.target.value)}
                   placeholder="e.g. 001"
                   required
-                  style={{ width: "100%", padding: "0.65rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px" }}
+                  style={{ width: "100%", padding: "0.65rem", background: "rgba(var(--ink-rgb), 0.03)", border: "1px solid var(--glass-border)", color: "var(--text-primary)", borderRadius: "4px" }}
                 />
               </div>
               <button 
@@ -850,12 +850,12 @@ export function ListSpecimenModal({
                         {pedigreeLabel}
                       </span>
                     </div>
-                    <strong style={{ color: "#fff", fontSize: "0.95rem" }}>{specimenInfo.commonName}</strong>
+                    <strong style={{ color: "var(--text-primary)", fontSize: "0.95rem" }}>{specimenInfo.commonName}</strong>
                     <span style={{ fontSize: "0.7rem", fontStyle: "italic", color: "var(--text-secondary)" }}>
                       {specimenInfo.scientificName}
                     </span>
                     <div style={{ display: "flex", gap: "0.35rem", marginTop: "0.25rem", alignItems: "center" }}>
-                      <span style={{ fontSize: "0.55rem", padding: "0.1rem 0.35rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", borderRadius: "4px", color: "var(--text-muted)", fontFamily: "monospace" }}>
+                      <span style={{ fontSize: "0.55rem", padding: "0.1rem 0.35rem", background: "rgba(var(--ink-rgb), 0.03)", border: "1px solid var(--glass-border)", borderRadius: "4px", color: "var(--text-muted)", fontFamily: "monospace" }}>
                         CERT #{specimenInfo.id.toString().padStart(3, "0")}
                       </span>
                       {sireId > 0 && (
@@ -926,7 +926,7 @@ export function ListSpecimenModal({
                       >
                         <span className="delivery-tile-icon">🚚</span>
                         <span className="delivery-tile-label">Shipping Available</span>
-                        <span style={{ fontSize: "0.55rem", color: "#34d399", fontWeight: 600 }}>Recommended · reaches the most buyers</span>
+                        <span style={{ fontSize: "0.55rem", color: "var(--accent-green)", fontWeight: 600 }}>Recommended · reaches the most buyers</span>
                       </div>
                     </div>
                     <p style={{ fontSize: "0.65rem", color: "var(--text-muted)", margin: "0.4rem 0 0" }}>
@@ -946,7 +946,7 @@ export function ListSpecimenModal({
                       onChange={(e) => setPrice(e.target.value)}
                       placeholder="e.g. 50.00"
                       required
-                      style={{ width: "100%", padding: "0.65rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px", outline: "none" }}
+                      style={{ width: "100%", padding: "0.65rem", background: "rgba(var(--ink-rgb), 0.03)", border: "1px solid var(--glass-border)", color: "var(--text-primary)", borderRadius: "4px", outline: "none" }}
                     />
                     {/* Price suggestion — a hint from comparable active listings,
                         never a promise (buildPriceSuggestion, §2.1). Hidden below
@@ -981,12 +981,12 @@ export function ListSpecimenModal({
                   )}
 
                   {/* --- Enhanced Listing Details Section --- */}
-                  <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "1rem", marginTop: "0.5rem" }}>
+                  <div style={{ borderTop: "1px solid rgba(var(--ink-rgb), 0.11)", paddingTop: "1rem", marginTop: "0.5rem" }}>
                     <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", textTransform: "uppercase", fontWeight: "600", letterSpacing: "0.04em" }}>
                       Specimen Details (helps buyers decide)
                     </span>
                     {carePrefilled && (
-                      <div style={{ fontSize: "0.65rem", color: "#34d399", marginTop: "0.35rem" }}>
+                      <div style={{ fontSize: "0.65rem", color: "var(--accent-green)", marginTop: "0.35rem" }}>
                         ✨ Auto-filled from Spec-Dex care data for {specimenInfo.commonName} — edit anything.
                       </div>
                     )}
@@ -1006,7 +1006,7 @@ export function ListSpecimenModal({
                     >
                       <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", marginBottom: "0.25rem" }}>
                         <span aria-hidden="true">{compatibilityPreview.verdict === "ok" ? "✅" : "🔎"}</span>
-                        <strong style={{ fontSize: "0.75rem", color: "#fff" }}>
+                        <strong style={{ fontSize: "0.75rem", color: "var(--text-primary)" }}>
                           Buyer view: {compatibilityPreview.headline}
                         </strong>
                       </div>
@@ -1032,7 +1032,7 @@ export function ListSpecimenModal({
                           <button
                             type="button"
                             onClick={() => { setPhotoFile(null); setPhotoPreview(null); }}
-                            style={{ position: "absolute", top: "-6px", right: "-6px", width: "18px", height: "18px", borderRadius: "50%", background: "rgba(248,113,113,0.9)", border: "none", color: "#fff", fontSize: "0.6rem", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+                            style={{ position: "absolute", top: "-6px", right: "-6px", width: "18px", height: "18px", borderRadius: "50%", background: "rgba(220,38,38,0.9)", border: "none", color: "#fff", fontSize: "0.6rem", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
                           >
                             ✕
                           </button>
@@ -1043,7 +1043,7 @@ export function ListSpecimenModal({
                           border: "2px dashed var(--glass-border)", cursor: "pointer",
                           display: "flex", alignItems: "center", justifyContent: "center",
                           flexDirection: "column", gap: "0.15rem",
-                          background: "rgba(255,255,255,0.02)", transition: "border-color 0.2s"
+                          background: "rgba(var(--ink-rgb), 0.02)", transition: "border-color 0.2s"
                         }}>
                           <span style={{ fontSize: "1.2rem" }}>📷</span>
                           <span style={{ fontSize: "0.55rem", color: "var(--text-muted)" }}>Add</span>
@@ -1076,7 +1076,7 @@ export function ListSpecimenModal({
                             display: "inline-flex", alignItems: "center", gap: "0.35rem",
                             padding: "0.3rem 0.65rem", borderRadius: "16px", border: "none", cursor: "pointer",
                             background: "linear-gradient(135deg, #a78bfa, #22d3ee)",
-                            boxShadow: "0 0 12px rgba(167,139,250,0.35)",
+                            boxShadow: "var(--glass-shadow)",
                             color: "#0b0f1a", fontSize: "0.68rem", fontWeight: 700,
                             minHeight: "32px", opacity: aiDraftLoading ? 0.7 : 1,
                           }}
@@ -1100,12 +1100,12 @@ export function ListSpecimenModal({
                           borderRadius: "0 6px 6px 0", fontSize: "0.75rem", color: "var(--text-secondary)",
                         }}
                       >
-                        <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "#c4b5fd", marginBottom: "0.3rem", textTransform: "uppercase", letterSpacing: "0.03em" }}>
+                        <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "var(--accent-violet)", marginBottom: "0.3rem", textTransform: "uppercase", letterSpacing: "0.03em" }}>
                           AI draft — review before publishing
                         </div>
                         <p style={{ margin: "0 0 0.5rem", lineHeight: 1.5 }}>{aiDraftText}</p>
                         <div style={{ display: "flex", gap: "0.5rem" }}>
-                          <button type="button" onClick={applyAiDraft} style={{ background: "none", border: "none", color: "#a78bfa", fontSize: "0.68rem", fontWeight: 600, cursor: "pointer", textDecoration: "underline", padding: 0 }}>
+                          <button type="button" onClick={applyAiDraft} style={{ background: "none", border: "none", color: "var(--accent-violet)", fontSize: "0.68rem", fontWeight: 600, cursor: "pointer", textDecoration: "underline", padding: 0 }}>
                             Use this draft
                           </button>
                           <button type="button" onClick={() => setAiDraftText(null)} style={{ background: "none", border: "none", color: "var(--text-muted)", fontSize: "0.68rem", cursor: "pointer", padding: 0 }}>
@@ -1126,7 +1126,7 @@ export function ListSpecimenModal({
                       placeholder="e.g. Beautiful coloration, eats pellets eagerly, peaceful in community tank..."
                       rows={3}
                       maxLength={500}
-                      style={{ width: "100%", padding: "0.65rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "6px", outline: "none", resize: "vertical", fontSize: "0.8rem", fontFamily: "inherit" }}
+                      style={{ width: "100%", padding: "0.65rem", background: "rgba(var(--ink-rgb), 0.03)", border: "1px solid var(--glass-border)", color: "var(--text-primary)", borderRadius: "6px", outline: "none", resize: "vertical", fontSize: "0.8rem", fontFamily: "inherit" }}
                     />
                     <span style={{ fontSize: "0.6rem", color: "var(--text-muted)", float: "right" }}>{description.length}/500</span>
                   </div>
@@ -1144,12 +1144,12 @@ export function ListSpecimenModal({
                           value={age}
                           onChange={(e) => setAge(e.target.value)}
                           placeholder="e.g. 6"
-                          style={{ flex: 1, padding: "0.65rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "6px", outline: "none" }}
+                          style={{ flex: 1, padding: "0.65rem", background: "rgba(var(--ink-rgb), 0.03)", border: "1px solid var(--glass-border)", color: "var(--text-primary)", borderRadius: "6px", outline: "none" }}
                         />
                         <select
                           value={ageUnit}
                           onChange={(e) => setAgeUnit(e.target.value)}
-                          style={{ padding: "0.5rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "6px", outline: "none", fontSize: "0.75rem" }}
+                          style={{ padding: "0.5rem", background: "rgba(var(--ink-rgb), 0.03)", border: "1px solid var(--glass-border)", color: "var(--text-primary)", borderRadius: "6px", outline: "none", fontSize: "0.75rem" }}
                         >
                           <option value="weeks">wks</option>
                           <option value="months">mo</option>
@@ -1168,7 +1168,7 @@ export function ListSpecimenModal({
                         value={size}
                         onChange={(e) => setSize(e.target.value)}
                         placeholder="e.g. 3.5"
-                        style={{ width: "100%", padding: "0.65rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "6px", outline: "none" }}
+                        style={{ width: "100%", padding: "0.65rem", background: "rgba(var(--ink-rgb), 0.03)", border: "1px solid var(--glass-border)", color: "var(--text-primary)", borderRadius: "6px", outline: "none" }}
                       />
                     </div>
                   </div>
@@ -1185,7 +1185,7 @@ export function ListSpecimenModal({
                         value={diet}
                         onChange={(e) => setDiet(e.target.value)}
                         placeholder="e.g. Pellets, frozen brine"
-                        style={{ width: "100%", padding: "0.65rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "6px", outline: "none" }}
+                        style={{ width: "100%", padding: "0.65rem", background: "rgba(var(--ink-rgb), 0.03)", border: "1px solid var(--glass-border)", color: "var(--text-primary)", borderRadius: "6px", outline: "none" }}
                       />
                     </div>
                     <div>
@@ -1196,7 +1196,7 @@ export function ListSpecimenModal({
                       <select
                         value={temperament}
                         onChange={(e) => setTemperament(e.target.value)}
-                        style={{ width: "100%", padding: "0.65rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "6px", outline: "none" }}
+                        style={{ width: "100%", padding: "0.65rem", background: "rgba(var(--ink-rgb), 0.03)", border: "1px solid var(--glass-border)", color: "var(--text-primary)", borderRadius: "6px", outline: "none" }}
                       >
                         <option value="">Select...</option>
                         <option value="Peaceful">Peaceful</option>
@@ -1225,9 +1225,9 @@ export function ListSpecimenModal({
                           onClick={() => setCareLevel(val)}
                           style={{
                             flex: 1, padding: "0.5rem 0.25rem", borderRadius: "6px", cursor: "pointer",
-                            background: careLevel === val ? color : "rgba(255,255,255,0.02)",
+                            background: careLevel === val ? color : "rgba(var(--ink-rgb), 0.02)",
                             border: `1px solid ${careLevel === val ? border : "var(--glass-border)"}`,
-                            color: careLevel === val ? "#fff" : "var(--text-muted)",
+                            color: careLevel === val ? "var(--text-primary)" : "var(--text-muted)",
                             fontSize: "0.7rem", fontWeight: careLevel === val ? "600" : "400",
                             transition: "all 0.15s ease", textAlign: "center"
                           }}
@@ -1249,9 +1249,9 @@ export function ListSpecimenModal({
                           Temp (°F){careConfidence && <ConfidencePill known={careConfidence.tempRangeCelsius} />}
                         </span>
                         <div style={{ display: "flex", gap: "0.2rem", alignItems: "center" }}>
-                          <input type="number" value={minTemp} onChange={(e) => setMinTemp(e.target.value)} placeholder="72" style={{ width: "100%", padding: "0.45rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px", outline: "none", fontSize: "0.75rem" }} />
+                          <input type="number" value={minTemp} onChange={(e) => setMinTemp(e.target.value)} placeholder="72" style={{ width: "100%", padding: "0.45rem", background: "rgba(var(--ink-rgb), 0.03)", border: "1px solid var(--glass-border)", color: "var(--text-primary)", borderRadius: "4px", outline: "none", fontSize: "0.75rem" }} />
                           <span style={{ color: "var(--text-muted)", fontSize: "0.7rem" }}>-</span>
-                          <input type="number" value={maxTemp} onChange={(e) => setMaxTemp(e.target.value)} placeholder="82" style={{ width: "100%", padding: "0.45rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px", outline: "none", fontSize: "0.75rem" }} />
+                          <input type="number" value={maxTemp} onChange={(e) => setMaxTemp(e.target.value)} placeholder="82" style={{ width: "100%", padding: "0.45rem", background: "rgba(var(--ink-rgb), 0.03)", border: "1px solid var(--glass-border)", color: "var(--text-primary)", borderRadius: "4px", outline: "none", fontSize: "0.75rem" }} />
                         </div>
                       </div>
                       <div>
@@ -1259,16 +1259,16 @@ export function ListSpecimenModal({
                           pH{careConfidence && <ConfidencePill known={careConfidence.phRange} />}
                         </span>
                         <div style={{ display: "flex", gap: "0.2rem", alignItems: "center" }}>
-                          <input type="number" step="0.1" value={minPh} onChange={(e) => setMinPh(e.target.value)} placeholder="6.5" style={{ width: "100%", padding: "0.45rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px", outline: "none", fontSize: "0.75rem" }} />
+                          <input type="number" step="0.1" value={minPh} onChange={(e) => setMinPh(e.target.value)} placeholder="6.5" style={{ width: "100%", padding: "0.45rem", background: "rgba(var(--ink-rgb), 0.03)", border: "1px solid var(--glass-border)", color: "var(--text-primary)", borderRadius: "4px", outline: "none", fontSize: "0.75rem" }} />
                           <span style={{ color: "var(--text-muted)", fontSize: "0.7rem" }}>-</span>
-                          <input type="number" step="0.1" value={maxPh} onChange={(e) => setMaxPh(e.target.value)} placeholder="7.5" style={{ width: "100%", padding: "0.45rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px", outline: "none", fontSize: "0.75rem" }} />
+                          <input type="number" step="0.1" value={maxPh} onChange={(e) => setMaxPh(e.target.value)} placeholder="7.5" style={{ width: "100%", padding: "0.45rem", background: "rgba(var(--ink-rgb), 0.03)", border: "1px solid var(--glass-border)", color: "var(--text-primary)", borderRadius: "4px", outline: "none", fontSize: "0.75rem" }} />
                         </div>
                       </div>
                       <div>
                         <span style={{ fontSize: "0.6rem", color: "var(--text-muted)", display: "block", marginBottom: "0.2rem" }}>
                           Min Tank (gal){careConfidence && <ConfidencePill known={careConfidence.minVolumeGallons} />}
                         </span>
-                        <input type="number" value={tankSizeMin} onChange={(e) => setTankSizeMin(e.target.value)} placeholder="20" style={{ width: "100%", padding: "0.45rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px", outline: "none", fontSize: "0.75rem" }} />
+                        <input type="number" value={tankSizeMin} onChange={(e) => setTankSizeMin(e.target.value)} placeholder="20" style={{ width: "100%", padding: "0.45rem", background: "rgba(var(--ink-rgb), 0.03)", border: "1px solid var(--glass-border)", color: "var(--text-primary)", borderRadius: "4px", outline: "none", fontSize: "0.75rem" }} />
                       </div>
                     </div>
                   </div>
@@ -1280,12 +1280,12 @@ export function ListSpecimenModal({
                   {packingProfile && (
                     <div style={{ padding: "0.65rem 0.75rem", borderRadius: "8px", background: "rgba(34,211,238,0.05)", border: "1px solid rgba(34,211,238,0.2)" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.4rem", flexWrap: "wrap", gap: "0.4rem" }}>
-                        <strong style={{ fontSize: "0.72rem", color: "#fff" }}>📦 Packing profile</strong>
+                        <strong style={{ fontSize: "0.72rem", color: "var(--text-primary)" }}>📦 Packing profile</strong>
                         {parcelPresets.length > 0 && (
                           <select
                             value={selectedPresetId ?? ""}
                             onChange={(e) => setSelectedPresetId(Number(e.target.value))}
-                            style={{ fontSize: "0.68rem", padding: "0.25rem 0.4rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "6px" }}
+                            style={{ fontSize: "0.68rem", padding: "0.25rem 0.4rem", background: "rgba(var(--ink-rgb), 0.03)", border: "1px solid var(--glass-border)", color: "var(--text-primary)", borderRadius: "6px" }}
                           >
                             {parcelPresets.map((p) => (
                               <option key={p.id} value={p.id}>{p.label}</option>
@@ -1298,7 +1298,7 @@ export function ListSpecimenModal({
                         {packingProfile.volumeIn3}in³{packingProfile.requiresThermalPack ? " · thermal pack" : ""}
                         {packingProfile.separationRequired ? " · ships alone" : ""}
                       </p>
-                      <p style={{ margin: "0.3rem 0 0", fontSize: "0.65rem", color: parcelPresets.length === 0 ? "var(--text-muted)" : (packingBoxesNeeded > 1 ? "#fbbf24" : "#34d399") }}>
+                      <p style={{ margin: "0.3rem 0 0", fontSize: "0.65rem", color: parcelPresets.length === 0 ? "var(--text-muted)" : (packingBoxesNeeded > 1 ? "var(--accent-amber)" : "var(--accent-green)") }}>
                         {parcelPresets.length === 0
                           ? "Using a default box estimate — add a parcel preset in Shipping settings for an exact fit."
                           : packingBoxesNeeded > 1
@@ -1317,7 +1317,7 @@ export function ListSpecimenModal({
                       <select
                         value={healthStatus}
                         onChange={(e) => setHealthStatus(e.target.value)}
-                        style={{ width: "100%", padding: "0.65rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "6px", outline: "none" }}
+                        style={{ width: "100%", padding: "0.65rem", background: "rgba(var(--ink-rgb), 0.03)", border: "1px solid var(--glass-border)", color: "var(--text-primary)", borderRadius: "6px", outline: "none" }}
                       >
                         <option value="healthy">Healthy — No Issues</option>
                         <option value="treated">Recently Treated</option>
@@ -1334,9 +1334,9 @@ export function ListSpecimenModal({
                           onClick={() => setDoaGuarantee(true)}
                           style={{
                             flex: 1, padding: "0.5rem", borderRadius: "6px", cursor: "pointer",
-                            background: doaGuarantee ? "rgba(34,197,94,0.12)" : "rgba(255,255,255,0.02)",
+                            background: doaGuarantee ? "rgba(34,197,94,0.12)" : "rgba(var(--ink-rgb), 0.02)",
                             border: `1px solid ${doaGuarantee ? "rgba(34,197,94,0.4)" : "var(--glass-border)"}`,
-                            color: doaGuarantee ? "#34d399" : "var(--text-muted)",
+                            color: doaGuarantee ? "var(--accent-green)" : "var(--text-muted)",
                             fontSize: "0.7rem", fontWeight: doaGuarantee ? "600" : "400"
                           }}
                         >
@@ -1347,9 +1347,9 @@ export function ListSpecimenModal({
                           onClick={() => setDoaGuarantee(false)}
                           style={{
                             flex: 1, padding: "0.5rem", borderRadius: "6px", cursor: "pointer",
-                            background: !doaGuarantee ? "rgba(248,113,113,0.12)" : "rgba(255,255,255,0.02)",
+                            background: !doaGuarantee ? "rgba(248,113,113,0.12)" : "rgba(var(--ink-rgb), 0.02)",
                             border: `1px solid ${!doaGuarantee ? "rgba(248,113,113,0.4)" : "var(--glass-border)"}`,
-                            color: !doaGuarantee ? "#f87171" : "var(--text-muted)",
+                            color: !doaGuarantee ? "var(--accent-red)" : "var(--text-muted)",
                             fontSize: "0.7rem", fontWeight: !doaGuarantee ? "600" : "400"
                           }}
                         >
@@ -1409,7 +1409,7 @@ export function ListSpecimenModal({
                           display: "flex", 
                           flexDirection: "column", 
                           gap: "0.5rem", 
-                          background: "rgba(255,255,255,0.015)"
+                          background: "rgba(var(--ink-rgb), 0.02)"
                         }}
                       >
                         {/* WHAT WAS DELETED HERE, AND WHY.
@@ -1461,7 +1461,7 @@ export function ListSpecimenModal({
                     <div style={{ padding: "0.85rem 1rem", borderRadius: "8px", background: "rgba(251,191,36,0.06)", border: "1px solid rgba(251,191,36,0.3)", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
                         <span style={{ fontSize: "1.1rem" }}>💳</span>
-                        <strong style={{ color: "#fbbf24", fontSize: "0.82rem" }}>Connect payouts to get paid</strong>
+                        <strong style={{ color: "var(--accent-amber)", fontSize: "0.82rem" }}>Connect payouts to get paid</strong>
                       </div>
                       <p style={{ margin: 0, fontSize: "0.72rem", color: "var(--text-secondary)", lineHeight: 1.5 }}>
                         You can list now, but buyers can't complete checkout until your payout account is set up. It only takes a couple of minutes.
@@ -1471,14 +1471,14 @@ export function ListSpecimenModal({
                         onClick={handleStartPayoutOnboarding}
                         disabled={onboardingPayout}
                         className="btn-secondary"
-                        style={{ alignSelf: "flex-start", fontSize: "0.72rem", padding: "0.4rem 0.9rem", borderColor: "rgba(251,191,36,0.4)", color: "#fbbf24" }}
+                        style={{ alignSelf: "flex-start", fontSize: "0.72rem", padding: "0.4rem 0.9rem", borderColor: "rgba(251,191,36,0.4)", color: "var(--accent-amber)" }}
                       >
                         {onboardingPayout ? "Opening setup…" : "Set up payouts →"}
                       </button>
                     </div>
                   )}
                   {sellerPayoutReady === true && (
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.7rem", color: "#34d399" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.7rem", color: "var(--accent-green)" }}>
                       <span>✅</span> Payouts connected — you're all set to get paid.
                     </div>
                   )}

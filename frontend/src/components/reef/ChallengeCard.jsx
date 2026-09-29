@@ -7,21 +7,21 @@
 import React from "react";
 
 const CHALLENGE_TYPE_INFO = {
-  breeding_sprint: { emoji: "🧬", label: "Breeding Sprint", color: "#a78bfa" },
-  growout_race: { emoji: "📈", label: "Grow-Out Race", color: "#34d399" },
-  photo_contest: { emoji: "📷", label: "Photo Contest", color: "#f472b6" },
-  care_streak: { emoji: "🔥", label: "Care Streak", color: "#fbbf24" },
+  breeding_sprint: { emoji: "🧬", label: "Breeding Sprint", color: "#6d28d9" },
+  growout_race: { emoji: "📈", label: "Grow-Out Race", color: "#047857" },
+  photo_contest: { emoji: "📷", label: "Photo Contest", color: "#b91c1c" },
+  care_streak: { emoji: "🔥", label: "Care Streak", color: "#b45309" },
 };
 
 const STATUS_STYLES = {
-  upcoming: { bg: "rgba(56, 189, 248, 0.08)", border: "rgba(56, 189, 248, 0.2)", label: "Upcoming", color: "var(--accent-blue)" },
-  active: { bg: "rgba(52, 211, 153, 0.08)", border: "rgba(52, 211, 153, 0.2)", label: "Active", color: "var(--accent-green)" },
-  completed: { bg: "rgba(255,255,255,0.03)", border: "rgba(255,255,255,0.08)", label: "Completed", color: "var(--text-muted)" },
-  cancelled: { bg: "rgba(248, 113, 113, 0.05)", border: "rgba(248, 113, 113, 0.15)", label: "Cancelled", color: "var(--accent-red)" },
+  upcoming: { bg: "rgba(56, 189, 248, 0.08)", border: "rgba(56, 189, 248, 0.2)", label: "Upcoming", color: "#0369a1" },
+  active: { bg: "rgba(52, 211, 153, 0.08)", border: "rgba(52, 211, 153, 0.2)", label: "Active", color: "#047857" },
+  completed: { bg: "rgba(var(--ink-rgb), 0.08)", border: "rgba(var(--ink-rgb), 0.13)", label: "Completed", color: "var(--text-muted)" },
+  cancelled: { bg: "rgba(248, 113, 113, 0.05)", border: "rgba(248, 113, 113, 0.15)", label: "Cancelled", color: "#b91c1c" },
 };
 
 export function ChallengeCard({ challenge }) {
-  const typeInfo = CHALLENGE_TYPE_INFO[challenge.challenge_type] || { emoji: "🏆", label: "Challenge", color: "#fff" };
+  const typeInfo = CHALLENGE_TYPE_INFO[challenge.challenge_type] || { emoji: "🏆", label: "Challenge", color: "var(--text-primary)" };
   const statusStyle = STATUS_STYLES[challenge.status] || STATUS_STYLES.upcoming;
 
   const now = new Date();
@@ -70,7 +70,7 @@ export function ChallengeCard({ challenge }) {
         <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
           <span style={{ fontSize: "1.3rem" }}>{typeInfo.emoji}</span>
           <div>
-            <h4 style={{ margin: 0, fontSize: "0.9rem", color: "#fff", fontWeight: "600" }}>
+            <h4 style={{ margin: 0, fontSize: "0.9rem", color: "var(--text-primary)", fontWeight: "600" }}>
               {challenge.title}
             </h4>
             <span style={{ fontSize: "0.65rem", color: typeInfo.color }}>
@@ -82,7 +82,7 @@ export function ChallengeCard({ challenge }) {
         <span style={{
           padding: "0.2rem 0.6rem",
           borderRadius: "50px",
-          background: "rgba(0,0,0,0.3)",
+          background: "rgba(var(--ink-rgb), 0.06)",
           fontSize: "0.6rem",
           color: statusStyle.color,
           fontWeight: "600",
@@ -103,7 +103,7 @@ export function ChallengeCard({ challenge }) {
         <div style={{ marginBottom: "0.75rem" }}>
           <div style={{
             height: "4px",
-            background: "rgba(255,255,255,0.06)",
+            background: "rgba(var(--ink-rgb), 0.06)",
             borderRadius: "2px",
             overflow: "hidden",
           }}>
@@ -136,7 +136,7 @@ export function ChallengeCard({ challenge }) {
         <div style={{
           marginTop: "0.5rem",
           padding: "0.5rem 0.75rem",
-          background: "rgba(0,0,0,0.15)",
+          background: "rgba(var(--ink-rgb), 0.04)",
           borderRadius: "var(--radius-sm)",
         }}>
           <div style={{ fontSize: "0.6rem", color: "var(--text-muted)", marginBottom: "0.4rem", fontWeight: "600" }}>
@@ -150,7 +150,7 @@ export function ChallengeCard({ challenge }) {
               padding: "0.2rem 0",
               fontSize: "0.7rem",
             }}>
-              <span style={{ color: i === 0 ? "var(--accent-amber)" : "#fff" }}>
+              <span style={{ color: i === 0 ? "var(--accent-amber)" : "var(--text-primary)" }}>
                 {i === 0 ? "🥇" : i === 1 ? "🥈" : "🥉"} {entry.wallet?.slice(0, 6)}...{entry.wallet?.slice(-4)}
               </span>
               <span style={{ color: "var(--text-secondary)", fontFamily: "monospace" }}>

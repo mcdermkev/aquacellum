@@ -183,7 +183,7 @@ function Sparkline({ label, unit, decimals, series, bandMin, bandMax }) {
     <div className="pt-card">
       <div className="pt-card-head">
         <span>{label}</span>
-        <span className="pt-latest" style={{ color: lastOk ? "#34d399" : "#f87171" }}>
+        <span className="pt-latest" style={{ color: lastOk ? "var(--accent-green)" : "var(--accent-red)" }}>
           {last.v.toFixed(decimals)}{unit ? ` ${unit}` : ""}
         </span>
       </div>
@@ -197,7 +197,7 @@ function Sparkline({ label, unit, decimals, series, bandMin, bandMax }) {
         {/* Points */}
         {series.map((p, i) => (
           <circle key={i} cx={x(i)} cy={y(p.v)} r={i === series.length - 1 ? 3 : 1.6}
-            fill={inRange(p.v) ? "#34d399" : "#f87171"} />
+            fill={inRange(p.v) ? "var(--accent-green)" : "var(--accent-red)"} />
         ))}
       </svg>
       <div className="pt-range">Safe: {fmt(bandMin, decimals)}–{fmt(bandMax, decimals)}{unit ? ` ${unit}` : ""}</div>

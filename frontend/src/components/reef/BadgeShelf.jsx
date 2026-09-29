@@ -293,10 +293,10 @@ function Badge({ badge, unlocked = true, size = "default" }) {
           width: s.box,
           height: s.box,
           borderRadius: "10px",
-          background: unlocked ? "rgba(255, 255, 255, 0.04)" : "rgba(255, 255, 255, 0.02)",
+          background: unlocked ? "rgba(var(--ink-rgb), 0.04)" : "rgba(var(--ink-rgb), 0.03)",
           border: unlocked
             ? "1px solid rgba(56, 189, 248, 0.2)"
-            : "1px solid rgba(255, 255, 255, 0.04)",
+            : "1px solid rgba(var(--ink-rgb), 0.09)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -371,10 +371,10 @@ export function BadgeShelf({
         .badge-tooltip-text {
           visibility: hidden;
           width: 180px;
-          background: rgba(8, 12, 20, 0.95);
+          background: var(--bg-secondary);
           backdrop-filter: blur(12px);
           -webkit-backdrop-filter: blur(12px);
-          color: #fff;
+          color: var(--text-primary);
           text-align: center;
           border-radius: 8px;
           padding: 0.5rem 0.6rem;
@@ -385,22 +385,22 @@ export function BadgeShelf({
           transform: translateX(-50%) translateY(4px);
           opacity: 0;
           transition: opacity 0.15s ease, transform 0.15s ease, visibility 0.15s ease;
-          border: 1px solid rgba(255, 255, 255, 0.08);
-          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+          border: 1px solid rgba(var(--ink-rgb), 0.13);
+          box-shadow: var(--shadow-md);
           pointer-events: none;
         }
         .badge-tooltip-title {
           font-family: 'Outfit', sans-serif;
           font-weight: 700;
           font-size: 0.75rem;
-          color: #38bdf8;
+          color: var(--accent-blue);
           margin-bottom: 2px;
           display: block;
         }
         .badge-tooltip-desc {
           font-family: 'Plus Jakarta Sans', sans-serif;
           font-size: 0.65rem;
-          color: #94a3b8;
+          color: var(--text-muted);
           display: block;
           line-height: 1.3;
         }

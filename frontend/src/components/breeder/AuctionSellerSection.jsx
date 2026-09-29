@@ -19,7 +19,7 @@ import { announce } from "../../utils/a11y";
 const TAP = "44px";
 const inputStyle = {
   minHeight: TAP, width: "100%", padding: "0 0.75rem", borderRadius: "10px",
-  border: "1px solid var(--glass-border)", background: "rgba(255,255,255,0.05)", color: "#fff", fontSize: "1rem",
+  border: "1px solid var(--glass-border)", background: "#fff", color: "var(--text-primary)", fontSize: "1rem",
 };
 
 /** Default end: 3 days out at 8 pm local. */
@@ -152,7 +152,7 @@ export function AuctionSellerSection({ walletAccount, sellerStatus, onStartOnboa
 
   const selling = mineQuery.data?.selling || [];
   const label = (text, node, hint) => (
-    <label style={{ display: "flex", flexDirection: "column", gap: "0.3rem", color: "#fff", fontSize: "0.95rem" }}>
+    <label style={{ display: "flex", flexDirection: "column", gap: "0.3rem", color: "var(--text-primary)", fontSize: "0.95rem" }}>
       {text}
       {node}
       {hint && <span style={{ color: "var(--text-muted)", fontSize: "0.8rem" }}>{hint}</span>}
@@ -162,8 +162,8 @@ export function AuctionSellerSection({ walletAccount, sellerStatus, onStartOnboa
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
       <div className="glass-card" style={{ padding: "1.25rem", display: "flex", flexDirection: "column", gap: "0.9rem" }}>
-        <h3 style={{ color: "#fff", margin: 0, display: "inline-flex", alignItems: "center", gap: "0.5rem" }}>
-          <Gavel size={22} weight="duotone" color="#7dd3fc" aria-hidden="true" /> New auction lot
+        <h3 style={{ color: "var(--text-primary)", margin: 0, display: "inline-flex", alignItems: "center", gap: "0.5rem" }}>
+          <Gavel size={22} weight="duotone" color="var(--accent-blue)" aria-hidden="true" /> New auction lot
         </h3>
         <p style={{ color: "var(--text-secondary)", margin: 0, fontSize: "0.95rem", lineHeight: 1.5 }}>
           Anyone can see your lot at aquacellum.com/auctions. The winner is charged automatically when bidding ends,
@@ -172,7 +172,7 @@ export function AuctionSellerSection({ walletAccount, sellerStatus, onStartOnboa
 
         {!payoutsReady ? (
           <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
-            <p style={{ color: "#fbbf24", margin: 0 }}>Set up payouts first. Winners are charged automatically, so the money needs somewhere to go.</p>
+            <p style={{ color: "var(--accent-amber)", margin: 0 }}>Set up payouts first. Winners are charged automatically, so the money needs somewhere to go.</p>
             <button type="button" className="btn-primary" onClick={onStartOnboarding} disabled={onboardingBusy} style={{ minHeight: TAP, alignSelf: "flex-start" }}>
               {onboardingBusy ? "Opening Stripe…" : "Set up payouts"}
             </button>
@@ -180,7 +180,7 @@ export function AuctionSellerSection({ walletAccount, sellerStatus, onStartOnboa
         ) : (
           <form onSubmit={submit} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "0.9rem" }} noValidate>
             <fieldset style={{ gridColumn: "1 / -1", border: "none", padding: 0, margin: 0, display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-              <legend style={{ color: "#fff", fontSize: "0.95rem", marginBottom: "0.4rem" }}>What are you auctioning?</legend>
+              <legend style={{ color: "var(--text-primary)", fontSize: "0.95rem", marginBottom: "0.4rem" }}>What are you auctioning?</legend>
               {[["batch_listing", "Fish from a listing"], ["freeform", "Something else (plants, gear…)"]].map(([value, text]) => (
                 <label key={value} className={form.source === value ? "btn-primary" : "btn-secondary"} style={{ minHeight: TAP, display: "inline-flex", alignItems: "center", gap: "0.4rem", padding: "0 0.9rem", cursor: "pointer" }}>
                   <input type="radio" name="lot-source" value={value} checked={form.source === value} onChange={set("source")} />
@@ -192,7 +192,7 @@ export function AuctionSellerSection({ walletAccount, sellerStatus, onStartOnboa
             {form.source === "batch_listing" && (
               <>
                 {label("Listing", (
-                  <select value={form.listingId} onChange={set("listingId")} required style={{ ...inputStyle, background: "rgba(15,23,42,0.9)" }}>
+                  <select value={form.listingId} onChange={set("listingId")} required style={{ ...inputStyle, background: "#fff" }}>
                     <option value="">Choose a listing…</option>
                     {listings.map((l) => <option key={l.id} value={l.id}>{l.commonName} ({l.quantityRemaining} in stock)</option>)}
                   </select>
@@ -227,16 +227,16 @@ export function AuctionSellerSection({ walletAccount, sellerStatus, onStartOnboa
           </form>
         )}
 
-        {error && <p role="alert" style={{ color: "#fca5a5", margin: 0, display: "inline-flex", gap: "0.4rem", alignItems: "center" }}><Warning size={18} /> {error}</p>}
+        {error && <p role="alert" style={{ color: "var(--accent-red)", margin: 0, display: "inline-flex", gap: "0.4rem", alignItems: "center" }}><Warning size={18} /> {error}</p>}
         {created && (
-          <p role="status" style={{ color: "#86efac", margin: 0, display: "inline-flex", gap: "0.4rem", alignItems: "center" }}>
-            <CheckCircle size={18} weight="fill" /> Listed. <a href={lotPath(created)} style={{ color: "#7dd3fc" }}>View the lot</a>
+          <p role="status" style={{ color: "var(--accent-green)", margin: 0, display: "inline-flex", gap: "0.4rem", alignItems: "center" }}>
+            <CheckCircle size={18} weight="fill" /> Listed. <a href={lotPath(created)} style={{ color: "var(--accent-blue)" }}>View the lot</a>
           </p>
         )}
       </div>
 
       <div className="glass-card" style={{ padding: "1.25rem" }}>
-        <h3 style={{ color: "#fff", margin: "0 0 0.75rem 0" }}>Your lots</h3>
+        <h3 style={{ color: "var(--text-primary)", margin: "0 0 0.75rem 0" }}>Your lots</h3>
         {mineQuery.isLoading ? <p style={{ color: "var(--text-muted)" }}>Loading…</p> : selling.length === 0 ? (
           <p style={{ color: "var(--text-muted)", margin: 0 }}>No lots yet.</p>
         ) : (
@@ -244,7 +244,7 @@ export function AuctionSellerSection({ walletAccount, sellerStatus, onStartOnboa
             {selling.map((l) => (
               <li key={l.id} style={{ display: "flex", gap: "0.75rem", alignItems: "center", flexWrap: "wrap", borderBottom: "1px solid var(--glass-border)", paddingBottom: "0.6rem" }}>
                 <div style={{ flex: "1 1 240px", minWidth: 0 }}>
-                  <a href={lotPath(l.id)} style={{ color: "#fff", fontWeight: 700 }}>{l.title}</a>
+                  <a href={lotPath(l.id)} style={{ color: "var(--text-primary)", fontWeight: 700 }}>{l.title}</a>
                   <p style={{ color: "var(--text-secondary)", margin: "0.2rem 0 0 0", fontSize: "0.9rem" }}>
                     {SELLING_STATUS[l.status] || l.status}
                     {" · "}
@@ -253,7 +253,7 @@ export function AuctionSellerSection({ walletAccount, sellerStatus, onStartOnboa
                   </p>
                 </div>
                 {l.status === "live" && l.bidCount === 0 && (
-                  <button type="button" className="btn-secondary" onClick={() => cancel(l.id)} style={{ minHeight: TAP, color: cancelling === l.id ? "#fca5a5" : undefined }}>
+                  <button type="button" className="btn-secondary" onClick={() => cancel(l.id)} style={{ minHeight: TAP, color: cancelling === l.id ? "var(--accent-red)" : undefined }}>
                     {cancelling === l.id ? "Tap again to cancel" : "Cancel"}
                   </button>
                 )}

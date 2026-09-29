@@ -59,11 +59,11 @@ function TankSelector({
               padding: "0.6rem 0.75rem",
               borderRadius: "8px",
               border: isSelected
-                ? "2px solid var(--accent-cyan, #22d3ee)"
-                : "1px solid rgba(255,255,255,0.1)",
+                ? "2px solid var(--accent-teal)"
+                : "1px solid rgba(var(--ink-rgb), 0.15)",
               background: isSelected
                 ? "rgba(34,211,238,0.08)"
-                : "rgba(255,255,255,0.03)",
+                : "rgba(var(--ink-rgb), 0.03)",
               cursor: "pointer",
               textAlign: "left",
               width: "100%",
@@ -103,7 +103,7 @@ function TankSelector({
                 <span style={{
                   fontSize: "0.6rem",
                   background: "rgba(34,211,238,0.12)",
-                  color: "var(--accent-cyan, #22d3ee)",
+                  color: "var(--accent-teal)",
                   border: "1px solid rgba(34,211,238,0.3)",
                   borderRadius: "12px",
                   padding: "0.1rem 0.4rem",
@@ -115,7 +115,7 @@ function TankSelector({
               {isSelected && (
                 <span style={{
                   fontSize: "0.85rem",
-                  color: "var(--accent-cyan, #22d3ee)",
+                  color: "var(--accent-teal)",
                 }}>
                   ✓
                 </span>

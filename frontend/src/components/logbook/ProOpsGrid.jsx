@@ -267,7 +267,7 @@ export function rankRows(a, b, sortKey) {
 }
 
 function StatusDot({ status }) {
-  const color = status === "ok" ? "#34d399" : status === "drifting" ? "#fbbf24" : "#f87171";
+  const color = status === "ok" ? "var(--accent-green)" : status === "drifting" ? "var(--accent-amber)" : "var(--accent-red)";
   return <span className="ops-dot" style={{ background: color, boxShadow: `0 0 6px ${color}` }} />;
 }
 

@@ -112,12 +112,12 @@ export function GrowOutSection({ walletAccount, casualModeActive }) {
           padding: "2.5rem 2rem",
           textAlign: "center",
           borderRadius: "12px",
-          background: "rgba(255, 255, 255, 0.02)",
+          background: "rgba(var(--ink-rgb), 0.02)",
           border: "1px dashed var(--glass-border)",
         }}
       >
         <EmptyStateIllustration type="growout" size={100} />
-        <div style={{ fontSize: "0.95rem", fontWeight: "600", color: "#fff", marginBottom: "0.35rem" }}>
+        <div style={{ fontSize: "0.95rem", fontWeight: "600", color: "var(--text-primary)", marginBottom: "0.35rem" }}>
           No spawns to track yet
         </div>
         <div style={{ fontSize: "0.8rem", color: "var(--text-muted)", maxWidth: "420px", margin: "0 auto", lineHeight: "1.5" }}>
@@ -140,7 +140,7 @@ export function GrowOutSection({ walletAccount, casualModeActive }) {
         }}>
           <img src="/poseidon-avatar.jpg" alt="" style={{ width: "24px", height: "24px", borderRadius: "50%", objectFit: "cover", flexShrink: 0, marginTop: "1px" }} />
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: "0.75rem", fontWeight: "600", color: "#fbbf24", marginBottom: "3px" }}>
+            <div style={{ fontSize: "0.75rem", fontWeight: "600", color: "var(--accent-amber)", marginBottom: "3px" }}>
               Poseidon nudge — {overdueSpawns.length} spawn{overdueSpawns.length > 1 ? "s" : ""} overdue
             </div>
             <div style={{ fontSize: "0.7rem", color: "var(--text-muted)", lineHeight: "1.4" }}>
@@ -152,7 +152,7 @@ export function GrowOutSection({ walletAccount, casualModeActive }) {
       )}
 
       <div style={{ marginBottom: "1.25rem" }}>
-        <h2 style={{ fontSize: "1.1rem", fontWeight: "700", color: "#fff", margin: "0 0 0.25rem" }}>
+        <h2 style={{ fontSize: "1.1rem", fontWeight: "700", color: "var(--text-primary)", margin: "0 0 0.25rem" }}>
           📊 Grow-Out Tracker
         </h2>
         <p style={{ fontSize: "0.8rem", color: "var(--text-muted)", margin: 0, lineHeight: "1.5" }}>
@@ -172,13 +172,13 @@ export function GrowOutSection({ walletAccount, casualModeActive }) {
               style={{
                 padding: "1rem 1.25rem",
                 borderRadius: "12px",
-                background: "rgba(255, 255, 255, 0.02)",
+                background: "rgba(var(--ink-rgb), 0.02)",
                 border: "1px solid var(--glass-border)",
               }}
             >
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: "0.5rem" }}>
                 <div>
-                  <span style={{ fontSize: "0.9rem", fontWeight: "600", color: "#fff" }}>{speciesName}</span>
+                  <span style={{ fontSize: "0.9rem", fontWeight: "600", color: "var(--text-primary)" }}>{speciesName}</span>
                   <span style={{ fontSize: "0.72rem", color: "var(--text-muted)", marginLeft: "0.5rem" }}>
                     🥚 {eggCount} {eggCount === 1 ? "offspring" : "offspring"}
                   </span>

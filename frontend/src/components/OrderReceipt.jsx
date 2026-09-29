@@ -37,22 +37,22 @@ export function OrderReceipt({ order, isExpanded, onToggle, casualModeActive = f
   const getStatusLabel = () => {
     if (isShipping) {
       switch (order.status) {
-        case 2: return { label: "Completed", color: "#34d399", icon: "✅" };
-        case 4: return { label: "Refunded", color: "#fbbf24", icon: "↩️" };
-        case 3: return { label: "Disputed", color: "#f87171", icon: "⚠️" };
-        default: return { label: "In Progress", color: "#7dd3fc", icon: "⏳" };
+        case 2: return { label: "Completed", color: "#047857", icon: "✅" };
+        case 4: return { label: "Refunded", color: "#b45309", icon: "↩️" };
+        case 3: return { label: "Disputed", color: "#b91c1c", icon: "⚠️" };
+        default: return { label: "In Progress", color: "#0369a1", icon: "⏳" };
       }
     }
     if (isBatch) {
       switch (order.state) {
-        case 1: return { label: "Completed", color: "#34d399", icon: "✅" };
-        case 2: return { label: "Refunded", color: "#fbbf24", icon: "↩️" };
-        default: return { label: "Pending", color: "#7dd3fc", icon: "🔒" };
+        case 1: return { label: "Completed", color: "#047857", icon: "✅" };
+        case 2: return { label: "Refunded", color: "#b45309", icon: "↩️" };
+        default: return { label: "Pending", color: "#0369a1", icon: "🔒" };
       }
     }
-    if (order.status === "settled") return { label: "Settled", color: "#34d399", icon: "✅" };
-    if (order.status === "failed") return { label: "Failed", color: "#f87171", icon: "❌" };
-    return { label: "Pending", color: "#7dd3fc", icon: "⏳" };
+    if (order.status === "settled") return { label: "Settled", color: "#047857", icon: "✅" };
+    if (order.status === "failed") return { label: "Failed", color: "#b91c1c", icon: "❌" };
+    return { label: "Pending", color: "#0369a1", icon: "⏳" };
   };
 
   const status = getStatusLabel();
@@ -68,8 +68,8 @@ export function OrderReceipt({ order, isExpanded, onToggle, casualModeActive = f
           padding: "0.4rem 0.75rem",
           fontSize: "0.72rem",
           fontWeight: "600",
-          background: isExpanded ? "rgba(56, 189, 248, 0.06)" : "rgba(255, 255, 255, 0.02)",
-          border: isExpanded ? "1px solid rgba(56, 189, 248, 0.2)" : "1px solid rgba(255, 255, 255, 0.06)",
+          background: isExpanded ? "rgba(56, 189, 248, 0.06)" : "rgba(var(--ink-rgb), 0.02)",
+          border: isExpanded ? "1px solid rgba(56, 189, 248, 0.2)" : "1px solid rgba(var(--ink-rgb), 0.11)",
           borderRadius: "4px",
           color: isExpanded ? "var(--accent-blue)" : "var(--text-secondary)",
           cursor: "pointer",
@@ -90,8 +90,8 @@ export function OrderReceipt({ order, isExpanded, onToggle, casualModeActive = f
           style={{
             marginTop: "0.75rem",
             padding: "1.25rem",
-            background: "rgba(0, 0, 0, 0.2)",
-            border: "1px solid rgba(255, 255, 255, 0.06)",
+            background: "var(--bg-band)",
+            border: "1px solid rgba(var(--ink-rgb), 0.11)",
             borderRadius: "8px",
             fontSize: "0.78rem",
           }}
@@ -102,7 +102,7 @@ export function OrderReceipt({ order, isExpanded, onToggle, casualModeActive = f
               <div style={{ fontSize: "0.65rem", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
                 {casualModeActive ? "Order Receipt" : "Transaction Ledger"}
               </div>
-              <div style={{ fontSize: "1rem", fontWeight: "700", color: "#fff", marginTop: "0.2rem" }}>
+              <div style={{ fontSize: "1rem", fontWeight: "700", color: "var(--text-primary)", marginTop: "0.2rem" }}>
                 {order.commonName || "Specimen"}
               </div>
               {isBatch && order.quantity && (
@@ -128,16 +128,16 @@ export function OrderReceipt({ order, isExpanded, onToggle, casualModeActive = f
           </div>
 
           {/* Date & Serial */}
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "1rem", padding: "0.5rem 0", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "1rem", padding: "0.5rem 0", borderBottom: "1px solid rgba(var(--ink-rgb), 0.1)" }}>
             <div>
               <span style={{ color: "var(--text-muted)" }}>Date: </span>
-              <span style={{ color: "#fff" }}>
+              <span style={{ color: "var(--text-primary)" }}>
                 {orderDate ? orderDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—"}
               </span>
             </div>
             <div>
               <span style={{ color: "var(--text-muted)" }}>Serial: </span>
-              <span style={{ fontFamily: "monospace", color: "#fff" }}>
+              <span style={{ fontFamily: "monospace", color: "var(--text-primary)" }}>
                 #{isShipping ? order.tokenId?.toString().padStart(4, "0") : order.purchaseId?.toString().padStart(4, "0")}
               </span>
             </div>
@@ -162,9 +162,9 @@ export function OrderReceipt({ order, isExpanded, onToggle, casualModeActive = f
           {/* Financial Breakdown */}
           <div style={{
             padding: "0.75rem",
-            background: "rgba(255, 255, 255, 0.02)",
+            background: "rgba(var(--ink-rgb), 0.02)",
             borderRadius: "6px",
-            border: "1px solid rgba(255, 255, 255, 0.04)",
+            border: "1px solid rgba(var(--ink-rgb), 0.09)",
             display: "flex",
             flexDirection: "column",
             gap: "0.4rem",
@@ -178,11 +178,11 @@ export function OrderReceipt({ order, isExpanded, onToggle, casualModeActive = f
               <>
                 <div style={{ display: "flex", justifyContent: "space-between" }}>
                   <span style={{ color: "var(--text-secondary)" }}>Specimen Price:</span>
-                  <span style={{ fontFamily: "monospace", color: "#fff" }}>${price.toFixed(2)}</span>
+                  <span style={{ fontFamily: "monospace", color: "var(--text-primary)" }}>${price.toFixed(2)}</span>
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between" }}>
                   <span style={{ color: "var(--text-secondary)" }}>Shipping Fee:</span>
-                  <span style={{ fontFamily: "monospace", color: "#fff" }}>${shippingFee.toFixed(2)}</span>
+                  <span style={{ fontFamily: "monospace", color: "var(--text-primary)" }}>${shippingFee.toFixed(2)}</span>
                 </div>
               </>
             )}
@@ -192,7 +192,7 @@ export function OrderReceipt({ order, isExpanded, onToggle, casualModeActive = f
                 <span style={{ color: "var(--text-secondary)" }}>
                   {order.quantity > 1 ? `${order.quantity} fish` : "Batch Total"}:
                 </span>
-                <span style={{ fontFamily: "monospace", color: "#fff" }}>${amountLocked.toFixed(2)}</span>
+                <span style={{ fontFamily: "monospace", color: "var(--text-primary)" }}>${amountLocked.toFixed(2)}</span>
               </div>
             )}
 
@@ -201,8 +201,8 @@ export function OrderReceipt({ order, isExpanded, onToggle, casualModeActive = f
               <span style={{ fontFamily: "monospace" }}>-${platformFee.toFixed(2)}</span>
             </div>
 
-            <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "0.4rem", marginTop: "0.2rem", display: "flex", justifyContent: "space-between" }}>
-              <strong style={{ color: "#fff" }}>
+            <div style={{ borderTop: "1px solid rgba(var(--ink-rgb), 0.11)", paddingTop: "0.4rem", marginTop: "0.2rem", display: "flex", justifyContent: "space-between" }}>
+              <strong style={{ color: "var(--text-primary)" }}>
                 {order.role === "Buyer" ? "You Paid:" : "You Received:"}
               </strong>
               <strong style={{ fontFamily: "monospace", color: "var(--accent-green)" }}>
@@ -232,7 +232,7 @@ export function OrderReceipt({ order, isExpanded, onToggle, casualModeActive = f
               {order.dispatchTimestamp > 0 && (
                 <div style={{ display: "flex", justifyContent: "space-between" }}>
                   <span style={{ color: "var(--text-muted)" }}>Dispatched:</span>
-                  <span style={{ color: "#fff" }}>
+                  <span style={{ color: "var(--text-primary)" }}>
                     {new Date(order.dispatchTimestamp * 1000).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                     {" "}({getRelativeTime(order.dispatchTimestamp)})
                   </span>
@@ -249,18 +249,18 @@ export function OrderReceipt({ order, isExpanded, onToggle, casualModeActive = f
             let color = "var(--text-muted)";
             let text = "Payout releases after you ship, plus a 3-day arrival check.";
             if (s === 2) {
-              icon = "✅"; color = "#34d399"; text = "Paid out to you.";
+              icon = "✅"; color = "var(--accent-green)"; text = "Paid out to you.";
             } else if (s === 4) {
-              icon = "↩️"; color = "#fbbf24"; text = "Refunded to the buyer.";
+              icon = "↩️"; color = "var(--accent-amber)"; text = "Refunded to the buyer.";
             } else if (s === 3) {
-              icon = "⏳"; color = "#f87171"; text = "On hold — under review.";
+              icon = "⏳"; color = "var(--accent-red)"; text = "On hold — under review.";
             } else if (s === 1 && order.dispatchTimestamp) {
               const whenMs = (Number(order.dispatchTimestamp) + WINDOW_SEC) * 1000;
               if (Date.now() >= whenMs) {
-                icon = "💵"; color = "#34d399"; text = "Payout available now.";
+                icon = "💵"; color = "var(--accent-green)"; text = "Payout available now.";
               } else {
                 const d = new Date(whenMs).toLocaleDateString("en-US", { month: "short", day: "numeric" });
-                icon = "💵"; color = "#7dd3fc"; text = `Payout available ${d} (once the arrival window closes).`;
+                icon = "💵"; color = "var(--accent-blue)"; text = `Payout available ${d} (once the arrival window closes).`;
               }
             }
             return (
@@ -268,7 +268,7 @@ export function OrderReceipt({ order, isExpanded, onToggle, casualModeActive = f
                 display: "flex", alignItems: "center", gap: "0.4rem",
                 fontSize: "0.72rem", color, marginBottom: "0.75rem",
                 padding: "0.4rem 0.6rem", borderRadius: "6px",
-                background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)",
+                background: "rgba(var(--ink-rgb), 0.02)", border: "1px solid rgba(var(--ink-rgb), 0.11)",
               }}>
                 <span>{icon}</span>
                 <span>{text}</span>
@@ -326,7 +326,7 @@ function OrderReviewSection({ order, casualModeActive }) {
 
   if (review) {
     return (
-      <div style={{ marginTop: "0.75rem", paddingTop: "0.75rem", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+      <div style={{ marginTop: "0.75rem", paddingTop: "0.75rem", borderTop: "1px solid rgba(var(--ink-rgb), 0.11)" }}>
         <div style={{ fontSize: "0.65rem", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.4rem" }}>
           {casualModeActive ? "Your review" : "Your review"}
         </div>
@@ -350,7 +350,7 @@ function OrderReviewSection({ order, casualModeActive }) {
     const showPending = ["created", "payment_pending", "payment_protected", "preparing", "in_transit", "pickup_ready", "delivered", "review_window", "non_delivery"].includes(canonicalState);
     if (!showPending) return null;
     return (
-      <div style={{ marginTop: "0.75rem", paddingTop: "0.75rem", borderTop: "1px solid rgba(255,255,255,0.06)", fontSize: "0.72rem", color: "var(--text-muted)" }}>
+      <div style={{ marginTop: "0.75rem", paddingTop: "0.75rem", borderTop: "1px solid rgba(var(--ink-rgb), 0.11)", fontSize: "0.72rem", color: "var(--text-muted)" }}>
         {casualModeActive ? "You can leave a review once your fish arrives." : "Review available after arrival is confirmed."}
       </div>
     );
@@ -358,7 +358,7 @@ function OrderReviewSection({ order, casualModeActive }) {
 
   if (!showComposer) {
     return (
-      <div style={{ marginTop: "0.75rem", paddingTop: "0.75rem", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+      <div style={{ marginTop: "0.75rem", paddingTop: "0.75rem", borderTop: "1px solid rgba(var(--ink-rgb), 0.11)" }}>
         <button
           type="button"
           onClick={() => setShowComposer(true)}

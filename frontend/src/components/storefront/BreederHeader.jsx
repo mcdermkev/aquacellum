@@ -11,12 +11,12 @@ const IPFS_GATEWAY = "https://gateway.pinata.cloud/ipfs";
 
 // Tier color mapping
 const TIER_COLORS = {
-  "Shallow": { color: "#94a3b8", bg: "rgba(148, 163, 184, 0.12)", border: "rgba(148, 163, 184, 0.3)" },
-  "Coastal": { color: "#38bdf8", bg: "rgba(56, 189, 248, 0.12)", border: "rgba(56, 189, 248, 0.3)" },
-  "Pelagic": { color: "#34d399", bg: "rgba(52, 211, 153, 0.12)", border: "rgba(52, 211, 153, 0.3)" },
-  "Abyssal": { color: "#a78bfa", bg: "rgba(167, 139, 250, 0.12)", border: "rgba(167, 139, 250, 0.3)" },
-  "Hadal": { color: "#fbbf24", bg: "rgba(251, 191, 36, 0.12)", border: "rgba(251, 191, 36, 0.3)" },
-  "God-Tier": { color: "#f472b6", bg: "rgba(244, 114, 182, 0.12)", border: "rgba(244, 114, 182, 0.3)" },
+  "Shallow": { color: "var(--text-muted)", bg: "rgba(148, 163, 184, 0.12)", border: "rgba(148, 163, 184, 0.3)" },
+  "Coastal": { color: "var(--accent-blue)", bg: "rgba(56, 189, 248, 0.12)", border: "rgba(56, 189, 248, 0.3)" },
+  "Pelagic": { color: "var(--accent-green)", bg: "rgba(52, 211, 153, 0.12)", border: "rgba(52, 211, 153, 0.3)" },
+  "Abyssal": { color: "var(--accent-violet)", bg: "rgba(167, 139, 250, 0.12)", border: "rgba(167, 139, 250, 0.3)" },
+  "Hadal": { color: "var(--accent-amber)", bg: "rgba(251, 191, 36, 0.12)", border: "rgba(251, 191, 36, 0.3)" },
+  "God-Tier": { color: "#be185d", bg: "rgba(244, 114, 182, 0.12)", border: "rgba(244, 114, 182, 0.3)" },
 };
 
 export function BreederHeader({ profile, stats }) {
@@ -70,7 +70,7 @@ export function BreederHeader({ profile, stats }) {
           )}
           {profile.isMasterBreeder && (
             <div className="sf-header__master-crown" aria-label="Master Breeder">
-              <Crown weight="fill" size={16} color="#fbbf24" />
+              <Crown weight="fill" size={16} color="var(--accent-amber)" />
             </div>
           )}
         </div>

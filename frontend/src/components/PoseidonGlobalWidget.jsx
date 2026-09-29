@@ -266,9 +266,10 @@ export function PoseidonGlobalWidget({ walletAddress, casualModeActive = true, a
   }, [activeTab, casualModeActive]);
 
   const isPro = !casualModeActive;
-  const accentColor = isPro ? "#a855f7" : "#38bdf8";
-  const panelBg = isPro ? "rgba(15, 7, 32, 0.96)" : "rgba(8, 18, 38, 0.96)";
-  const borderColor = isPro ? "rgba(168, 85, 247, 0.2)" : "rgba(56, 189, 248, 0.2)";
+  // Daylight theme: text-safe accents on a white panel.
+  const accentColor = isPro ? "#6d28d9" : "#0369a1";
+  const panelBg = "#ffffff";
+  const borderColor = isPro ? "rgba(109, 40, 217, 0.25)" : "rgba(3, 105, 161, 0.25)";
 
   // Deep-link handler: dispatches navigation events to the app
   const handleDeepLink = useCallback((linkData) => {

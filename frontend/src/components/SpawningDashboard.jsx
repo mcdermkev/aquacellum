@@ -167,7 +167,7 @@ export function SpawningDashboard({ walletAccount }) {
           gap: "0.4rem",
           marginBottom: "1.25rem",
           padding: "0.3rem",
-          background: "rgba(255, 255, 255, 0.02)",
+          background: "rgba(var(--ink-rgb), 0.02)",
           border: "1px solid rgba(16, 185, 129, 0.12)",
           borderRadius: "10px",
           width: "fit-content",
@@ -189,7 +189,7 @@ export function SpawningDashboard({ walletAccount }) {
                 cursor: "pointer",
                 fontSize: "0.8rem",
                 fontWeight: isActive ? "600" : "400",
-                color: isActive ? "#fff" : "var(--text-muted)",
+                color: isActive ? "var(--text-primary)" : "var(--text-muted)",
                 background: isActive
                   ? "linear-gradient(135deg, rgba(16, 185, 129, 0.25) 0%, rgba(5, 150, 105, 0.2) 100%)"
                   : "transparent",
@@ -208,7 +208,7 @@ export function SpawningDashboard({ walletAccount }) {
       {/* ─── REGISTERED CERTIFICATES ──────────────────────────────────────── */}
       {activeSection === "certificates" && (
         <div className="glass-card" style={{ padding: "1.5rem" }}>
-          <h3 style={{ fontSize: "1.2rem", color: "#fff", marginBottom: "0.5rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          <h3 style={{ fontSize: "1.2rem", color: "var(--text-primary)", marginBottom: "0.5rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
             📜 Registered Birth Certificates
           </h3>
           <p style={{ color: "var(--text-muted)", fontSize: "0.8rem", marginBottom: "1.25rem" }}>
@@ -233,8 +233,8 @@ export function SpawningDashboard({ walletAccount }) {
                       alignItems: "center",
                       justifyContent: "space-between",
                       padding: "0.75rem 1rem",
-                      background: "rgba(255,255,255,0.02)",
-                      border: "1px solid rgba(255,255,255,0.06)",
+                      background: "rgba(var(--ink-rgb), 0.02)",
+                      border: "1px solid rgba(var(--ink-rgb), 0.11)",
                       borderRadius: "8px",
                       transition: "border-color 0.2s",
                     }}
@@ -249,7 +249,7 @@ export function SpawningDashboard({ walletAccount }) {
                         🐟
                       </span>
                       <div>
-                        <div style={{ color: "#fff", fontSize: "0.85rem", fontWeight: "500" }}>
+                        <div style={{ color: "var(--text-primary)", fontSize: "0.85rem", fontWeight: "500" }}>
                           Cert. Serial No. {formatCertSerial(cert.id)}
                         </div>
                         <div style={{ color: "var(--text-muted)", fontSize: "0.72rem", marginTop: "2px" }}>
@@ -281,7 +281,7 @@ export function SpawningDashboard({ walletAccount }) {
 
           <div style={{ marginTop: "1rem", padding: "0.6rem 0.8rem", background: "rgba(16, 185, 129, 0.05)", borderRadius: "6px", border: "1px solid rgba(16, 185, 129, 0.1)" }}>
             <span style={{ color: "var(--text-muted)", fontSize: "0.72rem" }}>
-              Total Certificates: <strong style={{ color: "#fff" }}>{certificates.length}</strong>
+              Total Certificates: <strong style={{ color: "var(--text-primary)" }}>{certificates.length}</strong>
             </span>
           </div>
         </div>
@@ -290,7 +290,7 @@ export function SpawningDashboard({ walletAccount }) {
       {/* ─── HATCHERY INSIGHTS ────────────────────────────────────────────── */}
       {activeSection === "insights" && (
         <div className="glass-card" style={{ padding: "1.5rem" }}>
-          <h3 style={{ fontSize: "1.2rem", color: "#fff", marginBottom: "0.5rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          <h3 style={{ fontSize: "1.2rem", color: "var(--text-primary)", marginBottom: "0.5rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
             📊 Hatchery Insights
           </h3>
           <p style={{ color: "var(--text-muted)", fontSize: "0.8rem", marginBottom: "1.25rem" }}>
@@ -317,7 +317,7 @@ export function SpawningDashboard({ walletAccount }) {
                 {topSpecies.map(([name, count], i) => (
                   <div key={name} style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
                     <span style={{ color: "var(--text-muted)", fontSize: "0.7rem", width: "16px" }}>#{i + 1}</span>
-                    <div style={{ flex: 1, height: "6px", background: "rgba(255,255,255,0.05)", borderRadius: "3px", overflow: "hidden" }}>
+                    <div style={{ flex: 1, height: "6px", background: "rgba(var(--ink-rgb), 0.05)", borderRadius: "3px", overflow: "hidden" }}>
                       <div style={{
                         height: "100%",
                         width: `${(count / topSpecies[0][1]) * 100}%`,
@@ -326,7 +326,7 @@ export function SpawningDashboard({ walletAccount }) {
                         transition: "width 0.5s ease"
                       }} />
                     </div>
-                    <span style={{ color: "#fff", fontSize: "0.75rem", minWidth: "100px" }}>{name}</span>
+                    <span style={{ color: "var(--text-primary)", fontSize: "0.75rem", minWidth: "100px" }}>{name}</span>
                     <span style={{ color: "var(--text-muted)", fontSize: "0.7rem" }}>{count} spawn{count !== 1 ? "s" : ""}</span>
                   </div>
                 ))}
@@ -338,7 +338,7 @@ export function SpawningDashboard({ walletAccount }) {
           {lastSpawn && (
             <div style={{ marginTop: "1.25rem", padding: "0.75rem 1rem", background: "rgba(168, 85, 247, 0.05)", border: "1px solid rgba(168, 85, 247, 0.12)", borderRadius: "8px" }}>
               <div style={{ color: "var(--text-muted)", fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: "0.3rem" }}>Last Spawn Event</div>
-              <div style={{ color: "#fff", fontSize: "0.85rem" }}>
+              <div style={{ color: "var(--text-primary)", fontSize: "0.85rem" }}>
                 {getSpeciesName(lastSpawn.speciesId)} — Sire #{formatCertSerial(lastSpawn.sireId)} × Dam #{formatCertSerial(lastSpawn.damId)}
               </div>
               <div style={{ color: "var(--text-muted)", fontSize: "0.72rem", marginTop: "0.2rem" }}>
@@ -360,7 +360,7 @@ export function SpawningDashboard({ walletAccount }) {
       {/* ─── SPAWNING LOGS ────────────────────────────────────────────────── */}
       {activeSection === "logs" && (
         <div className="glass-card" style={{ padding: "1.5rem" }}>
-          <h3 style={{ fontSize: "1.2rem", color: "#fff", marginBottom: "0.5rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          <h3 style={{ fontSize: "1.2rem", color: "var(--text-primary)", marginBottom: "0.5rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
             📋 Spawning Logs
           </h3>
           <p style={{ color: "var(--text-muted)", fontSize: "0.8rem", marginBottom: "1.25rem" }}>
@@ -394,14 +394,14 @@ export function SpawningDashboard({ walletAccount }) {
                       key={spawn.spawnId}
                       style={{
                         padding: "0.85rem 1rem",
-                        background: "rgba(255,255,255,0.02)",
-                        border: "1px solid rgba(255,255,255,0.06)",
+                        background: "rgba(var(--ink-rgb), 0.02)",
+                        border: "1px solid rgba(var(--ink-rgb), 0.11)",
                         borderRadius: "8px",
                       }}
                     >
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                         <div>
-                          <div style={{ color: "#fff", fontSize: "0.85rem", fontWeight: "500" }}>
+                          <div style={{ color: "var(--text-primary)", fontSize: "0.85rem", fontWeight: "500" }}>
                             Spawn #{formatLocalRecordRef(spawn.spawnId)}
                           </div>
                           <div style={{ color: "var(--text-muted)", fontSize: "0.72rem", marginTop: "3px" }}>
@@ -466,10 +466,10 @@ export function SpawningDashboard({ walletAccount }) {
           {spawns.length > 0 && (
             <div style={{ marginTop: "1rem", padding: "0.6rem 0.8rem", background: "rgba(59, 130, 246, 0.05)", borderRadius: "6px", border: "1px solid rgba(59, 130, 246, 0.1)", display: "flex", justifyContent: "space-between" }}>
               <span style={{ color: "var(--text-muted)", fontSize: "0.72rem" }}>
-                Total Events: <strong style={{ color: "#fff" }}>{spawns.length}</strong>
+                Total Events: <strong style={{ color: "var(--text-primary)" }}>{spawns.length}</strong>
               </span>
               <span style={{ color: "var(--text-muted)", fontSize: "0.72rem" }}>
-                Total Fry Produced: <strong style={{ color: "#fff" }}>{totalOffspring}</strong>
+                Total Fry Produced: <strong style={{ color: "var(--text-primary)" }}>{totalOffspring}</strong>
               </span>
             </div>
           )}
@@ -490,7 +490,7 @@ function InsightCard({ label, value, icon, color }) {
       textAlign: "center",
     }}>
       <div style={{ fontSize: "1.2rem", marginBottom: "0.3rem" }}>{icon}</div>
-      <div style={{ color: "#fff", fontSize: "1.1rem", fontWeight: "600" }}>{value}</div>
+      <div style={{ color: "var(--text-primary)", fontSize: "1.1rem", fontWeight: "600" }}>{value}</div>
       <div style={{ color: "var(--text-muted)", fontSize: "0.68rem", marginTop: "0.15rem" }}>{label}</div>
     </div>
   );

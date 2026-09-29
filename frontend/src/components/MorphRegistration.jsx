@@ -36,7 +36,7 @@ const TRAIT_TYPES = [
 const STATUS_BADGES = {
   pending: { label: "Pending review", color: "var(--accent-amber, #fbbf24)", bg: "rgba(251,191,36,0.12)", border: "rgba(251,191,36,0.3)" },
   verified: { label: "Verified", color: "var(--accent-green, #34d399)", bg: "rgba(52,211,153,0.12)", border: "rgba(52,211,153,0.3)" },
-  promoted: { label: "Sub-species", color: "var(--accent-cyan, #22d3ee)", bg: "rgba(34,211,238,0.12)", border: "rgba(34,211,238,0.3)" },
+  promoted: { label: "Sub-species", color: "var(--accent-teal)", bg: "rgba(34,211,238,0.12)", border: "rgba(34,211,238,0.3)" },
   rejected: { label: "Not accepted", color: "var(--accent-red, #f87171)", bg: "rgba(248,113,113,0.12)", border: "rgba(248,113,113,0.3)" },
 };
 
@@ -248,9 +248,9 @@ export function MorphRegistration({ walletAccount, casualModeActive, contractAdd
   const inputStyle = {
     width: "100%",
     padding: "0.6rem 0.7rem",
-    background: "rgba(255,255,255,0.03)",
+    background: "rgba(var(--ink-rgb), 0.03)",
     border: casualModeActive ? "1px solid var(--glass-border)" : "1px solid rgba(168, 85, 247, 0.3)",
-    color: "#fff",
+    color: "var(--text-primary)",
     borderRadius: "6px",
     outline: "none",
     fontSize: "0.85rem",
@@ -265,7 +265,7 @@ export function MorphRegistration({ walletAccount, casualModeActive, contractAdd
         style={{
           padding: "0.7rem 0.85rem",
           borderRadius: "10px",
-          background: "rgba(255,255,255,0.02)",
+          background: "rgba(var(--ink-rgb), 0.02)",
           border: "1px solid var(--glass-border)",
           display: "flex",
           alignItems: "center",
@@ -274,7 +274,7 @@ export function MorphRegistration({ walletAccount, casualModeActive, contractAdd
         }}
       >
         <div style={{ flex: 1, minWidth: "180px" }}>
-          <div style={{ fontSize: "0.85rem", fontWeight: 600, color: "#fff" }}>
+          <div style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--text-primary)" }}>
             {m.morph_name}
             <span style={{ fontSize: "0.68rem", color: "var(--text-muted, #94a3b8)", fontWeight: 400, marginLeft: "0.4rem" }}>
               {traitLabel(m.trait_type)}
@@ -297,7 +297,7 @@ export function MorphRegistration({ walletAccount, casualModeActive, contractAdd
               <button
                 type="button"
                 onClick={() => setPreviewUrl(m.proof_url)}
-                style={{ fontSize: "0.7rem", color: "var(--accent-cyan, #22d3ee)", textDecoration: "none", background: "none", border: "none", padding: 0, cursor: "pointer" }}
+                style={{ fontSize: "0.7rem", color: "var(--accent-teal)", textDecoration: "none", background: "none", border: "none", padding: 0, cursor: "pointer" }}
               >
                 View reference ↗
               </button>
@@ -307,7 +307,7 @@ export function MorphRegistration({ walletAccount, casualModeActive, contractAdd
                 href={m.proof_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                style={{ fontSize: "0.7rem", color: "var(--accent-cyan, #22d3ee)", textDecoration: "none" }}
+                style={{ fontSize: "0.7rem", color: "var(--accent-teal)", textDecoration: "none" }}
               >
                 View reference ↗
               </a>
@@ -350,7 +350,7 @@ export function MorphRegistration({ walletAccount, casualModeActive, contractAdd
             title="Publish as a registered sub-species/strain of the base species"
             style={{
               fontSize: "0.7rem", padding: "0.3rem 0.7rem", borderRadius: "8px", cursor: "pointer",
-              background: "rgba(34,211,238,0.12)", border: "1px solid rgba(34,211,238,0.4)", color: "var(--accent-cyan, #22d3ee)",
+              background: "rgba(34,211,238,0.12)", border: "1px solid rgba(34,211,238,0.4)", color: "var(--accent-teal)",
               opacity: reviewBusyId === m.id ? 0.6 : 1, whiteSpace: "nowrap",
             }}
           >
@@ -375,7 +375,7 @@ export function MorphRegistration({ walletAccount, casualModeActive, contractAdd
   return (
     <div style={{ maxWidth: "640px" }}>
       <div style={{ marginBottom: "1.25rem" }}>
-        <h2 style={{ fontSize: "1.1rem", fontWeight: 700, color: "#fff", margin: "0 0 0.25rem" }}>
+        <h2 style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--text-primary)", margin: "0 0 0.25rem" }}>
           🎨 {casualModeActive ? "Register a New Look" : "Morph Registration"}
         </h2>
         <p style={{ fontSize: "0.8rem", color: "var(--text-muted, #94a3b8)", margin: 0, lineHeight: 1.5 }}>
@@ -397,7 +397,7 @@ export function MorphRegistration({ walletAccount, casualModeActive, contractAdd
       >
         <h3
           id="steve-morph-reference-heading"
-          style={{ fontSize: "0.88rem", color: "#fff", margin: "0 0 0.25rem" }}
+          style={{ fontSize: "0.88rem", color: "var(--text-primary)", margin: "0 0 0.25rem" }}
         >
           Steve&apos;s morph references
         </h3>
@@ -420,9 +420,9 @@ export function MorphRegistration({ walletAccount, casualModeActive, contractAdd
               style={{
                 overflow: "hidden",
                 borderRadius: "9px",
-                border: "1px solid rgba(255, 255, 255, 0.12)",
-                background: "rgba(15, 23, 42, 0.72)",
-                color: "#fff",
+                border: "1px solid rgba(var(--ink-rgb), 0.17)",
+                background: "#ffffff",
+                color: "var(--text-primary)",
                 textDecoration: "none",
               }}
             >
@@ -487,7 +487,7 @@ export function MorphRegistration({ walletAccount, casualModeActive, contractAdd
           <select
             value={form.traitType}
             onChange={(e) => update("traitType", e.target.value)}
-            style={{ ...inputStyle, background: "rgba(15, 23, 42, 0.95)" }}
+            style={{ ...inputStyle, background: "#ffffff" }}
           >
             {TRAIT_TYPES.map((t) => (
               <option key={t.value} value={t.value}>{t.label}</option>
@@ -640,7 +640,7 @@ export function MorphRegistration({ walletAccount, casualModeActive, contractAdd
             border: "1px solid rgba(168, 85, 247, 0.25)",
           }}
         >
-          <h3 style={{ fontSize: "0.9rem", fontWeight: 700, color: "#fff", margin: "0 0 0.75rem" }}>
+          <h3 style={{ fontSize: "0.9rem", fontWeight: 700, color: "var(--text-primary)", margin: "0 0 0.75rem" }}>
             🛡️ Curator Review
             <span style={{ fontSize: "0.7rem", color: "var(--text-muted, #94a3b8)", fontWeight: 400, marginLeft: "0.4rem" }}>
               {pendingCount} pending
@@ -661,7 +661,7 @@ export function MorphRegistration({ walletAccount, casualModeActive, contractAdd
 
       {/* Submitter's own history */}
       <div>
-        <h3 style={{ fontSize: "0.85rem", fontWeight: 700, color: "#fff", margin: "0 0 0.6rem" }}>
+        <h3 style={{ fontSize: "0.85rem", fontWeight: 700, color: "var(--text-primary)", margin: "0 0 0.6rem" }}>
           {casualModeActive ? "Your submissions" : "Submission queue"}
           {submissions.length > 0 && (
             <span style={{ fontSize: "0.7rem", color: "var(--text-muted, #94a3b8)", fontWeight: 400, marginLeft: "0.4rem" }}>
@@ -687,7 +687,7 @@ export function MorphRegistration({ walletAccount, casualModeActive, contractAdd
           onClick={() => setPreviewUrl(null)}
           style={{
             position: "fixed", inset: 0, zIndex: 1000,
-            background: "rgba(0,0,0,0.85)", backdropFilter: "blur(4px)",
+            background: "rgba(11, 37, 48, 0.8)", backdropFilter: "blur(4px)",
             display: "flex", alignItems: "center", justifyContent: "center", padding: "2rem",
             cursor: "zoom-out",
           }}
@@ -696,7 +696,7 @@ export function MorphRegistration({ walletAccount, casualModeActive, contractAdd
             src={previewUrl}
             alt="Morph evidence"
             onClick={(e) => e.stopPropagation()}
-            style={{ maxWidth: "100%", maxHeight: "100%", borderRadius: "12px", boxShadow: "0 20px 60px rgba(0,0,0,0.6)", cursor: "default" }}
+            style={{ maxWidth: "100%", maxHeight: "100%", borderRadius: "12px", boxShadow: "var(--shadow-lg)", cursor: "default" }}
           />
           <button
             type="button"

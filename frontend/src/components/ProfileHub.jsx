@@ -49,15 +49,15 @@ export function ProfileHub({
               width: 56, height: 56, borderRadius: "50%", flexShrink: 0,
               display: "flex", alignItems: "center", justifyContent: "center",
               fontSize: "1.6rem",
-              background: `radial-gradient(circle at 30% 30%, ${accentHex}33, rgba(10,14,26,0.9))`,
+              background: `radial-gradient(circle at 30% 30%, ${accentHex}33, #ffffff)`,
               border: `1px solid ${accentHex}55`,
-              boxShadow: `0 0 18px ${accentHex}33`,
+              boxShadow: "var(--glass-shadow)",
             }}
           >
             🐠
           </div>
           <div style={{ minWidth: 0 }}>
-            <div style={{ fontSize: "1rem", fontWeight: 700, color: "#fff" }}>
+            <div style={{ fontSize: "1rem", fontWeight: 700, color: "var(--text-primary)" }}>
               {levelInfo?.icon ? `${levelInfo.icon} ` : ""}Lvl {level} · {title}
             </div>
             {shortAddr && (
@@ -74,14 +74,14 @@ export function ProfileHub({
             <span>{xp.toLocaleString()} pts</span>
             <span>{nextLevelXp ? `${nextLevelXp.toLocaleString()} to next` : "Max level"}</span>
           </div>
-          <div style={{ height: 8, borderRadius: 999, background: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
+          <div style={{ height: 8, borderRadius: 999, background: "rgba(var(--ink-rgb), 0.06)", overflow: "hidden" }}>
             <div style={{ width: `${pct}%`, height: "100%", borderRadius: 999, background: `linear-gradient(90deg, ${accentHex}, ${accentHex}aa)`, transition: "width 0.4s ease" }} />
           </div>
         </div>
 
         {/* Stat chips */}
         <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-          <span style={{ fontSize: "0.7rem", color: "var(--text-secondary)", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 999, padding: "0.25rem 0.6rem" }}>
+          <span style={{ fontSize: "0.7rem", color: "var(--text-secondary)", background: "rgba(var(--ink-rgb), 0.03)", border: "1px solid rgba(var(--ink-rgb), 0.11)", borderRadius: 999, padding: "0.25rem 0.6rem" }}>
             🐠 {speciesCount} species
           </span>
         </div>
@@ -97,12 +97,12 @@ export function ProfileHub({
             className="glass-card profile-hub__link"
             style={{
               textAlign: "left", padding: "0.9rem", borderRadius: "14px", cursor: "pointer",
-              border: "1px solid rgba(255,255,255,0.06)", background: "rgba(255,255,255,0.02)",
+              border: "1px solid rgba(var(--ink-rgb), 0.11)", background: "rgba(var(--ink-rgb), 0.02)",
               display: "flex", flexDirection: "column", gap: "0.3rem",
             }}
           >
             <span style={{ fontSize: "1.3rem" }}>{l.icon}</span>
-            <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "#fff" }}>{l.label}</span>
+            <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--text-primary)" }}>{l.label}</span>
             <span style={{ fontSize: "0.68rem", color: "var(--text-muted)" }}>{l.desc}</span>
           </button>
         ))}
@@ -116,7 +116,7 @@ export function ProfileHub({
           marginTop: "0.25rem", padding: "0.75rem 1rem", borderRadius: "12px", cursor: "pointer",
           border: "1px solid rgba(168,85,247,0.3)",
           background: "linear-gradient(135deg, rgba(168,85,247,0.14), rgba(124,58,237,0.08))",
-          color: "#fff", fontSize: "0.85rem", fontWeight: 600,
+          color: "var(--accent-violet)", fontSize: "0.85rem", fontWeight: 600,
           display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem",
         }}
       >

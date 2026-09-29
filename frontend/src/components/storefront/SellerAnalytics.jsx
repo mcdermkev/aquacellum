@@ -51,11 +51,11 @@ import { prefersReducedMotion } from "../../utils/a11y";
 const COMPLETED_STATUSES = ["released", "completed", "settled", "resolved_released"];
 
 const ORDER_TYPE_META = {
-  shipping: { label: "Shipping", color: "#38bdf8" },
-  batch: { label: "Batch", color: "#34d399" },
-  fiat: { label: "Card", color: "#a78bfa" },
-  cash_handshake: { label: "In-Person", color: "#fbbf24" },
-  instant: { label: "Instant", color: "#f472b6" },
+  shipping: { label: "Shipping", color: "#0284c7" },
+  batch: { label: "Batch", color: "#059669" },
+  fiat: { label: "Card", color: "#7c3aed" },
+  cash_handshake: { label: "In-Person", color: "#d97706" },
+  instant: { label: "Instant", color: "#db2777" },
 };
 
 const fmtUsd = (cents, decimals = 0) =>
@@ -136,7 +136,7 @@ export function SellerAnalytics({ walletAccount, casualModeActive = false }) {
     const typeMix = Array.from(typeCounts.entries()).map(([type, count]) => ({
       type,
       label: ORDER_TYPE_META[type]?.label || type,
-      color: ORDER_TYPE_META[type]?.color || "#64748b",
+      color: ORDER_TYPE_META[type]?.color || "#5b7482",
       value: count,
     }));
 
@@ -256,31 +256,31 @@ export function SellerAnalytics({ walletAccount, casualModeActive = false }) {
       <div className="sf-analytics__kpis">
         <KpiTile
           icon={<CurrencyDollar weight="duotone" size={18} />}
-          color="#fbbf24"
+          color="var(--accent-amber)"
           label="Revenue"
           value={fmtUsd(kpi.revenueCents)}
         />
         <KpiTile
           icon={<Package weight="duotone" size={18} />}
-          color="#38bdf8"
+          color="var(--accent-blue)"
           label="Orders"
           value={kpi.totalOrders.toLocaleString()}
         />
         <KpiTile
           icon={<CheckCircle weight="duotone" size={18} />}
-          color="#34d399"
+          color="var(--accent-green)"
           label="Completion"
           value={hasSales ? `${completionRate}%` : "—"}
         />
         <KpiTile
           icon={<ChartLineUp weight="duotone" size={18} />}
-          color="#a78bfa"
+          color="var(--accent-violet)"
           label="Avg Order"
           value={hasSales ? fmtUsd(kpi.avgOrderCents, 2) : "—"}
         />
         <KpiTile
           icon={<Warning weight="duotone" size={18} />}
-          color={kpi.disputed > 0 ? "#f87171" : "#64748b"}
+          color={kpi.disputed > 0 ? "var(--accent-red)" : "var(--text-muted)"}
           label="Disputes"
           value={kpi.disputed.toLocaleString()}
         />
@@ -305,14 +305,14 @@ export function SellerAnalytics({ walletAccount, casualModeActive = false }) {
                 <AreaChart data={derived.revenueSeries} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
                   <defs>
                     <linearGradient id="sfRevGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#38bdf8" stopOpacity={0.5} />
-                      <stop offset="100%" stopColor="#38bdf8" stopOpacity={0} />
+                      <stop offset="0%" stopColor="#0284c7" stopOpacity={0.5} />
+                      <stop offset="100%" stopColor="#0284c7" stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" vertical={false} />
-                  <XAxis dataKey="label" tick={{ fill: "#7d8fa3", fontSize: 11 }} tickLine={false} axisLine={false} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(11,37,48,0.08)" vertical={false} />
+                  <XAxis dataKey="label" tick={{ fill: "#5b7482", fontSize: 11 }} tickLine={false} axisLine={false} />
                   <YAxis
-                    tick={{ fill: "#7d8fa3", fontSize: 11 }}
+                    tick={{ fill: "#5b7482", fontSize: 11 }}
                     tickLine={false}
                     axisLine={false}
                     tickFormatter={(v) => `$${v}`}
@@ -322,7 +322,7 @@ export function SellerAnalytics({ walletAccount, casualModeActive = false }) {
                   <Area
                     type="monotone"
                     dataKey="revenue"
-                    stroke="#38bdf8"
+                    stroke="#0284c7"
                     strokeWidth={2}
                     fill="url(#sfRevGrad)"
                   />
@@ -358,7 +358,7 @@ export function SellerAnalytics({ walletAccount, casualModeActive = false }) {
                     height={24}
                     iconType="circle"
                     iconSize={8}
-                    formatter={(value) => <span style={{ color: "#a9b7c6", fontSize: 11 }}>{value}</span>}
+                    formatter={(value) => <span style={{ color: "#3b5563", fontSize: 11 }}>{value}</span>}
                   />
                 </PieChart>
               </ResponsiveContainer>
@@ -369,7 +369,7 @@ export function SellerAnalytics({ walletAccount, casualModeActive = false }) {
               <div className="sf-analytics__card-title">Fulfillment</div>
               <div className="sf-analytics__fulfill">
                 <div className="sf-analytics__fulfill-row">
-                  <span className="sf-analytics__fulfill-icon" style={{ color: "#38bdf8" }}>
+                  <span className="sf-analytics__fulfill-icon" style={{ color: "var(--accent-blue)" }}>
                     <Truck weight="duotone" size={20} />
                   </span>
                   <div>
@@ -378,7 +378,7 @@ export function SellerAnalytics({ walletAccount, casualModeActive = false }) {
                   </div>
                 </div>
                 <div className="sf-analytics__fulfill-row">
-                  <span className="sf-analytics__fulfill-icon" style={{ color: "#34d399" }}>
+                  <span className="sf-analytics__fulfill-icon" style={{ color: "var(--accent-green)" }}>
                     <House weight="duotone" size={20} />
                   </span>
                   <div>
@@ -387,7 +387,7 @@ export function SellerAnalytics({ walletAccount, casualModeActive = false }) {
                   </div>
                 </div>
                 <div className="sf-analytics__fulfill-row">
-                  <span className="sf-analytics__fulfill-icon" style={{ color: "#a78bfa" }}>
+                  <span className="sf-analytics__fulfill-icon" style={{ color: "var(--accent-violet)" }}>
                     <Clock weight="duotone" size={20} />
                   </span>
                   <div>
@@ -438,7 +438,7 @@ export function SellerAnalytics({ walletAccount, casualModeActive = false }) {
           <div className="sf-analytics__two-col">
             <div className="sf-analytics__card glass-card">
               <div className="sf-analytics__card-title">
-                <Package weight="duotone" size={16} style={{ color: "var(--teal-400, #2dd4bf)" }} /> {ANALYTICS_COPY.boxUtilizationTitle}
+                <Package weight="duotone" size={16} style={{ color: "var(--accent-teal)" }} /> {ANALYTICS_COPY.boxUtilizationTitle}
               </div>
               {boxUtil.sampleSize === 0 ? (
                 <p className="sf-analytics__muted">{ANALYTICS_COPY.noDataYet}</p>
@@ -450,7 +450,7 @@ export function SellerAnalytics({ walletAccount, casualModeActive = false }) {
                     aria-valuemin={0}
                     aria-valuemax={100}
                     aria-label="Average box fill"
-                    style={{ height: "8px", borderRadius: "6px", background: "rgba(255,255,255,0.06)", overflow: "hidden", marginBottom: "0.5rem" }}
+                    style={{ height: "8px", borderRadius: "6px", background: "rgba(var(--ink-rgb), 0.06)", overflow: "hidden", marginBottom: "0.5rem" }}
                   >
                     <div
                       style={{
@@ -458,8 +458,8 @@ export function SellerAnalytics({ walletAccount, casualModeActive = false }) {
                         width: `${boxUtil.avgFillPercent}%`,
                         borderRadius: "6px",
                         background: boxUtil.avgFillPercent >= 90
-                          ? "linear-gradient(90deg, var(--amber-400, #fbbf24), #f59e0b)"
-                          : "linear-gradient(90deg, var(--teal-400, #2dd4bf), var(--cyan-400, #22d3ee))",
+                          ? "linear-gradient(90deg, var(--accent-amber), #f59e0b)"
+                          : "linear-gradient(90deg, var(--accent-teal), var(--accent-blue-fill))",
                         transition: reducedMotion ? "none" : "width 0.3s cubic-bezier(0.4,0,0.2,1)",
                       }}
                     />
@@ -501,7 +501,7 @@ export function SellerAnalytics({ walletAccount, casualModeActive = false }) {
 
           <div className="sf-analytics__card glass-card">
             <div className="sf-analytics__card-title">
-              <HandCoins weight="duotone" size={16} style={{ color: "var(--amber-400, #fbbf24)" }} /> {ANALYTICS_COPY.cashSaleTitle}
+              <HandCoins weight="duotone" size={16} style={{ color: "var(--accent-amber)" }} /> {ANALYTICS_COPY.cashSaleTitle}
             </div>
             {cashSales.sampleSize === 0 ? (
               <p className="sf-analytics__muted">{ANALYTICS_COPY.noDataYet}</p>

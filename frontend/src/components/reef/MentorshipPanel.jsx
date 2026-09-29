@@ -94,7 +94,7 @@ export function MentorshipPanel({ walletAddress, acceptingMentees = false, onVie
           justifyContent: "space-between",
         }}>
           <div>
-            <div style={{ fontSize: "0.85rem", color: "#fff", fontWeight: "500" }}>
+            <div style={{ fontSize: "0.85rem", color: "var(--text-primary)", fontWeight: "500" }}>
               🎓 Accept Mentees
             </div>
             <div style={{ fontSize: "0.7rem", color: "var(--text-muted)", marginTop: "0.2rem" }}>
@@ -109,7 +109,7 @@ export function MentorshipPanel({ walletAddress, acceptingMentees = false, onVie
               height: "24px",
               borderRadius: "12px",
               border: "none",
-              background: acceptingMentees ? "rgba(168, 85, 247, 0.4)" : "rgba(255,255,255,0.12)",
+              background: acceptingMentees ? "rgba(168, 85, 247, 0.4)" : "rgba(var(--ink-rgb), 0.1)",
               cursor: "pointer",
               position: "relative",
               transition: "background 0.2s ease",
@@ -141,7 +141,7 @@ export function MentorshipPanel({ walletAddress, acceptingMentees = false, onVie
           textAlign: "center",
         }}>
           <p style={{ fontSize: "1.3rem", margin: "0 0 0.5rem" }}>🎓</p>
-          <p style={{ fontSize: "0.8rem", color: "#fff", fontWeight: 600, margin: "0 0 0.3rem" }}>
+          <p style={{ fontSize: "0.8rem", color: "var(--text-primary)", fontWeight: 600, margin: "0 0 0.3rem" }}>
             {casualModeActive ? "Become a Mentor" : "Unlock Mentorship"}
           </p>
           <p style={{ fontSize: "0.68rem", color: "var(--text-muted)", margin: "0 0 0.75rem", lineHeight: 1.4 }}>
@@ -157,7 +157,7 @@ export function MentorshipPanel({ walletAddress, acceptingMentees = false, onVie
               borderRadius: "8px",
               border: "1px solid rgba(168, 85, 247, 0.2)",
               background: "rgba(168, 85, 247, 0.08)",
-              color: "#fff",
+              color: "var(--text-primary)",
               fontSize: "0.72rem",
               fontWeight: 600,
               cursor: "pointer",
@@ -197,7 +197,7 @@ export function MentorshipPanel({ walletAddress, acceptingMentees = false, onVie
                       : "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
                   }} />
                   <div>
-                    <div style={{ fontSize: "0.75rem", color: "#fff" }}>
+                    <div style={{ fontSize: "0.75rem", color: "var(--text-primary)" }}>
                       {m.mentee?.display_name || "Unknown"}
                     </div>
                     {m.message && (
@@ -307,7 +307,7 @@ export function MentorshipPanel({ walletAddress, acceptingMentees = false, onVie
                   <div key={mentor.wallet_address} className="glass-card" style={{
                     padding: "0.75rem 1rem",
                     borderRadius: "var(--radius-sm)",
-                    border: "1px solid rgba(255,255,255,0.08)",
+                    border: "1px solid rgba(var(--ink-rgb), 0.13)",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "space-between",
@@ -326,7 +326,7 @@ export function MentorshipPanel({ walletAddress, acceptingMentees = false, onVie
                         border: "2px solid rgba(251, 191, 36, 0.3)",
                       }} />
                       <div>
-                        <div style={{ fontSize: "0.8rem", color: "#fff", fontWeight: "500" }}>
+                        <div style={{ fontSize: "0.8rem", color: "var(--text-primary)", fontWeight: "500" }}>
                           {mentor.display_name || `${mentor.wallet_address.slice(0, 6)}...`}
                         </div>
                         <div style={{ fontSize: "0.6rem", color: "var(--accent-amber)" }}>
@@ -358,11 +358,11 @@ export function MentorshipPanel({ walletAddress, acceptingMentees = false, onVie
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "rgba(0,0,0,0.6)",
+          background: "rgba(11, 37, 48, 0.45)",
           padding: "1rem",
         }}>
           <div className="glass-card" style={{ padding: "1.5rem", maxWidth: "400px", width: "100%", borderRadius: "var(--radius-md)" }}>
-            <h3 style={{ margin: "0 0 1rem", fontSize: "1rem", color: "#fff" }}>🎓 Request Mentorship</h3>
+            <h3 style={{ margin: "0 0 1rem", fontSize: "1rem", color: "var(--text-primary)" }}>🎓 Request Mentorship</h3>
             <textarea
               value={requestMessage}
               onChange={(e) => setRequestMessage(e.target.value.slice(0, 300))}
@@ -372,10 +372,10 @@ export function MentorshipPanel({ walletAddress, acceptingMentees = false, onVie
               style={{
                 width: "100%",
                 padding: "0.7rem 1rem",
-                background: "rgba(255,255,255,0.04)",
-                border: "1px solid rgba(255,255,255,0.1)",
+                background: "rgba(var(--ink-rgb), 0.04)",
+                border: "1px solid rgba(var(--ink-rgb), 0.15)",
                 borderRadius: "var(--radius-sm)",
-                color: "#fff",
+                color: "var(--text-primary)",
                 fontSize: "0.85rem",
                 resize: "none",
                 marginBottom: "0.5rem",
@@ -443,7 +443,7 @@ function PairingCard({ profile, relationship, onViewProfile, onEnd, isOwnProfile
             : "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
         }} />
         <div>
-          <div style={{ fontSize: "0.75rem", color: "#fff" }}>
+          <div style={{ fontSize: "0.75rem", color: "var(--text-primary)" }}>
             {profile.display_name || `${profile.wallet_address.slice(0, 6)}...`}
           </div>
           <div style={{ fontSize: "0.6rem", color: "rgba(168, 85, 247, 0.8)" }}>

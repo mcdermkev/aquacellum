@@ -94,7 +94,7 @@ export function COICalculator({ contractAddress, walletAccount }) {
   return (
     <div style={{ marginTop: "1.5rem" }}>
       <div style={{ marginBottom: "1rem" }}>
-        <h3 style={{ fontSize: "1.1rem", fontWeight: "700", color: "#fff", margin: "0 0 0.25rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+        <h3 style={{ fontSize: "1.1rem", fontWeight: "700", color: "var(--text-primary)", margin: "0 0 0.25rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
           <span>🧮</span> Inbreeding Coefficient (COI) Calculator
         </h3>
         <p style={{ fontSize: "0.8rem", color: "var(--text-muted, #6b7280)", margin: 0, lineHeight: "1.5" }}>
@@ -105,26 +105,26 @@ export function COICalculator({ contractAddress, walletAccount }) {
       {/* Input */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: "0.75rem", alignItems: "end", marginBottom: "1rem" }}>
         <div>
-          <label style={{ fontSize: "0.68rem", fontWeight: "600", color: "#60a5fa", textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: "4px" }}>
+          <label style={{ fontSize: "0.68rem", fontWeight: "600", color: "var(--accent-blue)", textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: "4px" }}>
             ♂ Sire Cert #
           </label>
           <input
             type="number" min="1" value={sireId}
             onChange={(e) => setSireId(e.target.value)}
             placeholder="e.g. 001"
-            style={{ width: "100%", padding: "0.6rem 0.75rem", background: "rgba(96,165,250,0.05)", border: "1px solid rgba(96,165,250,0.2)", borderRadius: "8px", color: "#fff", fontSize: "0.85rem" }}
+            style={{ width: "100%", padding: "0.6rem 0.75rem", background: "rgba(96,165,250,0.05)", border: "1px solid rgba(96,165,250,0.2)", borderRadius: "8px", color: "var(--text-primary)", fontSize: "0.85rem" }}
           />
         </div>
         <span style={{ fontSize: "1.2rem", color: "var(--text-muted, #6b7280)", paddingBottom: "0.5rem" }}>×</span>
         <div>
-          <label style={{ fontSize: "0.68rem", fontWeight: "600", color: "#f472b6", textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: "4px" }}>
+          <label style={{ fontSize: "0.68rem", fontWeight: "600", color: "#be185d", textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: "4px" }}>
             ♀ Dam Cert #
           </label>
           <input
             type="number" min="1" value={damId}
             onChange={(e) => setDamId(e.target.value)}
             placeholder="e.g. 002"
-            style={{ width: "100%", padding: "0.6rem 0.75rem", background: "rgba(244,114,182,0.05)", border: "1px solid rgba(244,114,182,0.2)", borderRadius: "8px", color: "#fff", fontSize: "0.85rem" }}
+            style={{ width: "100%", padding: "0.6rem 0.75rem", background: "rgba(244,114,182,0.05)", border: "1px solid rgba(244,114,182,0.2)", borderRadius: "8px", color: "var(--text-primary)", fontSize: "0.85rem" }}
           />
         </div>
       </div>
@@ -139,14 +139,14 @@ export function COICalculator({ contractAddress, walletAccount }) {
       </button>
 
       {error && (
-        <div style={{ padding: "0.75rem 1rem", borderRadius: "8px", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", color: "#f87171", fontSize: "0.8rem", marginBottom: "1rem" }}>
+        <div style={{ padding: "0.75rem 1rem", borderRadius: "8px", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", color: "var(--accent-red)", fontSize: "0.8rem", marginBottom: "1rem" }}>
           {error}
         </div>
       )}
 
       {/* Results */}
       {result && riskConfig && (
-        <div style={{ borderRadius: "12px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(139,92,246,0.12)", overflow: "hidden" }}>
+        <div style={{ borderRadius: "12px", background: "rgba(var(--ink-rgb), 0.02)", border: "1px solid rgba(139,92,246,0.12)", overflow: "hidden" }}>
           {/* COI Score Header */}
           <div style={{ padding: "1.25rem", background: riskConfig.bg, borderBottom: `1px solid ${riskConfig.color}33` }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -169,7 +169,7 @@ export function COICalculator({ contractAddress, walletAccount }) {
               {/* Visual gauge */}
               <div style={{ width: "80px", height: "80px", position: "relative" }}>
                 <svg viewBox="0 0 36 36" style={{ width: "100%", height: "100%", transform: "rotate(-90deg)" }}>
-                  <circle cx="18" cy="18" r="15" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="3" />
+                  <circle cx="18" cy="18" r="15" fill="none" stroke="rgba(11,37,48,0.1)" strokeWidth="3" />
                   <circle
                     cx="18" cy="18" r="15" fill="none"
                     stroke={riskConfig.color}
@@ -191,13 +191,13 @@ export function COICalculator({ contractAddress, walletAccount }) {
             {/* Pairing summary */}
             <div style={{ display: "flex", gap: "1rem", marginBottom: "1rem", flexWrap: "wrap" }}>
               <div style={{ flex: 1, minWidth: "120px", padding: "0.6rem", borderRadius: "8px", background: "rgba(96,165,250,0.05)", border: "1px solid rgba(96,165,250,0.12)" }}>
-                <div style={{ fontSize: "0.6rem", color: "#60a5fa", textTransform: "uppercase", fontWeight: "600" }}>Sire</div>
-                <div style={{ fontSize: "0.82rem", color: "#fff", fontWeight: "500" }}>{result.sireName}</div>
+                <div style={{ fontSize: "0.6rem", color: "var(--accent-blue)", textTransform: "uppercase", fontWeight: "600" }}>Sire</div>
+                <div style={{ fontSize: "0.82rem", color: "var(--text-primary)", fontWeight: "500" }}>{result.sireName}</div>
                 <div style={{ fontSize: "0.62rem", color: "var(--text-muted, #6b7280)" }}>{result.sireAncestorCount} ancestors traced</div>
               </div>
               <div style={{ flex: 1, minWidth: "120px", padding: "0.6rem", borderRadius: "8px", background: "rgba(244,114,182,0.05)", border: "1px solid rgba(244,114,182,0.12)" }}>
-                <div style={{ fontSize: "0.6rem", color: "#f472b6", textTransform: "uppercase", fontWeight: "600" }}>Dam</div>
-                <div style={{ fontSize: "0.82rem", color: "#fff", fontWeight: "500" }}>{result.damName}</div>
+                <div style={{ fontSize: "0.6rem", color: "#be185d", textTransform: "uppercase", fontWeight: "600" }}>Dam</div>
+                <div style={{ fontSize: "0.82rem", color: "var(--text-primary)", fontWeight: "500" }}>{result.damName}</div>
                 <div style={{ fontSize: "0.62rem", color: "var(--text-muted, #6b7280)" }}>{result.damAncestorCount} ancestors traced</div>
               </div>
             </div>
@@ -218,7 +218,7 @@ export function COICalculator({ contractAddress, walletAccount }) {
                       <span style={{ fontSize: "0.75rem", color: "#e0e0e0" }}>
                         {p.ancestorName} <span style={{ color: "var(--text-muted, #6b7280)" }}>(#{p.ancestorId})</span>
                       </span>
-                      <span style={{ fontSize: "0.65rem", color: "#fbbf24", fontFamily: "'JetBrains Mono', monospace" }}>
+                      <span style={{ fontSize: "0.65rem", color: "var(--accent-amber)", fontFamily: "'JetBrains Mono', monospace" }}>
                         +{(p.contribution * 100).toFixed(2)}%
                       </span>
                     </div>

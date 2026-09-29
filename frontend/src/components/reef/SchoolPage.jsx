@@ -120,7 +120,7 @@ export function SchoolPage({ schoolId, onBack, onViewProfile }) {
         <div style={{ padding: "1.25rem 1.5rem" }}>
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "1rem" }}>
             <div>
-              <h2 style={{ margin: "0 0 0.3rem", fontSize: "1.2rem", color: "#fff" }}>
+              <h2 style={{ margin: "0 0 0.3rem", fontSize: "1.2rem", color: "var(--text-primary)" }}>
                 {TYPE_EMOJI[school.school_type]} {school.name}
               </h2>
               {school.description && (
@@ -165,7 +165,7 @@ export function SchoolPage({ schoolId, onBack, onViewProfile }) {
               borderRadius: "var(--radius-sm)",
               border: `1px solid ${activeTab === tab.id ? "rgba(56, 189, 248, 0.3)" : "transparent"}`,
               background: activeTab === tab.id ? "rgba(56, 189, 248, 0.1)" : "transparent",
-              color: activeTab === tab.id ? "#fff" : "var(--text-secondary)",
+              color: activeTab === tab.id ? "var(--text-primary)" : "var(--text-secondary)",
               fontSize: "0.8rem",
               cursor: "pointer",
               whiteSpace: "nowrap",
@@ -477,8 +477,8 @@ function MembersTab({ members, isAdmin, schoolId, onViewProfile, onPromote, onDe
   const sorted = [...members].sort((a, b) => (rolePriority[a.role] || 3) - (rolePriority[b.role] || 3));
 
   const roleLabels = {
-    founder: { label: "Founder", color: "var(--accent-amber)" },
-    elder: { label: "Elder", color: "var(--accent-blue)" },
+    founder: { label: "Founder", color: "#b45309" },
+    elder: { label: "Elder", color: "#0369a1" },
     member: { label: "Member", color: "var(--text-secondary)" },
     visitor: { label: "Visitor", color: "var(--text-muted)" },
   };
@@ -500,7 +500,7 @@ function MembersTab({ members, isAdmin, schoolId, onViewProfile, onPromote, onDe
               alignItems: "center",
               justifyContent: "space-between",
               borderRadius: "var(--radius-sm)",
-              border: "1px solid rgba(255,255,255,0.06)",
+              border: "1px solid rgba(var(--ink-rgb), 0.11)",
             }}
           >
             <div
@@ -517,7 +517,7 @@ function MembersTab({ members, isAdmin, schoolId, onViewProfile, onPromote, onDe
                 flexShrink: 0,
               }} />
               <div>
-                <div style={{ fontSize: "0.8rem", color: "#fff", fontWeight: "500" }}>
+                <div style={{ fontSize: "0.8rem", color: "var(--text-primary)", fontWeight: "500" }}>
                   {profile.display_name || `${profile.wallet_address.slice(0, 6)}...${profile.wallet_address.slice(-4)}`}
                 </div>
                 <span style={{ fontSize: "0.65rem", color: roleInfo.color, fontWeight: "600" }}>
@@ -1017,7 +1017,7 @@ function CreateChallengeForm({ schoolId, onCancel, onCreated }) {
       border: "1px solid rgba(245, 158, 11, 0.2)",
       background: "rgba(245, 158, 11, 0.03)",
     }}>
-      <h4 style={{ margin: "0 0 1rem", fontSize: "0.9rem", color: "#fff" }}>🏆 New Challenge</h4>
+      <h4 style={{ margin: "0 0 1rem", fontSize: "0.9rem", color: "var(--text-primary)" }}>🏆 New Challenge</h4>
 
       {/* Title */}
       <div style={{ marginBottom: "0.75rem" }}>
@@ -1029,8 +1029,8 @@ function CreateChallengeForm({ schoolId, onCancel, onCreated }) {
           placeholder="e.g. Spring Breeding Sprint"
           style={{
             width: "100%", padding: "0.5rem 0.75rem", borderRadius: "8px",
-            border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.04)",
-            color: "#fff", fontSize: "0.8rem",
+            border: "1px solid rgba(var(--ink-rgb), 0.15)", background: "rgba(var(--ink-rgb), 0.04)",
+            color: "var(--text-primary)", fontSize: "0.8rem",
           }}
         />
       </div>
@@ -1045,8 +1045,8 @@ function CreateChallengeForm({ schoolId, onCancel, onCreated }) {
           rows={3}
           style={{
             width: "100%", padding: "0.5rem 0.75rem", borderRadius: "8px",
-            border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.04)",
-            color: "#fff", fontSize: "0.8rem", resize: "vertical",
+            border: "1px solid rgba(var(--ink-rgb), 0.15)", background: "rgba(var(--ink-rgb), 0.04)",
+            color: "var(--text-primary)", fontSize: "0.8rem", resize: "vertical",
           }}
         />
       </div>
@@ -1063,9 +1063,9 @@ function CreateChallengeForm({ schoolId, onCancel, onCreated }) {
               style={{
                 padding: "0.35rem 0.7rem",
                 borderRadius: "50px",
-                border: `1px solid ${challengeType === ct.value ? "rgba(245, 158, 11, 0.4)" : "rgba(255,255,255,0.1)"}`,
-                background: challengeType === ct.value ? "rgba(245, 158, 11, 0.12)" : "rgba(255,255,255,0.03)",
-                color: challengeType === ct.value ? "#fff" : "var(--text-secondary)",
+                border: `1px solid ${challengeType === ct.value ? "rgba(245, 158, 11, 0.4)" : "rgba(var(--ink-rgb), 0.15)"}`,
+                background: challengeType === ct.value ? "rgba(245, 158, 11, 0.12)" : "rgba(var(--ink-rgb), 0.03)",
+                color: challengeType === ct.value ? "var(--text-primary)" : "var(--text-secondary)",
                 fontSize: "0.68rem",
                 cursor: "pointer",
                 transition: "all 0.15s ease",
@@ -1088,8 +1088,8 @@ function CreateChallengeForm({ schoolId, onCancel, onCreated }) {
           placeholder="e.g. Apistogramma cacatuoides"
           style={{
             width: "100%", padding: "0.5rem 0.75rem", borderRadius: "8px",
-            border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.04)",
-            color: "#fff", fontSize: "0.8rem",
+            border: "1px solid rgba(var(--ink-rgb), 0.15)", background: "rgba(var(--ink-rgb), 0.04)",
+            color: "var(--text-primary)", fontSize: "0.8rem",
           }}
         />
       </div>
@@ -1104,8 +1104,8 @@ function CreateChallengeForm({ schoolId, onCancel, onCreated }) {
             onChange={(e) => setStartTime(e.target.value)}
             style={{
               width: "100%", padding: "0.5rem 0.6rem", borderRadius: "8px",
-              border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.04)",
-              color: "#fff", fontSize: "0.75rem",
+              border: "1px solid rgba(var(--ink-rgb), 0.15)", background: "rgba(var(--ink-rgb), 0.04)",
+              color: "var(--text-primary)", fontSize: "0.75rem",
             }}
           />
         </div>
@@ -1117,8 +1117,8 @@ function CreateChallengeForm({ schoolId, onCancel, onCreated }) {
             onChange={(e) => setEndTime(e.target.value)}
             style={{
               width: "100%", padding: "0.5rem 0.6rem", borderRadius: "8px",
-              border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.04)",
-              color: "#fff", fontSize: "0.75rem",
+              border: "1px solid rgba(var(--ink-rgb), 0.15)", background: "rgba(var(--ink-rgb), 0.04)",
+              color: "var(--text-primary)", fontSize: "0.75rem",
             }}
           />
         </div>
@@ -1135,8 +1135,8 @@ function CreateChallengeForm({ schoolId, onCancel, onCreated }) {
           max={1000}
           style={{
             width: "100px", padding: "0.5rem 0.75rem", borderRadius: "8px",
-            border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.04)",
-            color: "#fff", fontSize: "0.8rem",
+            border: "1px solid rgba(var(--ink-rgb), 0.15)", background: "rgba(var(--ink-rgb), 0.04)",
+            color: "var(--text-primary)", fontSize: "0.8rem",
           }}
         />
         <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", marginLeft: "0.5rem" }}>XP for winner (10–1000)</span>
@@ -1159,7 +1159,7 @@ function CreateChallengeForm({ schoolId, onCancel, onCreated }) {
           onClick={onCancel}
           style={{
             padding: "0.5rem 1rem", borderRadius: "8px",
-            border: "1px solid rgba(255,255,255,0.1)", background: "transparent",
+            border: "1px solid rgba(var(--ink-rgb), 0.15)", background: "transparent",
             color: "var(--text-muted)", fontSize: "0.75rem", cursor: "pointer",
           }}
         >
@@ -1224,9 +1224,9 @@ function SettingsTab({ school, schoolId }) {
     <div className="glass-card" style={{
       padding: "1.5rem",
       borderRadius: "var(--radius-sm)",
-      border: "1px solid rgba(255,255,255,0.06)",
+      border: "1px solid rgba(var(--ink-rgb), 0.11)",
     }}>
-      <h3 style={{ margin: "0 0 1.25rem", fontSize: "1rem", color: "#fff" }}>⚙️ School Settings</h3>
+      <h3 style={{ margin: "0 0 1.25rem", fontSize: "1rem", color: "var(--text-primary)" }}>⚙️ School Settings</h3>
 
       {/* Name */}
       <div style={{ marginBottom: "1rem" }}>
@@ -1237,8 +1237,8 @@ function SettingsTab({ school, schoolId }) {
           onChange={(e) => setName(e.target.value.slice(0, 60))}
           style={{
             width: "100%", padding: "0.55rem 0.85rem", borderRadius: "8px",
-            border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.04)",
-            color: "#fff", fontSize: "0.85rem",
+            border: "1px solid rgba(var(--ink-rgb), 0.15)", background: "rgba(var(--ink-rgb), 0.04)",
+            color: "var(--text-primary)", fontSize: "0.85rem",
           }}
         />
       </div>
@@ -1253,8 +1253,8 @@ function SettingsTab({ school, schoolId }) {
           rows={3}
           style={{
             width: "100%", padding: "0.55rem 0.85rem", borderRadius: "8px",
-            border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.04)",
-            color: "#fff", fontSize: "0.85rem", resize: "vertical",
+            border: "1px solid rgba(var(--ink-rgb), 0.15)", background: "rgba(var(--ink-rgb), 0.04)",
+            color: "var(--text-primary)", fontSize: "0.85rem", resize: "vertical",
           }}
         />
       </div>
@@ -1269,8 +1269,8 @@ function SettingsTab({ school, schoolId }) {
           placeholder="https://example.com/banner.jpg"
           style={{
             width: "100%", padding: "0.55rem 0.85rem", borderRadius: "8px",
-            border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.04)",
-            color: "#fff", fontSize: "0.85rem",
+            border: "1px solid rgba(var(--ink-rgb), 0.15)", background: "rgba(var(--ink-rgb), 0.04)",
+            color: "var(--text-primary)", fontSize: "0.85rem",
           }}
         />
         {bannerUrl && (
@@ -1290,7 +1290,7 @@ function SettingsTab({ school, schoolId }) {
           onClick={() => setIsInviteOnly(!isInviteOnly)}
           style={{
             width: "44px", height: "24px", borderRadius: "12px", border: "none",
-            background: isInviteOnly ? "rgba(56, 189, 248, 0.5)" : "rgba(255,255,255,0.12)",
+            background: isInviteOnly ? "rgba(56, 189, 248, 0.5)" : "rgba(var(--ink-rgb), 0.1)",
             cursor: "pointer", position: "relative", transition: "background 0.2s ease",
           }}
           role="switch"
@@ -1316,8 +1316,8 @@ function SettingsTab({ school, schoolId }) {
           min={1}
           style={{
             width: "120px", padding: "0.55rem 0.85rem", borderRadius: "8px",
-            border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.04)",
-            color: "#fff", fontSize: "0.85rem",
+            border: "1px solid rgba(var(--ink-rgb), 0.15)", background: "rgba(var(--ink-rgb), 0.04)",
+            color: "var(--text-primary)", fontSize: "0.85rem",
           }}
         />
         <span style={{ fontSize: "0.62rem", color: "var(--text-muted)", marginLeft: "0.5rem" }}>Leave empty for unlimited</span>

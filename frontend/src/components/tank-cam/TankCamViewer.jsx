@@ -121,7 +121,7 @@ export function TankCamViewer({ cam, onClose }) {
             }}
           >
             <span style={{ fontSize: "2rem" }}>📡</span>
-            <p style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>{error}</p>
+            <p style={{ color: "rgba(255, 255, 255, 0.8)", fontSize: "0.85rem" }}>{error}</p>
           </div>
         )}
 

@@ -11,11 +11,11 @@ import { fetchModerationQueue, moderateFlag } from "../../services/reefTrustApi"
 import { ProfileCard } from "./ProfileCard";
 
 const ACTION_LABELS = {
-  dismiss: { label: "Dismiss", icon: "✓", color: "#10b981" },
-  hide: { label: "Hide Content", icon: "🙈", color: "#f59e0b" },
-  warn: { label: "Warn User", icon: "⚠️", color: "#f59e0b" },
-  mute_24h: { label: "Mute 24h", icon: "🔇", color: "#ef4444" },
-  mute_7d: { label: "Mute 7 days", icon: "🔇", color: "#ef4444" },
+  dismiss: { label: "Dismiss", icon: "✓", color: "#047857" },
+  hide: { label: "Hide Content", icon: "🙈", color: "#b45309" },
+  warn: { label: "Warn User", icon: "⚠️", color: "#b45309" },
+  mute_24h: { label: "Mute 24h", icon: "🔇", color: "#b91c1c" },
+  mute_7d: { label: "Mute 7 days", icon: "🔇", color: "#b91c1c" },
   ban: { label: "Ban", icon: "🚫", color: "#dc2626" },
 };
 
@@ -35,8 +35,8 @@ function FlaggedItemCard({ item, onAction }) {
       style={{
         padding: "1rem",
         borderRadius: "10px",
-        background: "rgba(255, 255, 255, 0.02)",
-        border: `1px solid ${item.severity === "high" ? "rgba(248, 113, 113, 0.2)" : "rgba(255, 255, 255, 0.06)"}`,
+        background: "rgba(var(--ink-rgb), 0.03)",
+        border: `1px solid ${item.severity === "high" ? "rgba(248, 113, 113, 0.2)" : "rgba(var(--ink-rgb), 0.11)"}`,
         marginBottom: "0.75rem",
       }}
     >
@@ -53,7 +53,7 @@ function FlaggedItemCard({ item, onAction }) {
               ? "rgba(248, 113, 113, 0.15)"
               : item.severity === "medium"
                 ? "rgba(251, 191, 36, 0.15)"
-                : "rgba(255, 255, 255, 0.05)",
+                : "rgba(var(--ink-rgb), 0.05)",
             color: item.severity === "high"
               ? "var(--accent-red)"
               : item.severity === "medium"
@@ -75,7 +75,7 @@ function FlaggedItemCard({ item, onAction }) {
       <div style={{
         padding: "0.75rem",
         borderRadius: "8px",
-        background: "rgba(0, 0, 0, 0.2)",
+        background: "var(--bg-band)",
         marginBottom: "0.75rem",
         fontSize: "0.8rem",
         color: "var(--text-secondary)",
@@ -170,7 +170,7 @@ function FlaggedItemCard({ item, onAction }) {
       )}
 
       {expanded && item.escalation_history && (
-        <div style={{ marginTop: "0.5rem", paddingLeft: "0.75rem", borderLeft: "2px solid rgba(255,255,255,0.06)" }}>
+        <div style={{ marginTop: "0.5rem", paddingLeft: "0.75rem", borderLeft: "2px solid rgba(var(--ink-rgb), 0.11)" }}>
           {item.escalation_history.map((entry, i) => (
             <div key={i} style={{ fontSize: "0.65rem", color: "var(--text-muted)", marginBottom: "0.3rem" }}>
               <span>{new Date(entry.date).toLocaleDateString()}</span>
@@ -230,7 +230,7 @@ export function ModerationPanel({ onBack }) {
           >
             ← Back
           </button>
-          <h2 style={{ margin: 0, fontSize: "1.1rem", color: "#fff" }}>🛡️ Moderation Queue</h2>
+          <h2 style={{ margin: 0, fontSize: "1.1rem", color: "var(--text-primary)" }}>🛡️ Moderation Queue</h2>
         </div>
         <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
           <span style={{
@@ -253,8 +253,8 @@ export function ModerationPanel({ onBack }) {
         marginBottom: "1rem",
         padding: "0.25rem",
         borderRadius: "8px",
-        background: "rgba(255, 255, 255, 0.03)",
-        border: "1px solid rgba(255, 255, 255, 0.06)",
+        background: "rgba(var(--ink-rgb), 0.03)",
+        border: "1px solid rgba(var(--ink-rgb), 0.11)",
       }}>
         {[
           { key: "pending", label: `Pending (${stats.pending})` },
@@ -270,7 +270,7 @@ export function ModerationPanel({ onBack }) {
               borderRadius: "6px",
               border: "none",
               background: filter === tab.key ? "rgba(56, 189, 248, 0.12)" : "transparent",
-              color: filter === tab.key ? "#fff" : "var(--text-muted)",
+              color: filter === tab.key ? "var(--text-primary)" : "var(--text-muted)",
               fontSize: "0.7rem",
               fontWeight: filter === tab.key ? 600 : 400,
               cursor: "pointer",
@@ -295,11 +295,11 @@ export function ModerationPanel({ onBack }) {
           textAlign: "center",
           padding: "3rem",
           borderRadius: "12px",
-          background: "rgba(255, 255, 255, 0.02)",
-          border: "1px solid rgba(255, 255, 255, 0.05)",
+          background: "rgba(var(--ink-rgb), 0.03)",
+          border: "1px solid rgba(var(--ink-rgb), 0.1)",
         }}>
           <p style={{ fontSize: "2rem", margin: "0 0 0.5rem" }}>✅</p>
-          <p style={{ fontSize: "0.9rem", color: "#fff", fontWeight: 600, margin: 0 }}>
+          <p style={{ fontSize: "0.9rem", color: "var(--text-primary)", fontWeight: 600, margin: 0 }}>
             Queue is clear
           </p>
           <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", margin: "0.25rem 0 0" }}>

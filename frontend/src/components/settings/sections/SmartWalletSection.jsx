@@ -113,7 +113,7 @@ export function SmartWalletSection({ casualModeActive }) {
             padding: "0.15rem 0.5rem",
             borderRadius: "20px",
             background: smartWalletAddress ? "rgba(52, 211, 153, 0.15)" : "rgba(251, 191, 36, 0.15)",
-            color: smartWalletAddress ? "#4ade80" : "#fbbf24",
+            color: smartWalletAddress ? "var(--accent-green)" : "var(--accent-amber)",
             border: smartWalletAddress
               ? "1px solid rgba(52, 211, 153, 0.3)"
               : "1px solid rgba(251, 191, 36, 0.3)",
@@ -186,9 +186,9 @@ function TechnicalReadout({ address, showFooter = false }) {
           justifyContent: "space-between",
           alignItems: "center",
           padding: "0.6rem 0.85rem",
-          background: "rgba(0,0,0,0.25)",
+          background: "var(--bg-band)",
           borderRadius: "8px",
-          border: "1px solid rgba(255,255,255,0.05)",
+          border: "1px solid var(--glass-border)",
         }}
       >
         <div>
@@ -219,9 +219,9 @@ function TechnicalReadout({ address, showFooter = false }) {
       </div>
 
       <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
-        <ReadoutTile label="Network" value="Base Sepolia" color="#4ade80" tint="52,211,153" />
-        <ReadoutTile label="Gas Sponsor" value="CDP Paymaster" color="#38bdf8" tint="56,189,248" />
-        <ReadoutTile label="Batching" value="3s Queue" color="#c084fc" tint="168,85,247" />
+        <ReadoutTile label="Network" value="Base Sepolia" color="var(--accent-green)" tint="52,211,153" />
+        <ReadoutTile label="Gas Sponsor" value="CDP Paymaster" color="var(--accent-blue)" tint="56,189,248" />
+        <ReadoutTile label="Batching" value="3s Queue" color="var(--accent-violet)" tint="168,85,247" />
       </div>
 
       {showFooter && (

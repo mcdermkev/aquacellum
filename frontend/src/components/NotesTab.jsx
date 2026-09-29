@@ -61,7 +61,7 @@ export function NotesTab({ tankId }) {
 
       {/* Compose area */}
       <div style={{
-        background: "rgba(255,255,255,0.03)",
+        background: "rgba(var(--ink-rgb), 0.03)",
         border: "1px solid var(--glass-border)",
         borderRadius: "10px",
         padding: "0.75rem",
@@ -76,10 +76,10 @@ export function NotesTab({ tankId }) {
           rows={3}
           style={{
             width: "100%",
-            background: "rgba(0,0,0,0.25)",
+            background: "var(--bg-band)",
             border: "1px solid var(--glass-border)",
             borderRadius: "6px",
-            color: "#fff",
+            color: "var(--text-primary)",
             fontSize: "0.8rem",
             padding: "0.6rem 0.75rem",
             resize: "vertical",
@@ -95,7 +95,7 @@ export function NotesTab({ tankId }) {
           style={{
             alignSelf: "flex-end",
             padding: "0.4rem 1.1rem",
-            background: draft.trim() ? "linear-gradient(135deg,#38bdf8,#6366f1)" : "rgba(255,255,255,0.08)",
+            background: draft.trim() ? "linear-gradient(135deg,#38bdf8,#6366f1)" : "rgba(var(--ink-rgb), 0.08)",
             border: "none",
             borderRadius: "6px",
             color: draft.trim() ? "#fff" : "var(--text-muted)",
@@ -126,7 +126,7 @@ export function NotesTab({ tankId }) {
             alignItems: "flex-start",
           }}>
             <div style={{ flex: 1 }}>
-              <p style={{ color: "#fff", fontSize: "0.8rem", margin: 0, lineHeight: 1.5 }}>{note.text}</p>
+              <p style={{ color: "var(--text-primary)", fontSize: "0.8rem", margin: 0, lineHeight: 1.5 }}>{note.text}</p>
               <span style={{ color: "var(--text-muted)", fontSize: "0.68rem" }}>
                 {new Date(note.createdAt).toLocaleString()}
               </span>

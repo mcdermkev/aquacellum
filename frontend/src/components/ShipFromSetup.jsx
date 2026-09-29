@@ -94,7 +94,7 @@ export function ShipFromSetup({ walletAccount }) {
   const showForm = expanded || (!configured && !loading);
 
   return (
-    <div className="sf-setup__field" style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "1rem", marginTop: "0.5rem" }}>
+    <div className="sf-setup__field" style={{ borderTop: "1px solid rgba(var(--ink-rgb), 0.11)", paddingTop: "1rem", marginTop: "0.5rem" }}>
       <label className="sf-setup__label">📦 Ship-from address</label>
       <p style={{ fontSize: "0.8rem", color: "var(--text-secondary)", margin: "0 0 0.75rem 0", lineHeight: 1.5 }}>
         Where you ship from. Used to quote real, distance-based rates to each buyer and to buy labels in-app.
@@ -146,6 +146,6 @@ export function ShipFromSetup({ walletAccount }) {
   );
 }
 
-const input = { background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border, rgba(255,255,255,0.12))", borderRadius: "6px", padding: "0.5rem 0.6rem", color: "#fff", fontSize: "0.82rem", width: "100%", boxSizing: "border-box" };
-const saveBtn = { display: "inline-flex", alignItems: "center", gap: "0.5rem", padding: "0.55rem 1rem", fontSize: "0.85rem", fontWeight: 600, background: "var(--accent-green, #34d399)", color: "#04231a", border: "none", borderRadius: "8px", cursor: "pointer" };
+const input = { background: "rgba(var(--ink-rgb), 0.03)", border: "1px solid var(--glass-border, rgba(var(--ink-rgb), 0.17))", borderRadius: "6px", padding: "0.5rem 0.6rem", color: "var(--text-primary)", fontSize: "0.82rem", width: "100%", boxSizing: "border-box" };
+const saveBtn = { display: "inline-flex", alignItems: "center", gap: "0.5rem", padding: "0.55rem 1rem", fontSize: "0.85rem", fontWeight: 600, background: "var(--accent-green-fill)", color: "#fff", border: "none", borderRadius: "8px", cursor: "pointer" };
 const linkBtn = { background: "none", border: "none", color: "var(--accent-blue, #60a5fa)", fontSize: "0.8rem", cursor: "pointer", textDecoration: "underline" };

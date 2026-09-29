@@ -443,7 +443,7 @@ export function FacilityTreeView({ contractAddress, walletAccount, onSelectTank,
         >
           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
             <span style={{ fontSize: "0.75rem", opacity: 0.6 }}>[{CONTAINMENT_TYPES[node.containment]}]</span>
-            <strong style={{ color: "#fff" }}>{node.name}</strong>
+            <strong style={{ color: "var(--text-primary)" }}>{node.name}</strong>
             <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>ID: {node.id} ({formatVolume(node.volumeLiters, volumeUnit)})</span>
           </div>
 
@@ -482,7 +482,7 @@ export function FacilityTreeView({ contractAddress, walletAccount, onSelectTank,
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <h3 style={{ fontSize: "1.25rem", color: "#fff" }}>Husbandry Facility Hierarchy</h3>
+        <h3 style={{ fontSize: "1.25rem", color: "var(--text-primary)" }}>Husbandry Facility Hierarchy</h3>
         <div style={{ display: "flex", gap: "0.5rem" }}>
           {!casualModeActive && (
             <button className="btn-secondary" style={{ fontSize: "0.85rem", padding: "0.5rem 1rem" }} onClick={() => setIsImportOpen(true)}>
@@ -514,7 +514,7 @@ export function FacilityTreeView({ contractAddress, walletAccount, onSelectTank,
           {Object.keys(tree).map(facility => {
             const isFacilityExpanded = expandedNodes[facility] !== false;
             return (
-              <div key={facility} className="glass-card" style={{ padding: "1.25rem", background: "rgba(255, 255, 255, 0.01)" }}>
+              <div key={facility} className="glass-card" style={{ padding: "1.25rem", background: "rgba(var(--ink-rgb), 0.02)" }}>
                 {/* Facility Level */}
                 <div 
                   onClick={() => toggleNode(facility)}
@@ -643,7 +643,7 @@ export function FacilityTreeView({ contractAddress, walletAccount, onSelectTank,
           left: 0,
           right: 0,
           bottom: 0,
-          background: "rgba(0, 0, 0, 0.75)",
+          background: "rgba(11, 37, 48, 0.45)",
           backdropFilter: "blur(8px)",
           display: "flex",
           alignItems: "center",
@@ -706,7 +706,7 @@ export function FacilityTreeView({ contractAddress, walletAccount, onSelectTank,
                     onChange={(e) => setRegisterForm({ ...registerForm, name: e.target.value })}
                     placeholder={casualModeActive ? "e.g. My Living Room Tank" : "e.g. Rack A - Basket 4"}
                     required
-                    style={{ width: "100%", padding: "0.5rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px" }}
+                    style={{ width: "100%", padding: "0.5rem", background: "rgba(var(--ink-rgb), 0.03)", border: "1px solid var(--glass-border)", color: "var(--text-primary)", borderRadius: "4px" }}
                   />
                 </div>
                 <div>
@@ -717,7 +717,7 @@ export function FacilityTreeView({ contractAddress, walletAccount, onSelectTank,
                     <label style={{ 
                       flex: 1, 
                       padding: "0.5rem", 
-                      background: "rgba(255,255,255,0.05)", 
+                      background: "rgba(var(--ink-rgb), 0.05)", 
                       border: "1px dashed var(--glass-border)", 
                       borderRadius: "4px", 
                       fontSize: "0.7rem", 
@@ -760,7 +760,7 @@ export function FacilityTreeView({ contractAddress, walletAccount, onSelectTank,
                   <select 
                     value={registerForm.tankType}
                     onChange={(e) => setRegisterForm({ ...registerForm, tankType: e.target.value })}
-                    style={{ width: "100%", padding: "0.5rem", background: "rgba(8,12,20,0.9)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px" }}
+                    style={{ width: "100%", padding: "0.5rem", background: "var(--bg-secondary)", border: "1px solid var(--glass-border)", color: "var(--text-primary)", borderRadius: "4px" }}
                   >
                     {TANK_TYPE_OPTIONS.map((opt) => <option key={opt.id} value={String(opt.id)}>{opt.label}</option>)}
                   </select>
@@ -769,7 +769,7 @@ export function FacilityTreeView({ contractAddress, walletAccount, onSelectTank,
                       aria-label="Saltwater style"
                       value={registerForm.marineStyle || "reef"}
                       onChange={(e) => setRegisterForm({ ...registerForm, marineStyle: e.target.value })}
-                      style={{ width: "100%", marginTop: "0.4rem", padding: "0.5rem", background: "rgba(8,12,20,0.9)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px" }}
+                      style={{ width: "100%", marginTop: "0.4rem", padding: "0.5rem", background: "var(--bg-secondary)", border: "1px solid var(--glass-border)", color: "var(--text-primary)", borderRadius: "4px" }}
                     >
                       {MARINE_STYLES.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
                     </select>
@@ -782,7 +782,7 @@ export function FacilityTreeView({ contractAddress, walletAccount, onSelectTank,
                     value={registerForm.volumeLiters}
                     onChange={(e) => setRegisterForm({ ...registerForm, volumeLiters: e.target.value })}
                     required
-                    style={{ width: "100%", padding: "0.5rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px" }}
+                    style={{ width: "100%", padding: "0.5rem", background: "rgba(var(--ink-rgb), 0.03)", border: "1px solid var(--glass-border)", color: "var(--text-primary)", borderRadius: "4px" }}
                   />
                 </div>
               </div>
@@ -807,7 +807,7 @@ export function FacilityTreeView({ contractAddress, walletAccount, onSelectTank,
                         onFocus={() => setFishDropdownOpen(true)}
                         placeholder="Type to search fish..."
                         autoComplete="off"
-                        style={{ width: "100%", padding: "0.5rem", background: "rgba(8,12,20,0.9)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px", fontSize: "0.8rem" }}
+                        style={{ width: "100%", padding: "0.5rem", background: "var(--bg-secondary)", border: "1px solid var(--glass-border)", color: "var(--text-primary)", borderRadius: "4px", fontSize: "0.8rem" }}
                       />
                       {fishDropdownOpen && (
                         <div
@@ -818,7 +818,7 @@ export function FacilityTreeView({ contractAddress, walletAccount, onSelectTank,
                             right: 0,
                             maxHeight: "180px",
                             overflowY: "auto",
-                            background: "rgba(8,12,20,0.97)",
+                            background: "var(--bg-secondary)",
                             border: "1px solid var(--glass-border)",
                             borderTop: "none",
                             borderRadius: "0 0 4px 4px",
@@ -846,9 +846,9 @@ export function FacilityTreeView({ contractAddress, walletAccount, onSelectTank,
                                 style={{
                                   padding: "0.4rem 0.6rem",
                                   fontSize: "0.8rem",
-                                  color: String(s.speciesId) === String(currentSelectSpeciesId) ? "var(--accent-blue)" : "#fff",
+                                  color: String(s.speciesId) === String(currentSelectSpeciesId) ? "var(--accent-blue)" : "var(--text-primary)",
                                   cursor: "pointer",
-                                  borderBottom: "1px solid rgba(255,255,255,0.03)",
+                                  borderBottom: "1px solid rgba(var(--ink-rgb), 0.08)",
                                 }}
                                 onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(56,189,248,0.1)"; }}
                                 onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
@@ -879,21 +879,21 @@ export function FacilityTreeView({ contractAddress, walletAccount, onSelectTank,
                     </div>
                     <div style={{ width: "80px" }}>
                       <span style={{ display: "block", fontSize: "0.65rem", color: "var(--text-muted)", marginBottom: "0.25rem" }}>Qty</span>
-                      <div style={{ display: "flex", alignItems: "center", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", borderRadius: "4px", height: "35px" }}>
+                      <div style={{ display: "flex", alignItems: "center", background: "rgba(var(--ink-rgb), 0.03)", border: "1px solid var(--glass-border)", borderRadius: "4px", height: "35px" }}>
                         <button 
                           type="button" 
                           onClick={() => setCurrentSelectQty(prev => Math.max(1, prev - 1))}
-                          style={{ background: "none", border: "none", color: "#fff", width: "26px", height: "100%", cursor: "pointer", fontSize: "0.95rem", display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }}
+                          style={{ background: "none", border: "none", color: "var(--text-primary)", width: "26px", height: "100%", cursor: "pointer", fontSize: "0.95rem", display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }}
                         >
                           -
                         </button>
-                        <span style={{ flex: 1, textAlign: "center", fontSize: "0.85rem", color: "#fff", minWidth: "20px", fontWeight: "600" }}>
+                        <span style={{ flex: 1, textAlign: "center", fontSize: "0.85rem", color: "var(--text-primary)", minWidth: "20px", fontWeight: "600" }}>
                           {currentSelectQty}
                         </span>
                         <button 
                           type="button" 
                           onClick={() => setCurrentSelectQty(prev => prev + 1)}
-                          style={{ background: "none", border: "none", color: "#fff", width: "26px", height: "100%", cursor: "pointer", fontSize: "0.95rem", display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }}
+                          style={{ background: "none", border: "none", color: "var(--text-primary)", width: "26px", height: "100%", cursor: "pointer", fontSize: "0.95rem", display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }}
                         >
                           +
                         </button>
@@ -911,12 +911,12 @@ export function FacilityTreeView({ contractAddress, walletAccount, onSelectTank,
 
                   {/* List of Added Fish */}
                   {addedFishList.length > 0 && (
-                    <div style={{ marginTop: "0.75rem", background: "rgba(0,0,0,0.2)", borderRadius: "6px", padding: "0.5rem", border: "1px dashed var(--glass-border)" }}>
+                    <div style={{ marginTop: "0.75rem", background: "var(--bg-band)", borderRadius: "6px", padding: "0.5rem", border: "1px dashed var(--glass-border)" }}>
                       <div style={{ fontSize: "0.7rem", color: "var(--text-muted)", marginBottom: "0.25rem", fontWeight: "600" }}>Selected Fish to Add:</div>
                       <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
                         {addedFishList.map((f, idx) => (
-                          <div key={idx} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "rgba(255,255,255,0.02)", padding: "0.25rem 0.5rem", borderRadius: "4px", fontSize: "0.85rem" }}>
-                            <span style={{ color: "#fff" }}>
+                          <div key={idx} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "rgba(var(--ink-rgb), 0.02)", padding: "0.25rem 0.5rem", borderRadius: "4px", fontSize: "0.85rem" }}>
+                            <span style={{ color: "var(--text-primary)" }}>
                               <strong style={{ color: "var(--accent-blue)" }}>{f.quantity}x</strong> {f.commonName}
                             </span>
                             <button
@@ -942,7 +942,7 @@ export function FacilityTreeView({ contractAddress, walletAccount, onSelectTank,
                       <select 
                         value={registerForm.containment}
                         onChange={(e) => setRegisterForm({ ...registerForm, containment: e.target.value })}
-                        style={{ width: "100%", padding: "0.5rem", background: "rgba(8,12,20,0.9)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px" }}
+                        style={{ width: "100%", padding: "0.5rem", background: "var(--bg-secondary)", border: "1px solid var(--glass-border)", color: "var(--text-primary)", borderRadius: "4px" }}
                       >
                         {CONTAINMENT_TYPES.map((c, idx) => <option key={idx} value={idx}>{c}</option>)}
                       </select>
@@ -952,7 +952,7 @@ export function FacilityTreeView({ contractAddress, walletAccount, onSelectTank,
                       <select 
                         value={registerForm.parentUnitId}
                         onChange={(e) => setRegisterForm({ ...registerForm, parentUnitId: e.target.value })}
-                        style={{ width: "100%", padding: "0.5rem", background: "rgba(8,12,20,0.9)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px" }}
+                        style={{ width: "100%", padding: "0.5rem", background: "var(--bg-secondary)", border: "1px solid var(--glass-border)", color: "var(--text-primary)", borderRadius: "4px" }}
                       >
                         <option value="0">None (Top-Level)</option>
                         {possibleParents.map(parent => (
@@ -974,7 +974,7 @@ export function FacilityTreeView({ contractAddress, walletAccount, onSelectTank,
                         value={registerForm.facility}
                         onChange={(e) => setRegisterForm({ ...registerForm, facility: e.target.value })}
                         placeholder="Your group name"
-                        style={{ width: "100%", padding: "0.5rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px" }}
+                        style={{ width: "100%", padding: "0.5rem", background: "rgba(var(--ink-rgb), 0.03)", border: "1px solid var(--glass-border)", color: "var(--text-primary)", borderRadius: "4px" }}
                       />
                       {/* Suggestions only — typing a new name still creates a new group. */}
                       <datalist id="register-facility-groups">
@@ -988,7 +988,7 @@ export function FacilityTreeView({ contractAddress, walletAccount, onSelectTank,
                         value={registerForm.room}
                         onChange={(e) => setRegisterForm({ ...registerForm, room: e.target.value })}
                         placeholder="e.g. Room B"
-                        style={{ width: "100%", padding: "0.5rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px" }}
+                        style={{ width: "100%", padding: "0.5rem", background: "rgba(var(--ink-rgb), 0.03)", border: "1px solid var(--glass-border)", color: "var(--text-primary)", borderRadius: "4px" }}
                       />
                     </div>
                     <div>
@@ -998,7 +998,7 @@ export function FacilityTreeView({ contractAddress, walletAccount, onSelectTank,
                         value={registerForm.rack}
                         onChange={(e) => setRegisterForm({ ...registerForm, rack: e.target.value })}
                         placeholder="e.g. Rack 3"
-                        style={{ width: "100%", padding: "0.5rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px" }}
+                        style={{ width: "100%", padding: "0.5rem", background: "rgba(var(--ink-rgb), 0.03)", border: "1px solid var(--glass-border)", color: "var(--text-primary)", borderRadius: "4px" }}
                       />
                     </div>
                   </div>
@@ -1034,13 +1034,13 @@ export function FacilityTreeView({ contractAddress, walletAccount, onSelectTank,
           position: "fixed",
           bottom: "2rem",
           right: "2rem",
-          background: "rgba(10, 15, 30, 0.9)",
+          background: "var(--bg-secondary)",
           backdropFilter: "blur(8px)",
           border: "1px solid var(--accent-red)",
-          color: "#fff",
+          color: "var(--text-primary)",
           padding: "1rem 1.5rem",
           borderRadius: "var(--radius-md)",
-          boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 0 15px rgba(248, 113, 113, 0.2)",
+          boxShadow: "var(--shadow-md)",
           zIndex: 9999,
           display: "flex",
           alignItems: "center",

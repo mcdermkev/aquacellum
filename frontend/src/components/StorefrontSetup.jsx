@@ -366,7 +366,7 @@ export function StorefrontSetup({ walletAccount, casualModeActive, existingProfi
           </div>
           <span className="sf-setup__hint">
             {bannerError ? (
-              <span style={{ color: "#f87171" }}>{bannerError}</span>
+              <span style={{ color: "var(--accent-red)" }}>{bannerError}</span>
             ) : (
               <>Your avatar is pulled automatically from your app profile.</>
             )}
@@ -394,9 +394,9 @@ export function StorefrontSetup({ walletAccount, casualModeActive, existingProfi
             />
             <span className="sf-setup__slug-status">
               {slugStatus === "checking" && <SpinnerGap size={16} className="sf-setup__spinner" />}
-              {slugStatus === "available" && <Check size={16} weight="bold" style={{ color: "#34d399" }} />}
-              {slugStatus === "taken" && <Warning size={16} weight="bold" style={{ color: "#f87171" }} />}
-              {slugStatus === "invalid" && <Warning size={16} weight="bold" style={{ color: "#fbbf24" }} />}
+              {slugStatus === "available" && <Check size={16} weight="bold" style={{ color: "var(--accent-green)" }} />}
+              {slugStatus === "taken" && <Warning size={16} weight="bold" style={{ color: "var(--accent-red)" }} />}
+              {slugStatus === "invalid" && <Warning size={16} weight="bold" style={{ color: "var(--accent-amber)" }} />}
             </span>
           </div>
           <span id="sf-slug-hint" className="sf-setup__hint">
@@ -550,7 +550,7 @@ export function StorefrontSetup({ walletAccount, casualModeActive, existingProfi
 
           <div className="sf-setup__field">
             <label className="sf-setup__label" htmlFor="sf-doa">
-              <FirstAid size={15} weight="duotone" style={{ color: "#f87171" }} />
+              <FirstAid size={15} weight="duotone" style={{ color: "var(--accent-red)" }} />
               Dead-on-Arrival (DOA) Policy
               <span className="sf-setup__char-count">{doaPolicy.length}/{MAX_POLICY}</span>
             </label>
@@ -584,7 +584,7 @@ export function StorefrontSetup({ walletAccount, casualModeActive, existingProfi
         </div>
 
         {/* Payouts — Stripe Connect */}
-        <div className="sf-setup__field" style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "1rem", marginTop: "0.5rem" }}>
+        <div className="sf-setup__field" style={{ borderTop: "1px solid rgba(var(--ink-rgb), 0.11)", paddingTop: "1rem", marginTop: "0.5rem" }}>
           <label className="sf-setup__label">
             <Bank size={15} weight="duotone" style={{ color: "var(--accent-green)" }} />
             Payouts
@@ -614,7 +614,7 @@ export function StorefrontSetup({ walletAccount, casualModeActive, existingProfi
                 style={{
                   display: "inline-flex", alignItems: "center", gap: "0.5rem",
                   padding: "0.6rem 1rem", fontSize: "0.85rem", fontWeight: 600,
-                  background: "var(--accent-green, #34d399)", color: "#04231a",
+                  background: "var(--accent-green-fill)", color: "#fff",
                   border: "none", borderRadius: "8px", cursor: connectingPayouts ? "wait" : "pointer",
                   opacity: (!walletAccount || connectingPayouts) ? 0.6 : 1,
                 }}

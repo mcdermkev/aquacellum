@@ -81,7 +81,7 @@ export function AiCompanionToggle({
             />
           )}
           <span style={{ minWidth: 0 }}>
-            <span style={{ display: "block", fontSize: "0.9rem", fontWeight: 600, color: "#fff" }}>
+            <span style={{ display: "block", fontSize: "0.9rem", fontWeight: 600, color: "var(--text-primary)" }}>
               {name}
             </span>
             <span style={{ display: "block", fontSize: "0.72rem", color: "var(--text-muted)" }}>
@@ -97,8 +97,8 @@ export function AiCompanionToggle({
             width: 44,
             height: 24,
             borderRadius: "12px",
-            background: enabled ? `rgba(${accentRgb}, 0.5)` : "rgba(255,255,255,0.1)",
-            border: `1px solid ${enabled ? `rgba(${accentRgb}, 0.6)` : "rgba(255,255,255,0.15)"}`,
+            background: enabled ? `rgba(${accentRgb}, 0.5)` : "rgba(var(--ink-rgb), 0.1)",
+            border: `1px solid ${enabled ? `rgba(${accentRgb}, 0.6)` : "rgba(var(--ink-rgb), 0.15)"}`,
             transition: "background 0.3s ease",
             flexShrink: 0,
           }}

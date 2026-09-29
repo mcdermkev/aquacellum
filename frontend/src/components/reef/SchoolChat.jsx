@@ -82,7 +82,7 @@ export function SchoolChat({ schoolId, isAdmin }) {
       maxHeight: "60vh",
       borderRadius: "var(--radius-sm)",
       overflow: "hidden",
-      border: "1px solid rgba(255,255,255,0.08)",
+      border: "1px solid rgba(var(--ink-rgb), 0.13)",
     }}>
       {/* Connection Status */}
       <div style={{
@@ -90,8 +90,8 @@ export function SchoolChat({ schoolId, isAdmin }) {
         display: "flex",
         alignItems: "center",
         gap: "0.4rem",
-        borderBottom: "1px solid rgba(255,255,255,0.06)",
-        background: "rgba(0,0,0,0.2)",
+        borderBottom: "1px solid rgba(var(--ink-rgb), 0.11)",
+        background: "rgba(var(--ink-rgb), 0.03)",
       }}>
         <span style={{
           width: "6px",
@@ -177,8 +177,8 @@ export function SchoolChat({ schoolId, isAdmin }) {
                     borderRadius: isOwn ? "12px 12px 4px 12px" : "12px 12px 12px 4px",
                     background: isOwn
                       ? "rgba(56, 189, 248, 0.15)"
-                      : "rgba(255,255,255,0.06)",
-                    border: `1px solid ${isOwn ? "rgba(56, 189, 248, 0.2)" : "rgba(255,255,255,0.06)"}`,
+                      : "rgba(var(--ink-rgb), 0.06)",
+                    border: `1px solid ${isOwn ? "rgba(56, 189, 248, 0.2)" : "rgba(var(--ink-rgb), 0.11)"}`,
                     position: "relative",
                   }}>
                     {!isOwn && (
@@ -186,7 +186,7 @@ export function SchoolChat({ schoolId, isAdmin }) {
                         {profile?.display_name || `${msg.author_wallet.slice(0, 6)}...`}
                       </div>
                     )}
-                    <div style={{ fontSize: "0.8rem", color: "#fff", lineHeight: "1.4", wordBreak: "break-word" }}>
+                    <div style={{ fontSize: "0.8rem", color: "var(--text-primary)", lineHeight: "1.4", wordBreak: "break-word" }}>
                       {msg.body}
                     </div>
                     <div style={{ fontSize: "0.55rem", color: "var(--text-muted)", marginTop: "0.2rem", textAlign: isOwn ? "left" : "right" }}>
@@ -238,7 +238,7 @@ export function SchoolChat({ schoolId, isAdmin }) {
             borderRadius: "50px",
             background: "rgba(56, 189, 248, 0.2)",
             border: "1px solid rgba(56, 189, 248, 0.3)",
-            color: "#fff",
+            color: "var(--text-primary)",
             fontSize: "0.65rem",
             cursor: "pointer",
           }}
@@ -252,8 +252,8 @@ export function SchoolChat({ schoolId, isAdmin }) {
         display: "flex",
         gap: "0.5rem",
         padding: "0.75rem 1rem",
-        borderTop: "1px solid rgba(255,255,255,0.06)",
-        background: "rgba(0,0,0,0.15)",
+        borderTop: "1px solid rgba(var(--ink-rgb), 0.11)",
+        background: "rgba(var(--ink-rgb), 0.03)",
       }}>
         <input
           type="text"
@@ -265,10 +265,10 @@ export function SchoolChat({ schoolId, isAdmin }) {
           style={{
             flex: 1,
             padding: "0.6rem 1rem",
-            background: "rgba(255,255,255,0.04)",
-            border: "1px solid rgba(255,255,255,0.1)",
+            background: "rgba(var(--ink-rgb), 0.04)",
+            border: "1px solid rgba(var(--ink-rgb), 0.15)",
             borderRadius: "50px",
-            color: "#fff",
+            color: "var(--text-primary)",
             fontSize: "0.8rem",
             outline: "none",
           }}
@@ -280,7 +280,7 @@ export function SchoolChat({ schoolId, isAdmin }) {
             padding: "0.6rem 1rem",
             borderRadius: "50px",
             border: "none",
-            background: input.trim() ? "var(--accent-blue)" : "rgba(255,255,255,0.08)",
+            background: input.trim() ? "var(--accent-blue)" : "rgba(var(--ink-rgb), 0.08)",
             color: input.trim() ? "#fff" : "var(--text-muted)",
             fontSize: "0.8rem",
             cursor: input.trim() ? "pointer" : "default",

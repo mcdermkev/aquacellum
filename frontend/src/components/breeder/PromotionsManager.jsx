@@ -204,7 +204,7 @@ export function PromotionsManager({ walletAccount, casualModeActive = false }) {
   return (
     <div className="sf-merch">
       <div className="sf-setup__header" style={{ marginBottom: "1rem" }}>
-        <Tag weight="duotone" size={26} style={{ color: "var(--amber-400, #fbbf24)" }} />
+        <Tag weight="duotone" size={26} style={{ color: "var(--accent-amber)" }} />
         <div>
           <h2 className="sf-setup__title">Promotions</h2>
           <p className="sf-setup__subtitle">
@@ -224,7 +224,7 @@ export function PromotionsManager({ walletAccount, casualModeActive = false }) {
           <li key={promo.id} className="glass-card" style={{ padding: "0.75rem 1rem" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "0.6rem", flexWrap: "wrap" }}>
               <div>
-                <strong style={{ color: "#fff", fontFamily: "'JetBrains Mono', monospace" }}>
+                <strong style={{ color: "var(--text-primary)", fontFamily: "'JetBrains Mono', monospace" }}>
                   {promo.code || "Automatic"}
                 </strong>
                 <div style={{ fontSize: "0.72rem", color: "var(--text-secondary)", marginTop: "0.2rem" }}>
@@ -234,7 +234,7 @@ export function PromotionsManager({ walletAccount, casualModeActive = false }) {
                 </div>
               </div>
               <div style={{ display: "flex", gap: "0.4rem", alignItems: "center" }}>
-                <span style={{ fontSize: "0.7rem", color: promo.active ? "var(--teal-400, #2dd4bf)" : "var(--text-muted)" }}>
+                <span style={{ fontSize: "0.7rem", color: promo.active ? "var(--accent-teal)" : "var(--text-muted)" }}>
                   {promo.active ? PROMOTION_COPY.activeLabel : PROMOTION_COPY.pausedLabel}
                 </span>
                 <button
@@ -327,7 +327,7 @@ export function PromotionsManager({ walletAccount, casualModeActive = false }) {
 
           {/* Preview only — never a charge. */}
           <div style={{ padding: "0.6rem 0.75rem", borderRadius: "8px", background: "rgba(251,191,36,0.06)", border: "1px solid rgba(251,191,36,0.2)" }}>
-            <strong style={{ fontSize: "0.75rem", color: "var(--amber-400, #fbbf24)" }}>{PROMOTION_COPY.previewTitle}</strong>
+            <strong style={{ fontSize: "0.75rem", color: "var(--accent-amber)" }}>{PROMOTION_COPY.previewTitle}</strong>
             <p style={{ margin: "0.3rem 0 0", fontSize: "0.78rem", color: "var(--text-secondary)" }}>
               {preview.applicable
                 ? `This would take ${formatPriceCents(preview.discountCents)} off a ${formatPriceCents(5000)} order.`
@@ -364,9 +364,9 @@ export function PromotionsManager({ walletAccount, casualModeActive = false }) {
       )}
 
       {/* Customer segments — gated behind customer_segmentation (Hadal). */}
-      <div style={{ marginTop: "1.5rem", borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "1.25rem" }}>
+      <div style={{ marginTop: "1.5rem", borderTop: "1px solid rgba(var(--ink-rgb), 0.06)", paddingTop: "1.25rem" }}>
         <div className="sf-setup__header" style={{ marginBottom: "0.75rem" }}>
-          <Users weight="duotone" size={24} style={{ color: "var(--violet-400, #a78bfa)" }} />
+          <Users weight="duotone" size={24} style={{ color: "var(--accent-violet)" }} />
           <div>
             <h2 className="sf-setup__title" style={{ fontSize: "1.1rem" }}>{PROMOTION_COPY.segmentsTitle}</h2>
           </div>
@@ -421,8 +421,8 @@ const iconBtnStyle = {
   minWidth: "32px",
   minHeight: "32px",
   borderRadius: "8px",
-  background: "rgba(255,255,255,0.03)",
-  border: "1px solid var(--glass-border, rgba(255,255,255,0.1))",
+  background: "rgba(var(--ink-rgb), 0.03)",
+  border: "1px solid var(--glass-border, rgba(var(--ink-rgb), 0.1))",
   color: "var(--text-secondary)",
   cursor: "pointer",
 };
@@ -435,8 +435,8 @@ const addBtnStyle = {
   minHeight: "44px",
   fontSize: "0.78rem",
   fontWeight: 600,
-  background: "rgba(255,255,255,0.03)",
-  border: "1px dashed var(--glass-border, rgba(255,255,255,0.15))",
+  background: "rgba(var(--ink-rgb), 0.03)",
+  border: "1px dashed var(--glass-border, rgba(var(--ink-rgb), 0.15))",
   borderRadius: "8px",
   color: "var(--text-secondary)",
   cursor: "pointer",

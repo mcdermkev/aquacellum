@@ -84,7 +84,7 @@ export function SellerReputation({ sellerWallet, casualModeActive = false }) {
 
   return (
     <section aria-label={casualModeActive ? "Reviews" : "Seller reputation"} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-      <h2 style={{ fontFamily: "Outfit, sans-serif", fontSize: "1.1rem", color: "#fff", margin: 0 }}>
+      <h2 style={{ fontFamily: "Outfit, sans-serif", fontSize: "1.1rem", color: "var(--text-primary)", margin: 0 }}>
         {casualModeActive ? "Reviews" : "Seller Reputation"}
       </h2>
 
@@ -95,8 +95,8 @@ export function SellerReputation({ sellerWallet, casualModeActive = false }) {
           <span
             style={{
               fontSize: "0.72rem", fontWeight: 600, padding: "0.2rem 0.6rem", borderRadius: "12px",
-              background: summary.tone === "good" ? "rgba(52,211,153,0.1)" : summary.tone === "new" ? "rgba(255,255,255,0.04)" : "rgba(251,191,36,0.1)",
-              color: summary.tone === "good" ? "#34d399" : summary.tone === "new" ? "var(--text-muted)" : "#fbbf24",
+              background: summary.tone === "good" ? "rgba(52,211,153,0.1)" : summary.tone === "new" ? "rgba(var(--ink-rgb), 0.04)" : "rgba(251,191,36,0.1)",
+              color: summary.tone === "good" ? "var(--accent-green)" : summary.tone === "new" ? "var(--text-muted)" : "var(--accent-amber)",
             }}
           >
             {summary.label}
@@ -160,11 +160,11 @@ function DimensionBar({ dimension, value }) {
       <span style={{ fontSize: "0.68rem", color: "var(--text-secondary)", width: "150px", flexShrink: 0 }}>
         {DIMENSION_LABELS[dimension] || dimension}
       </span>
-      <div style={{ flex: 1, height: "6px", borderRadius: "3px", background: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
+      <div style={{ flex: 1, height: "6px", borderRadius: "3px", background: "rgba(var(--ink-rgb), 0.06)", overflow: "hidden" }}>
         <div
           style={{
             width: `${pct}%`, height: "100%", borderRadius: "3px",
-            background: isHealth ? "#34d399" : "linear-gradient(90deg, #2dd4bf, #22d3ee)",
+            background: isHealth ? "var(--accent-green)" : "linear-gradient(90deg, #2dd4bf, #22d3ee)",
           }}
         />
       </div>
@@ -191,10 +191,10 @@ function ReviewCard({
         <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
           <ReviewStars average={review.overall} count={0} size={13} showCount={false} />
           <span
-            style={{ display: "inline-flex", alignItems: "center", gap: "0.25rem", fontSize: "0.65rem", fontWeight: 600, color: "#2dd4bf" }}
+            style={{ display: "inline-flex", alignItems: "center", gap: "0.25rem", fontSize: "0.65rem", fontWeight: 600, color: "var(--accent-teal)" }}
             title="Verified purchase"
           >
-            <SealCheck weight="duotone" size={14} color="#2dd4bf" />
+            <SealCheck weight="duotone" size={14} color="var(--accent-teal)" />
             Verified purchase
           </span>
         </div>
@@ -225,7 +225,7 @@ function ReviewCard({
 
       {review.sellerResponse && (
         <div style={{ marginLeft: "0.5rem", paddingLeft: "0.75rem", borderLeft: "2px solid rgba(167,139,250,0.4)" }}>
-          <span style={{ fontSize: "0.65rem", fontWeight: 700, color: "#a78bfa", textTransform: "uppercase", letterSpacing: "0.03em" }}>
+          <span style={{ fontSize: "0.65rem", fontWeight: 700, color: "var(--accent-violet)", textTransform: "uppercase", letterSpacing: "0.03em" }}>
             Seller response
           </span>
           <p style={{ margin: "0.2rem 0 0", fontSize: "0.78rem", color: "var(--text-secondary)", lineHeight: 1.5 }}>
@@ -238,7 +238,7 @@ function ReviewCard({
         <button
           type="button"
           onClick={() => onStartResponse(review.id)}
-          style={{ alignSelf: "flex-start", display: "inline-flex", alignItems: "center", gap: "0.3rem", background: "none", border: "none", color: "#a78bfa", fontSize: "0.72rem", cursor: "pointer", padding: 0, minHeight: "32px" }}
+          style={{ alignSelf: "flex-start", display: "inline-flex", alignItems: "center", gap: "0.3rem", background: "none", border: "none", color: "var(--accent-violet)", fontSize: "0.72rem", cursor: "pointer", padding: 0, minHeight: "32px" }}
         >
           <ChatCircleDots size={14} /> Respond
         </button>
@@ -252,7 +252,7 @@ function ReviewCard({
             placeholder="Thank the buyer or clarify anything — this is shown publicly."
             rows={2}
             maxLength={1000}
-            style={{ width: "100%", padding: "0.5rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "6px", fontSize: "0.78rem", fontFamily: "inherit", resize: "vertical" }}
+            style={{ width: "100%", padding: "0.5rem", background: "rgba(var(--ink-rgb), 0.03)", border: "1px solid var(--glass-border)", color: "var(--text-primary)", borderRadius: "6px", fontSize: "0.78rem", fontFamily: "inherit", resize: "vertical" }}
           />
           <div style={{ display: "flex", gap: "0.4rem" }}>
             <button type="button" onClick={() => onSubmitResponse(review.id)} className="btn-primary" style={{ minHeight: "32px", padding: "0.3rem 0.75rem", fontSize: "0.72rem" }}>

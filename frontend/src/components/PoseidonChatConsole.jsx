@@ -116,10 +116,10 @@ export function PoseidonChatConsole({ tankId, casualModeActive, walletAccount, s
 
   // Color tokens and text branding depending on persona mode
   const isPro = !casualModeActive;
-  const accentColor = isPro ? "#a855f7" : "#38bdf8"; // Neon purple vs Sky-blue
-  const consoleBg = isPro ? "rgba(15, 7, 32, 0.85)" : "rgba(8, 25, 48, 0.85)";
+  const accentColor = isPro ? "#6d28d9" : "#0369a1"; // Violet vs sky-blue (text-safe on the light panel)
+  const consoleBg = "rgba(255, 255, 255, 0.97)";
   const borderColor = isPro ? "rgba(168, 85, 247, 0.25)" : "rgba(56, 189, 248, 0.25)";
-  const shadowGlow = isPro ? "0 0 15px rgba(168, 85, 247, 0.15)" : "0 0 15px rgba(56, 189, 248, 0.15)";
+  const shadowGlow = "var(--shadow-lg)";
   const titleText = isPro ? "ECOLOGICAL AUTO-PILOT TERMINAL" : "Poseidon Assistant";
 
   // Docked as a body-level overlay, NOT inside whatever mounted it.
@@ -221,7 +221,7 @@ export function PoseidonChatConsole({ tankId, casualModeActive, walletAccount, s
             }}
             title="Close Panel"
             aria-label="Close chat panel"
-            onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.08)"}
+            onMouseEnter={(e) => e.currentTarget.style.background = "rgba(var(--ink-rgb), 0.08)"}
             onMouseLeave={(e) => e.currentTarget.style.background = "none"}
           >
             &times;
@@ -243,9 +243,9 @@ export function PoseidonChatConsole({ tankId, casualModeActive, walletAccount, s
       >
         {messages.map((msg) => {
           const isUser = msg.sender === "user";
-          const msgColor = isUser ? "#fff" : accentColor;
+          const msgColor = isUser ? "var(--text-primary)" : accentColor;
           const msgBg = isUser
-            ? "rgba(255, 255, 255, 0.08)"
+            ? "rgba(var(--ink-rgb), 0.05)"
             : isPro
             ? "rgba(168, 85, 247, 0.08)"
             : "rgba(56, 189, 248, 0.08)";
@@ -285,7 +285,7 @@ export function PoseidonChatConsole({ tankId, casualModeActive, walletAccount, s
                   padding: "0.5rem 0.75rem",
                   borderRadius: "8px",
                   background: msgBg,
-                  border: `1px solid ${isUser ? "rgba(255,255,255,0.08)" : borderColor}`,
+                  border: `1px solid ${isUser ? "rgba(var(--ink-rgb), 0.13)" : borderColor}`,
                   fontSize: "0.8rem",
                   lineHeight: "1.4"
                 }}
@@ -294,7 +294,7 @@ export function PoseidonChatConsole({ tankId, casualModeActive, walletAccount, s
                   <div
                     style={{
                       fontSize: "0.6rem",
-                      color: "rgba(255, 255, 255, 0.3)",
+                      color: "var(--text-muted)",
                       marginBottom: "2px",
                       fontWeight: "700"
                     }}
@@ -370,7 +370,7 @@ export function PoseidonChatConsole({ tankId, casualModeActive, walletAccount, s
           aria-label="Action confirmation"
         >
           <span style={{ fontSize: "0.9rem" }}>⚡</span>
-          <span style={{ fontSize: "0.72rem", color: casualModeActive ? "#fbbf24" : "#c084fc", flex: 1, minWidth: 0 }}>
+          <span style={{ fontSize: "0.72rem", color: casualModeActive ? "var(--accent-amber)" : "var(--accent-violet)", flex: 1, minWidth: 0 }}>
             {casualModeActive
               ? `Poseidon wants to: ${actionLabel(pendingAction.type, { casual: true })}`
               : `ACTION: ${pendingAction.type}`}
@@ -399,8 +399,8 @@ export function PoseidonChatConsole({ tankId, casualModeActive, walletAccount, s
               padding: "0.3rem 0.5rem",
               fontSize: "0.7rem",
               borderRadius: "6px",
-              border: "1px solid rgba(255,255,255,0.12)",
-              background: "rgba(255,255,255,0.05)",
+              border: "1px solid rgba(var(--ink-rgb), 0.17)",
+              background: "rgba(var(--ink-rgb), 0.05)",
               color: "var(--text-muted)",
               cursor: "pointer",
               whiteSpace: "nowrap",
@@ -428,7 +428,7 @@ export function PoseidonChatConsole({ tankId, casualModeActive, walletAccount, s
           borderTop: `1px solid ${borderColor}`,
           display: "flex",
           gap: "0.5rem",
-          background: "rgba(0,0,0,0.15)"
+          background: "var(--bg-band)"
         }}
       >
         <input
@@ -439,10 +439,10 @@ export function PoseidonChatConsole({ tankId, casualModeActive, walletAccount, s
           disabled={isLoading}
           style={{
             flex: 1,
-            background: "rgba(0,0,0,0.3)",
+            background: "var(--bg-band)",
             border: `1px solid ${borderColor}`,
             borderRadius: isPro ? "0" : "6px",
-            color: "#fff",
+            color: "var(--text-primary)",
             padding: "0.4rem 0.75rem",
             fontSize: "0.8rem",
             outline: "none",
@@ -457,7 +457,7 @@ export function PoseidonChatConsole({ tankId, casualModeActive, walletAccount, s
             background: isLoading ? "rgba(128,128,128,0.5)" : accentColor,
             border: "none",
             borderRadius: isPro ? "0" : "6px",
-            color: isPro ? "#000" : "#fff",
+            color: "#fff",
             fontWeight: "700",
             padding: "0.4rem 0.75rem",
             fontSize: "0.8rem",
@@ -480,7 +480,7 @@ export function PoseidonChatConsole({ tankId, casualModeActive, walletAccount, s
           flexWrap: "wrap",
           gap: "0.4rem",
           borderTop: `1px solid ${isPro ? "rgba(168, 85, 247, 0.1)" : "rgba(56, 189, 248, 0.1)"}`,
-          background: "rgba(0,0,0,0.08)",
+          background: "var(--bg-band)",
         }}>
           <span style={{ fontSize: "0.6rem", color: "var(--text-muted)", width: "100%", marginBottom: "0.15rem" }}>
             {isPro ? "SUGGESTED COMMANDS:" : "Try asking:"}

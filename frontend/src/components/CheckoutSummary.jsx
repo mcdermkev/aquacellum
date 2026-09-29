@@ -1167,7 +1167,7 @@ export function CheckoutSummary({
       <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
-            <h3 style={{ fontSize: "1.25rem", color: "#fff", margin: "0 0 0.25rem 0" }}>My Orders</h3>
+            <h3 style={{ fontSize: "1.25rem", color: "var(--text-primary)", margin: "0 0 0.25rem 0" }}>My Orders</h3>
             <p style={{ color: "var(--text-muted)", fontSize: "0.8rem", margin: 0 }}>Loading your order history...</p>
           </div>
         </div>
@@ -1227,7 +1227,7 @@ export function CheckoutSummary({
                 flexDirection: "column", 
                 alignItems: "center",
                 border: "1px solid var(--glass-border-hover)",
-                background: "rgba(255, 255, 255, 0.02)"
+                background: "rgba(var(--ink-rgb), 0.02)"
               }}
             >
               <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginBottom: "0.5rem" }}>
@@ -1241,13 +1241,13 @@ export function CheckoutSummary({
                       width: "32px", 
                       height: "32px", 
                       borderRadius: "4px", 
-                      background: slot.isOccupied ? "var(--accent-blue-glow)" : "rgba(255,255,255,0.03)", 
-                      border: slot.isOccupied ? "1px solid var(--accent-blue)" : "1px solid rgba(255,255,255,0.08)",
+                      background: slot.isOccupied ? "var(--accent-blue-glow)" : "rgba(var(--ink-rgb), 0.03)", 
+                      border: slot.isOccupied ? "1px solid var(--accent-blue)" : "1px solid rgba(var(--ink-rgb), 0.13)",
                       display: "flex", 
                       alignItems: "center", 
                       justifyContent: "center",
                       fontSize: "0.9rem",
-                      color: "#fff"
+                      color: "var(--text-primary)"
                     }}
                     title={slot.isOccupied ? slot.item.commonName : "Empty Slot"}
                   >
@@ -1313,12 +1313,12 @@ export function CheckoutSummary({
               padding: "2rem",
               marginBottom: "2rem",
               border: "1px solid var(--accent-blue)",
-              background: "rgba(14, 20, 36, 0.45)",
+              background: "var(--bg-band)",
             }}
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1.25rem", gap: "1rem" }}>
               <div>
-                <h3 style={{ fontSize: "1.35rem", color: "#fff", margin: 0, display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                <h3 style={{ fontSize: "1.35rem", color: "var(--text-primary)", margin: 0, display: "flex", alignItems: "center", gap: "0.5rem" }}>
                   <span>🐟</span> Confirm Fry Batch Purchase
                 </h3>
                 <p style={{ color: "var(--text-muted)", fontSize: "0.8rem", margin: "0.25rem 0 0 0" }}>
@@ -1378,7 +1378,7 @@ export function CheckoutSummary({
                         ));
                         setBatchPromo((previous) => ({ ...previous, [batch.listingId]: null }));
                       }}
-                      style={{ width: "70px", background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.1)", color: "#fff", borderRadius: "4px", padding: "0.35rem 0.5rem", textAlign: "center", outline: "none", fontSize: "0.85rem" }}
+                      style={{ width: "70px", background: "var(--bg-band)", border: "1px solid rgba(var(--ink-rgb), 0.15)", color: "var(--text-primary)", borderRadius: "4px", padding: "0.35rem 0.5rem", textAlign: "center", outline: "none", fontSize: "0.85rem" }}
                     />
                     <span style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>{available} available</span>
                   </div>
@@ -1428,12 +1428,12 @@ export function CheckoutSummary({
             padding: "2rem", 
             marginBottom: "2rem", 
             border: "1px solid var(--accent-blue)", 
-            background: "rgba(14, 20, 36, 0.45)" 
+            background: "var(--bg-band)" 
           }}
         >
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
             <div>
-              <h3 style={{ fontSize: "1.35rem", color: "#fff", margin: 0, display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <h3 style={{ fontSize: "1.35rem", color: "var(--text-primary)", margin: 0, display: "flex", alignItems: "center", gap: "0.5rem" }}>
                 <span>📦</span> Grouped Seller Checkout
               </h3>
               <p style={{ color: "var(--text-muted)", fontSize: "0.8rem", margin: 0 }}>
@@ -1464,7 +1464,7 @@ export function CheckoutSummary({
           <div style={{ display: "flex", flexWrap: "wrap", gap: "2rem", width: "100%" }}>
             {/* Left side: Items and Box visualization */}
             <div style={{ flex: "1 1 500px" }}>
-              <h4 style={{ color: "#fff", fontSize: "0.95rem", marginBottom: "0.75rem" }}>Selected Specimens ({N})</h4>
+              <h4 style={{ color: "var(--text-primary)", fontSize: "0.95rem", marginBottom: "0.75rem" }}>Selected Specimens ({N})</h4>
               <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginBottom: "1.5rem" }}>
                 {cartItems.map((item) => (
                   <div 
@@ -1474,13 +1474,13 @@ export function CheckoutSummary({
                       justifyContent: "space-between", 
                       alignItems: "center", 
                       padding: "0.75rem 1rem", 
-                      background: "rgba(255,255,255,0.02)", 
+                      background: "rgba(var(--ink-rgb), 0.02)", 
                       borderRadius: "6px",
-                      border: "1px solid rgba(255,255,255,0.05)"
+                      border: "1px solid rgba(var(--ink-rgb), 0.1)"
                     }}
                   >
                     <div>
-                      <strong style={{ color: "#fff", fontSize: "0.85rem" }}>{item.commonName}</strong>
+                      <strong style={{ color: "var(--text-primary)", fontSize: "0.85rem" }}>{item.commonName}</strong>
                       <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", display: "block", fontStyle: "italic" }}>{item.scientificName}</span>
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
@@ -1499,7 +1499,7 @@ export function CheckoutSummary({
                 ))}
               </div>
 
-              <h4 style={{ color: "#fff", fontSize: "0.95rem", marginBottom: "0.5rem" }}>Box Utilization Visualizer</h4>
+              <h4 style={{ color: "var(--text-primary)", fontSize: "0.95rem", marginBottom: "0.5rem" }}>Box Utilization Visualizer</h4>
               {renderBoxGrid()}
             </div>
 
@@ -1509,21 +1509,21 @@ export function CheckoutSummary({
                 className="glass-card" 
                 style={{ 
                   padding: "1.25rem", 
-                  background: "rgba(0,0,0,0.15)", 
-                  border: "1px solid rgba(255,255,255,0.05)",
+                  background: "var(--bg-band)", 
+                  border: "1px solid rgba(var(--ink-rgb), 0.1)",
                   display: "flex",
                   flexDirection: "column",
                   gap: "0.75rem"
                 }}
               >
-                <h4 style={{ color: "#fff", fontSize: "0.9rem", margin: 0, textTransform: "uppercase", letterSpacing: "0.05em" }}>Checkout Summary</h4>
+                <h4 style={{ color: "var(--text-primary)", fontSize: "0.9rem", margin: 0, textTransform: "uppercase", letterSpacing: "0.05em" }}>Checkout Summary</h4>
                 <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.8rem", color: "var(--text-secondary)" }}>
                   <span>Subtotal:</span>
-                  <span style={{ fontFamily: "monospace", color: "#fff" }}>${subtotal.toFixed(2)}</span>
+                  <span style={{ fontFamily: "monospace", color: "var(--text-primary)" }}>${subtotal.toFixed(2)}</span>
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.8rem", color: "var(--text-secondary)" }}>
                   <span>📦 Consolidated Shipping Boxes ({boxesCount}):</span>
-                  <span style={{ fontFamily: "monospace", color: "#fff" }}>${totalShippingFee.toFixed(2)}</span>
+                  <span style={{ fontFamily: "monospace", color: "var(--text-primary)" }}>${totalShippingFee.toFixed(2)}</span>
                 </div>
                 {((firstShippingFee * N) - totalShippingFee) > 0 && casualModeActive && (
                   <div style={{ 
@@ -1553,8 +1553,8 @@ export function CheckoutSummary({
                     <span style={{ fontFamily: "monospace" }}>-${excessRefund.toFixed(2)}</span>
                   </div>
                 )}
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", fontSize: "1.05rem", borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: "0.75rem", marginTop: "0.25rem" }}>
-                  <strong style={{ color: "#fff" }}>Estimated total</strong>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", fontSize: "1.05rem", borderTop: "1px solid rgba(var(--ink-rgb), 0.13)", paddingTop: "0.75rem", marginTop: "0.25rem" }}>
+                  <strong style={{ color: "var(--text-primary)" }}>Estimated total</strong>
                   <strong style={{ fontFamily: "monospace", color: "var(--accent-green)", fontSize: "1.15rem" }}>
                     ${Math.max(0, totalCost - (consolidatedPromo?.discountCents || 0) / 100).toFixed(2)}
                   </strong>
@@ -1616,7 +1616,7 @@ export function CheckoutSummary({
                       onChange={(e) => setIsCashHandshake(e.target.checked)}
                       style={{ cursor: "pointer" }}
                     />
-                    <label htmlFor="cash-handshake-toggle" style={{ fontSize: "0.75rem", color: "#fff", cursor: "pointer", fontWeight: "600" }}>
+                    <label htmlFor="cash-handshake-toggle" style={{ fontSize: "0.75rem", color: "var(--text-primary)", cursor: "pointer", fontWeight: "600" }}>
                       🤝 Enable [ Cash Handshake ] Bypass
                     </label>
                   </div>
@@ -1625,8 +1625,8 @@ export function CheckoutSummary({
                     fontSize: "0.7rem",
                     color: "var(--text-muted)",
                     padding: "0.5rem",
-                    background: "rgba(255, 255, 255, 0.02)",
-                    border: "1px solid rgba(255, 255, 255, 0.05)",
+                    background: "rgba(var(--ink-rgb), 0.02)",
+                    border: "1px solid rgba(var(--ink-rgb), 0.1)",
                     borderRadius: "4px",
                     marginTop: "0.25rem",
                     marginBottom: "0.25rem",
@@ -1647,11 +1647,11 @@ export function CheckoutSummary({
                 <div style={{
                   marginTop: "1rem",
                   padding: "1rem",
-                  background: "rgba(255, 255, 255, 0.03)",
-                  border: "1px solid rgba(255, 255, 255, 0.1)",
+                  background: "rgba(var(--ink-rgb), 0.03)",
+                  border: "1px solid rgba(var(--ink-rgb), 0.15)",
                   borderRadius: "8px"
                 }}>
-                  <h5 style={{ color: "#fff", margin: "0 0 0.5rem 0", fontSize: "0.85rem" }}>🛡️ What happens next?</h5>
+                  <h5 style={{ color: "var(--text-primary)", margin: "0 0 0.5rem 0", fontSize: "0.85rem" }}>🛡️ What happens next?</h5>
                   <ul style={{ margin: 0, paddingLeft: "1.2rem", color: "var(--text-muted)", fontSize: "0.75rem", lineHeight: "1.5" }}>
                     <li>{casualModeActive ? "The breeder is notified and begins preparing your fish." : "The seller is notified and prepares your specimen(s) for dispatch."}</li>
                     <li>Your payment is held securely in escrow until delivery is confirmed.</li>
@@ -1668,7 +1668,7 @@ export function CheckoutSummary({
                   <div style={{
                     position: "fixed",
                     top: 0, left: 0, right: 0, bottom: 0,
-                    background: "rgba(0, 0, 0, 0.8)",
+                    background: "rgba(11, 37, 48, 0.45)",
                     backdropFilter: "blur(8px)",
                     display: "flex", alignItems: "center", justifyContent: "center",
                     zIndex: 2000, padding: "1rem"
@@ -1685,13 +1685,13 @@ export function CheckoutSummary({
                         &times;
                       </button>
                       <span style={{ fontSize: "2.5rem" }}>💵</span>
-                      <h3 style={{ color: "#fff", marginTop: "0.5rem" }}>Cash Handshake QR Code</h3>
+                      <h3 style={{ color: "var(--text-primary)", marginTop: "0.5rem" }}>Cash Handshake QR Code</h3>
                       <p style={{ color: "var(--text-muted)", fontSize: "0.8rem", marginBottom: "1.5rem" }}>
                         Show this QR code to the Breeder to complete the cash transfer and record lineage provenance.
                       </p>
                       
                       <div style={{
-                        background: "rgba(255,255,255,0.02)",
+                        background: "rgba(var(--ink-rgb), 0.02)",
                         border: "1px solid rgba(16, 185, 129, 0.3)",
                         borderRadius: "8px", padding: "1rem", display: "inline-block",
                         marginBottom: "1.5rem"
@@ -1699,7 +1699,7 @@ export function CheckoutSummary({
                         <img src={qrUrl} alt="Cash Handshake QR" style={{ display: "block", borderRadius: "4px", width: "200px", height: "200px" }} />
                       </div>
 
-                      <div style={{ fontSize: "0.8rem", color: "var(--text-secondary)", textAlign: "left", background: "rgba(0,0,0,0.2)", padding: "0.75rem", borderRadius: "6px" }}>
+                      <div style={{ fontSize: "0.8rem", color: "var(--text-secondary)", textAlign: "left", background: "var(--bg-band)", padding: "0.75rem", borderRadius: "6px" }}>
                         <div>Buyer: <span style={{ fontFamily: "monospace", fontSize: "0.7rem" }}><DisplayName address={cashHandshakePayload.buyer} /></span></div>
                         <div>Seller: <span style={{ fontFamily: "monospace", fontSize: "0.7rem" }}><DisplayName address={cashHandshakePayload.seller} /></span></div>
                         <div>Specimens: <strong>{cashHandshakePayload.tokenIds.length}</strong></div>
@@ -1737,15 +1737,15 @@ export function CheckoutSummary({
                         className="glass-card"
                         style={{ 
                           padding: "0.5rem", 
-                          background: "rgba(255,255,255,0.01)", 
+                          background: "rgba(var(--ink-rgb), 0.02)", 
                           display: "flex", 
                           justifyContent: "space-between", 
                           alignItems: "center",
-                          border: "1px solid rgba(255,255,255,0.03)"
+                          border: "1px solid rgba(var(--ink-rgb), 0.08)"
                         }}
                       >
                         <div style={{ minWidth: 0, flex: 1, paddingRight: "0.5rem" }}>
-                          <strong style={{ fontSize: "0.75rem", color: "#fff", display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          <strong style={{ fontSize: "0.75rem", color: "var(--text-primary)", display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                             {addon.commonName}
                           </strong>
                           <span style={{ fontSize: "0.65rem", color: "var(--accent-green)", fontWeight: "600" }}>
@@ -1765,7 +1765,7 @@ export function CheckoutSummary({
         </div>
       )}
 
-      <h3 style={{ fontSize: "1.25rem", color: "#fff", marginBottom: "0.25rem" }}>Order Tracking & Protections</h3>
+      <h3 style={{ fontSize: "1.25rem", color: "var(--text-primary)", marginBottom: "0.25rem" }}>Order Tracking & Protections</h3>
       <p style={{ color: "var(--text-muted)", fontSize: "0.8rem", margin: "0 0 1rem 0" }}>
         All your purchases and sales with buyer protection, shipping tracking, and fulfillment actions.
       </p>
@@ -1790,8 +1790,8 @@ export function CheckoutSummary({
                     padding: "0.4rem 0.85rem",
                     fontSize: "0.72rem",
                     fontWeight: isActive ? "700" : "500",
-                    background: isActive ? "rgba(56, 189, 248, 0.1)" : "rgba(255, 255, 255, 0.02)",
-                    border: isActive ? "1px solid rgba(56, 189, 248, 0.4)" : "1px solid rgba(255, 255, 255, 0.08)",
+                    background: isActive ? "rgba(56, 189, 248, 0.1)" : "rgba(var(--ink-rgb), 0.02)",
+                    border: isActive ? "1px solid rgba(56, 189, 248, 0.4)" : "1px solid rgba(var(--ink-rgb), 0.13)",
                     borderRadius: "20px",
                     color: isActive ? "var(--accent-blue)" : "var(--text-secondary)",
                     cursor: "pointer",
@@ -1815,10 +1815,10 @@ export function CheckoutSummary({
                 style={{
                   width: "100%",
                   padding: "0.5rem 0.75rem 0.5rem 2rem",
-                  background: "rgba(255, 255, 255, 0.03)",
-                  border: "1px solid rgba(255, 255, 255, 0.08)",
+                  background: "rgba(var(--ink-rgb), 0.03)",
+                  border: "1px solid rgba(var(--ink-rgb), 0.13)",
                   borderRadius: "6px",
-                  color: "#fff",
+                  color: "var(--text-primary)",
                   fontSize: "0.78rem",
                 }}
               />
@@ -1829,10 +1829,10 @@ export function CheckoutSummary({
               onChange={(e) => setOrderSort(e.target.value)}
               style={{
                 padding: "0.5rem 0.6rem",
-                background: "rgba(255, 255, 255, 0.03)",
-                border: "1px solid rgba(255, 255, 255, 0.08)",
+                background: "rgba(var(--ink-rgb), 0.03)",
+                border: "1px solid rgba(var(--ink-rgb), 0.13)",
                 borderRadius: "6px",
-                color: "#fff",
+                color: "var(--text-primary)",
                 fontSize: "0.72rem",
                 cursor: "pointer",
               }}
@@ -1875,12 +1875,12 @@ export function CheckoutSummary({
               style={{ 
                 padding: "3rem 2rem", 
                 textAlign: "center", 
-                border: "1px dashed rgba(255, 255, 255, 0.1)",
-                background: "rgba(255, 255, 255, 0.01)"
+                border: "1px dashed rgba(var(--ink-rgb), 0.15)",
+                background: "rgba(var(--ink-rgb), 0.02)"
               }}
             >
               <div style={{ fontSize: "3rem", marginBottom: "1rem", opacity: 0.6 }}>📦</div>
-              <h4 style={{ color: "#fff", fontSize: "1.1rem", marginBottom: "0.5rem" }}>No Orders Yet</h4>
+              <h4 style={{ color: "var(--text-primary)", fontSize: "1.1rem", marginBottom: "0.5rem" }}>No Orders Yet</h4>
               <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", maxWidth: "400px", margin: "0 auto", lineHeight: "1.5" }}>
                 When you buy or sell specimens through the marketplace, your orders will appear here with full buyer protection, shipping updates, and fulfillment controls.
               </p>
@@ -1895,8 +1895,8 @@ export function CheckoutSummary({
               style={{ 
                 padding: "2rem", 
                 textAlign: "center", 
-                border: "1px dashed rgba(255, 255, 255, 0.08)",
-                background: "rgba(255, 255, 255, 0.01)"
+                border: "1px dashed rgba(var(--ink-rgb), 0.13)",
+                background: "rgba(var(--ink-rgb), 0.02)"
               }}
             >
               <div style={{ fontSize: "2rem", marginBottom: "0.75rem", opacity: 0.5 }}>🔍</div>
@@ -1944,7 +1944,7 @@ export function CheckoutSummary({
             </div>
 
             <div>
-              <h4 style={{ color: "#fff" }}>{order.commonName}</h4>
+              <h4 style={{ color: "var(--text-primary)" }}>{order.commonName}</h4>
               <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>
                 Role: <strong>{order.role}</strong>
               </span>
@@ -1958,7 +1958,7 @@ export function CheckoutSummary({
               <span>Shipping Fee:</span>
               <strong style={{ fontFamily: "monospace" }}>${parseFloat(order.shippingFee || 0).toFixed(2)}</strong>
             </div>
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.8rem", borderTop: "1px solid rgba(255,255,255,0.05)", paddingTop: "0.25rem" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.8rem", borderTop: "1px solid rgba(var(--ink-rgb), 0.1)", paddingTop: "0.25rem" }}>
               <span>Total Protected:</span>
               <strong style={{ fontFamily: "monospace", color: "var(--accent-green)" }}>${parseFloat(order.amountLocked || 0).toFixed(2)}</strong>
             </div>
@@ -1984,7 +1984,7 @@ export function CheckoutSummary({
                 const isDisputed = activeStep === -1;
                 return (
                   <div style={{ marginTop: "0.75rem", padding: "0.6rem", borderRadius: "8px", background: isDisputed ? "rgba(248,113,113,0.06)" : "rgba(251,191,36,0.06)", border: `1px solid ${isDisputed ? "rgba(248,113,113,0.2)" : "rgba(251,191,36,0.2)"}`, textAlign: "center" }}>
-                    <span style={{ fontSize: "0.75rem", fontWeight: "600", color: isDisputed ? "#f87171" : "#fbbf24" }}>
+                    <span style={{ fontSize: "0.75rem", fontWeight: "600", color: isDisputed ? "var(--accent-red)" : "var(--accent-amber)" }}>
                       {isDisputed ? "⚠️ Under Review" : "↩️ Refunded"}
                     </span>
                   </div>
@@ -2001,9 +2001,9 @@ export function CheckoutSummary({
                           width: "24px", height: "24px", borderRadius: "50%", flexShrink: 0,
                           display: "flex", alignItems: "center", justifyContent: "center",
                           fontSize: i <= activeStep ? "0.7rem" : "0.55rem",
-                          background: i <= activeStep ? "rgba(52,211,153,0.15)" : "rgba(255,255,255,0.03)",
-                          border: i <= activeStep ? "1.5px solid rgba(52,211,153,0.5)" : "1.5px solid rgba(255,255,255,0.08)",
-                          color: i <= activeStep ? "#34d399" : "var(--text-muted)",
+                          background: i <= activeStep ? "rgba(52,211,153,0.15)" : "rgba(var(--ink-rgb), 0.03)",
+                          border: i <= activeStep ? "1.5px solid rgba(52,211,153,0.5)" : "1.5px solid rgba(var(--ink-rgb), 0.13)",
+                          color: i <= activeStep ? "var(--accent-green)" : "var(--text-muted)",
                           transition: "all 0.3s ease",
                         }}>
                           {i < activeStep ? "✓" : step.icon}
@@ -2011,7 +2011,7 @@ export function CheckoutSummary({
                         {i < steps.length - 1 && (
                           <div style={{
                             flex: 1, height: "2px",
-                            background: i < activeStep ? "rgba(52,211,153,0.4)" : "rgba(255,255,255,0.06)",
+                            background: i < activeStep ? "rgba(52,211,153,0.4)" : "rgba(var(--ink-rgb), 0.06)",
                             transition: "background 0.3s ease",
                           }} />
                         )}
@@ -2023,7 +2023,7 @@ export function CheckoutSummary({
                     {steps.map((step, i) => (
                       <span key={i} style={{
                         fontSize: "0.55rem",
-                        color: i <= activeStep ? "#34d399" : "var(--text-muted)",
+                        color: i <= activeStep ? "var(--accent-green)" : "var(--text-muted)",
                         fontWeight: i === activeStep ? "700" : "400",
                         textAlign: "center",
                         width: "24%",
@@ -2036,7 +2036,7 @@ export function CheckoutSummary({
                   {order.status >= 1 && order.trackingNumber && (
                     <div style={{ marginTop: "0.4rem", fontSize: "0.68rem", color: "var(--text-secondary)", display: "flex", alignItems: "center", gap: "0.3rem" }}>
                       <span>📦</span>
-                      <span>Tracking: <strong style={{ fontFamily: "monospace", color: "#fff" }}>{order.trackingNumber}</strong></span>
+                      <span>Tracking: <strong style={{ fontFamily: "monospace", color: "var(--text-primary)" }}>{order.trackingNumber}</strong></span>
                     </div>
                   )}
                 </div>
@@ -2081,7 +2081,7 @@ export function CheckoutSummary({
             </div>
 
             <div>
-              <h4 style={{ color: "#fff" }}>{order.commonName} (Qty: {order.quantity})</h4>
+              <h4 style={{ color: "var(--text-primary)" }}>{order.commonName} (Qty: {order.quantity})</h4>
               <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>
                 Role: <strong>{order.role}</strong>
               </span>
@@ -2099,7 +2099,7 @@ export function CheckoutSummary({
                   {order.state === 0 ? "🔒" : order.state === 1 ? "✅" : "↩️"}
                 </span>
                 <div>
-                  <div style={{ fontSize: "0.75rem", fontWeight: "600", color: order.state === 1 ? "#34d399" : order.state === 2 ? "#fbbf24" : "#7dd3fc" }}>
+                  <div style={{ fontSize: "0.75rem", fontWeight: "600", color: order.state === 1 ? "var(--accent-green)" : order.state === 2 ? "var(--accent-amber)" : "var(--accent-blue)" }}>
                     {order.state === 0 ? "Payment Held — Awaiting Fulfillment" : order.state === 1 ? "Completed Successfully" : "Refunded to Buyer"}
                   </div>
                   <div style={{ fontSize: "0.62rem", color: "var(--text-muted)", marginTop: "1px" }}>
@@ -2201,10 +2201,10 @@ export function CheckoutSummary({
             simply untrue: no amount of XP opens this.
           */}
           <div>
-            <h3 style={{ fontSize: "1.1rem", color: "#fff", marginBottom: "0.5rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            <h3 style={{ fontSize: "1.1rem", color: "var(--text-primary)", marginBottom: "0.5rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
               <span>📊</span> {casualModeActive ? "Your Stats" : "Order Analytics"}
               {!hasEntitlement("order_analytics", { activity }) && (
-                <span style={{ fontSize: "0.6rem", padding: "0.15rem 0.4rem", borderRadius: "8px", background: "rgba(251,191,36,0.1)", border: "1px solid rgba(251,191,36,0.2)", color: "#fbbf24" }}>
+                <span style={{ fontSize: "0.6rem", padding: "0.15rem 0.4rem", borderRadius: "8px", background: "rgba(251,191,36,0.1)", border: "1px solid rgba(251,191,36,0.2)", color: "var(--accent-amber)" }}>
                   🔒 After your first order
                 </span>
               )}
@@ -2223,7 +2223,7 @@ export function CheckoutSummary({
             reorder inside this panel opens on a second order.
           */}
           <div>
-            <h3 style={{ fontSize: "1.1rem", color: "#fff", marginBottom: "0.5rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            <h3 style={{ fontSize: "1.1rem", color: "var(--text-primary)", marginBottom: "0.5rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
               <span>👁️</span> {casualModeActive ? "Watchlist & Reorder" : "Species Watchlist & Smart Reorder"}
             </h3>
             <OrderWatchlistReorder
@@ -2258,13 +2258,13 @@ export function CheckoutSummary({
               >
                 <div style={{ fontSize: "1.5rem" }}>🎯</div>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: "0.78rem", fontWeight: "600", color: "#fff" }}>
+                  <div style={{ fontSize: "0.78rem", fontWeight: "600", color: "var(--text-primary)" }}>
                     {next.xpNeeded.toLocaleString()} XP to {next.nextTier}
                   </div>
                   <div style={{ fontSize: "0.68rem", color: "var(--text-muted)", marginTop: "0.2rem" }}>
                     Unlocks: {next.features.map((f) => `${f.icon} ${f.label}`).join(" • ")}
                   </div>
-                  <div style={{ marginTop: "0.4rem", height: "4px", borderRadius: "2px", background: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
+                  <div style={{ marginTop: "0.4rem", height: "4px", borderRadius: "2px", background: "rgba(var(--ink-rgb), 0.06)", overflow: "hidden" }}>
                     <div style={{
                       height: "100%",
                       width: `${Math.min(100, ((totalXp || 0) / (totalXp + next.xpNeeded)) * 100)}%`,
@@ -2283,7 +2283,7 @@ export function CheckoutSummary({
       {orderNotFound && !selectedOrder && (
         <div style={{
           position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
-          background: "rgba(0, 0, 0, 0.75)", backdropFilter: "blur(8px)",
+          background: "rgba(11, 37, 48, 0.45)", backdropFilter: "blur(8px)",
           display: "flex", alignItems: "center", justifyContent: "center",
           zIndex: 1000, padding: "1rem",
         }}>
@@ -2300,7 +2300,7 @@ export function CheckoutSummary({
               &times;
             </button>
             <div style={{ fontSize: "2rem", marginBottom: "0.75rem", opacity: 0.6 }}>🔍</div>
-            <h3 style={{ color: "#fff", fontSize: "1.1rem", marginBottom: "0.4rem" }}>Order not found</h3>
+            <h3 style={{ color: "var(--text-primary)", fontSize: "1.1rem", marginBottom: "0.4rem" }}>Order not found</h3>
             <p style={{ color: "var(--text-muted)", fontSize: "0.8rem", margin: 0 }}>
               {casualModeActive
                 ? "We couldn't find that order. It may belong to a different account, or the link may be out of date."
@@ -2318,7 +2318,7 @@ export function CheckoutSummary({
           left: 0,
           right: 0,
           bottom: 0,
-          background: "rgba(0, 0, 0, 0.75)",
+          background: "rgba(11, 37, 48, 0.45)",
           backdropFilter: "blur(8px)",
           display: "flex",
           alignItems: "center",
@@ -2342,7 +2342,7 @@ export function CheckoutSummary({
               &times;
             </button>
 
-            <h3 style={{ fontSize: "1.35rem", marginBottom: "0.25rem", color: "#fff" }}>Order Tracking & Fulfillment Details</h3>
+            <h3 style={{ fontSize: "1.35rem", marginBottom: "0.25rem", color: "var(--text-primary)" }}>Order Tracking & Fulfillment Details</h3>
             <p style={{ color: "var(--text-muted)", fontSize: "0.8rem", marginBottom: "1.5rem" }}>
               {selectedOrder.type === "shipping" ? `Shipping Certificate Serial No. ${selectedOrder.data.tokenId.toString().padStart(3, "0")}` : `Batch Order Serial No. ${selectedOrder.data.purchaseId.toString().padStart(3, "0")}`}
             </p>
@@ -2362,7 +2362,7 @@ export function CheckoutSummary({
             {/* BATCH ORDER FULLFILLMENTS */}
             {selectedOrder.type === "batch" && (
               <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-                <div style={{ background: "rgba(255,255,255,0.02)", padding: "0.75rem", borderRadius: "4px", fontSize: "0.85rem" }}>
+                <div style={{ background: "rgba(var(--ink-rgb), 0.02)", padding: "0.75rem", borderRadius: "4px", fontSize: "0.85rem" }}>
                   <div>Specimen: <strong>{selectedOrder.data.commonName}</strong></div>
                   <div>Quantity: <strong>{selectedOrder.data.quantity}</strong></div>
                   <div>Seller: <span style={{ fontSize: "0.75rem", fontFamily: "monospace" }}><DisplayName address={selectedOrder.data.seller} /></span></div>
@@ -2378,7 +2378,7 @@ export function CheckoutSummary({
                         <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)", marginBottom: "0.5rem" }}>
                           Provide this secure 4-digit PIN to the breeder when picking up your specimens:
                         </p>
-                        <div style={{ fontSize: "2rem", fontWeight: "700", letterSpacing: "0.25em", color: "var(--accent-amber)", background: "rgba(0,0,0,0.3)", padding: "0.5rem 1rem", borderRadius: "8px", display: "inline-block" }}>
+                        <div style={{ fontSize: "2rem", fontWeight: "700", letterSpacing: "0.25em", color: "var(--accent-amber)", background: "var(--bg-band)", padding: "0.5rem 1rem", borderRadius: "8px", display: "inline-block" }}>
                           {/* In local dev, PIN can be read or is pre-communicated. We can simulate displaying a generated pin from local storage or mock */}
                           {"2541"}
                         </div>
@@ -2404,8 +2404,8 @@ export function CheckoutSummary({
                           gap: "0.5rem", 
                           marginBottom: "1rem",
                           padding: "0.5rem",
-                          background: currentLocation.isInsideEventZone ? "rgba(34, 197, 94, 0.08)" : "rgba(255,255,255,0.02)",
-                          border: currentLocation.isInsideEventZone ? "1px solid rgba(34, 197, 94, 0.2)" : "1px solid rgba(255,255,255,0.05)",
+                          background: currentLocation.isInsideEventZone ? "rgba(34, 197, 94, 0.08)" : "rgba(var(--ink-rgb), 0.02)",
+                          border: currentLocation.isInsideEventZone ? "1px solid rgba(34, 197, 94, 0.2)" : "1px solid rgba(var(--ink-rgb), 0.1)",
                           borderRadius: "4px"
                         }}>
                           <input 
@@ -2469,7 +2469,7 @@ export function CheckoutSummary({
             {/* SHIPPING SINGLE ORDER FULLFILLMENTS */}
             {selectedOrder.type === "shipping" && (
               <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-                <div style={{ background: "rgba(255,255,255,0.02)", padding: "0.75rem", borderRadius: "4px", fontSize: "0.85rem" }}>
+                <div style={{ background: "rgba(var(--ink-rgb), 0.02)", padding: "0.75rem", borderRadius: "4px", fontSize: "0.85rem" }}>
                   <div>Specimen: <strong>{selectedOrder.data.commonName}</strong></div>
                   <div>Seller: <span style={{ fontSize: "0.75rem", fontFamily: "monospace" }}><DisplayName address={selectedOrder.data.seller} /></span></div>
                   <div>Buyer: <span style={{ fontSize: "0.75rem", fontFamily: "monospace" }}><DisplayName address={selectedOrder.data.buyer} /></span></div>
@@ -2490,7 +2490,7 @@ export function CheckoutSummary({
                             is bought from the carrier and auto-populates dispatch —
                             no manual entry, no separate carrier account tab. */}
                         <div style={{ padding: "0.75rem", background: "rgba(52,211,153,0.06)", border: "1px solid rgba(52,211,153,0.25)", borderRadius: "6px", fontSize: "0.8rem" }}>
-                          <strong style={{ color: "#34d399" }}>🏷️ Buy label &amp; auto-dispatch</strong>
+                          <strong style={{ color: "var(--accent-green)" }}>🏷️ Buy label &amp; auto-dispatch</strong>
                           <p style={{ margin: "0.4rem 0 0", color: "var(--text-muted)", fontSize: "0.75rem" }}>
                             Purchases the shipping label the buyer already paid for and fills in tracking automatically.
                           </p>
@@ -2511,7 +2511,7 @@ export function CheckoutSummary({
                               value={trackingInput}
                               onChange={(e) => setTrackingInput(e.target.value)}
                               placeholder="e.g. USPS 94001000..."
-                              style={{ width: "100%", padding: "0.5rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px" }}
+                              style={{ width: "100%", padding: "0.5rem", background: "rgba(var(--ink-rgb), 0.03)", border: "1px solid var(--glass-border)", color: "var(--text-primary)", borderRadius: "4px" }}
                             />
                             <button className="btn-secondary" style={{ justifyContent: "center" }} disabled={!trackingInput || actionLoading} onClick={handleDispatchShipping}>
                               {actionLoading ? "Updating Status..." : "Mark Dispatched"}

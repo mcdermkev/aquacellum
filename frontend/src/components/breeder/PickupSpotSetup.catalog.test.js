@@ -45,9 +45,9 @@ describe("PickupSpotSetup — CRUD calls only the pickupCoordinationApi service 
 });
 
 describe("PickupSpotSetup — Mapbox pin picker mirrors TideMap.jsx's pattern, degrades gracefully", () => {
-  it("reads VITE_MAPBOX_TOKEN and reuses the dark-v11 style", () => {
+  it("reads VITE_MAPBOX_TOKEN and reuses the light-v11 style", () => {
     expect(SOURCE).toContain("import.meta.env.VITE_MAPBOX_TOKEN");
-    expect(SOURCE).toContain("mapbox://styles/mapbox/dark-v11");
+    expect(SOURCE).toContain("mapbox://styles/mapbox/light-v11");
   });
 
   it("degrades to manual lat/lng entry when no Mapbox token is configured", () => {

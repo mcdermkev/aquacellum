@@ -27,13 +27,13 @@ export function CartButton({ onOpen }) {
         height: "38px",
         borderRadius: "10px",
         border: "1px solid var(--glass-border)",
-        background: "rgba(255,255,255,0.02)",
+        background: "rgba(var(--ink-rgb), 0.02)",
         color: "var(--text-secondary)",
         cursor: "pointer",
         transition: "all 0.3s cubic-bezier(0.4,0,0.2,1)",
         flexShrink: 0,
       }}
-      onMouseEnter={(e) => { e.currentTarget.style.color = "#fff"; e.currentTarget.style.borderColor = "var(--teal-400)"; }}
+      onMouseEnter={(e) => { e.currentTarget.style.color = "var(--text-primary)"; e.currentTarget.style.borderColor = "var(--accent-teal)"; }}
       onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-secondary)"; e.currentTarget.style.borderColor = "var(--glass-border)"; }}
     >
       <ShoppingCartSimple size={20} weight="duotone" />
@@ -48,14 +48,14 @@ export function CartButton({ onOpen }) {
             height: "18px",
             padding: "0 4px",
             borderRadius: "9px",
-            background: "linear-gradient(135deg, var(--teal-400), var(--violet-500))",
-            color: "#04120f",
+            background: "linear-gradient(135deg, var(--accent-teal), var(--accent-violet))",
+            color: "#fff",
             fontSize: "0.62rem",
             fontWeight: 700,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            boxShadow: "0 0 8px rgba(45, 212, 191, 0.4)",
+            boxShadow: "var(--shadow-md)",
           }}
         >
           {totals.itemCount > 99 ? "99+" : totals.itemCount}

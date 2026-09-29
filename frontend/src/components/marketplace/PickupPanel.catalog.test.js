@@ -73,9 +73,9 @@ describe("PickupPanel — reuses the existing messaging channel and handshake su
 });
 
 describe("PickupPanel — Mapbox map mirrors TideMap.jsx's pattern, degrades gracefully", () => {
-  it("reads VITE_MAPBOX_TOKEN and reuses the dark-v11 style", () => {
+  it("reads VITE_MAPBOX_TOKEN and reuses the light-v11 style", () => {
     expect(SOURCE).toContain("import.meta.env.VITE_MAPBOX_TOKEN");
-    expect(SOURCE).toContain("mapbox://styles/mapbox/dark-v11");
+    expect(SOURCE).toContain("mapbox://styles/mapbox/light-v11");
   });
 
   it("degrades to address-text + an Open-in-Maps link when the token/coords are absent", () => {

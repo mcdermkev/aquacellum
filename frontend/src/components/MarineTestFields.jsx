@@ -10,7 +10,7 @@ import { envelopeForTank, getTrackBackground, isInsideEnvelope } from "../utils/
 import { normalizeReading } from "../utils/tankHealth";
 
 const labelStyle = { display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.25rem" };
-const numberStyle = { width: "100%", padding: "0.5rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px" };
+const numberStyle = { width: "100%", padding: "0.5rem", background: "rgba(var(--ink-rgb), 0.03)", border: "1px solid var(--glass-border)", color: "var(--text-primary)", borderRadius: "4px" };
 const hintStyle = { fontSize: "0.6rem", color: "var(--text-muted)" };
 
 function status(value, min, max) {
@@ -24,7 +24,7 @@ function Slider({ id, label, unit, value, min, max, step, safeMin, safeMax, hint
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.75rem", marginBottom: "0.25rem" }}>
         <label htmlFor={id} style={{ color: "var(--text-secondary)" }}>{label}</label>
-        <strong style={{ color: ok ? "#4ade80" : "#f87171" }}>
+        <strong style={{ color: ok ? "var(--accent-green)" : "var(--accent-red)" }}>
           {value}{unit ? ` ${unit}` : ""} {ok ? "(Ideal)" : "(Warning)"}
         </strong>
       </div>
@@ -64,7 +64,7 @@ function Optional({ id, label, value, step, placeholder, target, onChange, ok })
         aria-describedby={`${id}-hint`}
         style={{ ...numberStyle, ...(ok === false ? { borderColor: "rgba(248, 113, 113, 0.6)" } : {}) }}
       />
-      <span id={`${id}-hint`} style={{ ...hintStyle, ...(ok === false ? { color: "#f87171" } : {}) }}>
+      <span id={`${id}-hint`} style={{ ...hintStyle, ...(ok === false ? { color: "var(--accent-red)" } : {}) }}>
         {ok === false ? "Outside target. " : ""}Target {target}. Optional.
       </span>
     </div>
@@ -124,7 +124,7 @@ export function MarineReadingTile({ tank }) {
         {rows.map((row) => (
           <div key={row.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <span>{row.label}:</span>
-            <strong style={{ color: row.ok ? "#4ade80" : "#f87171" }}>{row.value}{row.ok ? "" : " (outside target)"}</strong>
+            <strong style={{ color: row.ok ? "var(--accent-green)" : "var(--accent-red)" }}>{row.value}{row.ok ? "" : " (outside target)"}</strong>
           </div>
         ))}
       </div>

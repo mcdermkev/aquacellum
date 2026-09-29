@@ -76,7 +76,7 @@ export function FontSizeSettings() {
           padding: "8px 12px",
           marginBottom: 12,
           fontSize: 11,
-          color: "#fbbf24"
+          color: "var(--accent-amber)"
         }}>
           📝 Preview mode - click Apply to keep changes or select another size
         </div>
@@ -84,7 +84,7 @@ export function FontSizeSettings() {
 
       {/* Font scale options */}
       <div style={cardStyle}>
-        <div id="font-scale-label" style={{ fontSize: 12, fontWeight: 600, color: "#e2e8f0", marginBottom: 12 }}>
+        <div id="font-scale-label" style={{ fontSize: 12, fontWeight: 600, color: "var(--text-primary)", marginBottom: 12 }}>
           Font Scale
         </div>
 
@@ -106,16 +106,16 @@ export function FontSizeSettings() {
 
       {/* Sample text */}
       <div style={cardStyle}>
-        <div style={{ fontSize: 12, fontWeight: 600, color: "#e2e8f0", marginBottom: 8 }}>
+        <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-primary)", marginBottom: 8 }}>
           Sample Text
         </div>
-        <div style={{ fontSize: "var(--font-size-lg)", fontWeight: 600, color: "#38bdf8", marginBottom: 4 }}>
+        <div style={{ fontSize: "var(--font-size-lg)", fontWeight: 600, color: "var(--accent-blue)", marginBottom: 4 }}>
           Aquadex
         </div>
-        <div style={{ fontSize: "var(--font-size-base)", color: "#e2e8f0", marginBottom: 4 }}>
+        <div style={{ fontSize: "var(--font-size-base)", color: "var(--text-primary)", marginBottom: 4 }}>
           Your freshwater aquarium companion for species tracking and care logging.
         </div>
-        <div style={{ fontSize: "var(--font-size-sm)", color: "#94a3b8" }}>
+        <div style={{ fontSize: "var(--font-size-sm)", color: "var(--text-muted)" }}>
           Tank parameters: pH 7.2 • Temp 24.5°C • 40L planted community tank
         </div>
       </div>
@@ -130,7 +130,7 @@ export function FontSizeSettings() {
             background: "rgba(239, 68, 68, 0.08)",
             border: "1px solid rgba(239, 68, 68, 0.3)",
             borderRadius: 6,
-            color: "#f87171",
+            color: "var(--accent-red)",
             cursor: "pointer",
           }}
         >
@@ -164,16 +164,16 @@ function FontScaleOption({
   onPreviewEnd
 }) {
   const borderColor = isActive 
-    ? "#38bdf8" 
+    ? "#0284c7" 
     : isPreviewing 
-    ? "#fbbf24" 
-    : "rgba(255, 255, 255, 0.08)";
+    ? "#f59e0b" 
+    : "rgba(var(--ink-rgb), 0.13)";
     
   const backgroundColor = isActive
     ? "rgba(56, 189, 248, 0.08)"
     : isPreviewing
     ? "rgba(251, 191, 36, 0.08)"
-    : "rgba(255, 255, 255, 0.02)";
+    : "rgba(var(--ink-rgb), 0.02)";
 
   return (
     <button
@@ -208,18 +208,18 @@ function FontScaleOption({
             display: "block",
             fontSize: 12,
             fontWeight: 600,
-            color: isActive ? "#38bdf8" : isPreviewing ? "#fbbf24" : "#e2e8f0"
+            color: isActive ? "var(--accent-blue)" : isPreviewing ? "var(--accent-amber)" : "var(--text-primary)"
           }}>
             {config.label}
             {isActive && <span aria-hidden="true" style={{ marginLeft: 6 }}>✓</span>}
           </span>
-          <span style={{ display: "block", fontSize: 10, color: "#64748b", marginTop: 2 }}>
+          <span style={{ display: "block", fontSize: 10, color: "var(--text-muted)", marginTop: 2 }}>
             {config.description}
           </span>
         </span>
         <span aria-hidden="true" style={{
           fontSize: 11,
-          color: "#64748b",
+          color: "var(--text-muted)",
           fontFamily: "monospace"
         }}>
           {config.value}×
@@ -234,8 +234,8 @@ function FontScaleOption({
 // SettingsSection card owns that chrome now (AC-2).
 
 const cardStyle = {
-  background: "rgba(15, 23, 42, 0.6)",
-  border: "1px solid rgba(255, 255, 255, 0.08)",
+  background: "var(--bg-secondary)",
+  border: "1px solid rgba(var(--ink-rgb), 0.13)",
   borderRadius: 10,
   padding: "12px 14px",
   marginBottom: 12,

@@ -78,7 +78,7 @@ export function TideMap({ tideId, gpsBounds, attendees = [], isLive, onCheckIn }
 
     const map = new window.mapboxgl.Map({
       container: mapContainer.current,
-      style: "mapbox://styles/mapbox/dark-v11",
+      style: "mapbox://styles/mapbox/light-v11",
       center,
       zoom: 13,
     });

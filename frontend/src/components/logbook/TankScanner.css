@@ -3,7 +3,7 @@
 .tank-scanner-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.85);
+  background: rgba(11, 37, 48, 0.45);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   display: flex;
@@ -28,11 +28,11 @@
   justify-content: space-between;
   margin-bottom: 1rem;
 }
-.ts-head strong { color: #fff; font-size: 1rem; text-transform: capitalize; }
+.ts-head strong { color: var(--text-primary); font-size: 1rem; text-transform: capitalize; }
 .ts-close {
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.12));
-  color: #fff;
+  background: rgba(var(--ink-rgb), 0.06);
+  border: 1px solid var(--glass-border, rgba(var(--ink-rgb), 0.12));
+  color: var(--text-primary);
   width: 30px; height: 30px;
   border-radius: 8px;
   cursor: pointer;
@@ -90,7 +90,7 @@
   border-radius: 10px;
   background: rgba(251, 191, 36, 0.08);
   border: 1px solid rgba(251, 191, 36, 0.3);
-  color: #fcd34d;
+  color: var(--accent-amber);
   font-size: 0.82rem;
   line-height: 1.45;
   text-align: center;
@@ -102,7 +102,7 @@
   border-radius: 8px;
   background: rgba(244, 63, 94, 0.08);
   border: 1px solid rgba(244, 63, 94, 0.3);
-  color: #fca5a5;
+  color: var(--accent-red);
   font-size: 0.78rem;
   text-align: center;
 }
@@ -111,10 +111,10 @@
 .ts-manual input {
   flex: 1;
   min-width: 0;
-  background: rgba(0, 0, 0, 0.3);
-  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.12));
+  background: #fff;
+  border: 1px solid var(--glass-border, rgba(var(--ink-rgb), 0.12));
   border-radius: 8px;
-  color: #fff;
+  color: var(--text-primary);
   padding: 0.55rem 0.75rem;
   font-size: 0.85rem;
 }

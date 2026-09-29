@@ -34,7 +34,7 @@ export function TankmateRequests({ onNavigateProfile, casualModeActive = false }
       }}
     >
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.75rem" }}>
-        <h3 style={{ margin: 0, fontSize: "0.8rem", fontWeight: 600, color: "#fff" }}>
+        <h3 style={{ margin: 0, fontSize: "0.8rem", fontWeight: 600, color: "var(--text-primary)" }}>
           🤝 {casualModeActive ? "Tankmate Requests" : "Connection Requests"} ({requests.length})
         </h3>
       </div>
@@ -51,8 +51,8 @@ export function TankmateRequests({ onNavigateProfile, casualModeActive = false }
                 gap: "0.6rem",
                 padding: "0.5rem 0.6rem",
                 borderRadius: "8px",
-                background: "rgba(255, 255, 255, 0.02)",
-                border: "1px solid rgba(255, 255, 255, 0.05)",
+                background: "rgba(var(--ink-rgb), 0.03)",
+                border: "1px solid rgba(var(--ink-rgb), 0.1)",
               }}
             >
               {/* Profile info */}
@@ -109,14 +109,14 @@ export function TankmateRequests({ onNavigateProfile, casualModeActive = false }
                   style={{
                     padding: "0.3rem 0.6rem",
                     borderRadius: "6px",
-                    border: "1px solid rgba(255, 255, 255, 0.08)",
+                    border: "1px solid rgba(var(--ink-rgb), 0.13)",
                     background: "transparent",
                     color: "var(--text-muted)",
                     fontSize: "0.65rem",
                     cursor: "pointer",
                     transition: "color 0.15s ease",
                   }}
-                  onMouseEnter={(e) => { e.currentTarget.style.color = "#fff"; }}
+                  onMouseEnter={(e) => { e.currentTarget.style.color = "var(--text-primary)"; }}
                   onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)"; }}
                 >
                   ✕

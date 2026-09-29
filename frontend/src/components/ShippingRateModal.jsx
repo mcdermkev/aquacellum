@@ -134,11 +134,11 @@ export function ShippingRateModal({ isOpen, onClose, listing, onProceed }) {
         onClick={(e) => e.stopPropagation()}
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-          <h3 style={{ margin: 0, color: "#fff" }}>🚚 Shipping — {listing.commonName || "Live specimen"}</h3>
+          <h3 style={{ margin: 0, color: "var(--text-primary)" }}>🚚 Shipping — {listing.commonName || "Live specimen"}</h3>
           <button onClick={onClose} style={closeBtn} aria-label="Close shipping options">✕</button>
         </div>
 
-        <p style={{ color: "var(--text-muted, #9fb3c8)", fontSize: "0.85rem", marginTop: 0 }}>
+        <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", marginTop: 0 }}>
           Item {priceUSD}. Shipping is quoted live from the seller to your address, so you only pay the real
           distance-based cost. Live fish ship expedited only.
         </p>
@@ -169,13 +169,13 @@ export function ShippingRateModal({ isOpen, onClose, listing, onProceed }) {
         {/* Rate options */}
         {rates.length > 0 && (
           <div style={{ marginTop: 14 }}>
-            <div style={{ color: "#fff", fontWeight: 600, marginBottom: 6 }}>Choose a service</div>
+            <div style={{ color: "var(--text-primary)", fontWeight: 600, marginBottom: 6 }}>Choose a service</div>
             {rates.map((r) => (
-              <label key={r.rateId} style={{ ...rateRow, borderColor: r.rateId === selectedRateId ? "#34d399" : "rgba(255,255,255,0.1)" }}>
+              <label key={r.rateId} style={{ ...rateRow, borderColor: r.rateId === selectedRateId ? "var(--accent-green-fill)" : "rgba(var(--ink-rgb), 0.15)" }}>
                 <input type="radio" name="rate" checked={r.rateId === selectedRateId} onChange={() => setSelectedRateId(r.rateId)} />
                 <span style={{ flex: 1 }}>{describeRate(r)}</span>
                 {r.estimatedDeliveryDate && (
-                  <span style={{ color: "var(--text-muted, #9fb3c8)", fontSize: "0.75rem" }}>
+                  <span style={{ color: "var(--text-muted)", fontSize: "0.75rem" }}>
                     ~{new Date(r.estimatedDeliveryDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                   </span>
                 )}
@@ -186,22 +186,22 @@ export function ShippingRateModal({ isOpen, onClose, listing, onProceed }) {
             {advice && (
               <div style={adviceBox}>
                 {advice.window && (
-                  <div style={{ color: advice.window.canShipToday ? "#34d399" : "#fbbf24" }}>
+                  <div style={{ color: advice.window.canShipToday ? "var(--accent-green)" : "var(--accent-amber)" }}>
                     ⏱ {advice.window.reason}
                   </div>
                 )}
                 {advice.thermal && advice.thermal.recommend !== "none" && (
-                  <div style={{ color: "#93c5fd", marginTop: 4 }}>
+                  <div style={{ color: "var(--accent-blue)", marginTop: 4 }}>
                     {advice.thermal.recommend === "heat" ? "🔥" : "❄️"} {advice.thermal.reason}
                   </div>
                 )}
               </div>
             )}
 
-            <button onClick={handleContinue} disabled={!selectedRate} style={{ ...primaryBtn, marginTop: 12, background: "#34d399" }}>
+            <button onClick={handleContinue} disabled={!selectedRate} style={{ ...primaryBtn, marginTop: 12, background: "var(--accent-green-fill)" }}>
               Continue to payment — {selectedRate ? formatUSD((listing.priceCentsUSD || 0) + selectedRate.amountCents) : priceUSD}
             </button>
-            <p style={{ color: "var(--text-muted, #9fb3c8)", fontSize: "0.72rem", textAlign: "center", marginTop: 6 }}>
+            <p style={{ color: "var(--text-muted)", fontSize: "0.72rem", textAlign: "center", marginTop: 6 }}>
               Item + shipping{handlingFeeCents > 0 ? " & handling" : ""}. Funds are held in escrow until you confirm live arrival.
             </p>
           </div>
@@ -212,11 +212,11 @@ export function ShippingRateModal({ isOpen, onClose, listing, onProceed }) {
 }
 
 // ─── inline styles (kept local to avoid touching global CSS) ────────────────
-const overlay = { position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 };
-const modal = { background: "#0f1b2a", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 16, padding: 20, width: "100%", maxWidth: 460, maxHeight: "90vh", overflowY: "auto" };
-const input = { background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 8, padding: "9px 11px", color: "#fff", fontSize: "0.85rem", width: "100%", boxSizing: "border-box" };
-const primaryBtn = { width: "100%", padding: "11px", borderRadius: 10, border: "none", background: "#3b82f6", color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: "0.9rem" };
-const closeBtn = { background: "none", border: "none", color: "#9fb3c8", fontSize: "1.1rem", cursor: "pointer" };
-const errorBox = { marginTop: 10, padding: "9px 11px", background: "rgba(248,113,113,0.12)", border: "1px solid rgba(248,113,113,0.3)", borderRadius: 8, color: "#fca5a5", fontSize: "0.82rem" };
-const rateRow = { display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, marginBottom: 6, color: "#fff", fontSize: "0.85rem", cursor: "pointer" };
-const adviceBox = { marginTop: 10, padding: "10px 12px", background: "rgba(255,255,255,0.04)", borderRadius: 10, fontSize: "0.8rem" };
+const overlay = { position: "fixed", inset: 0, background: "rgba(11, 37, 48, 0.45)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 };
+const modal = { background: "#ffffff", boxShadow: "var(--shadow-lg)", border: "1px solid rgba(var(--ink-rgb), 0.15)", borderRadius: 16, padding: 20, width: "100%", maxWidth: 460, maxHeight: "90vh", overflowY: "auto" };
+const input = { background: "rgba(var(--ink-rgb), 0.05)", border: "1px solid rgba(var(--ink-rgb), 0.17)", borderRadius: 8, padding: "9px 11px", color: "var(--text-primary)", fontSize: "0.85rem", width: "100%", boxSizing: "border-box" };
+const primaryBtn = { width: "100%", padding: "11px", borderRadius: 10, border: "none", background: "var(--accent-blue-fill)", color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: "0.9rem" };
+const closeBtn = { background: "none", border: "none", color: "var(--text-muted)", fontSize: "1.1rem", cursor: "pointer" };
+const errorBox = { marginTop: 10, padding: "9px 11px", background: "rgba(248,113,113,0.12)", border: "1px solid rgba(248,113,113,0.3)", borderRadius: 8, color: "var(--accent-red)", fontSize: "0.82rem" };
+const rateRow = { display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", border: "1px solid rgba(var(--ink-rgb), 0.15)", borderRadius: 10, marginBottom: 6, color: "var(--text-primary)", fontSize: "0.85rem", cursor: "pointer" };
+const adviceBox = { marginTop: 10, padding: "10px 12px", background: "rgba(var(--ink-rgb), 0.04)", borderRadius: 10, fontSize: "0.8rem" };

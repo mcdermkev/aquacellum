@@ -31,7 +31,7 @@ import { ORDER_STATES } from "../services/marketplaceStateMachine";
 const COLORS = {
   done: "#34d399",     // green — completed step
   current: "#38bdf8",  // blue — where the order is now
-  pending: "rgba(255,255,255,0.18)",
+  pending: "rgba(11, 37, 48, 0.2)",
   alert: "#f87171",    // red — problem/refund
 };
 
@@ -103,7 +103,7 @@ export function OrderTimeline({ order, casualModeActive = false, compact = false
           flexDirection: "column",
           gap,
           paddingLeft: "0.5rem",
-          borderLeft: "2px solid rgba(255,255,255,0.06)",
+          borderLeft: "2px solid rgba(var(--ink-rgb), 0.11)",
         }}
       >
         {steps.map((step) => {
@@ -125,7 +125,7 @@ export function OrderTimeline({ order, casualModeActive = false, compact = false
               <div style={{ flex: 1, display: "flex", alignItems: "baseline", gap: "0.5rem" }}>
                 <span
                   style={{
-                    color: isPending ? "var(--text-muted)" : "#fff",
+                    color: isPending ? "var(--text-muted)" : "var(--text-primary)",
                     fontSize: "0.74rem",
                     fontWeight: step.state === "current" ? 600 : 400,
                   }}

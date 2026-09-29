@@ -54,13 +54,13 @@ export function SponsorCard({
         right: "0.75rem",
         fontSize: "0.6rem",
         fontWeight: "600",
-        color: "rgba(255, 255, 255, 0.4)",
+        color: "var(--text-muted)",
         textTransform: "uppercase",
         letterSpacing: "0.08em",
         padding: "0.15rem 0.5rem",
         borderRadius: "8px",
-        background: "rgba(255, 255, 255, 0.03)",
-        border: "1px solid rgba(255, 255, 255, 0.06)"
+        background: "rgba(var(--ink-rgb), 0.03)",
+        border: "1px solid rgba(var(--ink-rgb), 0.11)"
       }}>
         Sponsored
       </span>
@@ -76,7 +76,7 @@ export function SponsorCard({
               height: "36px",
               borderRadius: "8px",
               objectFit: "contain",
-              background: "rgba(255, 255, 255, 0.05)",
+              background: "rgba(var(--ink-rgb), 0.05)",
               padding: "4px"
             }}
           />
@@ -86,11 +86,11 @@ export function SponsorCard({
             margin: 0, 
             fontSize: "0.95rem", 
             fontWeight: "700", 
-            color: "#fff" 
+            color: "var(--text-primary)" 
           }}>
             {title || sponsor.brand}
           </h4>
-          <span style={{ fontSize: "0.7rem", color: "rgba(255, 255, 255, 0.5)" }}>
+          <span style={{ fontSize: "0.7rem", color: "var(--text-secondary)" }}>
             {sponsor.brand} Partner
           </span>
         </div>
@@ -100,7 +100,7 @@ export function SponsorCard({
       {description && (
         <p style={{
           fontSize: "0.8rem",
-          color: "rgba(255, 255, 255, 0.6)",
+          color: "var(--text-secondary)",
           lineHeight: "1.5",
           margin: "0 0 1rem 0"
         }}>
@@ -151,10 +151,10 @@ export function SponsorCard({
 
 function getAccentForVariant(variant) {
   switch (variant) {
-    case "featured": return "#38bdf8";    // Blue
-    case "partner": return "#10b981";     // Green
-    case "biome": return "#8b5cf6";       // Purple
-    case "campaign": return "#f59e0b";    // Amber
-    default: return "#38bdf8";
+    case "featured": return "#0369a1";    // Blue
+    case "partner": return "#047857";     // Green
+    case "biome": return "#6d28d9";       // Purple
+    case "campaign": return "#b45309";    // Amber
+    default: return "#0369a1";
   }
 }

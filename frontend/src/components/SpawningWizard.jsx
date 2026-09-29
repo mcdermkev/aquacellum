@@ -482,7 +482,7 @@ export function SpawningWizard({ contractAddress, walletAccount, onComplete, cas
 
   return (
     <div className="glass-card spawning-wizard-card" style={{ maxWidth: "680px", margin: "0 auto", padding: "2.5rem" }}>
-      <h2 style={{ fontSize: "1.75rem", color: "#fff", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+      <h2 style={{ fontSize: "1.75rem", color: "var(--text-primary)", display: "flex", alignItems: "center", gap: "0.5rem" }}>
         🥚 Breeding Pair Setup
       </h2>
       <p style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>
@@ -506,7 +506,7 @@ export function SpawningWizard({ contractAddress, walletAccount, onComplete, cas
       {txState.status !== "idle" && txState.status !== "success" && txState.status !== "error" && (
         <div className="glass-card" style={{ padding: "1.5rem", border: "1px solid var(--accent-blue)", textAlign: "center" }}>
           <div className="shimmer-placeholder" style={{ height: "4px", borderRadius: "2px", marginBottom: "1rem" }}></div>
-          <p style={{ color: "#fff" }}>{txState.message}</p>
+          <p style={{ color: "var(--text-primary)" }}>{txState.message}</p>
           {txState.txHash && (
             <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", fontFamily: "monospace", display: "block", wordBreak: "break-all", marginTop: "0.5rem" }}>
               Pending: {txState.txHash}
@@ -602,7 +602,7 @@ export function SpawningWizard({ contractAddress, walletAccount, onComplete, cas
                   <select 
                     value={selectedSireId}
                     onChange={(e) => setSelectedSireId(e.target.value)}
-                    style={{ width: "100%", padding: "0.5rem", background: "rgba(8,12,20,0.9)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px", fontSize: "0.8rem", marginBottom: "0.5rem" }}
+                    style={{ width: "100%", padding: "0.5rem", background: "#ffffff", border: "1px solid var(--glass-border)", color: "var(--text-primary)", borderRadius: "4px", fontSize: "0.8rem", marginBottom: "0.5rem" }}
                   >
                     <option value="0">🐟 Select a Male Fish…</option>
                     {candidatesFor(selectedDamId).map(s => (
@@ -615,7 +615,7 @@ export function SpawningWizard({ contractAddress, walletAccount, onComplete, cas
                       <span className="token-title">
                         Cert. Serial No. {formatCertSerial(selectedSire.id)}
                         {sexSymbol(selectedSire.gender) && (
-                          <span style={{ marginLeft: "0.35rem", color: selectedSire.gender === "Male" ? "#38bdf8" : "#f43f5e" }}>
+                          <span style={{ marginLeft: "0.35rem", color: selectedSire.gender === "Male" ? "var(--accent-blue)" : "#be123c" }}>
                             {sexSymbol(selectedSire.gender)}
                           </span>
                         )}
@@ -658,7 +658,7 @@ export function SpawningWizard({ contractAddress, walletAccount, onComplete, cas
                 {selectedSireId !== "0" && selectedDamId !== "0" && (
                   <div className="inbreeding-badge-connector">
                     {assessing ? (
-                      <span className="badge" style={{ fontSize: "0.72rem", padding: "0.5rem 1rem", border: "1px solid var(--glass-border)", background: "rgba(255,255,255,0.04)", color: "var(--text-muted)", whiteSpace: "nowrap" }}>
+                      <span className="badge" style={{ fontSize: "0.72rem", padding: "0.5rem 1rem", border: "1px solid var(--glass-border)", background: "rgba(var(--ink-rgb), 0.04)", color: "var(--text-muted)", whiteSpace: "nowrap" }}>
                         {casualModeActive ? PAIRING_COPY.coiChecking.casual : PAIRING_COPY.coiChecking.pro}
                       </span>
                     ) : coiSignal?.available && coiRisk ? (
@@ -667,13 +667,13 @@ export function SpawningWizard({ contractAddress, walletAccount, onComplete, cas
                         style={{
                           fontSize: "0.75rem", padding: "0.5rem 1rem", whiteSpace: "nowrap",
                           border: `1px solid ${coiRisk.color}55`, background: coiRisk.bg, color: coiRisk.color,
-                          boxShadow: "0 4px 15px rgba(0,0,0,0.5)",
+                          boxShadow: "var(--shadow-md)",
                         }}
                       >
                         {coiRisk.icon} {coiSignal.coi}% — {coiRisk.label}
                       </span>
                     ) : coiSignal ? (
-                      <span style={{ fontSize: "0.72rem", padding: "0.5rem 1rem", whiteSpace: "nowrap", borderRadius: "12px", border: "1px solid var(--glass-border)", background: "rgba(255,255,255,0.04)", color: "var(--text-muted)" }}>
+                      <span style={{ fontSize: "0.72rem", padding: "0.5rem 1rem", whiteSpace: "nowrap", borderRadius: "12px", border: "1px solid var(--glass-border)", background: "rgba(var(--ink-rgb), 0.04)", color: "var(--text-muted)" }}>
                         {casualModeActive ? PAIRING_COPY.coiUnavailable.casual : PAIRING_COPY.coiUnavailable.pro}
                       </span>
                     ) : null}
@@ -691,7 +691,7 @@ export function SpawningWizard({ contractAddress, walletAccount, onComplete, cas
                   <select 
                     value={selectedDamId}
                     onChange={(e) => setSelectedDamId(e.target.value)}
-                    style={{ width: "100%", padding: "0.5rem", background: "rgba(8,12,20,0.9)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px", fontSize: "0.8rem", marginBottom: "0.5rem" }}
+                    style={{ width: "100%", padding: "0.5rem", background: "#ffffff", border: "1px solid var(--glass-border)", color: "var(--text-primary)", borderRadius: "4px", fontSize: "0.8rem", marginBottom: "0.5rem" }}
                   >
                     <option value="0">🐟 Find a Compatible Match…</option>
                     {candidatesFor(selectedSireId).map(d => (
@@ -704,7 +704,7 @@ export function SpawningWizard({ contractAddress, walletAccount, onComplete, cas
                       <span className="token-title">
                         Cert. Serial No. {formatCertSerial(selectedDam.id)}
                         {sexSymbol(selectedDam.gender) && (
-                          <span style={{ marginLeft: "0.35rem", color: selectedDam.gender === "Male" ? "#38bdf8" : "#f43f5e" }}>
+                          <span style={{ marginLeft: "0.35rem", color: selectedDam.gender === "Male" ? "var(--accent-blue)" : "#be123c" }}>
                             {sexSymbol(selectedDam.gender)}
                           </span>
                         )}
@@ -774,7 +774,7 @@ export function SpawningWizard({ contractAddress, walletAccount, onComplete, cas
                   {/* Relatedness */}
                   <div>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "0.35rem", gap: "0.75rem", flexWrap: "wrap" }}>
-                      <strong style={{ color: "#fff", fontSize: "0.88rem" }}>
+                      <strong style={{ color: "var(--text-primary)", fontSize: "0.88rem" }}>
                         {casualModeActive ? "How closely related they are" : "Relatedness (Wright's COI)"}
                       </strong>
                       {coiSignal?.available && (
@@ -806,7 +806,7 @@ export function SpawningWizard({ contractAddress, walletAccount, onComplete, cas
                             {coiSignal.paths.map((p, i) => (
                               <span key={i} style={{ fontSize: "0.66rem", padding: "2px 8px", borderRadius: "6px", background: "rgba(251,191,36,0.06)", border: "1px solid rgba(251,191,36,0.15)", color: "#e0e0e0" }}>
                                 {p.ancestorName} <span style={{ color: "var(--text-muted)" }}>#{formatCertSerial(p.ancestorId)}</span>
-                                <span style={{ color: "#fbbf24", marginLeft: "4px", fontFamily: "'JetBrains Mono', monospace" }}>
+                                <span style={{ color: "var(--accent-amber)", marginLeft: "4px", fontFamily: "'JetBrains Mono', monospace" }}>
                                   +{(p.contribution * 100).toFixed(2)}%
                                 </span>
                               </span>
@@ -863,7 +863,7 @@ export function SpawningWizard({ contractAddress, walletAccount, onComplete, cas
                     setCreatingTank(false);
                     handleTankSelect(e.target.value);
                   }}
-                  style={{ width: "100%", padding: "0.75rem", background: "rgba(8,12,20,0.9)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px" }}
+                  style={{ width: "100%", padding: "0.75rem", background: "#ffffff", border: "1px solid var(--glass-border)", color: "var(--text-primary)", borderRadius: "4px" }}
                 >
                   <option value="0">🧴 Pick a tank…</option>
                   {tanks.map(t => (
@@ -881,7 +881,7 @@ export function SpawningWizard({ contractAddress, walletAccount, onComplete, cas
                       onKeyDown={(e) => { if (e.key === "Enter") handleCreateTank(); }}
                       placeholder={casualModeActive ? "Name your new tank (e.g. Breeding Tank)" : "New containment unit name"}
                       autoFocus
-                      style={{ flex: 1, padding: "0.6rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px", fontSize: "0.85rem" }}
+                      style={{ flex: 1, padding: "0.6rem", background: "rgba(var(--ink-rgb), 0.03)", border: "1px solid var(--glass-border)", color: "var(--text-primary)", borderRadius: "4px", fontSize: "0.85rem" }}
                     />
                     <button
                       type="button"
@@ -922,29 +922,29 @@ export function SpawningWizard({ contractAddress, walletAccount, onComplete, cas
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
                         <div className="telemetry-tile-premium">
                           <span style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>Temp</span>
-                          <strong style={{ fontSize: "1.2rem", color: "#fff" }}>{readingText(snappedParameters.temp, "°C")}</strong>
+                          <strong style={{ fontSize: "1.2rem", color: "var(--text-primary)" }}>{readingText(snappedParameters.temp, "°C")}</strong>
                         </div>
                         <div className="telemetry-tile-premium">
                           <span style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>pH</span>
-                          <strong style={{ fontSize: "1.2rem", color: "#fff" }}>{readingText(snappedParameters.ph)}</strong>
+                          <strong style={{ fontSize: "1.2rem", color: "var(--text-primary)" }}>{readingText(snappedParameters.ph)}</strong>
                         </div>
                       </div>
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.75rem" }}>
                         <div className="telemetry-tile-premium">
                           <span style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>Ammonia</span>
-                          <strong style={{ fontSize: "1.2rem", color: readingOver(snappedParameters.ammonia, 0.05) ? "var(--accent-red)" : "#fff" }}>
+                          <strong style={{ fontSize: "1.2rem", color: readingOver(snappedParameters.ammonia, 0.05) ? "var(--accent-red)" : "var(--text-primary)" }}>
                             {readingText(snappedParameters.ammonia, " ppm")}
                           </strong>
                         </div>
                         <div className="telemetry-tile-premium">
                           <span style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>Nitrite</span>
-                          <strong style={{ fontSize: "1.2rem", color: readingOver(snappedParameters.nitrite, 0.05) ? "var(--accent-red)" : "#fff" }}>
+                          <strong style={{ fontSize: "1.2rem", color: readingOver(snappedParameters.nitrite, 0.05) ? "var(--accent-red)" : "var(--text-primary)" }}>
                             {readingText(snappedParameters.nitrite, " ppm")}
                           </strong>
                         </div>
                         <div className="telemetry-tile-premium">
                           <span style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>Nitrate</span>
-                          <strong style={{ fontSize: "1.2rem", color: readingOver(snappedParameters.nitrate, 20.0) ? "var(--accent-amber)" : "#fff" }}>
+                          <strong style={{ fontSize: "1.2rem", color: readingOver(snappedParameters.nitrate, 20.0) ? "var(--accent-amber)" : "var(--text-primary)" }}>
                             {readingText(snappedParameters.nitrate, " ppm")}
                           </strong>
                         </div>
@@ -953,15 +953,15 @@ export function SpawningWizard({ contractAddress, walletAccount, onComplete, cas
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.75rem" }}>
                           <div className="telemetry-tile-premium">
                             <span style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>GH</span>
-                            <strong style={{ fontSize: "1.2rem", color: "#fff" }}>{readingText(snappedParameters.gh, " dGH")}</strong>
+                            <strong style={{ fontSize: "1.2rem", color: "var(--text-primary)" }}>{readingText(snappedParameters.gh, " dGH")}</strong>
                           </div>
                           <div className="telemetry-tile-premium">
                             <span style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>KH</span>
-                            <strong style={{ fontSize: "1.2rem", color: "#fff" }}>{readingText(snappedParameters.kh, " dKH")}</strong>
+                            <strong style={{ fontSize: "1.2rem", color: "var(--text-primary)" }}>{readingText(snappedParameters.kh, " dKH")}</strong>
                           </div>
                           <div className="telemetry-tile-premium">
                             <span style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>Alkalinity</span>
-                            <strong style={{ fontSize: "1.2rem", color: "#fff" }}>{readingText(snappedParameters.tal, " ppm")}</strong>
+                            <strong style={{ fontSize: "1.2rem", color: "var(--text-primary)" }}>{readingText(snappedParameters.tal, " ppm")}</strong>
                           </div>
                         </div>
                       )}
@@ -1010,7 +1010,7 @@ export function SpawningWizard({ contractAddress, walletAccount, onComplete, cas
                       onChange={() => {}} // handled by click
                       style={{ cursor: "pointer" }}
                     />
-                    <span style={{ fontSize: "0.9rem", color: "#fff" }}>{p.label}</span>
+                    <span style={{ fontSize: "0.9rem", color: "var(--text-primary)" }}>{p.label}</span>
                   </div>
                 ))}
               </div>
@@ -1022,7 +1022,7 @@ export function SpawningWizard({ contractAddress, walletAccount, onComplete, cas
                   value={geneticMarkers.custom} 
                   onChange={(e) => setGeneticMarkers(prev => ({ ...prev, custom: e.target.value }))}
                   placeholder="e.g. Platinum Red-Ear Mosaic, Dumbo Ear"
-                  style={{ width: "100%", padding: "0.75rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px" }}
+                  style={{ width: "100%", padding: "0.75rem", background: "rgba(var(--ink-rgb), 0.03)", border: "1px solid var(--glass-border)", color: "var(--text-primary)", borderRadius: "4px" }}
                 />
               </div>
 
@@ -1048,7 +1048,7 @@ export function SpawningWizard({ contractAddress, walletAccount, onComplete, cas
                   max="10" 
                   value={offspringCount} 
                   onChange={(e) => setOffspringCount(Math.min(10, Math.max(1, Number(e.target.value))))}
-                  style={{ width: "100%", padding: "0.75rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px" }}
+                  style={{ width: "100%", padding: "0.75rem", background: "rgba(var(--ink-rgb), 0.03)", border: "1px solid var(--glass-border)", color: "var(--text-primary)", borderRadius: "4px" }}
                 />
                 <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", marginTop: "0.25rem", display: "block" }}>
                   To prevent resource limits, a maximum of 10 offspring certificates can be registered in a single wizard flow.
@@ -1061,7 +1061,7 @@ export function SpawningWizard({ contractAddress, walletAccount, onComplete, cas
                   <label style={{ 
                     flex: 1, 
                     padding: "0.75rem", 
-                    background: "rgba(255,255,255,0.03)", 
+                    background: "rgba(var(--ink-rgb), 0.03)", 
                     border: "1px dashed var(--glass-border)", 
                     borderRadius: "4px", 
                     fontSize: "0.8rem", 
@@ -1094,8 +1094,8 @@ export function SpawningWizard({ contractAddress, walletAccount, onComplete, cas
                 </div>
               </div>
 
-              <div className="glass-card" style={{ padding: "1.25rem", background: "rgba(0,0,0,0.2)", display: "flex", flexDirection: "column", gap: "0.75rem", fontSize: "0.85rem" }}>
-                <strong style={{ color: "#fff", fontSize: "0.95rem" }}>Breeding Registry Summary</strong>
+              <div className="glass-card" style={{ padding: "1.25rem", background: "var(--bg-band)", display: "flex", flexDirection: "column", gap: "0.75rem", fontSize: "0.85rem" }}>
+                <strong style={{ color: "var(--text-primary)", fontSize: "0.95rem" }}>Breeding Registry Summary</strong>
                 <div style={{ display: "flex", justifyContent: "space-between", gap: "0.75rem" }}>
                   <span>Breeding Pair:</span>
                   <strong style={{ textAlign: "right" }}>
@@ -1140,13 +1140,13 @@ export function SpawningWizard({ contractAddress, walletAccount, onComplete, cas
           position: "fixed",
           bottom: "2rem",
           right: "2rem",
-          background: "rgba(10, 15, 30, 0.9)",
+          background: "#ffffff",
           backdropFilter: "blur(8px)",
           border: "1px solid var(--accent-red)",
-          color: "#fff",
+          color: "var(--text-primary)",
           padding: "1rem 1.5rem",
           borderRadius: "var(--radius-md)",
-          boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 0 15px rgba(248, 113, 113, 0.2)",
+          boxShadow: "var(--shadow-lg)",
           zIndex: 9999,
           display: "flex",
           alignItems: "center",

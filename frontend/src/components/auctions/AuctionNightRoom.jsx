@@ -59,7 +59,7 @@ export function AuctionNightRoom({ auctionId, paidNumber = null }) {
           <Bubbles />
           <div className="an-room-main">
             <div>
-              <CheckCircle size={96} weight="duotone" color="#4ade80" aria-hidden="true" />
+              <CheckCircle size={96} weight="duotone" color="var(--accent-green)" aria-hidden="true" />
               <h1 className="an-room-title" style={{ fontSize: "clamp(2rem, 8vw, 3.5rem)" }}>You&apos;re paid, bidder #{paidNumber}</h1>
               <p className="an-room-price">Show this screen at the desk to collect your fish.</p>
               {room && <p className="an-soft" style={{ marginTop: "1rem" }}>{room.clubName} · {room.title}</p>}

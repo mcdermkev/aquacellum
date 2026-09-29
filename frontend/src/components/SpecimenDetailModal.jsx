@@ -587,9 +587,9 @@ export function SpecimenDetailModal({
   if (!activeId) return null;
 
   const statusBadgeColors = [
-    { text: "#22c55e", bg: "rgba(34, 197, 94, 0.1)", border: "rgba(34, 197, 94, 0.2)" }, // Active
-    { text: "#ef4444", bg: "rgba(239, 68, 68, 0.1)", border: "rgba(239, 68, 68, 0.2)" }, // Deceased
-    { text: "#3b82f6", bg: "rgba(59, 130, 246, 0.1)", border: "rgba(59, 130, 246, 0.2)" }  // Rehomed
+    { text: "var(--accent-green)", bg: "rgba(34, 197, 94, 0.1)", border: "rgba(34, 197, 94, 0.2)" }, // Active
+    { text: "var(--accent-red)", bg: "rgba(239, 68, 68, 0.1)", border: "rgba(239, 68, 68, 0.2)" }, // Deceased
+    { text: "var(--accent-blue)", bg: "rgba(59, 130, 246, 0.1)", border: "rgba(59, 130, 246, 0.2)" }  // Rehomed
   ];
 
   // `customPhoto` is resolved in the effect near the state declarations above (§9.3).
@@ -600,9 +600,9 @@ export function SpecimenDetailModal({
   const finalImgSrc = customPhoto || masterPhotoUrl;
   const isPlant = isPlantEntry(matchedSpecies || { specCode: spec?.speciesId || 0 });
   const badgeLabel = isPlant ? "🌿 Certified Master Flora" : "🛡️ Breeder-Verified Master Stock";
-  const badgeBg = isPlant ? "rgba(16,185,129,0.18)" : "rgba(56,189,248,0.12)";
+  const badgeBg = isPlant ? "rgba(236, 253, 245, 0.92)" : "rgba(240, 249, 255, 0.92)";
   const badgeBorder = isPlant ? "rgba(16,185,129,0.45)" : "rgba(56,189,248,0.35)";
-  const badgeColor = isPlant ? "#34d399" : "#7dd3fc";
+  const badgeColor = isPlant ? "var(--accent-green)" : "var(--accent-blue)";
 
   const renderNodeCard = (node, label) => {
     if (!node) {
@@ -610,8 +610,8 @@ export function SpecimenDetailModal({
         <div style={{
           padding: "0.3rem 0.4rem",
           borderRadius: "6px",
-          background: "rgba(255, 255, 255, 0.01)",
-          border: "1px dashed rgba(255, 255, 255, 0.05)",
+          background: "rgba(var(--ink-rgb), 0.01)",
+          border: "1px dashed rgba(var(--ink-rgb), 0.1)",
           textAlign: "center",
           fontSize: "0.6rem",
           color: "var(--text-muted)",
@@ -632,7 +632,7 @@ export function SpecimenDetailModal({
         style={{
           padding: "0.3rem 0.4rem",
           borderRadius: "6px",
-          background: "rgba(255, 255, 255, 0.03)",
+          background: "rgba(var(--ink-rgb), 0.03)",
           border: "1px solid var(--glass-border)",
           cursor: "pointer",
           fontSize: "0.6rem",
@@ -643,11 +643,11 @@ export function SpecimenDetailModal({
           justifyContent: "center",
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.background = "rgba(255, 255, 255, 0.08)";
+          e.currentTarget.style.background = "rgba(var(--ink-rgb), 0.08)";
           e.currentTarget.style.borderColor = "var(--accent-blue)";
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.background = "rgba(255, 255, 255, 0.03)";
+          e.currentTarget.style.background = "rgba(var(--ink-rgb), 0.03)";
           e.currentTarget.style.borderColor = "var(--glass-border)";
         }}
       >
@@ -655,7 +655,7 @@ export function SpecimenDetailModal({
           <span style={{ fontSize: "0.5rem", color: "var(--accent-blue)", fontWeight: "600" }}>{label}</span>
           <span style={{ fontFamily: "monospace", opacity: 0.8 }}>Cert. #{node.id}</span>
         </div>
-        <div style={{ color: "#fff", fontWeight: "600", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        <div style={{ color: "var(--text-primary)", fontWeight: "600", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {node.commonName}
         </div>
       </div>
@@ -771,7 +771,7 @@ export function SpecimenDetailModal({
           padding: "1.25rem 1.5rem",
           borderBottom: "1px solid var(--glass-border)"
         }}>
-          <h3 style={{ fontSize: "1.25rem", color: "#fff", display: "flex", alignItems: "center", gap: "0.5rem", margin: 0 }}>
+          <h3 style={{ fontSize: "1.25rem", color: "var(--text-primary)", display: "flex", alignItems: "center", gap: "0.5rem", margin: 0 }}>
             <span>{isPlant ? "🌿" : "🐟"}</span> Birth Certificate Serial No. {activeId.toString().padStart(3, "0")}
           </h3>
           <button 
@@ -807,10 +807,10 @@ export function SpecimenDetailModal({
                   height: "12rem",
                   width: "100%",
                   borderRadius: "0.75rem",
-                  background: "linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%)",
+                  background: "linear-gradient(135deg, rgba(var(--ink-rgb), 0.03) 0%, rgba(var(--ink-rgb), 0.01) 100%)",
                   backdropFilter: "blur(12px)",
-                  boxShadow: "inset 0 1px 1px rgba(255, 255, 255, 0.05), 0 4px 15px rgba(0, 0, 0, 0.1)",
-                  border: "1px solid rgba(255, 255, 255, 0.08)",
+                  boxShadow: "inset 0 1px 1px rgba(255, 255, 255, 0.05), 0 4px 15px rgba(11, 37, 48, 0.03)",
+                  border: "1px solid rgba(var(--ink-rgb), 0.13)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -897,7 +897,7 @@ export function SpecimenDetailModal({
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
                   <div>
                     <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", display: "block", textTransform: "uppercase" }}>Common Name</span>
-                    <strong style={{ fontSize: "1.25rem", color: "#fff" }}>{speciesInfo.commonName}</strong>
+                    <strong style={{ fontSize: "1.25rem", color: "var(--text-primary)" }}>{speciesInfo.commonName}</strong>
                     {evaluateCompatibility(speciesInfo || matchedSpecies, activeUserTank) && (
                       <div className="perfect-fit-badge">✅ Perfect Aquarium Fit</div>
                     )}
@@ -909,16 +909,16 @@ export function SpecimenDetailModal({
                   {spec.varietyName && (
                     <div>
                       <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", display: "block", textTransform: "uppercase" }}>Morph / Variety</span>
-                      <span style={{ fontSize: "0.9rem", color: "#fff" }}>{spec.varietyName}</span>
+                      <span style={{ fontSize: "0.9rem", color: "var(--text-primary)" }}>{spec.varietyName}</span>
                     </div>
                   )}
                   <div>
                     <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", display: "block", textTransform: "uppercase" }}>Estimated Age</span>
-                    <span style={{ fontSize: "0.9rem", color: "#fff" }}>{calculateAge(spec.birthTimestamp, spec.lifeStage)}</span>
+                    <span style={{ fontSize: "0.9rem", color: "var(--text-primary)" }}>{calculateAge(spec.birthTimestamp, spec.lifeStage)}</span>
                   </div>
                   <div>
                     <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", display: "block", textTransform: "uppercase" }}>Registered Breeder</span>
-                    <span style={{ fontSize: "0.9rem", color: "#fff", fontWeight: "600" }}>
+                    <span style={{ fontSize: "0.9rem", color: "var(--text-primary)", fontWeight: "600" }}>
                       {ownerDisplayName}
                     </span>
                   </div>
@@ -930,7 +930,7 @@ export function SpecimenDetailModal({
                   <div>
                     <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", display: "block", textTransform: "uppercase" }}>Origin</span>
                     <span
-                      style={{ fontSize: "0.9rem", color: "#fff" }}
+                      style={{ fontSize: "0.9rem", color: "var(--text-primary)" }}
                       title={provenanceText(resolveProvenance(spec), { casual: casualModeActive })}
                     >
                       {provenanceLabel(spec, { casual: casualModeActive })}
@@ -970,7 +970,7 @@ export function SpecimenDetailModal({
                     <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem", fontSize: "0.8rem" }}>
                       <div>
                         <span style={{ color: "var(--text-secondary)" }}>Unit Name:</span>{" "}
-                        <strong style={{ color: "#fff" }}>{tankInfo.name}</strong>
+                        <strong style={{ color: "var(--text-primary)" }}>{tankInfo.name}</strong>
                       </div>
                       <div>
                         <span style={{ color: "var(--text-secondary)" }}>Registry ID:</span>{" "}
@@ -1006,7 +1006,7 @@ export function SpecimenDetailModal({
                       <div style={{
                         fontSize: "0.8rem",
                         fontWeight: "700",
-                        color: "#34d399",
+                        color: "var(--accent-green)",
                         background: "rgba(16, 185, 129, 0.12)",
                         border: "1px solid rgba(16, 185, 129, 0.3)",
                         padding: "0.35rem 0.75rem",
@@ -1040,7 +1040,7 @@ export function SpecimenDetailModal({
                               border: "1px solid var(--accent-blue)",
                               borderRadius: "4px",
                               padding: "0.15rem 0.5rem",
-                              color: "#fff",
+                              color: "var(--text-primary)",
                               fontSize: "0.75rem",
                               cursor: "pointer"
                             }}
@@ -1062,7 +1062,7 @@ export function SpecimenDetailModal({
                               border: "1px solid var(--accent-blue)",
                               borderRadius: "4px",
                               padding: "0.15rem 0.5rem",
-                              color: "#fff",
+                              color: "var(--text-primary)",
                               fontSize: "0.75rem",
                               cursor: "pointer"
                             }}
@@ -1084,7 +1084,7 @@ export function SpecimenDetailModal({
                   className="glass-card" 
                   style={{ 
                     padding: "1rem 1.25rem", 
-                    background: "rgba(0,0,0,0.15)",
+                    background: "var(--bg-band)",
                     border: showPedigreeTree ? "1px solid rgba(56, 189, 248, 0.2)" : "1px solid var(--glass-border)",
                     boxShadow: showPedigreeTree ? "0 0 15px rgba(56, 189, 248, 0.05)" : "none",
                     transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
@@ -1135,7 +1135,7 @@ export function SpecimenDetailModal({
                   it would hand this viewer's IP to the seller on the surface where
                   they're being judged, so the reader chooses. */}
               {!metadata && metadataSource === METADATA_SOURCE.EXTERNAL && metadataUri && (
-                <div className="glass-card" style={{ padding: "1rem", background: "rgba(0,0,0,0.15)" }}>
+                <div className="glass-card" style={{ padding: "1rem", background: "var(--bg-band)" }}>
                   <h4 style={{ fontSize: "0.85rem", color: "var(--text-secondary)", margin: "0 0 0.5rem 0" }}>
                     <span>🔗</span> Breeder-hosted document
                   </h4>
@@ -1147,7 +1147,7 @@ export function SpecimenDetailModal({
                     href={metadataUri}
                     target="_blank"
                     rel="noopener noreferrer nofollow"
-                    style={{ fontSize: "0.75rem", color: "var(--accent-cyan)", wordBreak: "break-all" }}
+                    style={{ fontSize: "0.75rem", color: "var(--accent-teal)", wordBreak: "break-all" }}
                   >
                     {metadataUri}
                   </a>
@@ -1160,7 +1160,7 @@ export function SpecimenDetailModal({
                   className="glass-card"
                   style={{
                     padding: "1.25rem",
-                    background: "rgba(0,0,0,0.15)",
+                    background: "var(--bg-band)",
                     // Certificate frame (COSMETIC_EXPRESSION_SPEC.md §3): the
                     // border reflects the breeder's mastery of this species at the
                     // moment the certificate was minted. Immutable after creation.
@@ -1221,9 +1221,9 @@ export function SpecimenDetailModal({
                         {metadata.attributes.map((attr, idx) => {
                           if (["Sire ID", "Dam ID", "Containment Tank ID"].includes(attr.trait_type)) return null;
                           return (
-                            <div key={idx} style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px dashed rgba(255,255,255,0.03)", paddingBottom: "0.15rem" }}>
+                            <div key={idx} style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px dashed rgba(var(--ink-rgb), 0.08)", paddingBottom: "0.15rem" }}>
                               <span style={{ color: "var(--text-secondary)" }}>{attr.trait_type}:</span>
-                              <strong style={{ color: "#fff" }}>{attr.value}</strong>
+                              <strong style={{ color: "var(--text-primary)" }}>{attr.value}</strong>
                             </div>
                           );
                         })}

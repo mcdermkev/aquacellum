@@ -107,14 +107,14 @@ export function FishIdentifier({
           aria-live="polite"
           style={{
             fontSize: "0.75rem",
-            color: "rgba(255,255,255,0.85)",
+            color: "var(--text-primary)",
             display: "flex",
             flexDirection: "column",
             gap: "0.4rem",
           }}
         >
           {!result.success && (
-            <div style={{ color: result.needsAuth ? accentColor : "#fca5a5" }}>
+            <div style={{ color: result.needsAuth ? accentColor : "var(--accent-red)" }}>
               {result.error}
             </div>
           )}
@@ -144,7 +144,7 @@ export function FishIdentifier({
                       border: `1px solid ${borderColor}`,
                       borderRadius: radius,
                       padding: "0.4rem 0.5rem",
-                      background: "rgba(0,0,0,0.2)",
+                      background: "var(--bg-band)",
                     }}
                   >
                     <div style={{ display: "flex", justifyContent: "space-between", gap: "0.5rem" }}>

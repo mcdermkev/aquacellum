@@ -141,7 +141,7 @@ export function InstallAppPanel({ casualModeActive }) {
                     }}
                   >
                     <span style={{ fontSize: "0.8rem" }}>💡</span>
-                    <span style={{ fontSize: "0.72rem", color: "rgba(251, 191, 36, 0.9)", lineHeight: "1.4" }}>
+                    <span style={{ fontSize: "0.72rem", color: "var(--accent-amber)", lineHeight: "1.4" }}>
                       This must be done in Safari. Other browsers on iPhone (Chrome, Firefox) don't support installing PWAs.
                     </span>
                   </div>

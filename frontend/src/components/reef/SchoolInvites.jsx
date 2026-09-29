@@ -53,7 +53,7 @@ export function SchoolInvites({ onNavigateSchool }) {
       background: "rgba(168, 85, 247, 0.04)",
       border: "1px solid rgba(168, 85, 247, 0.15)",
     }}>
-      <h4 style={{ margin: "0 0 0.5rem", fontSize: "0.8rem", color: "#a78bfa", fontWeight: 700 }}>
+      <h4 style={{ margin: "0 0 0.5rem", fontSize: "0.8rem", color: "var(--accent-violet)", fontWeight: 700 }}>
         🏫 School Invites ({invites.length})
       </h4>
 
@@ -68,8 +68,8 @@ export function SchoolInvites({ onNavigateSchool }) {
               gap: "0.5rem",
               padding: "0.5rem 0.6rem",
               borderRadius: "8px",
-              background: "rgba(255, 255, 255, 0.02)",
-              border: "1px solid rgba(255, 255, 255, 0.04)",
+              background: "rgba(var(--ink-rgb), 0.03)",
+              border: "1px solid rgba(var(--ink-rgb), 0.09)",
               flexWrap: "wrap",
             }}
           >
@@ -79,7 +79,7 @@ export function SchoolInvites({ onNavigateSchool }) {
                 style={{
                   background: "none",
                   border: "none",
-                  color: "#fff",
+                  color: "var(--text-primary)",
                   fontSize: "0.8rem",
                   fontWeight: 600,
                   cursor: "pointer",
@@ -123,7 +123,7 @@ export function SchoolInvites({ onNavigateSchool }) {
                 style={{
                   padding: "0.3rem 0.6rem",
                   borderRadius: "6px",
-                  border: "1px solid rgba(255, 255, 255, 0.1)",
+                  border: "1px solid rgba(var(--ink-rgb), 0.15)",
                   background: "transparent",
                   color: "var(--text-muted)",
                   fontSize: "0.65rem",

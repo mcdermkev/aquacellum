@@ -81,7 +81,7 @@ export function ExpertAuditForm({ recipientWallet, targetCurrentId, targetTankId
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
-      background: "rgba(0, 0, 0, 0.7)",
+      background: "rgba(11, 37, 48, 0.45)",
       backdropFilter: "blur(8px)",
       padding: "1rem",
     }}>
@@ -97,7 +97,7 @@ export function ExpertAuditForm({ recipientWallet, targetCurrentId, targetTankId
       }}>
         {/* Header */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
-          <h2 style={{ margin: 0, fontSize: "1.15rem", color: "#fff" }}>
+          <h2 style={{ margin: 0, fontSize: "1.15rem", color: "var(--text-primary)" }}>
             ⭐ Expert Audit
           </h2>
           <button
@@ -118,7 +118,7 @@ export function ExpertAuditForm({ recipientWallet, targetCurrentId, targetTankId
           {CATEGORIES.map((cat) => (
             <div key={cat.key}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.4rem" }}>
-                <label style={{ fontSize: "0.8rem", color: "#fff", fontWeight: "500" }}>
+                <label style={{ fontSize: "0.8rem", color: "var(--text-primary)", fontWeight: "500" }}>
                   {cat.label}
                 </label>
                 <span style={{ fontSize: "0.7rem", color: "var(--accent-amber)", fontWeight: "600" }}>
@@ -138,10 +138,10 @@ export function ExpertAuditForm({ recipientWallet, targetCurrentId, targetTankId
                       width: "36px",
                       height: "36px",
                       borderRadius: "var(--radius-sm)",
-                      border: `1px solid ${scores[cat.key] >= star ? "rgba(251, 191, 36, 0.4)" : "rgba(255,255,255,0.08)"}`,
+                      border: `1px solid ${scores[cat.key] >= star ? "rgba(251, 191, 36, 0.4)" : "rgba(var(--ink-rgb), 0.13)"}`,
                       background: scores[cat.key] >= star
                         ? "rgba(251, 191, 36, 0.15)"
-                        : "rgba(255,255,255,0.03)",
+                        : "rgba(var(--ink-rgb), 0.03)",
                       color: scores[cat.key] >= star ? "var(--accent-amber)" : "var(--text-muted)",
                       fontSize: "1rem",
                       cursor: "pointer",
@@ -188,10 +188,10 @@ export function ExpertAuditForm({ recipientWallet, targetCurrentId, targetTankId
             style={{
               width: "100%",
               padding: "0.7rem 1rem",
-              background: "rgba(255,255,255,0.04)",
-              border: "1px solid rgba(255,255,255,0.1)",
+              background: "rgba(var(--ink-rgb), 0.04)",
+              border: "1px solid rgba(var(--ink-rgb), 0.15)",
               borderRadius: "var(--radius-sm)",
-              color: "#fff",
+              color: "var(--text-primary)",
               fontSize: "0.85rem",
               resize: "vertical",
             }}

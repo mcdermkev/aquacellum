@@ -54,9 +54,9 @@ const ACHIEVEMENTS = [
 ];
 
 const TIER_STYLES = {
-  bronze: { bg: "rgba(180, 130, 70, 0.1)", border: "rgba(180, 130, 70, 0.3)", color: "#cd7f32", glow: "rgba(205, 127, 50, 0.15)" },
-  silver: { bg: "rgba(192, 192, 210, 0.08)", border: "rgba(192, 192, 210, 0.25)", color: "#c0c0d2", glow: "rgba(192, 192, 210, 0.12)" },
-  gold: { bg: "rgba(255, 215, 0, 0.08)", border: "rgba(255, 215, 0, 0.25)", color: "#ffd700", glow: "rgba(255, 215, 0, 0.15)" },
+  bronze: { bg: "rgba(180, 130, 70, 0.1)", border: "rgba(180, 130, 70, 0.3)", color: "#8a5a1f", glow: "rgba(205, 127, 50, 0.15)" },
+  silver: { bg: "rgba(192, 192, 210, 0.08)", border: "rgba(192, 192, 210, 0.25)", color: "#4b5563", glow: "rgba(192, 192, 210, 0.12)" },
+  gold: { bg: "rgba(255, 215, 0, 0.08)", border: "rgba(255, 215, 0, 0.25)", color: "#a16207", glow: "rgba(255, 215, 0, 0.15)" },
 };
 
 
@@ -127,7 +127,7 @@ export function BreederAchievements({ walletAccount }) {
             background: "rgba(139, 92, 246, 0.04)", border: "1px solid rgba(139, 92, 246, 0.1)",
           }}>
             <div style={{ fontSize: "0.9rem", marginBottom: "2px" }}>{icon}</div>
-            <div style={{ fontSize: "1rem", fontWeight: "700", color: "#fff" }}>{value}</div>
+            <div style={{ fontSize: "1rem", fontWeight: "700", color: "var(--text-primary)" }}>{value}</div>
             <div style={{ fontSize: "0.6rem", color: "var(--text-muted)", marginTop: "1px" }}>{label}</div>
           </div>
         ))}
@@ -136,7 +136,7 @@ export function BreederAchievements({ walletAccount }) {
       {/* Earned Achievements */}
       <div style={{ marginBottom: "1.25rem" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.6rem" }}>
-          <span style={{ fontSize: "0.75rem", fontWeight: "700", color: "#fff" }}>
+          <span style={{ fontSize: "0.75rem", fontWeight: "700", color: "var(--text-primary)" }}>
             🏆 Earned ({earned.length}/{ACHIEVEMENTS.length})
           </span>
           <span style={{ fontSize: "0.65rem", color: "var(--text-muted)" }}>
@@ -145,7 +145,7 @@ export function BreederAchievements({ walletAccount }) {
         </div>
 
         {/* Progress bar */}
-        <div style={{ height: "4px", background: "rgba(255,255,255,0.05)", borderRadius: "2px", marginBottom: "0.75rem", overflow: "hidden" }}>
+        <div style={{ height: "4px", background: "rgba(var(--ink-rgb), 0.05)", borderRadius: "2px", marginBottom: "0.75rem", overflow: "hidden" }}>
           <div style={{
             height: "100%", width: `${(earned.length / ACHIEVEMENTS.length) * 100}%`,
             background: "linear-gradient(90deg, #a78bfa, #34d399)",
@@ -166,7 +166,7 @@ export function BreederAchievements({ walletAccount }) {
                 <div key={a.id} style={{
                   padding: "0.7rem", borderRadius: "10px", textAlign: "center",
                   background: style.bg, border: `1px solid ${style.border}`,
-                  boxShadow: `0 0 12px ${style.glow}`,
+                  boxShadow: "var(--glass-shadow)",
                   transition: "transform 0.2s",
                   cursor: "default",
                   position: "relative",
@@ -207,7 +207,7 @@ export function BreederAchievements({ walletAccount }) {
             {locked.slice(0, 6).map((a) => (
               <div key={a.id} style={{
                 padding: "0.6rem", borderRadius: "8px", textAlign: "center",
-                background: "rgba(255,255,255,0.01)", border: "1px dashed rgba(255,255,255,0.06)",
+                background: "rgba(var(--ink-rgb), 0.02)", border: "1px dashed rgba(var(--ink-rgb), 0.11)",
                 opacity: 0.5,
               }} title={a.description}>
                 <img
@@ -239,7 +239,7 @@ export function BreederAchievements({ walletAccount }) {
         }}>
           <div style={{ fontSize: "1.5rem" }}>{levelInfo.icon || "🐟"}</div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: "0.82rem", fontWeight: "700", color: "#fff" }}>
+            <div style={{ fontSize: "0.82rem", fontWeight: "700", color: "var(--text-primary)" }}>
               {levelInfo.label || levelInfo.key}
             </div>
             <div style={{ fontSize: "0.68rem", color: "var(--text-muted)", marginTop: "2px" }}>
@@ -256,7 +256,7 @@ export function BreederAchievements({ walletAccount }) {
           <div style={{
             fontSize: "0.62rem", fontWeight: "700", padding: "4px 10px", borderRadius: "12px",
             background: "rgba(167, 139, 250, 0.1)", border: "1px solid rgba(167, 139, 250, 0.25)",
-            color: "#a78bfa",
+            color: "var(--accent-violet)",
           }}>
             Tier {levelInfo.level}
           </div>

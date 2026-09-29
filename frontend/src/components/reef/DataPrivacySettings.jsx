@@ -91,12 +91,12 @@ export function DataPrivacySettings({ casualModeActive = false }) {
         gap: "1.25rem",
         padding: "1.25rem",
         borderRadius: "12px",
-        background: "rgba(255, 255, 255, 0.02)",
-        border: "1px solid rgba(255, 255, 255, 0.06)",
+        background: "rgba(var(--ink-rgb), 0.03)",
+        border: "1px solid rgba(var(--ink-rgb), 0.11)",
       }}
       aria-label="Data & Privacy Settings"
     >
-      <h3 style={{ margin: 0, fontSize: "0.9rem", fontWeight: 600, color: "#fff" }}>
+      <h3 style={{ margin: 0, fontSize: "0.9rem", fontWeight: 600, color: "var(--text-primary)" }}>
         {casualModeActive ? "🔒 Your Data" : "Data & Privacy"}
       </h3>
 
@@ -141,7 +141,7 @@ export function DataPrivacySettings({ casualModeActive = false }) {
       )}
 
       {/* Export section */}
-      <div style={{ paddingBottom: "1rem", borderBottom: "1px solid rgba(255, 255, 255, 0.05)" }}>
+      <div style={{ paddingBottom: "1rem", borderBottom: "1px solid rgba(var(--ink-rgb), 0.1)" }}>
         <h4 style={{ margin: "0 0 0.25rem", fontSize: "0.8rem", color: "var(--text-primary)" }}>
           📦 Export Your Data
         </h4>
@@ -156,7 +156,7 @@ export function DataPrivacySettings({ casualModeActive = false }) {
             padding: "0.45rem 1rem",
             borderRadius: "8px",
             border: "1px solid rgba(56, 189, 248, 0.2)",
-            background: exporting ? "rgba(255,255,255,0.03)" : "rgba(56, 189, 248, 0.08)",
+            background: exporting ? "rgba(var(--ink-rgb), 0.03)" : "rgba(56, 189, 248, 0.08)",
             color: exporting ? "var(--text-muted)" : "var(--accent-blue)",
             fontSize: "0.75rem",
             fontWeight: 500,
@@ -225,8 +225,8 @@ export function DataPrivacySettings({ casualModeActive = false }) {
                   padding: "0.5rem 0.75rem",
                   borderRadius: "6px",
                   border: "1px solid rgba(248, 113, 113, 0.2)",
-                  background: "rgba(0,0,0,0.2)",
-                  color: "#fff",
+                  background: "var(--bg-secondary)",
+                  color: "var(--text-primary)",
                   fontSize: "0.8rem",
                   marginBottom: "0.75rem",
                   outline: "none",
@@ -241,7 +241,7 @@ export function DataPrivacySettings({ casualModeActive = false }) {
                     padding: "0.4rem 0.8rem",
                     borderRadius: "6px",
                     border: "none",
-                    background: confirmText === "DELETE MY ACCOUNT" ? "#dc2626" : "rgba(255,255,255,0.05)",
+                    background: confirmText === "DELETE MY ACCOUNT" ? "#dc2626" : "rgba(var(--ink-rgb), 0.05)",
                     color: confirmText === "DELETE MY ACCOUNT" ? "#fff" : "var(--text-muted)",
                     fontSize: "0.7rem",
                     fontWeight: 600,
@@ -255,7 +255,7 @@ export function DataPrivacySettings({ casualModeActive = false }) {
                   style={{
                     padding: "0.4rem 0.8rem",
                     borderRadius: "6px",
-                    border: "1px solid rgba(255,255,255,0.08)",
+                    border: "1px solid rgba(var(--ink-rgb), 0.13)",
                     background: "transparent",
                     color: "var(--text-muted)",
                     fontSize: "0.7rem",

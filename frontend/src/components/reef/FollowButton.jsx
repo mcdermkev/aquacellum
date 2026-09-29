@@ -72,7 +72,7 @@ export function FollowButton({ targetWallet, compact = false, onFollowChange }) 
           background: following
             ? "rgba(52, 211, 153, 0.08)"
             : "rgba(56, 189, 248, 0.08)",
-          color: following ? "#34d399" : "#38bdf8",
+          color: following ? "var(--accent-green)" : "var(--accent-blue)",
           fontSize: "0.6rem",
           fontWeight: 600,
           cursor: loading ? "default" : "pointer",
@@ -100,7 +100,7 @@ export function FollowButton({ targetWallet, compact = false, onFollowChange }) 
         background: following
           ? "rgba(52, 211, 153, 0.08)"
           : "linear-gradient(135deg, #0ea5e9, #0369a1)",
-        color: following ? "#34d399" : "#fff",
+        color: following ? "var(--accent-green)" : "var(--text-primary)",
         fontSize: "0.75rem",
         fontWeight: 600,
         cursor: loading ? "default" : "pointer",

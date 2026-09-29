@@ -517,7 +517,7 @@ export function BreederTerminal({ walletAccount, casualModeActive = false, initi
   return (
     <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
       <div className="glass-card" style={{ padding: "1.5rem 1.75rem", marginBottom: "1.5rem" }}>
-        <h2 style={{ fontSize: "1.5rem", color: "#fff", margin: "0 0 0.25rem 0" }}>
+        <h2 style={{ fontSize: "1.5rem", color: "var(--text-primary)", margin: "0 0 0.25rem 0" }}>
           🐟 Breeder Terminal
         </h2>
         <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", margin: 0 }}>
@@ -559,8 +559,8 @@ export function BreederTerminal({ walletAccount, casualModeActive = false, initi
                 flexShrink: 0,
                 borderRadius: "10px",
                 border: isActive ? "1px solid var(--accent-blue)" : "1px solid var(--glass-border)",
-                background: isActive ? "rgba(56, 189, 248, 0.12)" : "rgba(255,255,255,0.02)",
-                color: isActive ? "#7dd3fc" : "var(--text-secondary)",
+                background: isActive ? "rgba(56, 189, 248, 0.12)" : "rgba(var(--ink-rgb), 0.02)",
+                color: isActive ? "var(--accent-blue)" : "var(--text-secondary)",
                 fontSize: "0.82rem",
                 fontWeight: 600,
                 cursor: "pointer",
@@ -812,8 +812,8 @@ function DashboardHome({ dashboard, ordersLoading, sellerStatus, casualModeActiv
           style={{ padding: "1.25rem", gridColumn: "1 / -1", border: "1px solid rgba(251, 191, 36, 0.35)", background: "rgba(251, 191, 36, 0.06)" }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "0.5rem" }}>
-            <Warning size={20} weight="duotone" color="#fbbf24" />
-            <strong style={{ color: "#fff", fontSize: "0.95rem" }}>Connect payouts to get paid</strong>
+            <Warning size={20} weight="duotone" color="var(--accent-amber)" />
+            <strong style={{ color: "var(--text-primary)", fontSize: "0.95rem" }}>Connect payouts to get paid</strong>
           </div>
           <p style={{ color: "var(--text-secondary)", fontSize: "0.8rem", margin: "0 0 0.85rem 0" }}>
             Buyers can't complete checkout for your listings until Stripe payouts are set up.
@@ -831,7 +831,7 @@ function DashboardHome({ dashboard, ordersLoading, sellerStatus, casualModeActiv
       )}
 
       <DashboardCard
-        icon={<ClipboardText size={20} weight="duotone" color="#38bdf8" />}
+        icon={<ClipboardText size={20} weight="duotone" color="var(--accent-blue)" />}
         title="New Orders"
         value={ordersLoading ? "…" : String(newOrders.count)}
         subtitle={
@@ -843,7 +843,7 @@ function DashboardHome({ dashboard, ordersLoading, sellerStatus, casualModeActiv
       />
 
       <DashboardCard
-        icon={<Truck size={20} weight="duotone" color="#a78bfa" />}
+        icon={<Truck size={20} weight="duotone" color="var(--accent-violet)" />}
         title="Pending Actions"
         value={ordersLoading ? "…" : String(totalPending)}
         subtitle={`${pendingActions.toDispatch.count} to dispatch · ${pendingActions.toHandoff.count} to hand off · ${pendingActions.cashMeets.count} cash meets`}
@@ -851,7 +851,7 @@ function DashboardHome({ dashboard, ordersLoading, sellerStatus, casualModeActiv
       />
 
       <DashboardCard
-        icon={<CurrencyDollar size={20} weight="duotone" color="#34d399" />}
+        icon={<CurrencyDollar size={20} weight="duotone" color="var(--accent-green)" />}
         title="Earnings"
         value={ordersLoading ? "…" : formatPriceCents(earnings.availableCents)}
         subtitle={`${formatPriceCents(earnings.protectedCents)} protected · ${formatPriceCents(earnings.frozenCents)} frozen`}
@@ -859,7 +859,7 @@ function DashboardHome({ dashboard, ordersLoading, sellerStatus, casualModeActiv
       />
 
       <DashboardCard
-        icon={<Package size={20} weight="duotone" color="#fbbf24" />}
+        icon={<Package size={20} weight="duotone" color="var(--accent-amber)" />}
         title="Low Stock"
         value={String(lowStock.items.length)}
         subtitle={casualModeActive ? "Listings running low or sold" : "Listings at/near zero inventory"}
@@ -867,7 +867,7 @@ function DashboardHome({ dashboard, ordersLoading, sellerStatus, casualModeActiv
       />
 
       <DashboardCard
-        icon={openClaims.count > 0 ? <Warning size={20} weight="duotone" color="#f87171" /> : <CheckCircle size={20} weight="duotone" color="#34d399" />}
+        icon={openClaims.count > 0 ? <Warning size={20} weight="duotone" color="var(--accent-red)" /> : <CheckCircle size={20} weight="duotone" color="var(--accent-green)" />}
         title="Open Claims"
         value={ordersLoading ? "…" : String(openClaims.count)}
         subtitle={openClaims.count > 0 ? "Needs your attention" : "No disputes open"}
@@ -876,7 +876,7 @@ function DashboardHome({ dashboard, ordersLoading, sellerStatus, casualModeActiv
       />
 
       <DashboardCard
-        icon={<StorefrontIcon size={20} weight="duotone" color="#7dd3fc" />}
+        icon={<StorefrontIcon size={20} weight="duotone" color="var(--accent-blue)" />}
         title="Storefront"
         value={onboardingComplete ? "Ready" : "Setup needed"}
         subtitle={onboardingComplete ? "Payouts connected" : "Payouts not yet connected"}
@@ -897,7 +897,7 @@ function DashboardCard({ icon, title, value, subtitle, onClick, alert = false })
         padding: "1.1rem 1.25rem",
         textAlign: "left",
         border: alert ? "1px solid rgba(248, 113, 113, 0.35)" : "1px solid var(--glass-border)",
-        background: alert ? "rgba(248, 113, 113, 0.05)" : "rgba(255,255,255,0.01)",
+        background: alert ? "rgba(248, 113, 113, 0.05)" : "rgba(var(--ink-rgb), 0.01)",
         cursor: "pointer",
         minHeight: "44px",
         display: "flex",
@@ -911,7 +911,7 @@ function DashboardCard({ icon, title, value, subtitle, onClick, alert = false })
           {title}
         </span>
       </div>
-      <strong style={{ fontSize: "1.5rem", color: "#fff" }}>{value}</strong>
+      <strong style={{ fontSize: "1.5rem", color: "var(--text-primary)" }}>{value}</strong>
       <span style={{ fontSize: "0.72rem", color: "var(--text-secondary)" }}>{subtitle}</span>
     </button>
   );
@@ -942,10 +942,10 @@ const STATUS_TABS = [
 ];
 
 const PAYOUT_CHIP_STYLE = {
-  protected: { bg: "rgba(56, 189, 248, 0.1)", border: "rgba(56, 189, 248, 0.3)", color: "#7dd3fc", label: "Protected" },
-  available: { bg: "rgba(52, 211, 153, 0.1)", border: "rgba(52, 211, 153, 0.3)", color: "#34d399", label: "Available" },
-  frozen: { bg: "rgba(248, 113, 113, 0.1)", border: "rgba(248, 113, 113, 0.3)", color: "#f87171", label: "Frozen" },
-  none: { bg: "rgba(255,255,255,0.03)", border: "rgba(255,255,255,0.08)", color: "var(--text-muted)", label: "—" },
+  protected: { bg: "rgba(56, 189, 248, 0.1)", border: "rgba(56, 189, 248, 0.3)", color: "var(--accent-blue)", label: "Protected" },
+  available: { bg: "rgba(52, 211, 153, 0.1)", border: "rgba(52, 211, 153, 0.3)", color: "var(--accent-green)", label: "Available" },
+  frozen: { bg: "rgba(248, 113, 113, 0.1)", border: "rgba(248, 113, 113, 0.3)", color: "var(--accent-red)", label: "Frozen" },
+  none: { bg: "rgba(var(--ink-rgb), 0.03)", border: "rgba(var(--ink-rgb), 0.08)", color: "var(--text-muted)", label: "—" },
 };
 
 function OrdersSection({
@@ -1039,10 +1039,10 @@ function OrdersSection({
                 minHeight: "36px",
                 fontSize: "0.72rem",
                 fontWeight: isActive ? 700 : 500,
-                background: isActive ? "rgba(167, 139, 250, 0.12)" : "rgba(255,255,255,0.02)",
-                border: isActive ? "1px solid rgba(167, 139, 250, 0.4)" : "1px solid rgba(255,255,255,0.08)",
+                background: isActive ? "rgba(167, 139, 250, 0.12)" : "rgba(var(--ink-rgb), 0.02)",
+                border: isActive ? "1px solid rgba(167, 139, 250, 0.4)" : "1px solid rgba(var(--ink-rgb), 0.08)",
                 borderRadius: "20px",
-                color: isActive ? "#a78bfa" : "var(--text-secondary)",
+                color: isActive ? "var(--accent-violet)" : "var(--text-secondary)",
                 cursor: "pointer",
                 whiteSpace: "nowrap",
                 flexShrink: 0,
@@ -1070,8 +1070,8 @@ function OrdersSection({
                 minHeight: "36px",
                 fontSize: "0.72rem",
                 fontWeight: isActive ? 700 : 500,
-                background: isActive ? "rgba(56, 189, 248, 0.1)" : "rgba(255,255,255,0.02)",
-                border: isActive ? "1px solid rgba(56, 189, 248, 0.4)" : "1px solid rgba(255,255,255,0.08)",
+                background: isActive ? "rgba(56, 189, 248, 0.1)" : "rgba(var(--ink-rgb), 0.02)",
+                border: isActive ? "1px solid rgba(56, 189, 248, 0.4)" : "1px solid rgba(var(--ink-rgb), 0.08)",
                 borderRadius: "20px",
                 color: isActive ? "var(--accent-blue)" : "var(--text-secondary)",
                 cursor: "pointer",
@@ -1096,10 +1096,10 @@ function OrdersSection({
           style={{
             width: "100%",
             padding: "0.55rem 0.75rem 0.55rem 2rem",
-            background: "rgba(255, 255, 255, 0.03)",
-            border: "1px solid rgba(255, 255, 255, 0.08)",
+            background: "rgba(var(--ink-rgb), 0.03)",
+            border: "1px solid rgba(var(--ink-rgb), 0.08)",
             borderRadius: "8px",
-            color: "#fff",
+            color: "var(--text-primary)",
             fontSize: "0.8rem",
             minHeight: "40px",
           }}
@@ -1229,7 +1229,7 @@ function SellerOrderRow({
             />
           )}
           <div style={{ minWidth: 0 }}>
-            <strong style={{ color: "#fff", fontSize: "0.85rem" }}>
+            <strong style={{ color: "var(--text-primary)", fontSize: "0.85rem" }}>
               {commonName || "Order"}{quantity ? ` (Qty: ${quantity})` : ""}
             </strong>
             <div style={{ fontSize: "0.72rem", color: "var(--text-secondary)", marginTop: "0.15rem" }}>
@@ -1255,9 +1255,9 @@ function SellerOrderRow({
             fontWeight: 600,
             padding: "0.25rem 0.55rem",
             borderRadius: "12px",
-            background: "rgba(255,255,255,0.03)",
-            border: "1px solid rgba(255,255,255,0.08)",
-            color: status.tone === "alert" ? "#f87171" : status.tone === "good" ? "#34d399" : "var(--text-secondary)",
+            background: "rgba(var(--ink-rgb), 0.03)",
+            border: "1px solid rgba(var(--ink-rgb), 0.08)",
+            color: status.tone === "alert" ? "var(--accent-red)" : status.tone === "good" ? "var(--accent-green)" : "var(--text-secondary)",
             flexShrink: 0,
           }}
         >
@@ -1266,7 +1266,7 @@ function SellerOrderRow({
       </div>
 
       {customerHistoryOpen && (
-        <div style={{ padding: "0.6rem 0.75rem", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "6px", fontSize: "0.72rem", color: "var(--text-secondary)" }}>
+        <div style={{ padding: "0.6rem 0.75rem", background: "rgba(var(--ink-rgb), 0.02)", border: "1px solid rgba(var(--ink-rgb), 0.06)", borderRadius: "6px", fontSize: "0.72rem", color: "var(--text-secondary)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "0.35rem", marginBottom: "0.35rem", color: "var(--text-muted)" }}>
             <ClockCounterClockwise size={13} /> Order history with {customer.alias}
           </div>
@@ -1351,7 +1351,7 @@ function SellerOrderRow({
                 value={manualTrackingInput}
                 onChange={(e) => onManualTrackingInputChange(e.target.value)}
                 placeholder="e.g. USPS 94001000..."
-                style={{ flex: 1, padding: "0.4rem 0.6rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px", fontSize: "0.75rem" }}
+                style={{ flex: 1, padding: "0.4rem 0.6rem", background: "rgba(var(--ink-rgb), 0.03)", border: "1px solid var(--glass-border)", color: "var(--text-primary)", borderRadius: "4px", fontSize: "0.75rem" }}
               />
               <button
                 type="button"
@@ -1397,12 +1397,12 @@ function PickupArrangementPanel({ open, onToggle, state, onConfirm, confirmBusy 
         📍 Pickup time — {open && arrangement ? statusView.label : "view / confirm"}
       </summary>
       {open && (
-        <div style={{ marginTop: "0.5rem", padding: "0.6rem 0.7rem", borderRadius: "6px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}>
+        <div style={{ marginTop: "0.5rem", padding: "0.6rem 0.7rem", borderRadius: "6px", background: "rgba(var(--ink-rgb), 0.02)", border: "1px solid rgba(var(--ink-rgb), 0.06)" }}>
           {state?.loading && <span style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>Loading…</span>}
           {state?.error && <span style={{ fontSize: "0.72rem", color: "var(--accent-red, #f87171)" }} role="alert">{state.error}</span>}
           {!state?.loading && !state?.error && (
             <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
-              <span style={{ fontSize: "0.75rem", color: "#fff" }}>{statusView.label}</span>
+              <span style={{ fontSize: "0.75rem", color: "var(--text-primary)" }}>{statusView.label}</span>
               {arrangement?.proposedTime && (
                 <span style={{ fontSize: "0.7rem", color: "var(--text-secondary)" }}>
                   Buyer proposed: <strong>{new Date(arrangement.proposedTime).toLocaleString()}</strong>
@@ -1429,7 +1429,7 @@ function PickupArrangementPanel({ open, onToggle, state, onConfirm, confirmBusy 
                       type="datetime-local"
                       value={counterTime}
                       onChange={(e) => setCounterTime(e.target.value)}
-                      style={{ padding: "0.35rem 0.5rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px", fontSize: "0.72rem" }}
+                      style={{ padding: "0.35rem 0.5rem", background: "rgba(var(--ink-rgb), 0.03)", border: "1px solid var(--glass-border)", color: "var(--text-primary)", borderRadius: "4px", fontSize: "0.72rem" }}
                     />
                     <button
                       type="button"
@@ -1530,8 +1530,8 @@ function listingStatus(item) {
 }
 
 const LISTING_STATUS_COLOR = Object.freeze({
-  good: "#34d399",
-  alert: "#f87171",
+  good: "var(--accent-green)",
+  alert: "var(--accent-red)",
   muted: "var(--text-muted)",
 });
 
@@ -1562,7 +1562,7 @@ function ListingsSection({ listings, casualModeActive, onNewListing, onEditListi
               >
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "0.5rem", flexWrap: "wrap" }}>
                   <div>
-                    <strong style={{ color: "#fff", fontSize: "0.85rem" }}>{item.commonName}</strong>
+                    <strong style={{ color: "var(--text-primary)", fontSize: "0.85rem" }}>{item.commonName}</strong>
                     {item.scientificName && (
                       <span style={{ display: "block", fontSize: "0.68rem", fontStyle: "italic", color: "var(--text-muted)" }}>
                         {item.scientificName}
@@ -1573,7 +1573,7 @@ function ListingsSection({ listings, casualModeActive, onNewListing, onEditListi
                     style={{
                       display: "inline-flex", alignItems: "center", gap: "0.3rem",
                       fontSize: "0.68rem", fontWeight: 600, padding: "0.2rem 0.5rem", borderRadius: "12px",
-                      background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)",
+                      background: "rgba(var(--ink-rgb), 0.03)", border: "1px solid rgba(var(--ink-rgb), 0.08)",
                       color: LISTING_STATUS_COLOR[status.tone],
                     }}
                   >
@@ -1615,7 +1615,7 @@ function PayoutsSection({ sellerStatus, casualModeActive, onStartOnboarding, onb
 
   return (
     <div className="glass-card" style={{ padding: "1.5rem" }}>
-      <h3 style={{ color: "#fff", fontSize: "1rem", margin: "0 0 0.75rem 0" }}>💳 Payouts</h3>
+      <h3 style={{ color: "var(--text-primary)", fontSize: "1rem", margin: "0 0 0.75rem 0" }}>💳 Payouts</h3>
       {onboardingComplete ? (
         <>
           <p style={{ color: "var(--text-secondary)", fontSize: "0.85rem", marginBottom: "1rem" }}>

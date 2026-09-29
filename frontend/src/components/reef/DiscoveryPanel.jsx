@@ -28,7 +28,7 @@ function SectionHeader({ icon, title, subtitle, isExpanded }) {
           margin: 0,
           fontSize: "0.85rem",
           fontWeight: 700,
-          color: "#fff",
+          color: "var(--text-primary)",
           display: "flex",
           alignItems: "center",
           gap: "0.4rem",
@@ -120,7 +120,7 @@ function LoadingSkeleton() {
           style={{
             height: "32px",
             borderRadius: "8px",
-            background: "rgba(255, 255, 255, 0.03)",
+            background: "rgba(var(--ink-rgb), 0.03)",
             animation: "pulse 1.5s ease-in-out infinite",
           }}
         />
@@ -173,8 +173,8 @@ export function DiscoveryPanel({ onProfileClick, casualModeActive = false }) {
   const sectionStyle = {
     padding: "0.75rem",
     borderRadius: "10px",
-    background: "rgba(255, 255, 255, 0.02)",
-    border: "1px solid rgba(255, 255, 255, 0.05)",
+    background: "rgba(var(--ink-rgb), 0.03)",
+    border: "1px solid rgba(var(--ink-rgb), 0.1)",
     marginBottom: "0.75rem",
   };
 
@@ -222,15 +222,15 @@ export function DiscoveryPanel({ onProfileClick, casualModeActive = false }) {
                   flex: 1,
                   padding: "0.4rem 0.6rem",
                   borderRadius: "6px",
-                  border: "1px solid rgba(255, 255, 255, 0.08)",
-                  background: "rgba(0, 0, 0, 0.2)",
-                  color: "#fff",
+                  border: "1px solid rgba(var(--ink-rgb), 0.13)",
+                  background: "var(--bg-secondary)",
+                  color: "var(--text-primary)",
                   fontSize: "0.75rem",
                   outline: "none",
                   transition: "border-color 0.15s ease",
                 }}
                 onFocus={(e) => { e.target.style.borderColor = "rgba(56, 189, 248, 0.3)"; }}
-                onBlur={(e) => { e.target.style.borderColor = "rgba(255, 255, 255, 0.08)"; }}
+                onBlur={(e) => { e.target.style.borderColor = "rgba(var(--ink-rgb), 0.13)"; }}
                 aria-label="Search species"
               />
               <button
@@ -242,8 +242,8 @@ export function DiscoveryPanel({ onProfileClick, casualModeActive = false }) {
                   border: "none",
                   background: speciesSearch.trim()
                     ? "rgba(56, 189, 248, 0.15)"
-                    : "rgba(255, 255, 255, 0.03)",
-                  color: speciesSearch.trim() ? "#fff" : "var(--text-muted)",
+                    : "rgba(var(--ink-rgb), 0.03)",
+                  color: speciesSearch.trim() ? "var(--text-primary)" : "var(--text-muted)",
                   fontSize: "0.7rem",
                   fontWeight: 600,
                   cursor: speciesSearch.trim() ? "pointer" : "not-allowed",
@@ -374,7 +374,7 @@ export function DiscoveryPanel({ onProfileClick, casualModeActive = false }) {
       {/* Hover styles */}
       <style>{`
         .discovery-breeder-row:hover {
-          background: rgba(255, 255, 255, 0.04) !important;
+          background: rgba(var(--ink-rgb), 0.04) !important;
         }
         .discovery-breeder-row:focus-visible {
           outline: 2px solid rgba(56, 189, 248, 0.5);

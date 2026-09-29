@@ -75,7 +75,7 @@ export function ReviewComposer({ orderId, orderRef, fulfillmentMethod, onSubmitt
       aria-label={casualModeActive ? "Leave a review" : "Submit review"}
       style={{ padding: "1.1rem 1.25rem", display: "flex", flexDirection: "column", gap: "0.9rem" }}
     >
-      <h3 style={{ fontFamily: "Outfit, sans-serif", fontSize: "1rem", color: "#fff", margin: 0 }}>
+      <h3 style={{ fontFamily: "Outfit, sans-serif", fontSize: "1rem", color: "var(--text-primary)", margin: 0 }}>
         {casualModeActive ? "How did it go?" : "Leave a review"}
       </h3>
 
@@ -107,7 +107,7 @@ export function ReviewComposer({ orderId, orderRef, fulfillmentMethod, onSubmitt
           rows={3}
           maxLength={2000}
           placeholder={casualModeActive ? "Healthy on arrival, great communication..." : "Describe the fish, packaging, and experience."}
-          style={{ width: "100%", padding: "0.6rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "6px", fontSize: "0.8rem", fontFamily: "'Plus Jakarta Sans', sans-serif", resize: "vertical" }}
+          style={{ width: "100%", padding: "0.6rem", background: "rgba(var(--ink-rgb), 0.03)", border: "1px solid var(--glass-border)", color: "var(--text-primary)", borderRadius: "6px", fontSize: "0.8rem", fontFamily: "'Plus Jakarta Sans', sans-serif", resize: "vertical" }}
         />
       </div>
 
@@ -123,10 +123,10 @@ export function ReviewComposer({ orderId, orderRef, fulfillmentMethod, onSubmitt
           disabled={!canSubmit}
           style={{
             flex: 1, minHeight: "44px", padding: "0.55rem 1rem", borderRadius: "10px", border: "none",
-            background: canSubmit ? "linear-gradient(135deg, var(--teal-400, #2dd4bf), var(--violet-400, #a78bfa))" : "rgba(255,255,255,0.05)",
-            color: canSubmit ? "#04231a" : "var(--text-muted)", fontWeight: 700, fontSize: "0.85rem",
+            background: canSubmit ? "linear-gradient(135deg, var(--accent-teal), var(--accent-violet))" : "rgba(var(--ink-rgb), 0.05)",
+            color: canSubmit ? "#fff" : "var(--text-muted)", fontWeight: 700, fontSize: "0.85rem",
             cursor: canSubmit ? "pointer" : "not-allowed",
-            boxShadow: canSubmit ? "0 0 16px rgba(45,212,191,0.25)" : "none",
+            boxShadow: canSubmit ? "var(--shadow-md)" : "none",
           }}
         >
           {submitting ? "Submitting…" : casualModeActive ? "Post review" : "Submit review"}
@@ -201,7 +201,7 @@ function RatingRadioGroup({ label, value, onChange, required = false, compact = 
             <Star
               weight={star <= value ? "fill" : "regular"}
               size={compact ? 18 : 24}
-              color={star <= value ? "#fbbf24" : "rgba(251,191,36,0.3)"}
+              color={star <= value ? "var(--accent-amber)" : "rgba(180,83,9,0.35)"}
             />
           </button>
         ))}

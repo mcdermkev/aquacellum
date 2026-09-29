@@ -311,7 +311,7 @@ export function ContentComposer({ isOpen, onClose, onSuccess, casualModeActive =
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: "rgba(0, 0, 0, 0.7)",
+        background: "rgba(11, 37, 48, 0.45)",
         backdropFilter: "blur(4px)",
       }}
       onClick={(e) => { if (e.target === e.currentTarget) handleClose(); }}
@@ -326,19 +326,19 @@ export function ContentComposer({ isOpen, onClose, onSuccess, casualModeActive =
           maxWidth: "520px",
           maxHeight: "85vh",
           overflow: "auto",
-          background: "rgba(15, 23, 42, 0.95)",
-          border: "1px solid rgba(255, 255, 255, 0.08)",
+          background: "var(--bg-secondary)",
+          border: "1px solid rgba(var(--ink-rgb), 0.13)",
           borderRadius: "16px",
           padding: "1.5rem",
           display: "flex",
           flexDirection: "column",
           gap: "1rem",
-          boxShadow: "0 24px 80px rgba(0, 0, 0, 0.6)",
+          boxShadow: "var(--shadow-lg)",
         }}
       >
         {/* Header */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <h3 style={{ margin: 0, fontSize: "1rem", fontWeight: 700, color: "#fff" }}>
+          <h3 style={{ margin: 0, fontSize: "1rem", fontWeight: 700, color: "var(--text-primary)" }}>
             {casualModeActive ? "🪸 Share a Tank Update" : "New Current"}
           </h3>
           <button
@@ -394,9 +394,9 @@ export function ContentComposer({ isOpen, onClose, onSuccess, casualModeActive =
                 width: "100%",
                 padding: "0.5rem",
                 borderRadius: "8px",
-                border: "1px solid rgba(255, 255, 255, 0.1)",
-                background: "rgba(255, 255, 255, 0.04)",
-                color: "#fff",
+                border: "1px solid rgba(var(--ink-rgb), 0.15)",
+                background: "rgba(var(--ink-rgb), 0.04)",
+                color: "var(--text-primary)",
                 fontSize: "0.8rem",
               }}
             >
@@ -425,9 +425,9 @@ export function ContentComposer({ isOpen, onClose, onSuccess, casualModeActive =
               resize: "vertical",
               padding: "0.75rem",
               borderRadius: "10px",
-              border: "1px solid rgba(255, 255, 255, 0.08)",
-              background: "rgba(255, 255, 255, 0.03)",
-              color: "#fff",
+              border: "1px solid rgba(var(--ink-rgb), 0.13)",
+              background: "rgba(var(--ink-rgb), 0.03)",
+              color: "var(--text-primary)",
               fontSize: "0.85rem",
               lineHeight: "1.6",
               fontFamily: "inherit",
@@ -435,7 +435,7 @@ export function ContentComposer({ isOpen, onClose, onSuccess, casualModeActive =
               minHeight: "100px",
             }}
             onFocus={(e) => { e.target.style.borderColor = "rgba(56, 189, 248, 0.3)"; }}
-            onBlur={(e) => { e.target.style.borderColor = "rgba(255, 255, 255, 0.08)"; }}
+            onBlur={(e) => { e.target.style.borderColor = "rgba(var(--ink-rgb), 0.13)"; }}
           />
           <span style={{ fontSize: "0.6rem", color: "var(--text-muted)", float: "right" }}>
             {body.length}/{MAX_BODY_LENGTH}
@@ -451,9 +451,9 @@ export function ContentComposer({ isOpen, onClose, onSuccess, casualModeActive =
               style={{
                 padding: "0.4rem 0.75rem",
                 borderRadius: "8px",
-                border: "1px solid rgba(255, 255, 255, 0.1)",
-                background: "rgba(255, 255, 255, 0.04)",
-                color: photos.length >= MAX_PHOTOS || video ? "var(--text-muted)" : "#fff",
+                border: "1px solid rgba(var(--ink-rgb), 0.15)",
+                background: "rgba(var(--ink-rgb), 0.04)",
+                color: photos.length >= MAX_PHOTOS || video ? "var(--text-muted)" : "var(--text-primary)",
                 fontSize: "0.75rem",
                 cursor: photos.length >= MAX_PHOTOS || video ? "default" : "pointer",
               }}
@@ -484,7 +484,7 @@ export function ContentComposer({ isOpen, onClose, onSuccess, casualModeActive =
                       height: "100%",
                       objectFit: "cover",
                       borderRadius: "8px",
-                      border: "1px solid rgba(255, 255, 255, 0.1)",
+                      border: "1px solid rgba(var(--ink-rgb), 0.15)",
                     }}
                   />
                   <button
@@ -524,9 +524,9 @@ export function ContentComposer({ isOpen, onClose, onSuccess, casualModeActive =
                 style={{
                   padding: "0.4rem 0.75rem",
                   borderRadius: "8px",
-                  border: "1px solid rgba(255, 255, 255, 0.1)",
-                  background: "rgba(255, 255, 255, 0.04)",
-                  color: "#fff",
+                  border: "1px solid rgba(var(--ink-rgb), 0.15)",
+                  background: "rgba(var(--ink-rgb), 0.04)",
+                  color: "var(--text-primary)",
                   fontSize: "0.75rem",
                   cursor: "pointer",
                 }}
@@ -538,9 +538,9 @@ export function ContentComposer({ isOpen, onClose, onSuccess, casualModeActive =
                 style={{
                   padding: "0.4rem 0.75rem",
                   borderRadius: "8px",
-                  border: "1px solid rgba(255, 255, 255, 0.1)",
-                  background: "rgba(255, 255, 255, 0.04)",
-                  color: "#fff",
+                  border: "1px solid rgba(var(--ink-rgb), 0.15)",
+                  background: "rgba(var(--ink-rgb), 0.04)",
+                  color: "var(--text-primary)",
                   fontSize: "0.75rem",
                   cursor: "pointer",
                 }}
@@ -579,7 +579,7 @@ export function ContentComposer({ isOpen, onClose, onSuccess, casualModeActive =
                   maxHeight: "200px",
                   objectFit: "cover",
                   borderRadius: "10px",
-                  border: "1px solid rgba(255, 255, 255, 0.1)",
+                  border: "1px solid rgba(var(--ink-rgb), 0.15)",
                 }}
                 muted
                 playsInline
@@ -661,11 +661,11 @@ export function ContentComposer({ isOpen, onClose, onSuccess, casualModeActive =
                   borderRadius: "50px",
                   border: visibility === opt.value
                     ? "1px solid rgba(56, 189, 248, 0.4)"
-                    : "1px solid rgba(255, 255, 255, 0.08)",
+                    : "1px solid rgba(var(--ink-rgb), 0.13)",
                   background: visibility === opt.value
                     ? "rgba(56, 189, 248, 0.1)"
                     : "transparent",
-                  color: visibility === opt.value ? "#fff" : "var(--text-muted)",
+                  color: visibility === opt.value ? "var(--text-primary)" : "var(--text-muted)",
                   fontSize: "0.65rem",
                   cursor: "pointer",
                 }}
@@ -689,10 +689,10 @@ export function ContentComposer({ isOpen, onClose, onSuccess, casualModeActive =
                   padding: "0.25rem 0.55rem",
                   borderRadius: "50px",
                   border: section === null
-                    ? "1px solid rgba(255, 255, 255, 0.3)"
-                    : "1px solid rgba(255, 255, 255, 0.08)",
-                  background: section === null ? "rgba(255, 255, 255, 0.08)" : "transparent",
-                  color: section === null ? "#fff" : "var(--text-muted)",
+                    ? "1px solid rgba(var(--ink-rgb), 0.25)"
+                    : "1px solid rgba(var(--ink-rgb), 0.13)",
+                  background: section === null ? "rgba(var(--ink-rgb), 0.08)" : "transparent",
+                  color: section === null ? "var(--text-primary)" : "var(--text-muted)",
                   fontSize: "0.62rem",
                   cursor: "pointer",
                   transition: "all 0.15s ease",
@@ -709,7 +709,7 @@ export function ContentComposer({ isOpen, onClose, onSuccess, casualModeActive =
                     borderRadius: "50px",
                     border: section === sec.id
                       ? `1px solid ${sec.color}`
-                      : "1px solid rgba(255, 255, 255, 0.08)",
+                      : "1px solid rgba(var(--ink-rgb), 0.13)",
                     background: section === sec.id ? `${sec.color}18` : "transparent",
                     color: section === sec.id ? sec.color : "var(--text-muted)",
                     fontSize: "0.62rem",
@@ -734,7 +734,7 @@ export function ContentComposer({ isOpen, onClose, onSuccess, casualModeActive =
 
         {/* Upload progress */}
         {uploadProgress !== null && uploadProgress < 100 && (
-          <div style={{ width: "100%", height: "3px", background: "rgba(255,255,255,0.05)", borderRadius: "2px" }}>
+          <div style={{ width: "100%", height: "3px", background: "rgba(var(--ink-rgb), 0.05)", borderRadius: "2px" }}>
             <div style={{
               width: `${uploadProgress}%`,
               height: "100%",
@@ -756,7 +756,7 @@ export function ContentComposer({ isOpen, onClose, onSuccess, casualModeActive =
             border: "none",
             background: canSubmit
               ? "linear-gradient(135deg, #0ea5e9, #0369a1)"
-              : "rgba(255, 255, 255, 0.05)",
+              : "rgba(var(--ink-rgb), 0.05)",
             color: canSubmit ? "#fff" : "var(--text-muted)",
             fontSize: "0.85rem",
             fontWeight: 600,

@@ -129,7 +129,7 @@ export function ProfileCard({
           style={{
             fontSize: s.fontSize,
             fontWeight: 600,
-            color: "#fff",
+            color: "var(--text-primary)",
             overflow: "hidden",
             textOverflow: "ellipsis",
             whiteSpace: "nowrap",

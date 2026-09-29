@@ -62,7 +62,7 @@ export function SchoolDirectory({ onSelectSchool, onCreateSchool, casualModeActi
       {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
         <div>
-          <h2 style={{ margin: 0, fontSize: "1.2rem", color: "#fff" }}>
+          <h2 style={{ margin: 0, fontSize: "1.2rem", color: "var(--text-primary)" }}>
             {casualModeActive ? "👥 Groups" : "🏫 Schools"}
           </h2>
           <p style={{ margin: "0.2rem 0 0", fontSize: "0.68rem", color: "var(--text-muted)" }}>
@@ -109,7 +109,7 @@ export function SchoolDirectory({ onSelectSchool, onCreateSchool, casualModeActi
                   <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
                     <span style={{ fontSize: "1.2rem" }}>{TYPE_EMOJI[school.school_type] || "🏫"}</span>
                     <div style={{ minWidth: 0 }}>
-                      <div style={{ fontSize: "0.8rem", fontWeight: "600", color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      <div style={{ fontSize: "0.8rem", fontWeight: "600", color: "var(--text-primary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                         {school.name}
                       </div>
                       <div style={{ fontSize: "0.65rem", color: "var(--text-muted)" }}>
@@ -158,10 +158,10 @@ export function SchoolDirectory({ onSelectSchool, onCreateSchool, casualModeActi
           style={{
             flex: "1 1 200px",
             padding: "0.6rem 1rem",
-            background: "rgba(255,255,255,0.04)",
-            border: "1px solid rgba(255,255,255,0.1)",
+            background: "rgba(var(--ink-rgb), 0.04)",
+            border: "1px solid rgba(var(--ink-rgb), 0.15)",
             borderRadius: "var(--radius-sm)",
-            color: "#fff",
+            color: "var(--text-primary)",
             fontSize: "0.85rem",
           }}
         />
@@ -176,9 +176,9 @@ export function SchoolDirectory({ onSelectSchool, onCreateSchool, casualModeActi
             style={{
               padding: "0.35rem 0.75rem",
               borderRadius: "50px",
-              border: `1px solid ${typeFilter === f.value ? "rgba(56, 189, 248, 0.4)" : "rgba(255,255,255,0.1)"}`,
-              background: typeFilter === f.value ? "rgba(56, 189, 248, 0.12)" : "rgba(255,255,255,0.03)",
-              color: typeFilter === f.value ? "#fff" : "var(--text-secondary)",
+              border: `1px solid ${typeFilter === f.value ? "rgba(56, 189, 248, 0.4)" : "rgba(var(--ink-rgb), 0.15)"}`,
+              background: typeFilter === f.value ? "rgba(56, 189, 248, 0.12)" : "rgba(var(--ink-rgb), 0.03)",
+              color: typeFilter === f.value ? "var(--text-primary)" : "var(--text-secondary)",
               fontSize: "0.7rem",
               cursor: "pointer",
               transition: "all 0.2s ease",
@@ -194,8 +194,8 @@ export function SchoolDirectory({ onSelectSchool, onCreateSchool, casualModeActi
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "1rem" }}>
           {[1, 2, 3].map((i) => (
             <div key={i} className="glass-card" style={{ padding: "1rem", height: "140px", borderRadius: "var(--radius-sm)" }}>
-              <div style={{ height: "20px", background: "rgba(255,255,255,0.05)", borderRadius: "4px", marginBottom: "0.5rem" }} />
-              <div style={{ height: "14px", width: "60%", background: "rgba(255,255,255,0.03)", borderRadius: "4px" }} />
+              <div style={{ height: "20px", background: "rgba(var(--ink-rgb), 0.05)", borderRadius: "4px", marginBottom: "0.5rem" }} />
+              <div style={{ height: "14px", width: "60%", background: "rgba(var(--ink-rgb), 0.03)", borderRadius: "4px" }} />
             </div>
           ))}
         </div>
@@ -252,7 +252,7 @@ function SchoolCard({ school, isMember, onSelect, onJoin, isJoining }) {
         padding: "0",
         borderRadius: "var(--radius-sm)",
         overflow: "hidden",
-        border: "1px solid rgba(255,255,255,0.08)",
+        border: "1px solid rgba(var(--ink-rgb), 0.13)",
         cursor: "pointer",
         transition: "all 0.2s ease",
       }}
@@ -287,7 +287,7 @@ function SchoolCard({ school, isMember, onSelect, onJoin, isJoining }) {
             padding: "0.2rem 0.5rem",
             borderRadius: "50px",
             fontSize: "0.6rem",
-            color: "var(--text-muted)",
+            color: "rgba(255,255,255,0.85)",
           }}>
             🔒 Invite Only
           </span>
@@ -296,7 +296,7 @@ function SchoolCard({ school, isMember, onSelect, onJoin, isJoining }) {
 
       {/* Info */}
       <div style={{ padding: "0.75rem 1rem" }}>
-        <h4 style={{ margin: "0 0 0.3rem", fontSize: "0.9rem", color: "#fff", fontWeight: "600" }}>
+        <h4 style={{ margin: "0 0 0.3rem", fontSize: "0.9rem", color: "var(--text-primary)", fontWeight: "600" }}>
           {school.name}
         </h4>
         {school.description && (
@@ -360,7 +360,7 @@ function OfficialSchoolCard({ school, isMember, onSelect, onJoin, isJoining }) {
     >
       <span style={{ fontSize: "1rem", flexShrink: 0 }}>⭐</span>
       <div style={{ minWidth: 0, flex: 1 }}>
-        <div style={{ fontSize: "0.75rem", fontWeight: "600", color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+        <div style={{ fontSize: "0.75rem", fontWeight: "600", color: "var(--text-primary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
           {school.name}
         </div>
         <div style={{ fontSize: "0.6rem", color: "var(--text-muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>

@@ -50,7 +50,7 @@ export function ExpertAuditCard({ audit, onViewProfile, compact = false }) {
       }}>
         <span style={{ fontSize: "1.2rem" }}>⭐</span>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: "0.7rem", color: "#fff" }}>
+          <div style={{ fontSize: "0.7rem", color: "var(--text-primary)" }}>
             Expert Audit — <span style={{ color: "var(--accent-amber)", fontWeight: "600" }}>{overallScore}/5.0</span>
           </div>
           <div style={{ fontSize: "0.6rem", color: "var(--text-muted)" }}>
@@ -92,7 +92,7 @@ export function ExpertAuditCard({ audit, onViewProfile, compact = false }) {
                   flexShrink: 0,
                 }} />
                 <div>
-                  <div style={{ fontSize: "0.8rem", color: "#fff", fontWeight: "500" }}>
+                  <div style={{ fontSize: "0.8rem", color: "var(--text-primary)", fontWeight: "500" }}>
                     {auditor.display_name || `${auditor.wallet_address.slice(0, 6)}...${auditor.wallet_address.slice(-4)}`}
                   </div>
                   <div style={{ fontSize: "0.6rem", color: "var(--accent-amber)", fontWeight: "600" }}>
@@ -125,8 +125,8 @@ export function ExpertAuditCard({ audit, onViewProfile, compact = false }) {
             <div key={cat.key} style={{
               padding: "0.5rem 0.75rem",
               borderRadius: "var(--radius-sm)",
-              background: "rgba(0,0,0,0.2)",
-              border: "1px solid rgba(255,255,255,0.06)",
+              background: "rgba(var(--ink-rgb), 0.04)",
+              border: "1px solid rgba(var(--ink-rgb), 0.11)",
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
@@ -140,7 +140,7 @@ export function ExpertAuditCard({ audit, onViewProfile, compact = false }) {
                     key={s}
                     style={{
                       fontSize: "0.6rem",
-                      color: s <= score ? "var(--accent-amber)" : "rgba(255,255,255,0.15)",
+                      color: s <= score ? "var(--accent-amber)" : "var(--text-muted)",
                     }}
                   >
                     ★
@@ -156,7 +156,7 @@ export function ExpertAuditCard({ audit, onViewProfile, compact = false }) {
       {audit.commentary && (
         <div style={{
           padding: "0.75rem 1rem",
-          background: "rgba(0,0,0,0.15)",
+          background: "rgba(var(--ink-rgb), 0.04)",
           borderRadius: "var(--radius-sm)",
           borderLeft: "3px solid rgba(251, 191, 36, 0.3)",
           marginBottom: "0.75rem",

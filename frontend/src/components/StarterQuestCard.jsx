@@ -72,16 +72,16 @@ export function StarterQuestCard({ onNavigate, compact = false }) {
         display: "flex",
         flexDirection: "column",
         gap: "0.9rem",
-        border: quest.allDone ? "1px solid rgba(56,189,248,0.4)" : "1px solid rgba(255,255,255,0.08)",
+        border: quest.allDone ? "1px solid rgba(56,189,248,0.4)" : "1px solid rgba(var(--ink-rgb), 0.13)",
         background: quest.allDone
           ? "linear-gradient(135deg, rgba(56,189,248,0.14), rgba(16,185,129,0.08))"
-          : "rgba(255,255,255,0.02)",
+          : "rgba(var(--ink-rgb), 0.02)",
       }}
       aria-label="Getting started checklist"
     >
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.75rem" }}>
         <div style={{ minWidth: 0 }}>
-          <div style={{ fontSize: "0.95rem", fontWeight: 700, color: "#fff", display: "flex", alignItems: "center", gap: "0.4rem" }}>
+          <div style={{ fontSize: "0.95rem", fontWeight: 700, color: "var(--text-primary)", display: "flex", alignItems: "center", gap: "0.4rem" }}>
             {quest.allDone ? "🎉 You're all set" : "🧭 New here? Start with these"}
           </div>
           <div style={{ fontSize: "0.72rem", color: "var(--text-muted)", marginTop: 2 }}>
@@ -92,7 +92,7 @@ export function StarterQuestCard({ onNavigate, compact = false }) {
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexShrink: 0 }}>
-          <span style={{ fontSize: "0.72rem", fontWeight: 700, color: quest.allDone ? "#38bdf8" : "var(--text-secondary)", whiteSpace: "nowrap" }}>
+          <span style={{ fontSize: "0.72rem", fontWeight: 700, color: quest.allDone ? "var(--accent-blue)" : "var(--text-secondary)", whiteSpace: "nowrap" }}>
             {quest.completedCount}/{quest.total}
           </span>
           {/* Always available, not just on completion. */}
@@ -118,7 +118,7 @@ export function StarterQuestCard({ onNavigate, compact = false }) {
       </div>
 
       {/* Progress bar */}
-      <div style={{ height: 6, borderRadius: 999, background: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
+      <div style={{ height: 6, borderRadius: 999, background: "rgba(var(--ink-rgb), 0.06)", overflow: "hidden" }}>
         <div
           style={{
             width: `${pct}%`,
@@ -148,7 +148,7 @@ export function StarterQuestCard({ onNavigate, compact = false }) {
                 padding: "0.55rem 0.6rem",
                 borderRadius: "10px",
                 border: "1px solid transparent",
-                background: done ? "transparent" : "rgba(255,255,255,0.03)",
+                background: done ? "transparent" : "rgba(var(--ink-rgb), 0.03)",
                 cursor: done ? "default" : "pointer",
                 opacity: done ? 0.6 : 1,
                 width: "100%",
@@ -165,7 +165,7 @@ export function StarterQuestCard({ onNavigate, compact = false }) {
                   alignItems: "center",
                   justifyContent: "center",
                   fontSize: "0.7rem",
-                  border: done ? "none" : "1.5px solid rgba(255,255,255,0.2)",
+                  border: done ? "none" : "1.5px solid rgba(var(--ink-rgb), 0.25)",
                   background: done ? "#10b981" : "transparent",
                   color: "#fff",
                 }}
@@ -178,7 +178,7 @@ export function StarterQuestCard({ onNavigate, compact = false }) {
                     display: "block",
                     fontSize: "0.83rem",
                     fontWeight: 600,
-                    color: "#fff",
+                    color: "var(--text-primary)",
                     textDecoration: done ? "line-through" : "none",
                   }}
                 >

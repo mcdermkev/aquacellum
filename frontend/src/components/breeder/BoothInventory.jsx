@@ -405,16 +405,16 @@ export function BoothInventory({ walletAccount, casualModeActive = false }) {
       {/* ── Header: title, connection state, queue badge, manual refresh ── */}
       <div className="glass-card" style={{ padding: "1rem 1.1rem" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "wrap" }}>
-          <Tote size={26} weight="duotone" color="#7dd3fc" />
+          <Tote size={26} weight="duotone" color="var(--accent-blue)" />
           <div style={{ flex: "1 1 auto", minWidth: 0 }}>
-            <h3 style={{ color: "#fff", fontSize: "1.15rem", margin: 0, fontWeight: 700 }}>
+            <h3 style={{ color: "var(--text-primary)", fontSize: "1.15rem", margin: 0, fontWeight: 700 }}>
               {copy.sectionTitle}
             </h3>
             <p style={{ color: "var(--text-secondary)", fontSize: "0.9rem", margin: "0.15rem 0 0 0" }}>
               {copy.subtitle}
             </p>
             {helping ? (
-              <p style={{ color: "#7dd3fc", fontSize: "0.9rem", margin: "0.2rem 0 0 0", fontWeight: 600 }}>
+              <p style={{ color: "var(--accent-blue)", fontSize: "0.9rem", margin: "0.2rem 0 0 0", fontWeight: 600 }}>
                 Helping at {helpingName}&apos;s booth
                 <span style={{ color: "var(--text-muted)", fontWeight: 400, fontFamily: "'JetBrains Mono', monospace", fontSize: "0.8rem" }}>
                   {" "}· you: {shortWallet(walletAccount)}
@@ -521,7 +521,7 @@ export function BoothInventory({ walletAccount, casualModeActive = false }) {
               borderRadius: "10px",
               border: "1px solid rgba(134, 239, 172, 0.35)",
               background: "rgba(134, 239, 172, 0.1)",
-              color: "#86efac",
+              color: "var(--accent-green)",
               fontSize: "0.95rem",
               fontWeight: 600,
               textAlign: "left",
@@ -560,7 +560,7 @@ export function BoothInventory({ walletAccount, casualModeActive = false }) {
         {joinNotice && (
           <div
             role={joinNotice.ok ? "status" : "alert"}
-            style={{ display: "flex", gap: "0.5rem", alignItems: "center", marginTop: "0.75rem", fontSize: "0.95rem", color: joinNotice.ok ? "#86efac" : "#fca5a5" }}
+            style={{ display: "flex", gap: "0.5rem", alignItems: "center", marginTop: "0.75rem", fontSize: "0.95rem", color: joinNotice.ok ? "var(--accent-green)" : "var(--accent-red)" }}
           >
             {joinNotice.ok ? <CheckCircle size={20} weight="fill" /> : <Warning size={20} weight="duotone" />}
             <span style={{ flex: 1 }}>{joinNotice.text}</span>
@@ -579,7 +579,7 @@ export function BoothInventory({ walletAccount, casualModeActive = false }) {
                 gap: "0.4rem",
                 fontSize: "0.9rem",
                 fontWeight: 600,
-                color: "#fbbf24",
+                color: "var(--accent-amber)",
                 background: "rgba(251, 191, 36, 0.12)",
                 border: "1px solid rgba(251, 191, 36, 0.35)",
                 borderRadius: "10px",
@@ -598,7 +598,7 @@ export function BoothInventory({ walletAccount, casualModeActive = false }) {
                 gap: "0.4rem",
                 fontSize: "0.9rem",
                 fontWeight: 600,
-                color: "#7dd3fc",
+                color: "var(--accent-blue)",
                 background: "rgba(56, 189, 248, 0.12)",
                 border: "1px solid rgba(56, 189, 248, 0.35)",
                 borderRadius: "10px",
@@ -625,9 +625,9 @@ export function BoothInventory({ walletAccount, casualModeActive = false }) {
             background: "rgba(52, 211, 153, 0.08)",
           }}
         >
-          <CheckCircle size={24} weight="duotone" color="#34d399" />
+          <CheckCircle size={24} weight="duotone" color="var(--accent-green)" />
           <div style={{ flex: 1, minWidth: 0 }}>
-            <strong style={{ color: "#fff", fontSize: "1rem" }}>
+            <strong style={{ color: "var(--text-primary)", fontSize: "1rem" }}>
               {lastSale.quantity} × {lastSale.name}
             </strong>
             <div style={{ color: "var(--text-secondary)", fontSize: "0.88rem" }}>
@@ -669,8 +669,8 @@ export function BoothInventory({ walletAccount, casualModeActive = false }) {
             background: "rgba(248, 113, 113, 0.08)",
           }}
         >
-          <Warning size={24} weight="duotone" color="#f87171" />
-          <span style={{ color: "#fff", fontSize: "0.95rem", flex: 1 }}>{saleError}</span>
+          <Warning size={24} weight="duotone" color="var(--accent-red)" />
+          <span style={{ color: "var(--text-primary)", fontSize: "0.95rem", flex: 1 }}>{saleError}</span>
           <button
             type="button"
             onClick={() => setSaleError(null)}
@@ -716,8 +716,8 @@ export function BoothInventory({ walletAccount, casualModeActive = false }) {
             fontSize: "1rem",
             borderRadius: "12px",
             border: "1px solid var(--glass-border)",
-            background: "rgba(255,255,255,0.04)",
-            color: "#fff",
+            background: "rgba(var(--ink-rgb), 0.04)",
+            color: "var(--text-primary)",
             boxSizing: "border-box",
           }}
         />
@@ -730,7 +730,7 @@ export function BoothInventory({ walletAccount, casualModeActive = false }) {
         </div>
       ) : inventory.isError ? (
         <div className="glass-card" style={{ padding: "1.5rem", textAlign: "center" }}>
-          <p style={{ color: "#f87171", fontSize: "1rem", marginBottom: "0.75rem" }}>
+          <p style={{ color: "var(--accent-red)", fontSize: "1rem", marginBottom: "0.75rem" }}>
             Couldn't load inventory.
           </p>
           <button
@@ -887,7 +887,7 @@ function BoothLine({ line, copy, onSell, onAdjust, adjusting = false, canAdjust 
       <div style={{ flex: "1 1 150px", minWidth: 0 }}>
         <strong
           style={{
-            color: "#fff",
+            color: "var(--text-primary)",
             fontSize: "1.05rem",
             fontWeight: 700,
             display: "block",
@@ -915,7 +915,7 @@ function BoothLine({ line, copy, onSell, onAdjust, adjusting = false, canAdjust 
             marginTop: "0.3rem",
             fontSize: "1rem",
             fontWeight: 600,
-            color: "#7dd3fc",
+            color: "var(--accent-blue)",
           }}
         >
           {formatPriceCents(line.priceCents)}
@@ -926,7 +926,7 @@ function BoothLine({ line, copy, onSell, onAdjust, adjusting = false, canAdjust 
               marginLeft: "0.6rem",
               fontSize: "0.85rem",
               fontWeight: 700,
-              color: "#f87171",
+              color: "var(--accent-red)",
               textTransform: "uppercase",
               letterSpacing: "0.04em",
             }}
@@ -948,7 +948,7 @@ function BoothLine({ line, copy, onSell, onAdjust, adjusting = false, canAdjust 
             fontSize: "2rem",
             lineHeight: 1,
             fontWeight: 800,
-            color: soldOut ? "#f87171" : "#fff",
+            color: soldOut ? "var(--accent-red)" : "var(--text-primary)",
             fontVariantNumeric: "tabular-nums",
           }}
         >
@@ -1016,8 +1016,8 @@ function SellSheet({ line, copy, quantity, onQuantityChange, onCash, onClose, bu
         minWidth: "60px",
         borderRadius: "14px",
         border: "1px solid var(--glass-border)",
-        background: disabled ? "rgba(255,255,255,0.02)" : "rgba(255,255,255,0.07)",
-        color: disabled ? "var(--text-muted)" : "#fff",
+        background: disabled ? "rgba(var(--ink-rgb), 0.02)" : "rgba(var(--ink-rgb), 0.07)",
+        color: disabled ? "var(--text-muted)" : "var(--text-primary)",
         cursor: disabled ? "not-allowed" : "pointer",
         display: "inline-flex",
         alignItems: "center",
@@ -1038,7 +1038,7 @@ function SellSheet({ line, copy, quantity, onQuantityChange, onCash, onClose, bu
         position: "fixed",
         inset: 0,
         zIndex: 1000,
-        background: "rgba(2, 6, 23, 0.72)",
+        background: "rgba(11,37,48,0.45)",
         display: "flex",
         alignItems: "flex-end",
         justifyContent: "center",
@@ -1061,7 +1061,7 @@ function SellSheet({ line, copy, quantity, onQuantityChange, onCash, onClose, bu
       >
         <div style={{ display: "flex", alignItems: "flex-start", gap: "0.6rem" }}>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <strong style={{ color: "#fff", fontSize: "1.15rem", fontWeight: 700 }}>
+            <strong style={{ color: "var(--text-primary)", fontSize: "1.15rem", fontWeight: 700 }}>
               {line.commonName}
             </strong>
             {line.scientificName && (
@@ -1076,7 +1076,7 @@ function SellSheet({ line, copy, quantity, onQuantityChange, onCash, onClose, bu
                 {line.scientificName}
               </span>
             )}
-            <span style={{ display: "block", color: "#7dd3fc", fontSize: "1rem", fontWeight: 600, marginTop: "0.2rem" }}>
+            <span style={{ display: "block", color: "var(--accent-blue)", fontSize: "1rem", fontWeight: 600, marginTop: "0.2rem" }}>
               {formatPriceCents(line.priceCents)} each · {formatRemaining(line)} {copy.remainingLabel}
             </span>
           </div>
@@ -1119,7 +1119,7 @@ function SellSheet({ line, copy, quantity, onQuantityChange, onCash, onClose, bu
                 textAlign: "center",
                 fontSize: "2rem",
                 fontWeight: 800,
-                color: "#fff",
+                color: "var(--text-primary)",
                 fontVariantNumeric: "tabular-nums",
               }}
             >
@@ -1191,7 +1191,7 @@ function SellSheet({ line, copy, quantity, onQuantityChange, onCash, onClose, bu
               fontWeight: 700,
               borderRadius: "14px",
               border: "1px dashed var(--glass-border)",
-              background: "rgba(255,255,255,0.02)",
+              background: "rgba(var(--ink-rgb), 0.02)",
               color: "var(--text-muted)",
               cursor: "not-allowed",
               display: "inline-flex",
@@ -1271,7 +1271,7 @@ function PublishTankModal({ lines, onClose, onPublish, busy, result }) {
         position: "fixed",
         inset: 0,
         zIndex: 1000,
-        background: "rgba(2, 6, 23, 0.72)",
+        background: "rgba(11,37,48,0.45)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -1295,7 +1295,7 @@ function PublishTankModal({ lines, onClose, onPublish, busy, result }) {
       >
         <div style={{ display: "flex", alignItems: "flex-start", gap: "0.6rem" }}>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <h3 style={{ color: "#fff", fontSize: "1.25rem", fontWeight: 700, margin: 0 }}>
+            <h3 style={{ color: "var(--text-primary)", fontSize: "1.25rem", fontWeight: 700, margin: 0 }}>
               Publish Tank for QR Label
             </h3>
             <p style={{ color: "var(--text-secondary)", fontSize: "0.9rem", marginTop: "0.3rem" }}>
@@ -1326,7 +1326,7 @@ function PublishTankModal({ lines, onClose, onPublish, busy, result }) {
               borderRadius: "12px",
               background: "rgba(248, 113, 113, 0.08)",
               border: "1px solid rgba(248, 113, 113, 0.4)",
-              color: "#f87171",
+              color: "var(--accent-red)",
               fontSize: "0.9rem",
             }}
           >
@@ -1339,14 +1339,14 @@ function PublishTankModal({ lines, onClose, onPublish, busy, result }) {
               borderRadius: "12px",
               background: "rgba(52, 211, 153, 0.08)",
               border: "1px solid rgba(52, 211, 153, 0.35)",
-              color: "#34d399",
+              color: "var(--accent-green)",
               fontSize: "0.9rem",
             }}
           >
             <strong>Tank published!</strong>
             <p style={{ margin: "0.5rem 0 0 0", color: "var(--text-secondary)" }}>
               Your label has been downloaded. The public page is at:<br />
-              <a href={result.publicUrl} target="_blank" rel="noopener noreferrer" style={{ color: "#7dd3fc", wordBreak: "break-all" }}>
+              <a href={result.publicUrl} target="_blank" rel="noopener noreferrer" style={{ color: "var(--accent-blue)", wordBreak: "break-all" }}>
                 {result.publicUrl}
               </a>
             </p>
@@ -1369,8 +1369,8 @@ function PublishTankModal({ lines, onClose, onPublish, busy, result }) {
                 padding: "0.7rem 0.9rem",
                 borderRadius: "10px",
                 border: "1px solid var(--glass-border)",
-                background: "rgba(255,255,255,0.04)",
-                color: "#fff",
+                background: "rgba(var(--ink-rgb), 0.04)",
+                color: "var(--text-primary)",
                 fontSize: "0.95rem",
               }}
             />
@@ -1393,8 +1393,8 @@ function PublishTankModal({ lines, onClose, onPublish, busy, result }) {
                 padding: "0.7rem 0.9rem",
                 borderRadius: "10px",
                 border: "1px solid var(--glass-border)",
-                background: "rgba(255,255,255,0.04)",
-                color: "#fff",
+                background: "rgba(var(--ink-rgb), 0.04)",
+                color: "var(--text-primary)",
                 fontSize: "0.95rem",
               }}
             />
@@ -1414,8 +1414,8 @@ function PublishTankModal({ lines, onClose, onPublish, busy, result }) {
                 padding: "0.7rem 0.9rem",
                 borderRadius: "10px",
                 border: "1px solid var(--glass-border)",
-                background: "rgba(255,255,255,0.04)",
-                color: "#fff",
+                background: "rgba(var(--ink-rgb), 0.04)",
+                color: "var(--text-primary)",
                 fontSize: "0.95rem",
                 resize: "vertical",
               }}
@@ -1455,7 +1455,7 @@ function PublishTankModal({ lines, onClose, onPublish, busy, result }) {
                     />
                     <label
                       htmlFor={`publish-listing-${line.id}`}
-                      style={{ flex: 1, cursor: "pointer", color: "#fff" }}
+                      style={{ flex: 1, cursor: "pointer", color: "var(--text-primary)" }}
                     >
                       <div style={{ fontSize: "0.9rem", fontWeight: 600 }}>{line.commonName}</div>
                       <div style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>

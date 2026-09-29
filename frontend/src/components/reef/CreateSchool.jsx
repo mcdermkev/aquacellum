@@ -131,7 +131,7 @@ export function CreateSchool({ onClose, onCreated }) {
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
-      background: "rgba(0, 0, 0, 0.7)",
+      background: "rgba(11, 37, 48, 0.45)",
       backdropFilter: "blur(8px)",
       padding: "1rem",
     }}>
@@ -146,7 +146,7 @@ export function CreateSchool({ onClose, onCreated }) {
       }}>
         {/* Header */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
-          <h2 style={{ margin: 0, fontSize: "1.25rem", color: "#fff" }}>
+          <h2 style={{ margin: 0, fontSize: "1.25rem", color: "var(--text-primary)" }}>
             🏫 Create a School
           </h2>
           <button
@@ -165,7 +165,7 @@ export function CreateSchool({ onClose, onCreated }) {
               flex: 1,
               height: "3px",
               borderRadius: "2px",
-              background: s <= step ? "var(--accent-blue)" : "rgba(255,255,255,0.1)",
+              background: s <= step ? "var(--accent-blue)" : "rgba(var(--ink-rgb), 0.1)",
               transition: "background 0.3s ease",
             }} />
           ))}
@@ -187,10 +187,10 @@ export function CreateSchool({ onClose, onCreated }) {
                 style={{
                   width: "100%",
                   padding: "0.7rem 1rem",
-                  background: "rgba(255,255,255,0.04)",
-                  border: "1px solid rgba(255,255,255,0.1)",
+                  background: "rgba(var(--ink-rgb), 0.04)",
+                  border: "1px solid rgba(var(--ink-rgb), 0.15)",
                   borderRadius: "var(--radius-sm)",
-                  color: "#fff",
+                  color: "var(--text-primary)",
                   fontSize: "0.9rem",
                 }}
               />
@@ -211,10 +211,10 @@ export function CreateSchool({ onClose, onCreated }) {
                   style={{
                     flex: 1,
                     padding: "0.7rem 1rem",
-                    background: "rgba(255,255,255,0.04)",
-                    border: `1px solid ${slugAvailable === false ? "rgba(248, 113, 113, 0.4)" : slugAvailable === true ? "rgba(52, 211, 153, 0.4)" : "rgba(255,255,255,0.1)"}`,
+                    background: "rgba(var(--ink-rgb), 0.04)",
+                    border: `1px solid ${slugAvailable === false ? "rgba(248, 113, 113, 0.4)" : slugAvailable === true ? "rgba(52, 211, 153, 0.4)" : "rgba(var(--ink-rgb), 0.15)"}`,
                     borderRadius: "var(--radius-sm)",
-                    color: "#fff",
+                    color: "var(--text-primary)",
                     fontSize: "0.9rem",
                   }}
                 />
@@ -243,10 +243,10 @@ export function CreateSchool({ onClose, onCreated }) {
                       padding: "0.6rem 0.8rem",
                       background: formData.schoolType === t.value
                         ? "rgba(56, 189, 248, 0.15)"
-                        : "rgba(255,255,255,0.03)",
-                      border: `1px solid ${formData.schoolType === t.value ? "rgba(56, 189, 248, 0.4)" : "rgba(255,255,255,0.08)"}`,
+                        : "rgba(var(--ink-rgb), 0.03)",
+                      border: `1px solid ${formData.schoolType === t.value ? "rgba(56, 189, 248, 0.4)" : "rgba(var(--ink-rgb), 0.13)"}`,
                       borderRadius: "var(--radius-sm)",
-                      color: formData.schoolType === t.value ? "#fff" : "var(--text-secondary)",
+                      color: formData.schoolType === t.value ? "var(--text-primary)" : "var(--text-secondary)",
                       cursor: "pointer",
                       textAlign: "left",
                       transition: "all 0.2s ease",
@@ -277,10 +277,10 @@ export function CreateSchool({ onClose, onCreated }) {
                 style={{
                   width: "100%",
                   padding: "0.7rem 1rem",
-                  background: "rgba(255,255,255,0.04)",
-                  border: "1px solid rgba(255,255,255,0.1)",
+                  background: "rgba(var(--ink-rgb), 0.04)",
+                  border: "1px solid rgba(var(--ink-rgb), 0.15)",
                   borderRadius: "var(--radius-sm)",
-                  color: "#fff",
+                  color: "var(--text-primary)",
                   fontSize: "0.85rem",
                   resize: "vertical",
                 }}
@@ -304,7 +304,7 @@ export function CreateSchool({ onClose, onCreated }) {
                       height: "120px",
                       objectFit: "cover",
                       borderRadius: "var(--radius-sm)",
-                      border: "1px solid rgba(255,255,255,0.1)",
+                      border: "1px solid rgba(var(--ink-rgb), 0.15)",
                     }}
                   />
                   <button
@@ -332,8 +332,8 @@ export function CreateSchool({ onClose, onCreated }) {
                   alignItems: "center",
                   justifyContent: "center",
                   height: "80px",
-                  background: "rgba(255,255,255,0.03)",
-                  border: "1px dashed rgba(255,255,255,0.15)",
+                  background: "rgba(var(--ink-rgb), 0.03)",
+                  border: "1px dashed rgba(var(--ink-rgb), 0.2)",
                   borderRadius: "var(--radius-sm)",
                   cursor: "pointer",
                   color: "var(--text-muted)",
@@ -364,8 +364,8 @@ export function CreateSchool({ onClose, onCreated }) {
                 style={{
                   width: "100%",
                   padding: "0.7rem 1rem",
-                  background: "rgba(255,255,255,0.02)",
-                  border: "1px solid rgba(255,255,255,0.06)",
+                  background: "rgba(var(--ink-rgb), 0.03)",
+                  border: "1px solid rgba(var(--ink-rgb), 0.11)",
                   borderRadius: "var(--radius-sm)",
                   color: "var(--text-muted)",
                   fontSize: "0.85rem",
@@ -392,10 +392,10 @@ export function CreateSchool({ onClose, onCreated }) {
                 style={{
                   width: "100%",
                   padding: "0.7rem 1rem",
-                  background: "rgba(255,255,255,0.04)",
-                  border: "1px solid rgba(255,255,255,0.1)",
+                  background: "rgba(var(--ink-rgb), 0.04)",
+                  border: "1px solid rgba(var(--ink-rgb), 0.15)",
                   borderRadius: "var(--radius-sm)",
-                  color: "#fff",
+                  color: "var(--text-primary)",
                   fontSize: "0.9rem",
                 }}
               />
@@ -406,12 +406,12 @@ export function CreateSchool({ onClose, onCreated }) {
               alignItems: "center",
               justifyContent: "space-between",
               padding: "1rem",
-              background: "rgba(255,255,255,0.03)",
+              background: "rgba(var(--ink-rgb), 0.03)",
               borderRadius: "var(--radius-sm)",
-              border: "1px solid rgba(255,255,255,0.08)",
+              border: "1px solid rgba(var(--ink-rgb), 0.13)",
             }}>
               <div>
-                <div style={{ fontSize: "0.85rem", color: "#fff", fontWeight: "500" }}>
+                <div style={{ fontSize: "0.85rem", color: "var(--text-primary)", fontWeight: "500" }}>
                   🔒 Invite Only
                 </div>
                 <div style={{ fontSize: "0.7rem", color: "var(--text-muted)", marginTop: "0.2rem" }}>
@@ -425,7 +425,7 @@ export function CreateSchool({ onClose, onCreated }) {
                   height: "24px",
                   borderRadius: "12px",
                   border: "none",
-                  background: formData.isInviteOnly ? "var(--accent-blue)" : "rgba(255,255,255,0.15)",
+                  background: formData.isInviteOnly ? "var(--accent-blue)" : "rgba(var(--ink-rgb), 0.1)",
                   cursor: "pointer",
                   position: "relative",
                   transition: "background 0.2s ease",
@@ -456,7 +456,7 @@ export function CreateSchool({ onClose, onCreated }) {
               <div style={{ fontSize: "0.75rem", color: "var(--accent-blue)", fontWeight: "600", marginBottom: "0.5rem" }}>
                 Review
               </div>
-              <div style={{ fontSize: "0.8rem", color: "#fff" }}>
+              <div style={{ fontSize: "0.8rem", color: "var(--text-primary)" }}>
                 <strong>{formData.name}</strong> ({SCHOOL_TYPES.find((t) => t.value === formData.schoolType)?.label})
               </div>
               <div style={{ fontSize: "0.7rem", color: "var(--text-muted)", marginTop: "0.3rem" }}>

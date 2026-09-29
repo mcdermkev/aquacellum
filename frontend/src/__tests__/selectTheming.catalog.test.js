@@ -44,14 +44,14 @@ function componentStylesheets(dir = SRC, out = []) {
  *  treated as a violation. */
 const stripCss = (s) => s.replace(/\/\*[\s\S]*?\*\//g, "");
 
-describe("global dark-UI declaration (the root fix)", () => {
-  it("declares color-scheme: dark on :root", () => {
-    // This one line is what makes the UA paint native controls dark: select
+describe("global color-scheme declaration (the root fix)", () => {
+  it("declares color-scheme: light on :root (Daylight theme, 2026-09-29)", () => {
+    // This one line is what makes the UA paint native controls to match the theme: select
     // popups, scrollbars, date pickers, autofill. Removing it silently
     // reintroduces white-on-white dropdowns across the whole app.
     const root = stripCss(GLOBAL_CSS).match(/:root\s*\{[\s\S]*?\}/);
     expect(root, ":root block should exist").toBeTruthy();
-    expect(root[0]).toMatch(/color-scheme:\s*dark/);
+    expect(root[0]).toMatch(/color-scheme:\s*light/);
   });
 
   it("also sets explicit option/optgroup colors as the fallback layer", () => {

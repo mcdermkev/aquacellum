@@ -184,7 +184,7 @@ export function ReefFeed({ casualModeActive = false, walletAddress, onNavigatePr
         marginBottom: "1rem",
       }}>
         <div>
-          <h2 style={{ margin: 0, fontSize: "1.2rem", fontWeight: 700, color: "#fff" }}>
+          <h2 style={{ margin: 0, fontSize: "1.2rem", fontWeight: 700, color: "var(--text-primary)" }}>
             {casualModeActive ? "🪸 Community" : "The Reef"}
           </h2>
           <p style={{ margin: "0.2rem 0 0", fontSize: "0.68rem", color: "var(--text-muted)" }}>
@@ -220,8 +220,8 @@ export function ReefFeed({ casualModeActive = false, walletAddress, onNavigatePr
                 width: "34px",
                 height: "34px",
                 borderRadius: "8px",
-                border: "1px solid rgba(255, 255, 255, 0.08)",
-                background: "rgba(255, 255, 255, 0.03)",
+                border: "1px solid rgba(var(--ink-rgb), 0.13)",
+                background: "rgba(var(--ink-rgb), 0.03)",
                 color: "var(--text-muted)",
                 cursor: "pointer",
                 fontSize: "1rem",
@@ -231,8 +231,8 @@ export function ReefFeed({ casualModeActive = false, walletAddress, onNavigatePr
                 justifyContent: "center",
                 padding: 0
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.color = "#fff"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)"; }}
+              onMouseEnter={(e) => { e.currentTarget.style.color = "var(--text-primary)"; e.currentTarget.style.borderColor = "rgba(var(--ink-rgb), 0.2)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)"; e.currentTarget.style.borderColor = "rgba(var(--ink-rgb), 0.13)"; }}
               title={casualModeActive ? "My Profile" : "Profile"}
               aria-label="View my profile"
             >
@@ -252,8 +252,8 @@ export function ReefFeed({ casualModeActive = false, walletAddress, onNavigatePr
               width: "34px",
               height: "34px",
               borderRadius: "8px",
-              border: "1px solid rgba(255, 255, 255, 0.08)",
-              background: "rgba(255, 255, 255, 0.03)",
+              border: "1px solid rgba(var(--ink-rgb), 0.13)",
+              background: "rgba(var(--ink-rgb), 0.03)",
               color: "var(--text-muted)",
               cursor: "pointer",
               fontSize: "0.95rem",
@@ -263,8 +263,8 @@ export function ReefFeed({ casualModeActive = false, walletAddress, onNavigatePr
               justifyContent: "center",
               padding: 0
             }}
-            onMouseEnter={(e) => { e.currentTarget.style.color = "#fff"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)"; }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = "var(--text-primary)"; e.currentTarget.style.borderColor = "rgba(var(--ink-rgb), 0.2)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)"; e.currentTarget.style.borderColor = "rgba(var(--ink-rgb), 0.13)"; }}
             title="Refresh"
             aria-label="Refresh feed"
           >
@@ -280,8 +280,8 @@ export function ReefFeed({ casualModeActive = false, walletAddress, onNavigatePr
         marginBottom: "1.25rem",
         padding: "0.25rem",
         borderRadius: "10px",
-        background: "rgba(255, 255, 255, 0.03)",
-        border: "1px solid rgba(255, 255, 255, 0.06)",
+        background: "rgba(var(--ink-rgb), 0.03)",
+        border: "1px solid rgba(var(--ink-rgb), 0.11)",
         overflowX: "auto",
       }} className="reef-feed-tabs scroll-fade" ref={tabsScrollRef}>
         {getTabConfig(casualModeActive).map((tab) => (
@@ -294,7 +294,7 @@ export function ReefFeed({ casualModeActive = false, walletAddress, onNavigatePr
               borderRadius: "8px",
               border: "none",
               background: activeTab === tab.key ? "rgba(56, 189, 248, 0.12)" : "transparent",
-              color: activeTab === tab.key ? "#fff" : "var(--text-muted)",
+              color: activeTab === tab.key ? "var(--text-primary)" : "var(--text-muted)",
               fontSize: "0.72rem",
               fontWeight: activeTab === tab.key ? 600 : 400,
               cursor: "pointer",
@@ -378,7 +378,7 @@ export function ReefFeed({ casualModeActive = false, walletAddress, onNavigatePr
         <div>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
             <div>
-              <h3 style={{ margin: 0, fontSize: "1rem", fontWeight: 600, color: "#fff" }}>
+              <h3 style={{ margin: 0, fontSize: "1rem", fontWeight: 600, color: "var(--text-primary)" }}>
                 {casualModeActive ? "📅 Upcoming Events" : "🌊 Upcoming Tides"}
               </h3>
               <p style={{ margin: "0.2rem 0 0", fontSize: "0.68rem", color: "var(--text-muted)" }}>
@@ -547,7 +547,7 @@ function WelcomeBanner({ casualModeActive }) {
     >
       <span style={{ fontSize: "1.75rem", flexShrink: 0 }}>🪸</span>
       <div>
-        <p style={{ margin: 0, fontSize: "0.85rem", fontWeight: 600, color: "#fff" }}>
+        <p style={{ margin: 0, fontSize: "0.85rem", fontWeight: 600, color: "var(--text-primary)" }}>
           {casualModeActive ? "Welcome to the community!" : "Welcome to The Reef"}
         </p>
         <p style={{ margin: "0.2rem 0 0", fontSize: "0.72rem", color: "var(--text-secondary)", lineHeight: "1.4" }}>
@@ -578,8 +578,8 @@ function renderFeedContent({
             style={{
               height: "180px",
               borderRadius: "12px",
-              background: "rgba(255, 255, 255, 0.03)",
-              border: "1px solid rgba(255, 255, 255, 0.05)",
+              background: "rgba(var(--ink-rgb), 0.03)",
+              border: "1px solid rgba(var(--ink-rgb), 0.1)",
               animation: "pulse 1.5s ease-in-out infinite",
             }}
           />
@@ -619,11 +619,11 @@ function renderFeedContent({
         textAlign: "center",
         padding: "3rem 1.5rem",
         borderRadius: "12px",
-        background: "rgba(255, 255, 255, 0.02)",
-        border: "1px solid rgba(255, 255, 255, 0.05)",
+        background: "rgba(var(--ink-rgb), 0.03)",
+        border: "1px solid rgba(var(--ink-rgb), 0.1)",
       }}>
         <p style={{ fontSize: "2.5rem", margin: "0 0 0.75rem" }}>{emptyIcon}</p>
-        <p style={{ fontSize: "0.95rem", color: "#fff", fontWeight: 600, margin: "0 0 0.5rem" }}>
+        <p style={{ fontSize: "0.95rem", color: "var(--text-primary)", fontWeight: 600, margin: "0 0 0.5rem" }}>
           {emptyTitle || (casualModeActive ? "Your feed is quiet" : "No activity yet")}
         </p>
         <p style={{ fontSize: "0.8rem", color: "var(--text-muted)", margin: "0 0 1.25rem", lineHeight: 1.5 }}>
@@ -640,7 +640,7 @@ function renderFeedContent({
               borderRadius: "8px",
               border: "1px solid rgba(56, 189, 248, 0.2)",
               background: "rgba(56, 189, 248, 0.08)",
-              color: "#fff",
+              color: "var(--text-primary)",
               fontSize: "0.75rem",
               fontWeight: 600,
               cursor: "pointer",
@@ -655,7 +655,7 @@ function renderFeedContent({
               borderRadius: "8px",
               border: "1px solid rgba(52, 211, 153, 0.2)",
               background: "rgba(52, 211, 153, 0.08)",
-              color: "#fff",
+              color: "var(--text-primary)",
               fontSize: "0.75rem",
               fontWeight: 600,
               cursor: "pointer",

@@ -31,13 +31,13 @@ export function BoxCapacityMeter({ boxStatus, casualModeActive = false }) {
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: "0.45rem" }}>
-        <Package size={16} weight="duotone" color={isFull ? "var(--amber-400)" : "var(--teal-400)"} />
+        <Package size={16} weight="duotone" color={isFull ? "var(--accent-amber)" : "var(--accent-teal)"} />
         <strong
           style={{
             fontFamily: "Outfit, sans-serif",
             fontSize: "0.82rem",
             fontWeight: 700,
-            background: "linear-gradient(135deg, var(--teal-300), var(--cyan-300), var(--teal-400))",
+            background: "linear-gradient(135deg, var(--accent-teal), var(--accent-blue-fill), var(--accent-teal))",
             WebkitBackgroundClip: "text",
             WebkitTextFillColor: "transparent",
             backgroundClip: "text",
@@ -56,7 +56,7 @@ export function BoxCapacityMeter({ boxStatus, casualModeActive = false }) {
         style={{
           height: "8px",
           borderRadius: "6px",
-          background: "rgba(255,255,255,0.06)",
+          background: "rgba(var(--ink-rgb), 0.06)",
           overflow: "hidden",
           position: "relative",
         }}
@@ -67,8 +67,8 @@ export function BoxCapacityMeter({ boxStatus, casualModeActive = false }) {
             width: `${fillPercent}%`,
             borderRadius: "6px",
             background: isFull
-              ? "linear-gradient(90deg, var(--amber-400), #f59e0b)"
-              : "linear-gradient(90deg, var(--teal-400), var(--cyan-400))",
+              ? "linear-gradient(90deg, var(--accent-amber), #f59e0b)"
+              : "linear-gradient(90deg, var(--accent-teal), var(--accent-blue-fill))",
             transition: "width 0.3s cubic-bezier(0.4,0,0.2,1), background 0.3s cubic-bezier(0.4,0,0.2,1)",
           }}
         />

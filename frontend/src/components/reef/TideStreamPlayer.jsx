@@ -82,7 +82,7 @@ function HostControls({ tideId, stream, onStreamCreated }) {
         border: "1px solid rgba(99, 102, 241, 0.15)",
       }}>
         <p style={{ fontSize: "2rem", margin: "0 0 0.75rem" }}>🎥</p>
-        <h3 style={{ margin: "0 0 0.5rem", color: "#fff", fontSize: "1rem" }}>
+        <h3 style={{ margin: "0 0 0.5rem", color: "var(--text-primary)", fontSize: "1rem" }}>
           Set Up Livestream
         </h3>
         <p style={{ margin: "0 0 1rem", fontSize: "0.75rem", color: "var(--text-muted)" }}>
@@ -106,7 +106,7 @@ function HostControls({ tideId, stream, onStreamCreated }) {
           {createStream.isPending ? "Setting up…" : "🎬 Create Stream"}
         </button>
         {createStream.error && (
-          <p style={{ margin: "0.5rem 0 0", fontSize: "0.7rem", color: "#f87171" }}>
+          <p style={{ margin: "0.5rem 0 0", fontSize: "0.7rem", color: "var(--accent-red)" }}>
             {createStream.error.message}
           </p>
         )}
@@ -128,7 +128,7 @@ function HostControls({ tideId, stream, onStreamCreated }) {
       gap: "0.75rem",
     }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <h4 style={{ margin: 0, fontSize: "0.85rem", color: "#fff" }}>
+        <h4 style={{ margin: 0, fontSize: "0.85rem", color: "var(--text-primary)" }}>
           🎬 Host Controls
         </h4>
         <span style={{
@@ -137,7 +137,7 @@ function HostControls({ tideId, stream, onStreamCreated }) {
           fontSize: "0.65rem",
           fontWeight: 700,
           background: stream.status === "live" ? "rgba(239, 68, 68, 0.9)" : "rgba(99, 102, 241, 0.2)",
-          color: "#fff",
+          color: stream.status === "live" ? "#fff" : "var(--accent-violet)",
         }}>
           {stream.status === "live" ? "● LIVE" : stream.status === "ended" ? "Ended" : "Ready"}
         </span>
@@ -151,8 +151,8 @@ function HostControls({ tideId, stream, onStreamCreated }) {
             style={{
               padding: "0.35rem 0.6rem",
               borderRadius: "6px",
-              border: "1px solid rgba(255,255,255,0.08)",
-              background: "rgba(255,255,255,0.03)",
+              border: "1px solid rgba(var(--ink-rgb), 0.13)",
+              background: "rgba(var(--ink-rgb), 0.03)",
               color: "var(--text-muted)",
               fontSize: "0.7rem",
               cursor: "pointer",
@@ -165,19 +165,19 @@ function HostControls({ tideId, stream, onStreamCreated }) {
           {showCredentials && (
             <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "0.3rem" }}>
-                <code style={{ flex: 1, padding: "0.3rem 0.5rem", borderRadius: "4px", background: "rgba(0,0,0,0.3)", fontSize: "0.6rem", color: "#e5e7eb", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                <code style={{ flex: 1, padding: "0.3rem 0.5rem", borderRadius: "4px", background: "var(--bg-band)", fontSize: "0.6rem", color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   rtmp://global-live.mux.com/app
                 </code>
-                <button onClick={() => copy("rtmp://global-live.mux.com/app", "url")} style={{ padding: "0.2rem 0.4rem", borderRadius: "4px", border: "1px solid rgba(255,255,255,0.1)", background: copied === "url" ? "rgba(52,211,153,0.1)" : "transparent", color: copied === "url" ? "#34d399" : "var(--text-muted)", fontSize: "0.6rem", cursor: "pointer" }}>
+                <button onClick={() => copy("rtmp://global-live.mux.com/app", "url")} style={{ padding: "0.2rem 0.4rem", borderRadius: "4px", border: "1px solid rgba(var(--ink-rgb), 0.15)", background: copied === "url" ? "rgba(52,211,153,0.1)" : "transparent", color: copied === "url" ? "var(--accent-green)" : "var(--text-muted)", fontSize: "0.6rem", cursor: "pointer" }}>
                   {copied === "url" ? "✓" : "Copy"}
                 </button>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: "0.3rem" }}>
-                <code style={{ flex: 1, padding: "0.3rem 0.5rem", borderRadius: "4px", background: "rgba(0,0,0,0.3)", fontSize: "0.6rem", color: "#e5e7eb", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                <code style={{ flex: 1, padding: "0.3rem 0.5rem", borderRadius: "4px", background: "var(--bg-band)", fontSize: "0.6rem", color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {stream.stream_key || "••••••••••••"}
                 </code>
                 {stream.stream_key && (
-                  <button onClick={() => copy(stream.stream_key, "key")} style={{ padding: "0.2rem 0.4rem", borderRadius: "4px", border: "1px solid rgba(255,255,255,0.1)", background: copied === "key" ? "rgba(52,211,153,0.1)" : "transparent", color: copied === "key" ? "#34d399" : "var(--text-muted)", fontSize: "0.6rem", cursor: "pointer" }}>
+                  <button onClick={() => copy(stream.stream_key, "key")} style={{ padding: "0.2rem 0.4rem", borderRadius: "4px", border: "1px solid rgba(var(--ink-rgb), 0.15)", background: copied === "key" ? "rgba(52,211,153,0.1)" : "transparent", color: copied === "key" ? "var(--accent-green)" : "var(--text-muted)", fontSize: "0.6rem", cursor: "pointer" }}>
                     {copied === "key" ? "✓" : "Copy"}
                   </button>
                 )}
@@ -197,7 +197,7 @@ function HostControls({ tideId, stream, onStreamCreated }) {
             borderRadius: "8px",
             border: "1px solid rgba(239, 68, 68, 0.3)",
             background: "rgba(239, 68, 68, 0.08)",
-            color: "#f87171",
+            color: "var(--accent-red)",
             fontSize: "0.75rem",
             fontWeight: 600,
             cursor: "pointer",
@@ -272,7 +272,7 @@ function StreamViewer({ playbackId, tideId }) {
 
       {error && (
         <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.7)" }}>
-          <p style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>{error}</p>
+          <p style={{ color: "rgba(255, 255, 255, 0.8)", fontSize: "0.85rem" }}>{error}</p>
         </div>
       )}
 
@@ -351,7 +351,7 @@ export function TideStreamPlayer({ tideId, hostWallet, tideStartTime }) {
           border: "1px solid rgba(99, 102, 241, 0.15)",
         }}>
           <p style={{ fontSize: "2rem", margin: "0 0 0.5rem" }}>🎥</p>
-          <h3 style={{ margin: "0 0 0.5rem", color: "#fff", fontSize: "0.9rem" }}>
+          <h3 style={{ margin: "0 0 0.5rem", color: "var(--text-primary)", fontSize: "0.9rem" }}>
             Stream Starting Soon
           </h3>
           <p style={{ margin: 0, fontSize: "0.75rem", color: "var(--text-muted)" }}>
@@ -363,7 +363,7 @@ export function TideStreamPlayer({ tideId, hostWallet, tideStartTime }) {
       {/* VOD available after stream ends */}
       {status === "ended" && stream?.recording_playback_id && (
         <div style={{ borderRadius: "12px", overflow: "hidden" }}>
-          <div style={{ padding: "0.5rem 0.75rem", background: "rgba(99, 102, 241, 0.08)", fontSize: "0.75rem", color: "#a5b4fc", fontWeight: 600 }}>
+          <div style={{ padding: "0.5rem 0.75rem", background: "rgba(99, 102, 241, 0.08)", fontSize: "0.75rem", color: "var(--accent-violet)", fontWeight: 600 }}>
             📼 Recording Available
           </div>
           <video

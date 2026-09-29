@@ -23,10 +23,10 @@ import { TideLivePulse } from "./TideLivePulse";
 import { TIDE_VIDEO_ENABLED } from "../../config/liveEvents";
 
 const TIDE_TYPE_LABELS = {
-  expo: { label: "Expo", icon: "📍", color: "#10b981" },
+  expo: { label: "Expo", icon: "📍", color: "#047857" },
   virtual: { label: "Virtual", icon: "🎥", color: "#6366f1" },
-  challenge: { label: "Challenge", icon: "🏆", color: "#f59e0b" },
-  auction: { label: "Auction", icon: "🔨", color: "#ef4444" },
+  challenge: { label: "Challenge", icon: "🏆", color: "#b45309" },
+  auction: { label: "Auction", icon: "🔨", color: "#b91c1c" },
 };
 
 /**
@@ -110,7 +110,7 @@ function VirtualGatheringPanel({ isLive, isEnded, onOpenFeed, onOpenChat }) {
       aria-label="Virtual gathering"
     >
       <p style={{ fontSize: "1.75rem", margin: "0 0 0.5rem" }}>🌊</p>
-      <h3 style={{ margin: "0 0 0.4rem", color: "#fff", fontSize: "0.95rem" }}>
+      <h3 style={{ margin: "0 0 0.4rem", color: "var(--text-primary)", fontSize: "0.95rem" }}>
         {isEnded ? "This gathering has ended" : isLive ? "Live Virtual Gathering" : "Virtual Gathering"}
       </h3>
       <p style={{ margin: "0 0 1rem", fontSize: "0.78rem", color: "var(--text-muted)", lineHeight: 1.5 }}>
@@ -228,7 +228,7 @@ export function TidePage({ tideId, onBack }) {
 
       {/* Header */}
       <header className="tide-page__header">
-        <span className="tide-page__type-badge" style={{ backgroundColor: typeInfo.color }}>
+        <span className="tide-page__type-badge" style={{ backgroundColor: typeInfo.color, color: "#fff" }}>
           {typeInfo.icon} {typeInfo.label}
         </span>
         <h1>{tide.title}</h1>
@@ -280,8 +280,8 @@ export function TidePage({ tideId, onBack }) {
             padding: "0.6rem 0.9rem",
             margin: "0.5rem 0",
             borderRadius: "12px",
-            background: "rgba(255,255,255,0.03)",
-            border: "1px solid rgba(255,255,255,0.08)",
+            background: "rgba(var(--ink-rgb), 0.03)",
+            border: "1px solid rgba(var(--ink-rgb), 0.13)",
           }}
         >
           <span style={{ fontSize: "0.72rem", color: "var(--text-muted)", fontWeight: 600 }}>
@@ -301,13 +301,13 @@ export function TidePage({ tideId, onBack }) {
               className="btn btn--ghost btn--sm"
               onClick={handleEndTide}
               disabled={endTideMutation.isPending}
-              style={{ color: "#f87171", borderColor: "rgba(239,68,68,0.3)" }}
+              style={{ color: "var(--accent-red)", borderColor: "rgba(239,68,68,0.3)" }}
             >
               {endTideMutation.isPending ? "Ending…" : "⏹ End Tide"}
             </button>
           )}
           {startTideMutation.isError && (
-            <span style={{ fontSize: "0.68rem", color: "#f87171" }}>
+            <span style={{ fontSize: "0.68rem", color: "var(--accent-red)" }}>
               Couldn&apos;t start — {startTideMutation.error?.message || "try again"}
             </span>
           )}

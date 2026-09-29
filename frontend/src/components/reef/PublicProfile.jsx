@@ -59,8 +59,8 @@ const TIER_ICONS = {
 // Keeper-role badges — a badge of honor for granted community authority
 // (founder / steward). Higher priority first; we show the top one held.
 const KEEPER_ROLE_BADGES = [
-  { role: "founder", icon: "👑", label: "Founder", color: "#f59e0b" },
-  { role: "steward", icon: "🛡️", label: "Steward", color: "#22d3ee" },
+  { role: "founder", icon: "👑", label: "Founder", color: "#b45309" },
+  { role: "steward", icon: "🛡️", label: "Steward", color: "#0f766e" },
 ];
 
 function pickRoleBadge(roles) {
@@ -96,7 +96,7 @@ function TierProgress({ xp, casualModeActive }) {
         style={{
           height: "8px",
           borderRadius: "50px",
-          background: "rgba(255,255,255,0.06)",
+          background: "rgba(var(--ink-rgb), 0.06)",
           overflow: "hidden",
         }}
         role="progressbar"
@@ -147,10 +147,10 @@ function FollowerCounts({ walletAddress }) {
   return (
     <div style={{ display: "flex", gap: "1.25rem", marginTop: "0.75rem", paddingLeft: "0.25rem" }}>
       <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>
-        <strong style={{ color: "#fff", fontWeight: 700 }}>{followers ?? "–"}</strong> Followers
+        <strong style={{ color: "var(--text-primary)", fontWeight: 700 }}>{followers ?? "–"}</strong> Followers
       </span>
       <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>
-        <strong style={{ color: "#fff", fontWeight: 700 }}>{following ?? "–"}</strong> Following
+        <strong style={{ color: "var(--text-primary)", fontWeight: 700 }}>{following ?? "–"}</strong> Following
       </span>
     </div>
   );
@@ -235,9 +235,9 @@ function ConnectionButton({ targetWallet, casualModeActive }) {
               flex: 1,
               padding: "0.4rem 0.6rem",
               borderRadius: "8px",
-              border: "1px solid rgba(255, 255, 255, 0.1)",
-              background: "rgba(255, 255, 255, 0.04)",
-              color: "#fff",
+              border: "1px solid rgba(var(--ink-rgb), 0.15)",
+              background: "rgba(var(--ink-rgb), 0.04)",
+              color: "var(--text-primary)",
               fontSize: "0.7rem",
               outline: "none",
             }}
@@ -264,7 +264,7 @@ function ConnectionButton({ targetWallet, casualModeActive }) {
             style={{
               padding: "0.4rem",
               borderRadius: "8px",
-              border: "1px solid rgba(255,255,255,0.1)",
+              border: "1px solid rgba(var(--ink-rgb), 0.15)",
               background: "transparent",
               color: "var(--text-muted)",
               fontSize: "0.7rem",
@@ -405,7 +405,7 @@ export function PublicProfile({ walletAddress, onBack, onNavigateProfile, casual
   if (isLoading) {
     return (
       <div style={{ maxWidth: "640px", margin: "0 auto", padding: "2rem" }}>
-        <div style={{ height: "200px", borderRadius: "12px", background: "rgba(255,255,255,0.03)", animation: "pulse 1.5s infinite" }} />
+        <div style={{ height: "200px", borderRadius: "12px", background: "rgba(var(--ink-rgb), 0.03)", animation: "pulse 1.5s infinite" }} />
       </div>
     );
   }
@@ -420,7 +420,7 @@ export function PublicProfile({ walletAddress, onBack, onNavigateProfile, casual
             <p style={{ fontSize: "2rem" }}>🐠</p>
             <p style={{ color: "var(--text-muted)" }}>Could not load your profile. Try switching to Casual mode and back, or reconnect your wallet.</p>
             {onBack && (
-              <button onClick={onBack} style={{ marginTop: "1rem", padding: "0.4rem 0.8rem", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.1)", background: "transparent", color: "#fff", cursor: "pointer", fontSize: "0.8rem" }}>
+              <button onClick={onBack} style={{ marginTop: "1rem", padding: "0.4rem 0.8rem", borderRadius: "8px", border: "1px solid rgba(var(--ink-rgb), 0.15)", background: "transparent", color: "var(--text-primary)", cursor: "pointer", fontSize: "0.8rem" }}>
                 ← Back to feed
               </button>
             )}
@@ -440,7 +440,7 @@ export function PublicProfile({ walletAddress, onBack, onNavigateProfile, casual
         <p style={{ fontSize: "2rem" }}>🐠</p>
         <p style={{ color: "var(--text-muted)" }}>Profile not found</p>
         {onBack && (
-          <button onClick={onBack} style={{ marginTop: "1rem", padding: "0.4rem 0.8rem", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.1)", background: "transparent", color: "#fff", cursor: "pointer", fontSize: "0.8rem" }}>
+          <button onClick={onBack} style={{ marginTop: "1rem", padding: "0.4rem 0.8rem", borderRadius: "8px", border: "1px solid rgba(var(--ink-rgb), 0.15)", background: "transparent", color: "var(--text-primary)", cursor: "pointer", fontSize: "0.8rem" }}>
             ← Back to feed
           </button>
         )}
@@ -463,8 +463,8 @@ export function PublicProfile({ walletAddress, onBack, onNavigateProfile, casual
             marginBottom: "1rem",
             padding: "0.35rem 0.7rem",
             borderRadius: "8px",
-            border: "1px solid rgba(255, 255, 255, 0.08)",
-            background: "rgba(255, 255, 255, 0.03)",
+            border: "1px solid rgba(var(--ink-rgb), 0.13)",
+            background: "rgba(var(--ink-rgb), 0.03)",
             color: "var(--text-muted)",
             cursor: "pointer",
             fontSize: "0.75rem",
@@ -480,12 +480,12 @@ export function PublicProfile({ walletAddress, onBack, onNavigateProfile, casual
         style={{
           padding: "1.75rem",
           borderRadius: "20px",
-          border: "1px solid rgba(255, 255, 255, 0.06)",
-          background: "linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%)",
+          border: "1px solid rgba(var(--ink-rgb), 0.11)",
+          background: "linear-gradient(180deg, rgba(var(--ink-rgb), 0.03) 0%, rgba(var(--ink-rgb), 0.03) 100%)",
           marginBottom: "1.5rem",
           position: "relative",
           overflow: "hidden",
-          boxShadow: "0 8px 32px 0 rgba(0, 0, 0, 0.3)",
+          boxShadow: "var(--glass-shadow)",
         }}
       >
         {/* Decorative subtle tier glow in background */}
@@ -535,7 +535,7 @@ export function PublicProfile({ walletAddress, onBack, onNavigateProfile, casual
           />
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-              <h2 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 700, color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              <h2 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 700, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {displayName}
               </h2>
               <span title={`${profile.companion_tier} Tier`} style={{ fontSize: "1rem" }}>
@@ -590,15 +590,15 @@ export function PublicProfile({ walletAddress, onBack, onNavigateProfile, casual
               style={{
                 padding: "0.35rem 0.7rem",
                 borderRadius: "8px",
-                border: "1px solid rgba(255, 255, 255, 0.1)",
-                background: "rgba(255, 255, 255, 0.03)",
+                border: "1px solid rgba(var(--ink-rgb), 0.15)",
+                background: "rgba(var(--ink-rgb), 0.03)",
                 color: "var(--text-muted)",
                 fontSize: "0.7rem",
                 cursor: "pointer",
                 transition: "all 0.15s ease",
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.color = "#fff"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.2)"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)"; }}
+              onMouseEnter={(e) => { e.currentTarget.style.color = "var(--text-primary)"; e.currentTarget.style.borderColor = "rgba(var(--ink-rgb), 0.25)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)"; e.currentTarget.style.borderColor = "rgba(var(--ink-rgb), 0.15)"; }}
             >
               ✏️ Edit
             </button>
@@ -634,19 +634,19 @@ export function PublicProfile({ walletAddress, onBack, onNavigateProfile, casual
         >
           {/* XP/Points */}
           <div style={{
-            background: "rgba(255, 255, 255, 0.02)",
-            border: "1px solid rgba(255, 255, 255, 0.04)",
+            background: "rgba(var(--ink-rgb), 0.03)",
+            border: "1px solid rgba(var(--ink-rgb), 0.09)",
             borderRadius: "12px",
             padding: "0.85rem 0.5rem",
             textAlign: "center",
-            boxShadow: "inset 0 1px 1px rgba(255, 255, 255, 0.02)",
+            boxShadow: "inset 0 1px 1px rgba(var(--ink-rgb), 0.06)",
             transition: "all 0.2s ease",
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
             justifyContent: "center"
           }}>
-            <p style={{ margin: 0, fontSize: "1.25rem", fontWeight: 800, color: "#fff", display: "block", marginBottom: "0.2rem" }}>
+            <p style={{ margin: 0, fontSize: "1.25rem", fontWeight: 800, color: "var(--text-primary)", display: "block", marginBottom: "0.2rem" }}>
               {profile.xp_total || 0}
             </p>
             <p style={{ margin: 0, fontSize: "0.65rem", color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em" }}>
@@ -656,19 +656,19 @@ export function PublicProfile({ walletAddress, onBack, onNavigateProfile, casual
           
           {/* Tanks */}
           <div style={{
-            background: "rgba(255, 255, 255, 0.02)",
-            border: "1px solid rgba(255, 255, 255, 0.04)",
+            background: "rgba(var(--ink-rgb), 0.03)",
+            border: "1px solid rgba(var(--ink-rgb), 0.09)",
             borderRadius: "12px",
             padding: "0.85rem 0.5rem",
             textAlign: "center",
-            boxShadow: "inset 0 1px 1px rgba(255, 255, 255, 0.02)",
+            boxShadow: "inset 0 1px 1px rgba(var(--ink-rgb), 0.06)",
             transition: "all 0.2s ease",
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
             justifyContent: "center"
           }}>
-            <p style={{ margin: 0, fontSize: "1.25rem", fontWeight: 800, color: "#fff", display: "block", marginBottom: "0.2rem" }}>
+            <p style={{ margin: 0, fontSize: "1.25rem", fontWeight: 800, color: "var(--text-primary)", display: "block", marginBottom: "0.2rem" }}>
               {profile.tank_count || 0}
             </p>
             <p style={{ margin: 0, fontSize: "0.65rem", color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em" }}>
@@ -678,19 +678,19 @@ export function PublicProfile({ walletAddress, onBack, onNavigateProfile, casual
 
           {/* Species */}
           <div style={{
-            background: "rgba(255, 255, 255, 0.02)",
-            border: "1px solid rgba(255, 255, 255, 0.04)",
+            background: "rgba(var(--ink-rgb), 0.03)",
+            border: "1px solid rgba(var(--ink-rgb), 0.09)",
             borderRadius: "12px",
             padding: "0.85rem 0.5rem",
             textAlign: "center",
-            boxShadow: "inset 0 1px 1px rgba(255, 255, 255, 0.02)",
+            boxShadow: "inset 0 1px 1px rgba(var(--ink-rgb), 0.06)",
             transition: "all 0.2s ease",
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
             justifyContent: "center"
           }}>
-            <p style={{ margin: 0, fontSize: "1.25rem", fontWeight: 800, color: "#fff", display: "block", marginBottom: "0.2rem" }}>
+            <p style={{ margin: 0, fontSize: "1.25rem", fontWeight: 800, color: "var(--text-primary)", display: "block", marginBottom: "0.2rem" }}>
               {profile.species_count || 0}
             </p>
             <p style={{ margin: 0, fontSize: "0.65rem", color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em" }}>
@@ -700,7 +700,7 @@ export function PublicProfile({ walletAddress, onBack, onNavigateProfile, casual
 
           {/* Tier */}
           <div style={{
-            background: "rgba(255, 255, 255, 0.02)",
+            background: "rgba(var(--ink-rgb), 0.03)",
             border: `1px solid ${tierColor}33`,
             borderRadius: "12px",
             padding: "0.85rem 0.5rem",
@@ -913,8 +913,8 @@ export function PublicProfile({ walletAddress, onBack, onNavigateProfile, casual
             textAlign: "center",
             padding: "2rem",
             borderRadius: "12px",
-            background: "rgba(255, 255, 255, 0.02)",
-            border: "1px solid rgba(255, 255, 255, 0.05)",
+            background: "rgba(var(--ink-rgb), 0.03)",
+            border: "1px solid rgba(var(--ink-rgb), 0.1)",
           }}>
             <p style={{ margin: 0, fontSize: "0.8rem", color: "var(--text-muted)" }}>
               No posts yet
@@ -942,8 +942,8 @@ export function PublicProfile({ walletAddress, onBack, onNavigateProfile, casual
               marginTop: "1rem",
               padding: "0.6rem",
               borderRadius: "8px",
-              border: "1px solid rgba(255, 255, 255, 0.08)",
-              background: "rgba(255, 255, 255, 0.03)",
+              border: "1px solid rgba(var(--ink-rgb), 0.13)",
+              background: "rgba(var(--ink-rgb), 0.03)",
               color: "var(--text-muted)",
               fontSize: "0.75rem",
               cursor: "pointer",

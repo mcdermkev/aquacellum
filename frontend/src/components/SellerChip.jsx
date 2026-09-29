@@ -19,12 +19,12 @@
 import React from "react";
 
 const TIER_CHIPS = {
-  Shallow: { icon: "🥚", label: "New Keeper", color: "#94a3b8" },
-  Coastal: { icon: "🥈", label: "Silver Keeper", color: "#38bdf8" },
-  Pelagic: { icon: "🥇", label: "Gold Aquarist", color: "#fbbf24" },
-  Abyssal: { icon: "💎", label: "Master Keeper", color: "#a855f7" },
-  Hadal: { icon: "👑", label: "Champion", color: "#f59e0b" },
-  "Hadal-Champion": { icon: "👑", label: "Zone Champion", color: "#f59e0b" },
+  Shallow: { icon: "🥚", label: "New Keeper", color: "#5b7482" },
+  Coastal: { icon: "🥈", label: "Silver Keeper", color: "#0369a1" },
+  Pelagic: { icon: "🥇", label: "Gold Aquarist", color: "#b45309" },
+  Abyssal: { icon: "💎", label: "Master Keeper", color: "#6d28d9" },
+  Hadal: { icon: "👑", label: "Champion", color: "#b45309" },
+  "Hadal-Champion": { icon: "👑", label: "Zone Champion", color: "#b45309" },
 };
 
 function formatDuration(days) {

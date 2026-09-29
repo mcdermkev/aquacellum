@@ -133,7 +133,7 @@ export function CashPickupConfirm({ isOpen, onClose, casualModeActive = true, on
         {success ? (
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.75rem", padding: "1rem 0", textAlign: "center" }}>
             <span style={{ fontSize: "2rem" }} aria-hidden="true">✅</span>
-            <strong style={{ color: "#fff", fontSize: "0.95rem" }}>
+            <strong style={{ color: "var(--text-primary)", fontSize: "0.95rem" }}>
               {casual ? "Ownership transferred — handoff complete" : "Ownership transferred — handoff confirmed"}
             </strong>
             <p style={{ margin: 0, fontSize: "0.78rem", color: "var(--text-secondary, #cbd5e1)" }}>
@@ -158,7 +158,7 @@ export function CashPickupConfirm({ isOpen, onClose, casualModeActive = true, on
                 borderRadius: "8px",
                 overflow: "hidden",
                 background: "#020617",
-                border: "1px solid rgba(255,255,255,0.06)",
+                border: "1px solid rgba(var(--ink-rgb), 0.06)",
               }}
             >
               <video
@@ -219,9 +219,9 @@ export function CashPickupConfirm({ isOpen, onClose, casualModeActive = true, on
                 style={{
                   width: "100%",
                   padding: "0.5rem 0.6rem",
-                  background: "rgba(0,0,0,0.3)",
-                  border: "1px solid rgba(255,255,255,0.1)",
-                  color: "#fff",
+                  background: "#fff",
+                  border: "1px solid var(--glass-border-hover)",
+                  color: "var(--text-primary)",
                   borderRadius: "6px",
                   fontSize: "0.75rem",
                   fontFamily: "monospace",
@@ -237,7 +237,7 @@ export function CashPickupConfirm({ isOpen, onClose, casualModeActive = true, on
                   borderRadius: "6px",
                   background: "rgba(239,68,68,0.08)",
                   border: "1px solid rgba(239,68,68,0.3)",
-                  color: "#fca5a5",
+                  color: "var(--accent-red)",
                   fontSize: "0.78rem",
                 }}
               >

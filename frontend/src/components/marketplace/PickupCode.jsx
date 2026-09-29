@@ -162,7 +162,7 @@ export function PickupCode({ isOpen, onClose, tokenId, buyerWallet, casualModeAc
                 borderRadius: "6px",
                 background: "rgba(239,68,68,0.08)",
                 border: "1px solid rgba(239,68,68,0.3)",
-                color: "#fca5a5",
+                color: "var(--accent-red)",
                 fontSize: "0.78rem",
               }}
             >
@@ -188,7 +188,7 @@ export function PickupCode({ isOpen, onClose, tokenId, buyerWallet, casualModeAc
 
             <div aria-live="polite" style={{ fontSize: "0.78rem", color: "var(--text-secondary, #cbd5e1)" }}>
               {casual ? "Expires in " : "Code expires in "}
-              <strong style={{ color: "#fff", fontFamily: "monospace" }}>{countdownLabel}</strong>
+              <strong style={{ color: "var(--text-primary)", fontFamily: "monospace" }}>{countdownLabel}</strong>
             </div>
 
             {/* Copyable text fallback — accessible, non-camera path (a QR
@@ -208,9 +208,9 @@ export function PickupCode({ isOpen, onClose, tokenId, buyerWallet, casualModeAc
                     flex: 1,
                     minWidth: 0,
                     padding: "0.5rem 0.6rem",
-                    background: "rgba(0,0,0,0.3)",
-                    border: "1px solid rgba(255,255,255,0.1)",
-                    color: "#fff",
+                    background: "#fff",
+                    border: "1px solid var(--glass-border-hover)",
+                    color: "var(--text-primary)",
                     borderRadius: "6px",
                     fontSize: "0.72rem",
                     fontFamily: "monospace",

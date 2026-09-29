@@ -367,8 +367,8 @@ function ArrivalModal({
         <div style={{
           padding: "0.5rem 0.75rem",
           borderRadius: "8px",
-          background: "rgba(255,255,255,0.03)",
-          border: "1px solid rgba(255,255,255,0.08)",
+          background: "rgba(var(--ink-rgb), 0.03)",
+          border: "1px solid rgba(var(--ink-rgb), 0.13)",
           marginBottom: "0.75rem",
           fontSize: "0.8rem",
           color: "var(--text-secondary, #cbd5e1)",
@@ -440,7 +440,7 @@ function ArrivalModal({
             border: "1px solid rgba(34,211,238,0.2)",
             marginBottom: "0.75rem",
             fontSize: "0.78rem",
-            color: "var(--accent-cyan, #22d3ee)",
+            color: "var(--accent-teal)",
           }}>
             {casualModeActive
               ? `Will be placed in "${tanks[0]?.name || "your tank"}"`
@@ -466,7 +466,7 @@ function ArrivalModal({
             borderRadius: "6px",
             background: "rgba(239,68,68,0.08)",
             border: "1px solid rgba(239,68,68,0.3)",
-            color: "#fca5a5",
+            color: "var(--accent-red)",
             fontSize: "0.75rem",
             marginBottom: "0.75rem",
           }}>
@@ -506,7 +506,7 @@ function ArrivalModal({
 
         {/* Report a problem (DOA) — only for shipping arrivals */}
         {isShippingMerge && shippingOrder && (
-          <div style={{ marginTop: "0.85rem", paddingTop: "0.75rem", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+          <div style={{ marginTop: "0.85rem", paddingTop: "0.75rem", borderTop: "1px solid rgba(var(--ink-rgb), 0.11)" }}>
             {reportSubmitted ? (
               <div style={{
                 padding: "0.6rem 0.75rem",
@@ -558,8 +558,8 @@ function ArrivalModal({
                     width: "100%",
                     padding: "0.5rem 0.6rem",
                     borderRadius: "6px",
-                    background: "rgba(255,255,255,0.03)",
-                    border: "1px solid rgba(255,255,255,0.12)",
+                    background: "rgba(var(--ink-rgb), 0.03)",
+                    border: "1px solid rgba(var(--ink-rgb), 0.17)",
                     color: "var(--text-primary, #f1f5f9)",
                     fontSize: "0.8rem",
                   }}
@@ -579,8 +579,8 @@ function ArrivalModal({
                     width: "100%",
                     padding: "0.5rem 0.6rem",
                     borderRadius: "6px",
-                    background: "rgba(255,255,255,0.03)",
-                    border: "1px solid rgba(255,255,255,0.12)",
+                    background: "rgba(var(--ink-rgb), 0.03)",
+                    border: "1px solid rgba(var(--ink-rgb), 0.17)",
                     color: "var(--text-primary, #f1f5f9)",
                     fontSize: "0.8rem",
                     resize: "vertical",
@@ -597,7 +597,7 @@ function ArrivalModal({
                       borderRadius: "6px",
                       background: "rgba(239,68,68,0.12)",
                       border: "1px solid rgba(239,68,68,0.4)",
-                      color: "#fca5a5",
+                      color: "var(--accent-red)",
                       fontSize: "0.8rem",
                       fontWeight: 600,
                       cursor: submitting ? "default" : "pointer",

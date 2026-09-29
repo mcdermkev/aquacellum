@@ -109,9 +109,9 @@ export function PromoCodeField({ sellerWallet, items, purchaseType, onApply, cas
               style={{
                 flex: 1,
                 minWidth: 0,
-                background: "rgba(0,0,0,0.3)",
-                border: "1px solid rgba(255,255,255,0.1)",
-                color: "#fff",
+                background: "var(--bg-band)",
+                border: "1px solid rgba(var(--ink-rgb), 0.15)",
+                color: "var(--text-primary)",
                 borderRadius: "6px",
                 padding: "0.4rem 0.6rem",
                 fontSize: "0.8rem",
@@ -125,7 +125,7 @@ export function PromoCodeField({ sellerWallet, items, purchaseType, onApply, cas
               disabled={!code.trim() || checking}
               style={{
                 flexShrink: 0,
-                background: !code.trim() || checking ? "rgba(255,255,255,0.06)" : "rgba(251, 191, 36, 0.15)",
+                background: !code.trim() || checking ? "rgba(var(--ink-rgb), 0.06)" : "rgba(251, 191, 36, 0.15)",
                 border: "1px solid rgba(251, 191, 36, 0.3)",
                 color: !code.trim() || checking ? "var(--text-muted)" : "var(--accent-amber, #fbbf24)",
                 borderRadius: "6px",

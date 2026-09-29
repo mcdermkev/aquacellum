@@ -98,7 +98,7 @@ export function QuickLogPanel({ tanks = [], casualModeActive = false, onComplete
         border: "1px solid rgba(34, 197, 94, 0.2)",
       }}>
         <span style={{ fontSize: "2.5rem", display: "block", marginBottom: "0.75rem" }}>✅</span>
-        <h3 style={{ color: "#34d399", margin: "0 0 0.5rem", fontSize: "1.1rem" }}>
+        <h3 style={{ color: "var(--accent-green)", margin: "0 0 0.5rem", fontSize: "1.1rem" }}>
           {casualModeActive ? "All Done!" : "Batch Log Complete"}
         </h3>
         <p style={{ color: "var(--text-secondary)", fontSize: "0.85rem", margin: "0 0 0.25rem" }}>
@@ -127,7 +127,7 @@ export function QuickLogPanel({ tanks = [], casualModeActive = false, onComplete
     }}>
       {/* Header */}
       <div style={{ marginBottom: "1rem" }}>
-        <h3 style={{ margin: 0, fontSize: "1rem", color: "#fff" }}>
+        <h3 style={{ margin: 0, fontSize: "1rem", color: "var(--text-primary)" }}>
           {casualModeActive ? "Quick Log" : "Batch Care Log"}
         </h3>
         <p style={{ margin: "0.2rem 0 0", fontSize: "0.75rem", color: "var(--text-muted)" }}>
@@ -148,11 +148,11 @@ export function QuickLogPanel({ tanks = [], casualModeActive = false, onComplete
               borderRadius: "20px",
               border: action === a.key
                 ? "1px solid rgba(56, 189, 248, 0.5)"
-                : "1px solid rgba(255,255,255,0.1)",
+                : "1px solid rgba(var(--ink-rgb), 0.15)",
               background: action === a.key
                 ? "rgba(56, 189, 248, 0.12)"
-                : "rgba(255,255,255,0.03)",
-              color: action === a.key ? "#7dd3fc" : "var(--text-secondary)",
+                : "rgba(var(--ink-rgb), 0.03)",
+              color: action === a.key ? "var(--accent-blue)" : "var(--text-secondary)",
               fontSize: "0.78rem",
               cursor: "pointer",
               transition: "all 0.15s ease",
@@ -209,7 +209,7 @@ export function QuickLogPanel({ tanks = [], casualModeActive = false, onComplete
                 background: isSelected ? "rgba(56, 189, 248, 0.05)" : "transparent",
                 border: isSelected
                   ? "1px solid rgba(56, 189, 248, 0.15)"
-                  : "1px solid rgba(255,255,255,0.04)",
+                  : "1px solid rgba(var(--ink-rgb), 0.09)",
                 cursor: "pointer",
                 transition: "all 0.15s ease",
               }}
@@ -220,7 +220,7 @@ export function QuickLogPanel({ tanks = [], casualModeActive = false, onComplete
                 onChange={() => toggleTank(tank.id)}
                 style={{ accentColor: "var(--accent-blue)", width: "16px", height: "16px" }}
               />
-              <span style={{ fontSize: "0.82rem", color: isSelected ? "#fff" : "var(--text-secondary)" }}>
+              <span style={{ fontSize: "0.82rem", color: isSelected ? "var(--text-primary)" : "var(--text-secondary)" }}>
                 {tank.name || `Tank #${tank.id}`}
               </span>
               {tank.type && (

@@ -246,8 +246,8 @@ export function ReefSearchBar({
             width: "34px",
             height: "34px",
             borderRadius: "8px",
-            border: "1px solid rgba(255, 255, 255, 0.08)",
-            background: "rgba(255, 255, 255, 0.03)",
+            border: "1px solid rgba(var(--ink-rgb), 0.13)",
+            background: "rgba(var(--ink-rgb), 0.03)",
             color: "var(--text-muted)",
             cursor: "pointer",
             fontSize: "0.95rem",
@@ -258,8 +258,8 @@ export function ReefSearchBar({
             padding: 0,
             minHeight: "unset"
           }}
-          onMouseEnter={(e) => { e.currentTarget.style.color = "#fff"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)"; }}
+          onMouseEnter={(e) => { e.currentTarget.style.color = "var(--text-primary)"; e.currentTarget.style.borderColor = "rgba(var(--ink-rgb), 0.2)"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)"; e.currentTarget.style.borderColor = "rgba(var(--ink-rgb), 0.13)"; }}
           title="Search"
           aria-label="Search The Reef"
         >

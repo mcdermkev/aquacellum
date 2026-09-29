@@ -38,12 +38,12 @@ const PREVIEW_LIMIT = 10;
 const inputStyle = {
   width: "100%",
   padding: "0.5rem",
-  background: "rgba(255,255,255,0.03)",
+  background: "rgba(var(--ink-rgb), 0.03)",
   border: "1px solid var(--glass-border)",
-  color: "#fff",
+  color: "var(--text-primary)",
   borderRadius: "4px",
 };
-const selectStyle = { ...inputStyle, background: "rgba(8,12,20,0.9)" };
+const selectStyle = { ...inputStyle, background: "var(--bg-secondary)" };
 const labelStyle = { display: "block", fontSize: "0.72rem", color: "var(--text-secondary)", marginBottom: "0.2rem" };
 
 const SAMPLE = "Name,Volume,Water,Group,Room,Rack\nBetta A1,5,Freshwater,Fish Room,Room A,Rack 1\nBetta A2,5,Freshwater,Fish Room,Room A,Rack 1";
@@ -139,7 +139,7 @@ export function ImportTanksModal({ walletAccount, onClose, onCreated }) {
       style={{
         position: "fixed",
         inset: 0,
-        background: "rgba(0, 0, 0, 0.75)",
+        background: "rgba(11, 37, 48, 0.45)",
         backdropFilter: "blur(8px)",
         display: "flex",
         alignItems: "center",
@@ -212,7 +212,7 @@ export function ImportTanksModal({ walletAccount, onClose, onCreated }) {
           <>
             {/* Step 2 — column mapping */}
             <div style={{ marginTop: "1.5rem" }}>
-              <div style={{ fontSize: "0.9rem", fontWeight: 600, color: "#fff", marginBottom: "0.5rem" }}>Match your columns</div>
+              <div style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--text-primary)", marginBottom: "0.5rem" }}>Match your columns</div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: "0.6rem" }}>
                 {IMPORT_FIELDS.map((field) => (
                   <div key={field}>
@@ -271,7 +271,7 @@ export function ImportTanksModal({ walletAccount, onClose, onCreated }) {
                     return (
                       <tr key={i} style={{ borderTop: "1px solid var(--glass-border)", opacity: ok ? 1 : 0.55 }}>
                         <td style={{ padding: "0.4rem 0.6rem" }}>{ok ? (r.warnings.length ? "⚠" : "✓") : "✗"}</td>
-                        <td style={{ padding: "0.4rem 0.6rem", color: "#fff" }}>{r.spec.name || <em style={{ color: "var(--accent-red)" }}>(missing)</em>}</td>
+                        <td style={{ padding: "0.4rem 0.6rem", color: "var(--text-primary)" }}>{r.spec.name || <em style={{ color: "var(--accent-red)" }}>(missing)</em>}</td>
                         <td style={{ padding: "0.4rem 0.6rem" }}>{gal} gal</td>
                         <td style={{ padding: "0.4rem 0.6rem" }}>{tankTypeLabel(r.spec.tankType)}</td>
                         <td style={{ padding: "0.4rem 0.6rem" }}>{loc}</td>

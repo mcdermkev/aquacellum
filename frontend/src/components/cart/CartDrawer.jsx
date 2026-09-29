@@ -182,18 +182,18 @@ export function CartDrawer({ isOpen, onClose, onProceedToCheckout, casualModeAct
                   padding: "0.75rem 1rem",
                   borderRadius: "10px",
                   border: "none",
-                  background: totals.itemCount === 0 ? "rgba(255,255,255,0.06)" : "linear-gradient(135deg, var(--teal-400), var(--violet-500))",
-                  color: totals.itemCount === 0 ? "var(--text-muted)" : "#04120f",
+                  background: totals.itemCount === 0 ? "rgba(var(--ink-rgb), 0.06)" : "linear-gradient(135deg, var(--accent-teal), var(--accent-violet))",
+                  color: totals.itemCount === 0 ? "var(--text-muted)" : "#fff",
                   fontWeight: 700,
                   fontSize: "0.9rem",
                   cursor: totals.itemCount === 0 ? "not-allowed" : "pointer",
-                  boxShadow: totals.itemCount === 0 ? "none" : "0 0 20px rgba(45, 212, 191, 0.3)",
+                  boxShadow: totals.itemCount === 0 ? "none" : "var(--shadow-md)",
                   transition: "all 0.3s cubic-bezier(0.4,0,0.2,1)",
                   justifyContent: "center",
                   display: "flex",
                 }}
-                onMouseEnter={(e) => { if (totals.itemCount > 0) e.currentTarget.style.boxShadow = "0 0 30px rgba(45, 212, 191, 0.5)"; }}
-                onMouseLeave={(e) => { if (totals.itemCount > 0) e.currentTarget.style.boxShadow = "0 0 20px rgba(45, 212, 191, 0.3)"; }}
+                onMouseEnter={(e) => { if (totals.itemCount > 0) e.currentTarget.style.boxShadow = "var(--shadow-lg)"; }}
+                onMouseLeave={(e) => { if (totals.itemCount > 0) e.currentTarget.style.boxShadow = "var(--shadow-md)"; }}
               >
                 Proceed to checkout
               </button>
@@ -212,7 +212,7 @@ export function CartDrawer({ isOpen, onClose, onProceedToCheckout, casualModeAct
             ? "Cart merge needs retry"
             : conflict.type === "sync_conflict" ? "Cart changed elsewhere" : "Replace cart?"}
           style={{
-            position: "absolute", inset: 0, background: "rgba(6, 8, 20, 0.75)",
+            position: "absolute", inset: 0, background: "rgba(11,37,48,0.45)",
             display: "flex", alignItems: "center", justifyContent: "center", padding: "1.5rem", zIndex: 10,
           }}
         >
@@ -220,7 +220,7 @@ export function CartDrawer({ isOpen, onClose, onProceedToCheckout, casualModeAct
             background: "var(--glass-bg)", border: "1px solid var(--glass-border)", backdropFilter: "blur(24px)",
             borderRadius: "14px", padding: "1.5rem", maxWidth: "360px", display: "flex", flexDirection: "column", gap: "0.85rem",
           }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "var(--amber-400)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "var(--accent-amber)" }}>
               <Warning size={20} weight="duotone" />
               <strong style={{ fontFamily: "Outfit, sans-serif", color: "var(--text-primary)" }}>
                 {conflict.type === "merge_error"
@@ -254,7 +254,7 @@ export function CartDrawer({ isOpen, onClose, onProceedToCheckout, casualModeAct
                 <button
                   type="button"
                   onClick={retryMerge}
-                  style={{ padding: "0.5rem 1rem", borderRadius: "8px", border: "none", background: "linear-gradient(135deg, var(--teal-400), var(--violet-500))", color: "#04120f", fontWeight: 700, fontSize: "0.8rem", cursor: "pointer" }}
+                  style={{ padding: "0.5rem 1rem", borderRadius: "8px", border: "none", background: "linear-gradient(135deg, var(--accent-teal), var(--accent-violet))", color: "#fff", fontWeight: 700, fontSize: "0.8rem", cursor: "pointer" }}
                 >
                   Retry cart merge
                 </button>
@@ -270,7 +270,7 @@ export function CartDrawer({ isOpen, onClose, onProceedToCheckout, casualModeAct
                   <button
                     type="button"
                     onClick={() => resolveConflict("local")}
-                    style={{ padding: "0.5rem 1rem", borderRadius: "8px", border: "none", background: "linear-gradient(135deg, var(--teal-400), var(--violet-500))", color: "#04120f", fontWeight: 700, fontSize: "0.8rem", cursor: "pointer" }}
+                    style={{ padding: "0.5rem 1rem", borderRadius: "8px", border: "none", background: "linear-gradient(135deg, var(--accent-teal), var(--accent-violet))", color: "#fff", fontWeight: 700, fontSize: "0.8rem", cursor: "pointer" }}
                   >
                     Replace with this device
                   </button>
@@ -287,7 +287,7 @@ export function CartDrawer({ isOpen, onClose, onProceedToCheckout, casualModeAct
                   <button
                     type="button"
                     onClick={() => resolveConflict("guest")}
-                    style={{ padding: "0.5rem 1rem", borderRadius: "8px", border: "none", background: "linear-gradient(135deg, var(--teal-400), var(--violet-500))", color: "#04120f", fontWeight: 700, fontSize: "0.8rem", cursor: "pointer" }}
+                    style={{ padding: "0.5rem 1rem", borderRadius: "8px", border: "none", background: "linear-gradient(135deg, var(--accent-teal), var(--accent-violet))", color: "#fff", fontWeight: 700, fontSize: "0.8rem", cursor: "pointer" }}
                   >
                     Keep this device cart
                   </button>
@@ -304,7 +304,7 @@ export function CartDrawer({ isOpen, onClose, onProceedToCheckout, casualModeAct
                   <button
                     type="button"
                     onClick={() => resolveConflict(true)}
-                    style={{ padding: "0.5rem 1rem", borderRadius: "8px", border: "none", background: "linear-gradient(135deg, var(--teal-400), var(--violet-500))", color: "#04120f", fontWeight: 700, fontSize: "0.8rem", cursor: "pointer" }}
+                    style={{ padding: "0.5rem 1rem", borderRadius: "8px", border: "none", background: "linear-gradient(135deg, var(--accent-teal), var(--accent-violet))", color: "#fff", fontWeight: 700, fontSize: "0.8rem", cursor: "pointer" }}
                   >
                     Replace cart
                   </button>
@@ -335,7 +335,7 @@ function CartItemRow({ item, changes, onSetQuantity, onRemove, casualModeActive 
     >
       <div style={{
         width: "52px", height: "52px", borderRadius: "10px", flexShrink: 0,
-        background: "linear-gradient(135deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%)",
+        background: "linear-gradient(135deg, rgba(var(--ink-rgb), 0.03) 0%, rgba(var(--ink-rgb), 0.01) 100%)",
         border: "1px solid var(--glass-border)", display: "flex", alignItems: "center", justifyContent: "center",
       }}>
         {item.imageUrl ? (
@@ -384,7 +384,7 @@ function CartItemRow({ item, changes, onSetQuantity, onRemove, casualModeActive 
                 type="button"
                 onClick={() => onSetQuantity(item.quantity - 1)}
                 aria-label="Decrease quantity"
-                style={{ width: "26px", height: "26px", borderRadius: "6px", border: "1px solid var(--glass-border)", background: "rgba(255,255,255,0.02)", color: "var(--text-secondary)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+                style={{ width: "26px", height: "26px", borderRadius: "6px", border: "1px solid var(--glass-border)", background: "rgba(var(--ink-rgb), 0.02)", color: "var(--text-secondary)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
               >
                 <Minus size={12} weight="bold" />
               </button>
@@ -393,7 +393,7 @@ function CartItemRow({ item, changes, onSetQuantity, onRemove, casualModeActive 
                 type="button"
                 onClick={() => onSetQuantity(item.quantity + 1)}
                 aria-label="Increase quantity"
-                style={{ width: "26px", height: "26px", borderRadius: "6px", border: "1px solid var(--glass-border)", background: "rgba(255,255,255,0.02)", color: "var(--text-secondary)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+                style={{ width: "26px", height: "26px", borderRadius: "6px", border: "1px solid var(--glass-border)", background: "rgba(var(--ink-rgb), 0.02)", color: "var(--text-secondary)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
               >
                 <Plus size={12} weight="bold" />
               </button>
@@ -410,7 +410,7 @@ function CartItemRow({ item, changes, onSetQuantity, onRemove, casualModeActive 
                 key={idx}
                 style={{
                   display: "inline-flex", alignItems: "center", gap: "0.3rem", fontSize: "0.68rem",
-                  color: change.type === CART_CHANGE_TYPE.UNAVAILABLE ? "var(--text-muted)" : "var(--amber-400)",
+                  color: change.type === CART_CHANGE_TYPE.UNAVAILABLE ? "var(--text-muted)" : "var(--accent-amber)",
                 }}
               >
                 {change.type === CART_CHANGE_TYPE.UNAVAILABLE ? <Info size={12} weight="duotone" /> : <Warning size={12} weight="duotone" />}
@@ -433,7 +433,7 @@ function EmptyState({ casualModeActive, onClose }) {
       {/* Subtle ambient orb per brand motion spec — decorative only. */}
       <div aria-hidden="true" style={{
         position: "absolute", width: "220px", height: "220px", borderRadius: "50%",
-        background: "var(--teal-400)", opacity: 0.08, filter: "blur(120px)", top: "20%", left: "50%", transform: "translateX(-50%)",
+        background: "var(--accent-teal)", opacity: 0.08, filter: "blur(120px)", top: "20%", left: "50%", transform: "translateX(-50%)",
       }} />
       <ShoppingCartSimple size={48} weight="duotone" color="var(--text-muted)" style={{ marginBottom: "1rem", position: "relative" }} />
       <h4 style={{ fontFamily: "Outfit, sans-serif", color: "var(--text-primary)", fontSize: "1rem", margin: "0 0 0.4rem 0", position: "relative" }}>
@@ -449,7 +449,7 @@ function EmptyState({ casualModeActive, onClose }) {
         onClick={onClose}
         style={{
           padding: "0.55rem 1.25rem", borderRadius: "10px", border: "1px solid var(--glass-border)",
-          background: "rgba(255,255,255,0.02)", color: "var(--text-primary)", fontSize: "0.82rem", cursor: "pointer", position: "relative",
+          background: "rgba(var(--ink-rgb), 0.02)", color: "var(--text-primary)", fontSize: "0.82rem", cursor: "pointer", position: "relative",
         }}
       >
         Browse the reef

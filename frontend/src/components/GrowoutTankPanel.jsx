@@ -55,9 +55,9 @@ export function GrowoutTankPanel({ spawnId, defaultName = "", casual = false, on
   const inputStyle = {
     width: "100%",
     padding: "0.45rem",
-    background: "rgba(0,0,0,0.2)",
+    background: "var(--bg-band)",
     border: "1px solid var(--glass-border)",
-    color: "#fff",
+    color: "var(--text-primary)",
     borderRadius: "4px",
     fontSize: "0.8rem",
   };
@@ -67,14 +67,14 @@ export function GrowoutTankPanel({ spawnId, defaultName = "", casual = false, on
     <div
       style={{
         padding: "0.75rem",
-        background: "rgba(0,0,0,0.2)",
+        background: "var(--bg-band)",
         borderRadius: "6px",
         border: "1px solid var(--glass-border)",
       }}
     >
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.75rem" }}>
         <div style={{ minWidth: 0 }}>
-          <strong style={{ fontSize: "0.82rem", color: "#fff" }}>
+          <strong style={{ fontSize: "0.82rem", color: "var(--text-primary)" }}>
             🪣 {casual ? "Move to a grow-out tank" : "Grow-out tank"}
           </strong>
           <div style={{ fontSize: "0.68rem", color: "var(--text-muted)", marginTop: 2 }}>

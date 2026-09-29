@@ -253,7 +253,7 @@ export function SpawnGrowoutTracker({ spawnId, eggCount, speciesName, mode }) {
       <ConfettiCelebration trigger={confettiTrigger} duration={1800} />
       {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
-        <span style={{ fontSize: "0.8rem", fontWeight: "600", color: "#fff" }}>📊 Grow-Out Tracker</span>
+        <span style={{ fontSize: "0.8rem", fontWeight: "600", color: "var(--text-primary)" }}>📊 Grow-Out Tracker</span>
         <button
           type="button"
           onClick={() => setExpanded(false)}
@@ -283,7 +283,7 @@ export function SpawnGrowoutTracker({ spawnId, eggCount, speciesName, mode }) {
           color: "var(--accent-green)",
         }}>
           <span>🏅</span>
-          <strong style={{ color: "#fff" }}>{totalPromoted}</strong>
+          <strong style={{ color: "var(--text-primary)" }}>{totalPromoted}</strong>
           <span style={{ color: "var(--text-secondary)" }}>{copy("promotedFunnelLabel")}</span>
         </div>
       )}
@@ -323,7 +323,7 @@ export function SpawnGrowoutTracker({ spawnId, eggCount, speciesName, mode }) {
                       objectFit: "cover", border: "1px solid rgba(139, 92, 246, 0.2)",
                       cursor: "pointer", transition: "transform 0.2s, box-shadow 0.2s",
                     }}
-                    onMouseEnter={(e) => { e.currentTarget.style.transform = "scale(1.1)"; e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.4)"; }}
+                    onMouseEnter={(e) => { e.currentTarget.style.transform = "scale(1.1)"; e.currentTarget.style.boxShadow = "var(--shadow-md)"; }}
                     onMouseLeave={(e) => { e.currentTarget.style.transform = "scale(1)"; e.currentTarget.style.boxShadow = "none"; }}
                     onClick={() => window.open(cp.photo, "_blank")}
                   />
@@ -398,7 +398,7 @@ export function SpawnGrowoutTracker({ spawnId, eggCount, speciesName, mode }) {
           borderRadius: "6px",
         }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ fontSize: "0.75rem", fontWeight: "600", color: "#fff" }}>
+            <span style={{ fontSize: "0.75rem", fontWeight: "600", color: "var(--text-primary)" }}>
               🏅 {copy("heading")}
             </span>
             <button
@@ -420,7 +420,7 @@ export function SpawnGrowoutTracker({ spawnId, eggCount, speciesName, mode }) {
             <span style={{ textTransform: "uppercase", letterSpacing: "0.06em", fontSize: "0.6rem" }}>
               {copy("parentsLabel")}
             </span>
-            <div style={{ color: "#fff", marginTop: "2px" }}>
+            <div style={{ color: "var(--text-primary)", marginTop: "2px" }}>
               Cert. {formatCertSerial(spawn.sireId)} · Cert. {formatCertSerial(spawn.damId)}
             </div>
           </div>
@@ -433,7 +433,7 @@ export function SpawnGrowoutTracker({ spawnId, eggCount, speciesName, mode }) {
               max={promotable}
               value={promoteCount}
               onChange={(e) => setPromoteCountSafely(e.target.value)}
-              style={{ width: "64px", padding: "0.3rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px", fontSize: "0.75rem" }}
+              style={{ width: "64px", padding: "0.3rem", background: "rgba(var(--ink-rgb), 0.03)", border: "1px solid var(--glass-border)", color: "var(--text-primary)", borderRadius: "4px", fontSize: "0.75rem" }}
             />
             <span style={{ color: "var(--text-muted)" }}>
               of {survivors} left
@@ -453,14 +453,14 @@ export function SpawnGrowoutTracker({ spawnId, eggCount, speciesName, mode }) {
                       onChange={(e) => setPromoteKeepers((prev) =>
                         prev.map((k, j) => (j === i ? { ...k, name: e.target.value } : k))
                       )}
-                      style={{ flex: 1, padding: "0.3rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px", fontSize: "0.72rem" }}
+                      style={{ flex: 1, padding: "0.3rem", background: "rgba(var(--ink-rgb), 0.03)", border: "1px solid var(--glass-border)", color: "var(--text-primary)", borderRadius: "4px", fontSize: "0.72rem" }}
                     />
                     <select
                       value={keeper.sex}
                       onChange={(e) => setPromoteKeepers((prev) =>
                         prev.map((k, j) => (j === i ? { ...k, sex: e.target.value } : k))
                       )}
-                      style={{ padding: "0.3rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px", fontSize: "0.72rem" }}
+                      style={{ padding: "0.3rem", background: "rgba(var(--ink-rgb), 0.03)", border: "1px solid var(--glass-border)", color: "var(--text-primary)", borderRadius: "4px", fontSize: "0.72rem" }}
                     >
                       {SEX_OPTIONS.map((option) => (
                         <option key={option.value} value={option.value}>
@@ -533,7 +533,7 @@ export function SpawnGrowoutTracker({ spawnId, eggCount, speciesName, mode }) {
           + Add Checkpoint
         </button>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", padding: "0.5rem", background: "rgba(0,0,0,0.2)", borderRadius: "4px" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", padding: "0.5rem", background: "var(--bg-band)", borderRadius: "4px" }}>
           <div style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap" }}>
             {/* MANUAL_GROWOUT_TYPES, not GROWOUT_TYPES — see PROGRAMMATIC_TYPES. */}
             {MANUAL_GROWOUT_TYPES.map(([key, { emoji, label }]) => (
@@ -564,7 +564,7 @@ export function SpawnGrowoutTracker({ spawnId, eggCount, speciesName, mode }) {
                 value={formCount}
                 onChange={(e) => setFormCount(e.target.value)}
                 placeholder="Count"
-                style={{ width: "70px", padding: "0.35rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px", fontSize: "0.75rem" }}
+                style={{ width: "70px", padding: "0.35rem", background: "rgba(var(--ink-rgb), 0.03)", border: "1px solid var(--glass-border)", color: "var(--text-primary)", borderRadius: "4px", fontSize: "0.75rem" }}
               />
             )}
             <input
@@ -572,7 +572,7 @@ export function SpawnGrowoutTracker({ spawnId, eggCount, speciesName, mode }) {
               value={formNote}
               onChange={(e) => setFormNote(e.target.value)}
               placeholder="Note (optional)"
-              style={{ flex: 1, padding: "0.35rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px", fontSize: "0.75rem" }}
+              style={{ flex: 1, padding: "0.35rem", background: "rgba(var(--ink-rgb), 0.03)", border: "1px solid var(--glass-border)", color: "var(--text-primary)", borderRadius: "4px", fontSize: "0.75rem" }}
             />
             {/* Photo upload */}
             <input
@@ -600,11 +600,11 @@ export function SpawnGrowoutTracker({ spawnId, eggCount, speciesName, mode }) {
               style={{
                 padding: "0.35rem 0.5rem",
                 fontSize: "0.8rem",
-                background: formPhoto ? "rgba(52, 211, 153, 0.12)" : "rgba(255,255,255,0.03)",
+                background: formPhoto ? "rgba(52, 211, 153, 0.12)" : "rgba(var(--ink-rgb), 0.03)",
                 border: `1px solid ${formPhoto ? "rgba(52, 211, 153, 0.3)" : "var(--glass-border)"}`,
                 borderRadius: "4px",
                 cursor: "pointer",
-                color: formPhoto ? "#34d399" : "var(--text-muted)",
+                color: formPhoto ? "var(--accent-green)" : "var(--text-muted)",
                 transition: "all 0.2s",
               }}
             >
@@ -677,14 +677,14 @@ export function SpawnGrowoutTracker({ spawnId, eggCount, speciesName, mode }) {
                 />
               </div>
             ) : (
-              <div key={cp.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.7rem", padding: "0.2rem 0", borderBottom: "1px solid rgba(255,255,255,0.03)" }}>
+              <div key={cp.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.7rem", padding: "0.2rem 0", borderBottom: "1px solid rgba(var(--ink-rgb), 0.08)" }}>
                 <span style={{ display: "flex", alignItems: "center", gap: "0.3rem" }}>
                   {cp.photo && (
                     <img src={cp.photo} alt="" style={{ width: "20px", height: "20px", borderRadius: "3px", objectFit: "cover", flexShrink: 0 }} />
                   )}
                   <span style={{ marginRight: "0.3rem" }}>{GROWOUT_TYPES[cp.type]?.emoji || "📝"}</span>
                   <span style={{ color: "var(--text-secondary)" }}>{GROWOUT_TYPES[cp.type]?.label || cp.type}</span>
-                  {cp.count > 0 && <strong style={{ color: "#fff", marginLeft: "0.3rem" }}>×{cp.count}</strong>}
+                  {cp.count > 0 && <strong style={{ color: "var(--text-primary)", marginLeft: "0.3rem" }}>×{cp.count}</strong>}
                   {cp.note && <span style={{ color: "var(--text-muted)", marginLeft: "0.4rem" }}>— {cp.note}</span>}
                 </span>
                 <span style={{ color: "var(--text-muted)", fontSize: "0.65rem", whiteSpace: "nowrap" }}>

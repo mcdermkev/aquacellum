@@ -46,7 +46,7 @@ function SideCell({ bucket }) {
   if (!bucket || !bucket.quantity) return <td style={cellStyle}>—</td>;
   return (
     <td style={cellStyle}>
-      <strong style={{ color: "#fff" }}>{bucket.quantity}</strong>
+      <strong style={{ color: "var(--text-primary)" }}>{bucket.quantity}</strong>
       <span style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}> · {money(bucket.cents)}</span>
     </td>
   );
@@ -78,7 +78,7 @@ export function EventReportTable({ report }) {
         <tbody>
           {lines.map((line) => (
             <tr key={line.listingId || "other"}>
-              <th scope="row" style={{ ...cellStyle, color: "#fff", textAlign: "left", fontWeight: 600 }}>{line.name}</th>
+              <th scope="row" style={{ ...cellStyle, color: "var(--text-primary)", textAlign: "left", fontWeight: 600 }}>{line.name}</th>
               <SideCell bucket={line.inPerson} />
               <SideCell bucket={line.online} />
               <td style={{ ...cellStyle, color: "var(--text-secondary)" }}>{line.remaining == null ? "—" : line.remaining}</td>
@@ -87,7 +87,7 @@ export function EventReportTable({ report }) {
         </tbody>
         <tfoot>
           <tr>
-            <th scope="row" style={{ ...cellStyle, color: "#fff", textAlign: "left" }}>Total</th>
+            <th scope="row" style={{ ...cellStyle, color: "var(--text-primary)", textAlign: "left" }}>Total</th>
             <SideCell bucket={totals.inPerson} />
             <SideCell bucket={totals.online} />
             <td style={cellStyle} />
@@ -181,7 +181,7 @@ export function BoothEvents({ onClose, onChange }) {
     onChange?.();
   };
 
-  const inputStyle = { minHeight: TAP_MIN, width: "100%", padding: "0 0.75rem", borderRadius: "10px", border: "1px solid var(--glass-border)", background: "rgba(255,255,255,0.05)", color: "#fff", fontSize: "1rem" };
+  const inputStyle = { minHeight: TAP_MIN, width: "100%", padding: "0 0.75rem", borderRadius: "10px", border: "1px solid var(--glass-border)", background: "#fff", color: "var(--text-primary)", fontSize: "1rem" };
   const past = events.filter((e) => !e.active);
 
   return (
@@ -189,13 +189,13 @@ export function BoothEvents({ onClose, onChange }) {
       role="dialog"
       aria-modal="true"
       aria-labelledby="booth-events-title"
-      style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(2,6,23,0.72)", display: "flex", alignItems: "flex-end", justifyContent: "center" }}
+      style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(11,37,48,0.45)", display: "flex", alignItems: "flex-end", justifyContent: "center" }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose?.(); }}
     >
       <div className="glass-card" style={{ width: "100%", maxWidth: "620px", maxHeight: "92vh", overflowY: "auto", padding: "1.25rem", borderRadius: "18px 18px 0 0", display: "flex", flexDirection: "column", gap: "1rem" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
-          <CalendarCheck size={26} weight="duotone" color="#7dd3fc" />
-          <h3 id="booth-events-title" style={{ color: "#fff", fontSize: "1.15rem", margin: 0, flex: 1 }}>Events</h3>
+          <CalendarCheck size={26} weight="duotone" color="var(--accent-blue)" />
+          <h3 id="booth-events-title" style={{ color: "var(--text-primary)", fontSize: "1.15rem", margin: 0, flex: 1 }}>Events</h3>
           <button ref={closeRef} type="button" className="btn-secondary" onClick={onClose} aria-label="Close" style={{ minWidth: TAP_MIN, minHeight: TAP_MIN }}>
             <X size={20} weight="bold" />
           </button>
@@ -205,7 +205,7 @@ export function BoothEvents({ onClose, onChange }) {
           <p style={{ color: "var(--text-muted)", margin: 0 }}>Loading…</p>
         ) : current ? (
           <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-            <p style={{ color: "#86efac", fontSize: "1.05rem", fontWeight: 700, margin: 0 }}>
+            <p style={{ color: "var(--accent-green)", fontSize: "1.05rem", fontWeight: 700, margin: 0 }}>
               At {current.name}{current.location ? ` · ${current.location}` : ""}
             </p>
             <p style={{ color: "var(--text-secondary)", margin: 0, fontSize: "0.95rem" }}>
@@ -216,7 +216,7 @@ export function BoothEvents({ onClose, onChange }) {
               className="btn-secondary"
               onClick={end}
               disabled={busy}
-              style={{ minHeight: TAP_MIN, alignSelf: "flex-start", padding: "0 1rem", color: confirmEnd ? "#fca5a5" : undefined }}
+              style={{ minHeight: TAP_MIN, alignSelf: "flex-start", padding: "0 1rem", color: confirmEnd ? "var(--accent-red)" : undefined }}
             >
               {confirmEnd ? "Tap again to end the event" : "End event"}
             </button>
@@ -227,15 +227,15 @@ export function BoothEvents({ onClose, onChange }) {
               At a show? Turn this on and your card sales are {feePercent}% until it ends. You&apos;ll also see what sells
               at your booth vs online.
             </p>
-            <label style={{ color: "#fff", fontSize: "0.95rem", display: "flex", flexDirection: "column", gap: "0.3rem" }}>
+            <label style={{ color: "var(--text-primary)", fontSize: "0.95rem", display: "flex", flexDirection: "column", gap: "0.3rem" }}>
               Event name
               <input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} maxLength={80} required placeholder="Aquashella" style={inputStyle} />
             </label>
-            <label style={{ color: "#fff", fontSize: "0.95rem", display: "flex", flexDirection: "column", gap: "0.3rem" }}>
+            <label style={{ color: "var(--text-primary)", fontSize: "0.95rem", display: "flex", flexDirection: "column", gap: "0.3rem" }}>
               Where (optional)
               <input value={form.location} onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))} maxLength={120} placeholder="City, venue" style={inputStyle} />
             </label>
-            <label style={{ color: "#fff", fontSize: "0.95rem", display: "flex", flexDirection: "column", gap: "0.3rem" }}>
+            <label style={{ color: "var(--text-primary)", fontSize: "0.95rem", display: "flex", flexDirection: "column", gap: "0.3rem" }}>
               Ends
               <input type="datetime-local" value={form.endsAt} onChange={(e) => setForm((f) => ({ ...f, endsAt: e.target.value }))} required style={inputStyle} />
             </label>
@@ -247,22 +247,22 @@ export function BoothEvents({ onClose, onChange }) {
         )}
 
         {error && (
-          <div role="alert" style={{ display: "flex", gap: "0.5rem", alignItems: "center", color: "#fca5a5", fontSize: "0.95rem" }}>
+          <div role="alert" style={{ display: "flex", gap: "0.5rem", alignItems: "center", color: "var(--accent-red)", fontSize: "0.95rem" }}>
             <Warning size={20} weight="duotone" /> {error}
           </div>
         )}
 
         {viewing && (
           <section aria-labelledby="booth-event-report-title" style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
-            <h4 id="booth-event-report-title" style={{ color: "#fff", fontSize: "1rem", margin: 0 }}>
+            <h4 id="booth-event-report-title" style={{ color: "var(--text-primary)", fontSize: "1rem", margin: 0 }}>
               {viewing.active ? "Live: " : ""}{viewing.name}
             </h4>
             {report && (
               <div style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap" }}>
-                <span style={{ display: "inline-flex", gap: "0.35rem", alignItems: "center", color: "#fff" }}>
+                <span style={{ display: "inline-flex", gap: "0.35rem", alignItems: "center", color: "var(--text-primary)" }}>
                   <Storefront size={18} weight="duotone" /> In person: {report.totals.inPerson.quantity} · {money(report.totals.inPerson.cents)}
                 </span>
-                <span style={{ display: "inline-flex", gap: "0.35rem", alignItems: "center", color: "#fff" }}>
+                <span style={{ display: "inline-flex", gap: "0.35rem", alignItems: "center", color: "var(--text-primary)" }}>
                   <Globe size={18} weight="duotone" /> Online: {report.totals.online.quantity} · {money(report.totals.online.cents)}
                 </span>
               </div>
@@ -279,7 +279,7 @@ export function BoothEvents({ onClose, onChange }) {
 
         {past.length > 0 && (
           <div>
-            <h4 style={{ color: "#fff", fontSize: "0.95rem", margin: "0 0 0.5rem 0" }}>Past events</h4>
+            <h4 style={{ color: "var(--text-primary)", fontSize: "0.95rem", margin: "0 0 0.5rem 0" }}>Past events</h4>
             <div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem" }}>
               {past.map((e) => (
                 <button

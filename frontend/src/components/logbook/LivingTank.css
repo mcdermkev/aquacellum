@@ -15,7 +15,8 @@
   border-radius: 14px;
   isolation: isolate;
   background: #04121f;
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
   /* Force a compositing layer so the animated (transformed) fish are actually
      clipped to the rounded corners on mobile WebKit — overflow:hidden +
      border-radius alone does NOT clip transformed children there, so the fish

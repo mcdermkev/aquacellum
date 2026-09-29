@@ -41,14 +41,14 @@ export function SponsorCampaignBanner({ surface, compact = false }) {
         borderRadius: "8px",
         fontSize: "0.7rem"
       }}>
-        <span style={{ color: "#f59e0b" }}>🎯</span>
-        <span style={{ color: "rgba(255, 255, 255, 0.7)" }}>
+        <span style={{ color: "var(--accent-amber)" }}>🎯</span>
+        <span style={{ color: "var(--text-secondary)" }}>
           {campaign.title}: {progress.current}/{progress.target}
         </span>
         <div style={{
           flex: 1,
           height: "4px",
-          background: "rgba(255, 255, 255, 0.05)",
+          background: "rgba(var(--ink-rgb), 0.05)",
           borderRadius: "2px",
           overflow: "hidden",
           minWidth: "40px"
@@ -103,35 +103,35 @@ export function SponsorCampaignBanner({ surface, compact = false }) {
         borderRadius: "12px",
         background: "rgba(245, 158, 11, 0.1)",
         border: "1px solid rgba(245, 158, 11, 0.3)",
-        color: "#f59e0b",
+        color: "var(--accent-amber)",
         textTransform: "uppercase",
         letterSpacing: "0.05em"
       }}>
         ⚡ Active Challenge
       </span>
 
-      <h4 style={{ margin: "0 0 0.25rem 0", fontSize: "1rem", color: "#fff", fontWeight: "700" }}>
+      <h4 style={{ margin: "0 0 0.25rem 0", fontSize: "1rem", color: "var(--text-primary)", fontWeight: "700" }}>
         🎯 {campaign.title}
       </h4>
-      <p style={{ margin: "0 0 1rem 0", fontSize: "0.8rem", color: "rgba(255, 255, 255, 0.6)", lineHeight: "1.4" }}>
+      <p style={{ margin: "0 0 1rem 0", fontSize: "0.8rem", color: "var(--text-secondary)", lineHeight: "1.4" }}>
         {campaign.description}
       </p>
 
       {/* Progress bar */}
       <div style={{ marginBottom: "0.75rem" }}>
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.7rem", marginBottom: "0.35rem" }}>
-          <span style={{ color: "rgba(255, 255, 255, 0.5)" }}>Progress</span>
-          <span style={{ color: isComplete ? "#10b981" : "#f59e0b", fontWeight: "600" }}>
+          <span style={{ color: "var(--text-secondary)" }}>Progress</span>
+          <span style={{ color: isComplete ? "var(--accent-green)" : "var(--accent-amber)", fontWeight: "600" }}>
             {progress.current} / {progress.target}
           </span>
         </div>
         <div style={{
           height: "8px",
           width: "100%",
-          background: "rgba(255, 255, 255, 0.04)",
+          background: "rgba(var(--ink-rgb), 0.04)",
           borderRadius: "4px",
           overflow: "hidden",
-          border: "1px solid rgba(255, 255, 255, 0.06)"
+          border: "1px solid rgba(var(--ink-rgb), 0.11)"
         }}>
           <div style={{
             height: "100%",
@@ -151,18 +151,18 @@ export function SponsorCampaignBanner({ surface, compact = false }) {
         justifyContent: "space-between",
         alignItems: "center",
         padding: "0.6rem 0.75rem",
-        background: "rgba(255, 255, 255, 0.02)",
+        background: "rgba(var(--ink-rgb), 0.03)",
         borderRadius: "6px",
-        border: "1px solid rgba(255, 255, 255, 0.04)"
+        border: "1px solid rgba(var(--ink-rgb), 0.09)"
       }}>
-        <span style={{ fontSize: "0.75rem", color: "rgba(255, 255, 255, 0.5)" }}>
-          🏆 Reward: <strong style={{ color: "#fff" }}>
+        <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>
+          🏆 Reward: <strong style={{ color: "var(--text-primary)" }}>
             {campaign.reward?.type === "badge" && `${campaign.reward.value} Badge`}
             {campaign.reward?.type === "discount_code" && `Discount Code`}
             {campaign.reward?.type === "xp_boost" && `${campaign.reward.value}`}
           </strong>
           {campaign.xpMultiplier > 1 && (
-            <span style={{ color: "#f59e0b", marginLeft: "0.5rem" }}>+ {campaign.xpMultiplier}x XP</span>
+            <span style={{ color: "var(--accent-amber)", marginLeft: "0.5rem" }}>+ {campaign.xpMultiplier}x XP</span>
           )}
         </span>
 
@@ -185,7 +185,7 @@ export function SponsorCampaignBanner({ surface, compact = false }) {
           </button>
         )}
         {isClaimed && (
-          <span style={{ fontSize: "0.7rem", color: "#10b981", fontWeight: "600" }}>✓ Claimed</span>
+          <span style={{ fontSize: "0.7rem", color: "var(--accent-green)", fontWeight: "600" }}>✓ Claimed</span>
         )}
       </div>
     </div>

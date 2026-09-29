@@ -19,7 +19,7 @@ const POLICY_ITEMS = [
     key: "doa",
     label: "Dead-on-Arrival Guarantee",
     icon: <FirstAid weight="duotone" size={20} />,
-    color: "#f87171",
+    color: "var(--accent-red)",
   },
   {
     key: "handshake",

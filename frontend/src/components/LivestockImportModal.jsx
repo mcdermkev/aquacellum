@@ -32,12 +32,12 @@ const PREVIEW_LIMIT = 10;
 const inputStyle = {
   width: "100%",
   padding: "0.5rem",
-  background: "rgba(255,255,255,0.03)",
+  background: "rgba(var(--ink-rgb), 0.03)",
   border: "1px solid var(--glass-border)",
-  color: "#fff",
+  color: "var(--text-primary)",
   borderRadius: "4px",
 };
-const selectStyle = { ...inputStyle, background: "rgba(8,12,20,0.9)" };
+const selectStyle = { ...inputStyle, background: "var(--bg-secondary)" };
 const labelStyle = { display: "block", fontSize: "0.72rem", color: "var(--text-secondary)", marginBottom: "0.2rem" };
 
 const SAMPLE = "Species,Quantity,Sex,Tank\nGuppy,6,Mixed,Grow-out 1\nBetta,1,Male,Grow-out 2";
@@ -181,7 +181,7 @@ export function LivestockImportModal({ walletAccount, catalog = [], tanks = [], 
       style={{
         position: "fixed",
         inset: 0,
-        background: "rgba(0, 0, 0, 0.75)",
+        background: "rgba(11, 37, 48, 0.45)",
         backdropFilter: "blur(8px)",
         display: "flex",
         alignItems: "center",
@@ -249,7 +249,7 @@ export function LivestockImportModal({ walletAccount, catalog = [], tanks = [], 
           <>
             {/* Step 2 — column mapping */}
             <div style={{ marginTop: "1.5rem" }}>
-              <div style={{ fontSize: "0.9rem", fontWeight: 600, color: "#fff", marginBottom: "0.5rem" }}>Match your columns</div>
+              <div style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--text-primary)", marginBottom: "0.5rem" }}>Match your columns</div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: "0.6rem" }}>
                 {LIVESTOCK_FIELDS.map((field) => (
                   <div key={field}>
@@ -275,7 +275,7 @@ export function LivestockImportModal({ walletAccount, catalog = [], tanks = [], 
 
             {/* Step 3 — species resolution */}
             <div style={{ marginTop: "1.5rem" }}>
-              <div style={{ fontSize: "0.9rem", fontWeight: 600, color: "#fff", marginBottom: "0.5rem" }}>
+              <div style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--text-primary)", marginBottom: "0.5rem" }}>
                 Resolve species{" "}
                 {unresolvedNames.length > 0 && (
                   <span style={{ fontSize: "0.72rem", color: "var(--accent-amber, #fbbf24)", fontWeight: 500 }}>
@@ -307,7 +307,7 @@ export function LivestockImportModal({ walletAccount, catalog = [], tanks = [], 
                       }}
                     >
                       <span style={{ flexShrink: 0, fontSize: "0.9rem" }}>{resolved ? (isExact ? "✓" : "•") : "⚠"}</span>
-                      <span style={{ minWidth: 0, flex: "0 0 34%", fontSize: "0.82rem", color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      <span style={{ minWidth: 0, flex: "0 0 34%", fontSize: "0.82rem", color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         "{name}"
                       </span>
                       <select
@@ -362,7 +362,7 @@ export function LivestockImportModal({ walletAccount, catalog = [], tanks = [], 
                     return (
                       <tr key={i} style={{ borderTop: "1px solid var(--glass-border)", opacity: sid ? 1 : 0.55 }}>
                         <td style={{ padding: "0.4rem 0.6rem" }}>{sid ? "✓" : "✗"}</td>
-                        <td style={{ padding: "0.4rem 0.6rem", color: "#fff" }}>
+                        <td style={{ padding: "0.4rem 0.6rem", color: "var(--text-primary)" }}>
                           {entry ? entry.commonName : <span style={{ color: "var(--accent-red)" }}>{r.species || "(missing)"} — needs match</span>}
                         </td>
                         <td style={{ padding: "0.4rem 0.6rem" }}>{r.quantity}</td>

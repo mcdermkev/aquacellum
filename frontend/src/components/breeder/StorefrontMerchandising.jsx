@@ -205,9 +205,9 @@ export function StorefrontMerchandising({ walletAccount, casualModeActive = fals
   }
 
   return (
-    <div className="sf-merch" style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "1.25rem", marginTop: "1.25rem" }}>
+    <div className="sf-merch" style={{ borderTop: "1px solid rgba(var(--ink-rgb), 0.06)", paddingTop: "1.25rem", marginTop: "1.25rem" }}>
       <div className="sf-setup__header" style={{ marginBottom: "1rem" }}>
-        <Stack weight="duotone" size={26} style={{ color: "var(--violet-400, #a78bfa)" }} />
+        <Stack weight="duotone" size={26} style={{ color: "var(--accent-violet)" }} />
         <div>
           <h2 className="sf-setup__title">Storefront Layout</h2>
           <p className="sf-setup__subtitle">
@@ -237,15 +237,15 @@ export function StorefrontMerchandising({ walletAccount, casualModeActive = fals
               padding: "0.9rem 1rem",
               border: section.type === SECTION_TYPES.FEATURED
                 ? "1px solid rgba(45,212,191,0.35)"
-                : "1px solid var(--glass-border, rgba(255,255,255,0.08))",
+                : "1px solid var(--glass-border, rgba(var(--ink-rgb), 0.08))",
               transition: reducedMotion ? "none" : "border-color 0.3s cubic-bezier(0.4,0,0.2,1)",
             }}
           >
             <div style={{ display: "flex", alignItems: "flex-start", gap: "0.6rem", flexWrap: "wrap" }}>
               {section.type === SECTION_TYPES.FEATURED ? (
-                <Star weight="duotone" size={18} style={{ color: "var(--teal-400, #2dd4bf)", marginTop: "0.3rem" }} />
+                <Star weight="duotone" size={18} style={{ color: "var(--accent-teal)", marginTop: "0.3rem" }} />
               ) : (
-                <Stack weight="duotone" size={18} style={{ color: "var(--violet-400, #a78bfa)", marginTop: "0.3rem" }} />
+                <Stack weight="duotone" size={18} style={{ color: "var(--accent-violet)", marginTop: "0.3rem" }} />
               )}
 
               <div style={{ flex: "1 1 220px", minWidth: 0 }}>
@@ -385,12 +385,12 @@ export function StorefrontMerchandising({ walletAccount, casualModeActive = fals
                       padding: "0.6rem 0.7rem",
                       border: section.type === SECTION_TYPES.FEATURED
                         ? "1px solid rgba(45,212,191,0.3)"
-                        : "1px solid var(--glass-border, rgba(255,255,255,0.08))",
+                        : "1px solid var(--glass-border, rgba(var(--ink-rgb), 0.08))",
                       fontSize: "0.72rem",
                       color: "var(--text-secondary)",
                     }}
                   >
-                    <strong style={{ display: "block", color: "#fff", fontSize: "0.78rem" }}>{item.commonName}</strong>
+                    <strong style={{ display: "block", color: "var(--text-primary)", fontSize: "0.78rem" }}>{item.commonName}</strong>
                     {formatPriceCents(normalizePriceCents(item))}
                   </div>
                 ))}
@@ -428,8 +428,8 @@ function ListingPicker({ listings, selectedKeys, onToggle }) {
             gap: "0.25rem",
             padding: "0.5rem",
             borderRadius: "8px",
-            background: "rgba(255,255,255,0.02)",
-            border: "1px solid var(--glass-border, rgba(255,255,255,0.08))",
+            background: "rgba(var(--ink-rgb), 0.02)",
+            border: "1px solid var(--glass-border, rgba(var(--ink-rgb), 0.08))",
           }}
         >
           {listings.length === 0 ? (
@@ -462,8 +462,8 @@ function reorderBtnStyle(disabled) {
     minWidth: "36px",
     minHeight: "36px",
     borderRadius: "8px",
-    background: "rgba(255,255,255,0.03)",
-    border: "1px solid var(--glass-border, rgba(255,255,255,0.1))",
+    background: "rgba(var(--ink-rgb), 0.03)",
+    border: "1px solid var(--glass-border, rgba(var(--ink-rgb), 0.1))",
     color: disabled ? "var(--text-muted)" : "var(--text-secondary)",
     cursor: disabled ? "default" : "pointer",
     opacity: disabled ? 0.4 : 1,
@@ -478,8 +478,8 @@ const addBtnStyle = {
   minHeight: "44px",
   fontSize: "0.78rem",
   fontWeight: 600,
-  background: "rgba(255,255,255,0.03)",
-  border: "1px dashed var(--glass-border, rgba(255,255,255,0.15))",
+  background: "rgba(var(--ink-rgb), 0.03)",
+  border: "1px dashed var(--glass-border, rgba(var(--ink-rgb), 0.15))",
   borderRadius: "8px",
   color: "var(--text-secondary)",
   cursor: "pointer",

@@ -234,9 +234,9 @@ export function VideoRecorder({ onRecorded, onCancel }) {
           style={{
             padding: "0.5rem 1rem",
             borderRadius: "8px",
-            border: "1px solid rgba(255, 255, 255, 0.15)",
-            background: "rgba(255, 255, 255, 0.05)",
-            color: "#fff",
+            border: "1px solid rgba(var(--ink-rgb), 0.2)",
+            background: "rgba(var(--ink-rgb), 0.05)",
+            color: "var(--text-primary)",
             cursor: "pointer",
           }}
         >

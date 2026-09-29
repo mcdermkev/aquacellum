@@ -80,7 +80,7 @@ export class TabErrorBoundary extends React.Component {
                 textAlign: "left",
                 marginBottom: "1.25rem",
                 padding: "0.75rem",
-                background: "rgba(0, 0, 0, 0.3)",
+                background: "var(--bg-band)",
                 borderRadius: "8px",
               }}
             >

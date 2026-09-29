@@ -142,8 +142,8 @@ export function OrderWatchlistReorder({ walletAccount, userTier, totalXp, casual
               padding: "0.4rem 0.75rem",
               fontSize: "0.72rem",
               fontWeight: activeSection === "watchlist" ? "700" : "500",
-              background: activeSection === "watchlist" ? "rgba(56, 189, 248, 0.1)" : "rgba(255, 255, 255, 0.02)",
-              border: activeSection === "watchlist" ? "1px solid rgba(56, 189, 248, 0.3)" : "1px solid rgba(255, 255, 255, 0.06)",
+              background: activeSection === "watchlist" ? "rgba(56, 189, 248, 0.1)" : "rgba(var(--ink-rgb), 0.02)",
+              border: activeSection === "watchlist" ? "1px solid rgba(56, 189, 248, 0.3)" : "1px solid rgba(var(--ink-rgb), 0.11)",
               borderRadius: "20px",
               color: activeSection === "watchlist" ? "var(--accent-blue)" : "var(--text-secondary)",
               cursor: "pointer",
@@ -159,10 +159,10 @@ export function OrderWatchlistReorder({ walletAccount, userTier, totalXp, casual
               padding: "0.4rem 0.75rem",
               fontSize: "0.72rem",
               fontWeight: activeSection === "reorder" ? "700" : "500",
-              background: activeSection === "reorder" ? "rgba(139, 92, 246, 0.1)" : "rgba(255, 255, 255, 0.02)",
-              border: activeSection === "reorder" ? "1px solid rgba(139, 92, 246, 0.3)" : "1px solid rgba(255, 255, 255, 0.06)",
+              background: activeSection === "reorder" ? "rgba(139, 92, 246, 0.1)" : "rgba(var(--ink-rgb), 0.02)",
+              border: activeSection === "reorder" ? "1px solid rgba(139, 92, 246, 0.3)" : "1px solid rgba(var(--ink-rgb), 0.11)",
               borderRadius: "20px",
-              color: activeSection === "reorder" ? "var(--accent-purple, #a855f7)" : "var(--text-secondary)",
+              color: activeSection === "reorder" ? "var(--accent-violet)" : "var(--text-secondary)",
               cursor: "pointer",
             }}
           >
@@ -198,10 +198,10 @@ export function OrderWatchlistReorder({ walletAccount, userTier, totalXp, casual
                 style={{
                   width: "100%",
                   padding: "0.45rem 0.6rem",
-                  background: "rgba(255,255,255,0.03)",
-                  border: "1px solid rgba(255,255,255,0.08)",
+                  background: "rgba(var(--ink-rgb), 0.03)",
+                  border: "1px solid rgba(var(--ink-rgb), 0.13)",
                   borderRadius: "4px",
-                  color: "#fff",
+                  color: "var(--text-primary)",
                   fontSize: "0.78rem",
                 }}
               />
@@ -218,10 +218,10 @@ export function OrderWatchlistReorder({ walletAccount, userTier, totalXp, casual
                 style={{
                   width: "100%",
                   padding: "0.45rem 0.6rem",
-                  background: "rgba(255,255,255,0.03)",
-                  border: "1px solid rgba(255,255,255,0.08)",
+                  background: "rgba(var(--ink-rgb), 0.03)",
+                  border: "1px solid rgba(var(--ink-rgb), 0.13)",
                   borderRadius: "4px",
-                  color: "#fff",
+                  color: "var(--text-primary)",
                   fontSize: "0.78rem",
                 }}
               />
@@ -256,11 +256,11 @@ export function OrderWatchlistReorder({ walletAccount, userTier, totalXp, casual
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "center",
-                    border: "1px solid rgba(255,255,255,0.04)",
+                    border: "1px solid rgba(var(--ink-rgb), 0.09)",
                   }}
                 >
                   <div>
-                    <div style={{ fontWeight: "600", color: "#fff", fontSize: "0.82rem" }}>
+                    <div style={{ fontWeight: "600", color: "var(--text-primary)", fontSize: "0.82rem" }}>
                       👁️ {item.species_name}
                     </div>
                     <div style={{ fontSize: "0.68rem", color: "var(--text-muted)" }}>
@@ -315,11 +315,11 @@ export function OrderWatchlistReorder({ walletAccount, userTier, totalXp, casual
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "center",
-                    border: "1px solid rgba(255,255,255,0.04)",
+                    border: "1px solid rgba(var(--ink-rgb), 0.09)",
                   }}
                 >
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: "600", color: "#fff", fontSize: "0.82rem" }}>
+                    <div style={{ fontWeight: "600", color: "var(--text-primary)", fontSize: "0.82rem" }}>
                       🐠 {order.commonName}
                     </div>
                     <div style={{ fontSize: "0.68rem", color: "var(--text-muted)", display: "flex", gap: "0.75rem", marginTop: "0.2rem" }}>
@@ -377,7 +377,7 @@ function LockedFeatureCard({ feature, totalXp }) {
       }}
     >
       <div style={{ fontSize: "2rem", marginBottom: "0.5rem" }}>{feature.icon}</div>
-      <h4 style={{ color: "#fff", fontSize: "0.95rem", marginBottom: "0.3rem" }}>{feature.label}</h4>
+      <h4 style={{ color: "var(--text-primary)", fontSize: "0.95rem", marginBottom: "0.3rem" }}>{feature.label}</h4>
       <p style={{ color: "var(--text-muted)", fontSize: "0.75rem", margin: "0 auto 1rem", maxWidth: "320px" }}>
         {feature.description}
       </p>
@@ -385,7 +385,7 @@ function LockedFeatureCard({ feature, totalXp }) {
         <div style={{
           height: "5px",
           borderRadius: "3px",
-          background: "rgba(255,255,255,0.06)",
+          background: "rgba(var(--ink-rgb), 0.06)",
           overflow: "hidden",
         }}>
           <div style={{

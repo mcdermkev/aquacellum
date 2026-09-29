@@ -80,21 +80,22 @@ export function LocalBreederMap({ contractAddress, marketplaceAddress, walletAcc
   // Theme Color Configurations
   const primaryThemeColor = isPro ? "var(--accent-pro, #a855f7)" : "var(--accent-amber)";
   const primaryThemeGlow = isPro ? "var(--primary-pro-glow, rgba(168, 85, 247, 0.4))" : "var(--accent-amber-glow)";
-  const themeAccentColor = isPro ? "#c084fc" : "#f59e0b";
-  const themeCardBorder = isPro ? "rgba(168, 85, 247, 0.22)" : "rgba(251, 191, 36, 0.15)";
+  const themeAccentColor = isPro ? "var(--accent-violet)" : "var(--accent-amber)";
+  const themeCardBorder = isPro ? "rgba(124, 58, 237, 0.22)" : "rgba(217, 119, 6, 0.22)";
 
-  const radarStrokeColor = isPro ? "rgba(168, 85, 247, 0.15)" : "rgba(251, 191, 36, 0.08)";
-  const radarLabelColor = isPro ? "rgba(168, 85, 247, 0.5)" : "rgba(251, 191, 36, 0.4)";
-  const pulseCircleStroke = isPro ? "rgba(168, 85, 247, 0.3)" : "rgba(251, 191, 36, 0.3)";
-  const pulseCircleStrokeInactive = isPro ? "rgba(168, 85, 247, 0.1)" : "rgba(251, 191, 36, 0.1)";
-  const regionFillColor = isPro ? "rgba(168, 85, 247, 0.18)" : "rgba(251, 191, 36, 0.18)";
-  const regionFillColorInactive = isPro ? "rgba(168, 85, 247, 0.08)" : "rgba(251, 191, 36, 0.08)";
-  const regionStrokeColor = isPro ? "rgba(168, 85, 247, 0.7)" : "rgba(251, 191, 36, 0.7)";
-  const regionStrokeColorInactive = isPro ? "rgba(168, 85, 247, 0.3)" : "rgba(251, 191, 36, 0.3)";
-  const sweepGradientStart = isPro ? "rgba(168, 85, 247, 0)" : "rgba(251, 191, 36, 0)";
-  const sweepGradientMid = isPro ? "rgba(168, 85, 247, 0.02)" : "rgba(251, 191, 36, 0.02)";
-  const sweepGradientEnd = isPro ? "rgba(168, 85, 247, 0.15)" : "rgba(251, 191, 36, 0.15)";
-  const sweepLineStroke = isPro ? "rgba(168, 85, 247, 0.25)" : "rgba(251, 191, 36, 0.25)";
+  // Radar canvas colors, tuned for the light (daylight) radar face.
+  const radarStrokeColor = isPro ? "rgba(124, 58, 237, 0.22)" : "rgba(217, 119, 6, 0.22)";
+  const radarLabelColor = isPro ? "rgba(109, 40, 217, 0.85)" : "rgba(180, 83, 9, 0.85)";
+  const pulseCircleStroke = isPro ? "rgba(124, 58, 237, 0.4)" : "rgba(217, 119, 6, 0.4)";
+  const pulseCircleStrokeInactive = isPro ? "rgba(124, 58, 237, 0.18)" : "rgba(217, 119, 6, 0.18)";
+  const regionFillColor = isPro ? "rgba(124, 58, 237, 0.18)" : "rgba(245, 158, 11, 0.22)";
+  const regionFillColorInactive = isPro ? "rgba(124, 58, 237, 0.08)" : "rgba(245, 158, 11, 0.1)";
+  const regionStrokeColor = isPro ? "rgba(124, 58, 237, 0.75)" : "rgba(217, 119, 6, 0.75)";
+  const regionStrokeColorInactive = isPro ? "rgba(124, 58, 237, 0.35)" : "rgba(217, 119, 6, 0.35)";
+  const sweepGradientStart = isPro ? "rgba(124, 58, 237, 0)" : "rgba(217, 119, 6, 0)";
+  const sweepGradientMid = isPro ? "rgba(124, 58, 237, 0.03)" : "rgba(217, 119, 6, 0.03)";
+  const sweepGradientEnd = isPro ? "rgba(124, 58, 237, 0.16)" : "rgba(217, 119, 6, 0.16)";
+  const sweepLineStroke = isPro ? "rgba(124, 58, 237, 0.35)" : "rgba(217, 119, 6, 0.35)";
 
   const canvasRef = useRef(null);
   const mapContainerRef = useRef(null);
@@ -274,8 +275,8 @@ export function LocalBreederMap({ contractAddress, marketplaceAddress, walletAcc
     function drawSweepAndCenter(cX, cY, maxR, a) {
       ctx.beginPath();
       ctx.arc(cX, cY, 6, 0, Math.PI * 2);
-      ctx.fillStyle = "#60a5fa";
-      ctx.shadowColor = "#60a5fa";
+      ctx.fillStyle = "#0284c7";
+      ctx.shadowColor = "rgba(2, 132, 199, 0.35)";
       ctx.shadowBlur = 10;
       ctx.fill();
       ctx.shadowBlur = 0;
@@ -303,7 +304,7 @@ export function LocalBreederMap({ contractAddress, marketplaceAddress, walletAcc
     }
 
     const drawRadar = () => {
-      ctx.fillStyle = "#090d16";
+      ctx.fillStyle = "#eaf3f5";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       const centerX = canvas.width / 2;
@@ -355,13 +356,13 @@ export function LocalBreederMap({ contractAddress, marketplaceAddress, walletAcc
         const badgeR = 14 * entryScale;
         ctx.beginPath();
         ctx.arc(x, y, badgeR, 0, Math.PI * 2);
-        ctx.fillStyle = isPro ? "rgba(168,85,247,0.35)" : "rgba(251,191,36,0.35)";
+        ctx.fillStyle = isPro ? "rgba(124,58,237,0.22)" : "rgba(245,158,11,0.3)";
         ctx.fill();
-        ctx.strokeStyle = isPro ? "rgba(168,85,247,0.7)" : "rgba(251,191,36,0.7)";
+        ctx.strokeStyle = isPro ? "rgba(124,58,237,0.75)" : "rgba(217,119,6,0.75)";
         ctx.lineWidth = 2;
         ctx.stroke();
         ctx.lineWidth = 1;
-        ctx.fillStyle = "#fff";
+        ctx.fillStyle = "#0b2530";
         ctx.font = "bold 11px 'Inter', sans-serif";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
@@ -404,8 +405,8 @@ export function LocalBreederMap({ contractAddress, marketplaceAddress, walletAcc
         ctx.beginPath();
         ctx.arc(x, y, 4 * entryScale, 0, Math.PI * 2);
         ctx.fillStyle = isActive
-          ? (isPro ? "#c084fc" : "#fbbf24")
-          : (isPro ? "rgba(168,85,247,0.6)" : "rgba(251,191,36,0.6)");
+          ? (isPro ? "#7c3aed" : "#d97706")
+          : (isPro ? "rgba(124,58,237,0.6)" : "rgba(217,119,6,0.6)");
         ctx.fill();
       });
 
@@ -470,9 +471,9 @@ export function LocalBreederMap({ contractAddress, marketplaceAddress, walletAcc
         mapContainerRef.current._leaflet_id = null;
       }
       const map = L.map(mapContainerRef.current, { center: [userLocation.lat, userLocation.lng], zoom: 12, zoomControl: true, attributionControl: false });
-      L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", { subdomains: "abcd", maxZoom: 19 }).addTo(map);
+      L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", { subdomains: "abcd", maxZoom: 19 }).addTo(map);
       // User location marker
-      L.circleMarker([userLocation.lat, userLocation.lng], { radius: 8, fillColor: "#60a5fa", fillOpacity: 1, color: "#fff", weight: 2 }).addTo(map).bindPopup("You are here");
+      L.circleMarker([userLocation.lat, userLocation.lng], { radius: 8, fillColor: "#0284c7", fillOpacity: 1, color: "#fff", weight: 2 }).addTo(map).bindPopup("You are here");
       // No seller-dot markers: the discovery radar plots no fabricated seller
       // locations (Decision D3 / T15). `listings` is intentionally empty until
       // the real opt-in zone-discovery feature (T15) lands.
@@ -587,12 +588,12 @@ export function LocalBreederMap({ contractAddress, marketplaceAddress, walletAcc
   return (
     <div style={{ display: "flex", gap: "2rem", flexWrap: "wrap", alignItems: "flex-start", position: "relative" }}>
       {/* ═══ Left: Radar / Map Card ═══ */}
-      <div className="glass-card" style={{ flex: "1 1 500px", padding: "1.5rem", display: "flex", flexDirection: "column", gap: "1.25rem", borderRadius: "var(--radius-md)", background: "rgba(15, 23, 42, 0.75)", border: `1px solid ${themeCardBorder}` }}>
+      <div className="glass-card" style={{ flex: "1 1 500px", padding: "1.5rem", display: "flex", flexDirection: "column", gap: "1.25rem", borderRadius: "var(--radius-md)", background: "var(--bg-secondary)", border: `1px solid ${themeCardBorder}` }}>
 
         {/* Header row: title + controls */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.75rem" }}>
           <div>
-            <h3 style={{ fontSize: "1.25rem", fontWeight: "700", color: "#fff", margin: 0, display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            <h3 style={{ fontSize: "1.25rem", fontWeight: "700", color: "var(--text-primary)", margin: 0, display: "flex", alignItems: "center", gap: "0.5rem" }}>
               <span>{viewMode === "radar" ? "\uD83E\uDDED" : "\uD83D\uDDFA\uFE0F"}</span> Pickup Map
             </h3>
             <span style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>
@@ -606,9 +607,9 @@ export function LocalBreederMap({ contractAddress, marketplaceAddress, walletAcc
           </div>
 
           {/* View Mode Toggle: Radar | Map */}
-          <div style={{ display: "flex", gap: "0.25rem", background: "rgba(0,0,0,0.3)", padding: "2px", borderRadius: "6px", border: "1px solid rgba(255,255,255,0.04)" }}>
+          <div style={{ display: "flex", gap: "0.25rem", background: "var(--bg-band)", padding: "2px", borderRadius: "6px", border: "1px solid rgba(var(--ink-rgb), 0.09)" }}>
             {["radar", "map"].map((mode) => (
-              <button key={mode} onClick={() => setViewMode(mode)} style={{ padding: "0.25rem 0.75rem", fontSize: "0.72rem", fontWeight: "600", border: "none", borderRadius: "4px", cursor: "pointer", background: viewMode === mode ? (isPro ? "var(--accent-pro)" : "var(--accent-amber)") : "transparent", color: viewMode === mode ? (isPro ? "#fff" : "#0f172a") : "var(--text-muted)", textTransform: "capitalize", transition: "all 0.2s" }}>
+              <button key={mode} onClick={() => setViewMode(mode)} style={{ padding: "0.25rem 0.75rem", fontSize: "0.72rem", fontWeight: "600", border: "none", borderRadius: "4px", cursor: "pointer", background: viewMode === mode ? (isPro ? "var(--accent-pro, #7c3aed)" : "var(--accent-amber-fill)") : "transparent", color: viewMode === mode ? (isPro ? "#fff" : "#0b2530") : "var(--text-muted)", textTransform: "capitalize", transition: "all 0.2s" }}>
                 {mode === "radar" ? "\uD83D\uDCE1 Radar" : "\uD83D\uDDFA\uFE0F Map"}
               </button>
             ))}
@@ -617,7 +618,7 @@ export function LocalBreederMap({ contractAddress, marketplaceAddress, walletAcc
 
         {/* Geolocation warning banner */}
         {geoStatus === "denied" && (
-          <div style={{ padding: "0.6rem 0.85rem", background: "rgba(251, 146, 60, 0.08)", border: "1px solid rgba(251, 146, 60, 0.25)", borderRadius: "8px", display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.72rem", color: "rgba(251, 191, 36, 0.9)" }}>
+          <div style={{ padding: "0.6rem 0.85rem", background: "rgba(251, 146, 60, 0.08)", border: "1px solid rgba(251, 146, 60, 0.25)", borderRadius: "8px", display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.72rem", color: "var(--accent-amber)" }}>
             <span>⚠️</span>
             <span>Location access was denied. Results are centered on a default area and may not reflect your actual neighborhood. <button onClick={() => window.location.reload()} style={{ background: "none", border: "none", color: themeAccentColor, cursor: "pointer", textDecoration: "underline", fontSize: "0.72rem", padding: 0 }}>Retry</button></span>
           </div>
@@ -631,16 +632,16 @@ export function LocalBreederMap({ contractAddress, marketplaceAddress, walletAcc
               It comes back with a real community-events source, not before. */}
 
           {/* Range Toggles */}
-          <div style={{ display: "flex", gap: "0.25rem", background: "rgba(0,0,0,0.3)", padding: "2px", borderRadius: "6px", border: "1px solid rgba(255,255,255,0.04)" }}>
+          <div style={{ display: "flex", gap: "0.25rem", background: "var(--bg-band)", padding: "2px", borderRadius: "6px", border: "1px solid rgba(var(--ink-rgb), 0.09)" }}>
             {[5, 10, 25].map((val) => (
-              <button key={val} onClick={() => { setRangeFilter(val); setSelectedListing(null); }} style={{ padding: "0.25rem 0.6rem", fontSize: "0.7rem", fontWeight: "600", border: "none", borderRadius: "4px", cursor: "pointer", background: rangeFilter === val ? primaryThemeColor : "transparent", color: rangeFilter === val ? (isPro ? "#fff" : "#0f172a") : "var(--text-muted)", transition: "all 0.2s" }}>
+              <button key={val} onClick={() => { setRangeFilter(val); setSelectedListing(null); }} style={{ padding: "0.25rem 0.6rem", fontSize: "0.7rem", fontWeight: "600", border: "none", borderRadius: "4px", cursor: "pointer", background: rangeFilter === val ? (isPro ? primaryThemeColor : "var(--accent-amber-fill)") : "transparent", color: rangeFilter === val ? (isPro ? "#fff" : "#0b2530") : "var(--text-muted)", transition: "all 0.2s" }}>
                 {useMetric ? `${Math.round(val * 1.60934)}km` : `${val}mi`}
               </button>
             ))}
           </div>
 
           {/* Distance Unit Toggle */}
-          <button onClick={() => setUseMetric(!useMetric)} style={{ padding: "0.25rem 0.6rem", fontSize: "0.65rem", fontWeight: "600", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "4px", cursor: "pointer", background: "rgba(0,0,0,0.2)", color: "var(--text-muted)", transition: "all 0.2s" }} title="Toggle distance units">
+          <button onClick={() => setUseMetric(!useMetric)} style={{ padding: "0.25rem 0.6rem", fontSize: "0.65rem", fontWeight: "600", border: "1px solid rgba(var(--ink-rgb), 0.11)", borderRadius: "4px", cursor: "pointer", background: "var(--bg-band)", color: "var(--text-muted)", transition: "all 0.2s" }} title="Toggle distance units">
             {useMetric ? "km \u2192 mi" : "mi \u2192 km"}
           </button>
 
@@ -649,7 +650,7 @@ export function LocalBreederMap({ contractAddress, marketplaceAddress, walletAcc
             <button
               onClick={() => setShowMyPickups((v) => !v)}
               aria-pressed={showMyPickups}
-              style={{ padding: "0.25rem 0.6rem", fontSize: "0.65rem", fontWeight: "600", border: showMyPickups ? "1px solid rgba(244,114,182,0.5)" : "1px solid rgba(255,255,255,0.06)", borderRadius: "4px", cursor: "pointer", background: showMyPickups ? "rgba(244,114,182,0.12)" : "rgba(0,0,0,0.2)", color: showMyPickups ? "#f472b6" : "var(--text-muted)", transition: "all 0.2s" }}
+              style={{ padding: "0.25rem 0.6rem", fontSize: "0.65rem", fontWeight: "600", border: showMyPickups ? "1px solid rgba(244,114,182,0.5)" : "1px solid rgba(var(--ink-rgb), 0.11)", borderRadius: "4px", cursor: "pointer", background: showMyPickups ? "rgba(244,114,182,0.12)" : "var(--bg-band)", color: showMyPickups ? "#be185d" : "var(--text-muted)", transition: "all 0.2s" }}
               title="Toggle your pickup orders on the map"
             >
               📍 My Pickups ({myPickups.length})
@@ -668,10 +669,10 @@ export function LocalBreederMap({ contractAddress, marketplaceAddress, walletAcc
                 onClick={handleCanvasClick}
                 onMouseMove={handleCanvasMove}
                 onMouseLeave={handleCanvasLeave}
-                style={{ maxWidth: "100%", aspectRatio: "1/1", borderRadius: "50%", border: isPro ? "2px solid rgba(168,85,247,0.25)" : "2px solid rgba(251,191,36,0.15)", boxShadow: isPro ? "0 0 32px rgba(168,85,247,0.15), inset 0 0 40px rgba(168,85,247,0.02)" : "0 0 32px rgba(0,0,0,0.5), inset 0 0 40px rgba(251,191,36,0.02)", cursor: "pointer" }}
+                style={{ maxWidth: "100%", aspectRatio: "1/1", borderRadius: "50%", border: isPro ? "2px solid rgba(124,58,237,0.25)" : "2px solid rgba(217,119,6,0.25)", boxShadow: "var(--glass-shadow)", cursor: "pointer" }}
               />
               {/* Hover Tooltip */}
-              <div ref={tooltipRef} style={{ position: "absolute", opacity: 0, pointerEvents: "none", background: "rgba(15,12,31,0.95)", border: `1px solid ${themeCardBorder}`, borderRadius: "8px", padding: "0.4rem 0.65rem", fontSize: "0.7rem", color: "#fff", whiteSpace: "nowrap", transition: "opacity 0.15s", zIndex: 100, backdropFilter: "blur(8px)" }}>
+              <div ref={tooltipRef} style={{ position: "absolute", opacity: 0, pointerEvents: "none", background: "var(--bg-secondary)", border: `1px solid ${themeCardBorder}`, boxShadow: "var(--shadow-md)", borderRadius: "8px", padding: "0.4rem 0.65rem", fontSize: "0.7rem", color: "var(--text-primary)", whiteSpace: "nowrap", transition: "opacity 0.15s", zIndex: 100, backdropFilter: "blur(8px)" }}>
                 {hoveredDot && (
                   <>
                     <strong>{hoveredDot.isEvent ? hoveredDot.name : hoveredDot.speciesName || "Breeder"}</strong>
@@ -692,9 +693,9 @@ export function LocalBreederMap({ contractAddress, marketplaceAddress, walletAcc
 
         {/* Location badge + stats bar */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.5rem" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", padding: "0.3rem 0.65rem", background: "rgba(0,0,0,0.25)", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.04)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", padding: "0.3rem 0.65rem", background: "var(--bg-band)", borderRadius: "12px", border: "1px solid rgba(var(--ink-rgb), 0.09)" }}>
             <span style={{ fontSize: "0.65rem" }}>{geoStatus === "granted" ? "\uD83D\uDCCD" : "\u26A0\uFE0F"}</span>
-            <span style={{ fontSize: "0.68rem", color: geoStatus === "granted" ? "var(--text-secondary)" : "rgba(251,146,60,0.8)" }}>
+            <span style={{ fontSize: "0.68rem", color: geoStatus === "granted" ? "var(--text-secondary)" : "var(--accent-amber)" }}>
               {locationLabel}
             </span>
           </div>
@@ -702,7 +703,7 @@ export function LocalBreederMap({ contractAddress, marketplaceAddress, walletAcc
               "N nearby / N clusters" counters were always 0 (there are no
               seller dots) and read as "nobody is near you" — Decision D3. */}
           <div style={{ display: "flex", gap: "0.5rem" }}>
-            <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", padding: "0.3rem 0.5rem", background: "rgba(0,0,0,0.2)", borderRadius: "10px" }}>
+            <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", padding: "0.3rem 0.5rem", background: "var(--bg-band)", borderRadius: "10px" }}>
               <strong style={{ color: themeAccentColor }}>{myPickups.length}</strong> {myPickups.length === 1 ? "pickup" : "pickups"}
             </span>
           </div>
@@ -717,7 +718,7 @@ export function LocalBreederMap({ contractAddress, marketplaceAddress, walletAcc
             location, and nothing in the product asks them to yet, so we say
             that plainly and point at the surface that does work. */}
         {!scanningPhase && myPickups.length === 0 && (
-          <div style={{ textAlign: "center", padding: "1.5rem 1rem", background: "rgba(0,0,0,0.15)", borderRadius: "10px", border: "1px dashed rgba(255,255,255,0.06)" }}>
+          <div style={{ textAlign: "center", padding: "1.5rem 1rem", background: "var(--bg-band)", borderRadius: "10px", border: "1px dashed rgba(var(--ink-rgb), 0.11)" }}>
             <div style={{ fontSize: "1.5rem", marginBottom: "0.5rem" }}>{"\uD83D\uDCCD"}</div>
             <p style={{ color: "var(--text-secondary)", fontSize: "0.8rem", margin: "0 0 0.5rem", fontWeight: "500" }}>
               Nothing on your map yet
@@ -744,9 +745,9 @@ export function LocalBreederMap({ contractAddress, marketplaceAddress, walletAcc
 
       {/* ═══ Mobile Bottom Drawer ═══ */}
       <div className="local-map-mobile-drawer" ref={drawerRef} onTouchStart={handleDrawerTouchStart} onTouchMove={handleDrawerTouchMove} onTouchEnd={handleDrawerTouchEnd}
-        style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 9000, background: "rgba(15, 23, 42, 0.97)", borderTop: `1px solid ${themeCardBorder}`, borderRadius: "16px 16px 0 0", backdropFilter: "blur(16px)", transform: mobileDrawerOpen ? "translateY(0)" : "translateY(100%)", transition: "transform 0.3s ease", maxHeight: "70vh", overflowY: "auto", padding: "1rem 1.25rem 2rem", display: "none" /* shown via CSS media query */ }}>
+        style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 9000, background: "var(--bg-secondary)", boxShadow: "var(--shadow-lg)", borderTop: `1px solid ${themeCardBorder}`, borderRadius: "16px 16px 0 0", backdropFilter: "blur(16px)", transform: mobileDrawerOpen ? "translateY(0)" : "translateY(100%)", transition: "transform 0.3s ease", maxHeight: "70vh", overflowY: "auto", padding: "1rem 1.25rem 2rem", display: "none" /* shown via CSS media query */ }}>
         {/* Drag handle */}
-        <div style={{ width: "36px", height: "4px", borderRadius: "2px", background: "rgba(255,255,255,0.15)", margin: "0 auto 1rem" }} />
+        <div style={{ width: "36px", height: "4px", borderRadius: "2px", background: "rgba(var(--ink-rgb), 0.18)", margin: "0 auto 1rem" }} />
         {renderDetailContent()}
       </div>
 
@@ -778,7 +779,7 @@ export function LocalBreederMap({ contractAddress, marketplaceAddress, walletAcc
   // Shared detail panel content (used by both desktop panel and mobile drawer)
   function renderDetailContent() {
     return (
-      <div className="glass-card" style={{ padding: "1.5rem", background: "rgba(15, 23, 42, 0.75)", border: `1px solid ${themeCardBorder}`, borderRadius: "var(--radius-md)", minHeight: "280px", display: "flex", flexDirection: "column", justifyContent: selectedListing ? "space-between" : "center", alignItems: selectedListing ? "stretch" : "center", textAlign: selectedListing ? "left" : "center", boxShadow: isPro ? "0 0 24px rgba(168,85,247,0.1)" : "0 12px 32px rgba(0,0,0,0.4)" }}>
+      <div className="glass-card" style={{ padding: "1.5rem", background: "var(--bg-secondary)", border: `1px solid ${themeCardBorder}`, borderRadius: "var(--radius-md)", minHeight: "280px", display: "flex", flexDirection: "column", justifyContent: selectedListing ? "space-between" : "center", alignItems: selectedListing ? "stretch" : "center", textAlign: selectedListing ? "left" : "center", boxShadow: "var(--glass-shadow)" }}>
         {selectedListing ? (
           renderBreederDetail()
         ) : (
@@ -787,7 +788,7 @@ export function LocalBreederMap({ contractAddress, marketplaceAddress, walletAcc
              markers this map draws are their own pickup pins. */
           <div style={{ padding: "2rem" }}>
             <div style={{ fontSize: "2rem", marginBottom: "0.75rem" }}>{"\uD83D\uDCCD"}</div>
-            <h4 style={{ color: "#fff", fontSize: "0.95rem", fontWeight: "600", marginBottom: "0.25rem" }}>
+            <h4 style={{ color: "var(--text-primary)", fontSize: "0.95rem", fontWeight: "600", marginBottom: "0.25rem" }}>
               {myPickups.length > 0 ? "No pickup selected" : "Nothing selected"}
             </h4>
             <p style={{ color: "var(--text-muted)", fontSize: "0.75rem", margin: 0 }}>
@@ -812,18 +813,18 @@ export function LocalBreederMap({ contractAddress, marketplaceAddress, walletAcc
         <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
           <div>
             <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Selected Local Breeder</span>
-            <h4 style={{ fontSize: "1.15rem", fontWeight: "700", color: "#fff", marginTop: "0.25rem" }}>{selectedListing.speciesName}</h4>
+            <h4 style={{ fontSize: "1.15rem", fontWeight: "700", color: "var(--text-primary)", marginTop: "0.25rem" }}>{selectedListing.speciesName}</h4>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: "0.65rem", fontSize: "0.85rem" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid rgba(255,255,255,0.04)", paddingBottom: "0.5rem" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid rgba(var(--ink-rgb), 0.09)", paddingBottom: "0.5rem" }}>
               <span style={{ color: "var(--text-secondary)" }}>Breeder</span>
-              <code style={{ color: "#fff", fontFamily: "monospace", fontSize: "0.75rem" }}>{truncateAddress(selectedListing.seller)}</code>
+              <code style={{ color: "var(--text-primary)", fontFamily: "monospace", fontSize: "0.75rem" }}>{truncateAddress(selectedListing.seller)}</code>
             </div>
-            <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid rgba(255,255,255,0.04)", paddingBottom: "0.5rem" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid rgba(var(--ink-rgb), 0.09)", paddingBottom: "0.5rem" }}>
               <span style={{ color: "var(--text-secondary)" }}>Available</span>
-              <strong style={{ color: "#fff" }}>{selectedListing.quantity} Fish</strong>
+              <strong style={{ color: "var(--text-primary)" }}>{selectedListing.quantity} Fish</strong>
             </div>
-            <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid rgba(255,255,255,0.04)", paddingBottom: "0.5rem" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid rgba(var(--ink-rgb), 0.09)", paddingBottom: "0.5rem" }}>
               <span style={{ color: "var(--text-secondary)" }}>Price / Fish</span>
               {/* Money goes through the canonical marketplace parser/formatter
                   (catalogQuery.js), the same one the board, cart, and
@@ -840,7 +841,7 @@ export function LocalBreederMap({ contractAddress, marketplaceAddress, walletAcc
                 })()}
               </strong>
             </div>
-            <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid rgba(255,255,255,0.04)", paddingBottom: "0.5rem" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid rgba(var(--ink-rgb), 0.09)", paddingBottom: "0.5rem" }}>
               <span style={{ color: "var(--text-secondary)" }}>Proximity</span>
               <strong style={{ color: "var(--accent-blue)", display: "flex", alignItems: "center", gap: "0.25rem" }}>
                 {"\u26A1"} {formatDistance(selectedListing.distance)}
@@ -852,9 +853,9 @@ export function LocalBreederMap({ contractAddress, marketplaceAddress, walletAcc
         <div style={{ marginTop: "1.5rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <label htmlFor="map-buy-qty" style={{ fontSize: "0.75rem", color: "var(--text-secondary)", fontWeight: "600" }}>Quantity:</label>
-            <input type="number" id="map-buy-qty" min="1" max={selectedListing.quantity} value={checkoutQuantity} onChange={(e) => setCheckoutQuantity(Math.min(selectedListing.quantity, Math.max(1, Number(e.target.value))))} style={{ width: "60px", background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "4px", color: "#fff", fontSize: "0.8rem", padding: "0.25rem 0.5rem", textAlign: "center", outline: "none" }} />
+            <input type="number" id="map-buy-qty" min="1" max={selectedListing.quantity} value={checkoutQuantity} onChange={(e) => setCheckoutQuantity(Math.min(selectedListing.quantity, Math.max(1, Number(e.target.value))))} style={{ width: "60px", background: "var(--bg-band)", border: "1px solid rgba(var(--ink-rgb), 0.13)", borderRadius: "4px", color: "var(--text-primary)", fontSize: "0.8rem", padding: "0.25rem 0.5rem", textAlign: "center", outline: "none" }} />
           </div>
-          <button onClick={() => handleCheckoutTrigger(selectedListing)} className={isPro ? "btn-primary-pro" : "btn-primary"} style={isPro ? { width: "100%", justifyContent: "center", padding: "0.75rem" } : { background: "var(--accent-amber)", boxShadow: "0 0 16px var(--accent-amber-glow)", color: "#0f172a", fontWeight: "700", padding: "0.75rem", border: "none", borderRadius: "6px", cursor: "pointer", transition: "all 0.2s", width: "100%" }}>
+          <button onClick={() => handleCheckoutTrigger(selectedListing)} className={isPro ? "btn-primary-pro" : "btn-primary"} style={isPro ? { width: "100%", justifyContent: "center", padding: "0.75rem" } : { background: "var(--accent-amber-fill)", boxShadow: "var(--glass-shadow)", color: "#0b2530", fontWeight: "700", padding: "0.75rem", border: "none", borderRadius: "6px", cursor: "pointer", transition: "all 0.2s", width: "100%" }}>
             {"\uD83E\uDD1D"} Settle via Local Pickup
           </button>
         </div>

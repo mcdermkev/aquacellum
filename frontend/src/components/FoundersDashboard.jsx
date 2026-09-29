@@ -33,12 +33,12 @@ import { fetchAllDashboardData } from "../services/foundersAnalytics";
 const REFRESH_INTERVAL_MS = 60_000; // Auto-refresh every 60s
 
 const CHART_COLORS = {
-  blue: "#38bdf8",
-  green: "#34d399",
-  purple: "#a78bfa",
-  amber: "#fbbf24",
-  red: "#f87171",
-  cyan: "#22d3ee",
+  blue: "#0284c7",
+  green: "#059669",
+  purple: "#7c3aed",
+  amber: "#f59e0b",
+  red: "#dc2626",
+  cyan: "#0891b2",
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -206,7 +206,7 @@ export function FoundersDashboard({ casualModeActive }) {
                     <stop offset="95%" stopColor={CHART_COLORS.blue} stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(11,37,48,0.1)" />
                 <XAxis
                   dataKey="date"
                   stroke="var(--text-muted)"
@@ -242,7 +242,7 @@ export function FoundersDashboard({ casualModeActive }) {
             ) : (
             <ResponsiveContainer width="100%" height={240}>
               <BarChart data={charts.protocolActivity} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(11,37,48,0.1)" />
                 <XAxis
                   dataKey="week"
                   stroke="var(--text-muted)"
@@ -358,9 +358,9 @@ function SocialMetric({ icon, label, value }) {
 
 function HealthIndicator({ name, status }) {
   const statusColors = {
-    healthy: "var(--accent-green)",
+    healthy: "var(--accent-green-fill)",
     degraded: "var(--accent-amber)",
-    down: "var(--accent-red)",
+    down: "var(--accent-red-fill)",
   };
   const statusIcons = {
     healthy: "✓",
@@ -374,7 +374,7 @@ function HealthIndicator({ name, status }) {
         style={{
           ...styles.healthDot,
           backgroundColor: statusColors[status],
-          boxShadow: `0 0 8px ${statusColors[status]}`,
+          boxShadow: "none",
         }}
       >
         {statusIcons[status]}
@@ -481,7 +481,7 @@ const styles = {
   loadingSpinner: {
     width: "40px",
     height: "40px",
-    border: "3px solid rgba(255,255,255,0.1)",
+    border: "3px solid rgba(var(--ink-rgb), 0.15)",
     borderTopColor: "var(--accent-blue)",
     borderRadius: "50%",
     animation: "spin 1s linear infinite",
@@ -610,7 +610,7 @@ const styles = {
   timeRange: {
     display: "flex",
     gap: "0.25rem",
-    background: "rgba(255,255,255,0.03)",
+    background: "rgba(var(--ink-rgb), 0.03)",
     borderRadius: "6px",
     padding: "0.2rem",
   },
@@ -703,7 +703,7 @@ const styles = {
     border: "1px solid var(--glass-border)",
     borderRadius: "8px",
     padding: "0.75rem",
-    boxShadow: "0 4px 16px rgba(0,0,0,0.5)",
+    boxShadow: "0 4px 16px rgba(var(--ink-rgb), 0.14)",
   },
   tooltipLabel: {
     fontSize: "0.75rem",

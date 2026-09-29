@@ -159,7 +159,7 @@ export function AcclimationChecklist({
       : item?.commonName || item?.scientificName || `Specimen #${item?.id ?? ""}`;
 
   const isDone = stepIndex >= DONE_INDEX;
-  const accent = "var(--accent-cyan, #22d3ee)";
+  const accent = "var(--accent-teal)";
   const title = casualModeActive ? "Acclimate your fish" : "Acclimation Protocol";
 
   return (
@@ -184,7 +184,7 @@ export function AcclimationChecklist({
                     height: "4px",
                     borderRadius: "4px",
                     background:
-                      state === "done" ? "var(--accent-green, #34d399)" : state === "active" ? accent : "rgba(255,255,255,0.1)",
+                      state === "done" ? "var(--accent-green, #34d399)" : state === "active" ? accent : "rgba(var(--ink-rgb), 0.1)",
                     marginBottom: "0.35rem",
                   }}
                 />
@@ -214,7 +214,7 @@ export function AcclimationChecklist({
             }}
           >
             <div style={{ fontSize: "2rem", marginBottom: "0.5rem" }}>✅</div>
-            <div style={{ fontWeight: 700, color: "#fff", marginBottom: "0.35rem" }}>
+            <div style={{ fontWeight: 700, color: "var(--text-primary)", marginBottom: "0.35rem" }}>
               {casualModeActive ? "All done — welcome home!" : "Acclimation complete"}
             </div>
             <p style={{ fontSize: "0.78rem", color: "var(--text-muted, #94a3b8)", margin: "0 auto 1rem", maxWidth: "320px", lineHeight: 1.5 }}>
@@ -240,7 +240,7 @@ export function AcclimationChecklist({
             >
               <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.4rem" }}>
                 <span style={{ fontSize: "1.4rem" }}>{currentStep.icon}</span>
-                <span style={{ fontWeight: 700, color: "#fff", fontSize: "0.95rem" }}>
+                <span style={{ fontWeight: 700, color: "var(--text-primary)", fontSize: "0.95rem" }}>
                   {casualModeActive ? currentStep.casualTitle : currentStep.proTitle}
                 </span>
               </div>
@@ -266,7 +266,7 @@ export function AcclimationChecklist({
                         )}
                       </div>
                       {/* Progress bar */}
-                      <div style={{ height: "6px", borderRadius: "4px", background: "rgba(255,255,255,0.08)", overflow: "hidden" }}>
+                      <div style={{ height: "6px", borderRadius: "4px", background: "rgba(var(--ink-rgb), 0.08)", overflow: "hidden" }}>
                         <div
                           style={{
                             height: "100%",

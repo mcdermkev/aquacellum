@@ -71,7 +71,7 @@ function PhotoGrid({ urls, altTexts }) {
           style={{
             position: "relative",
             paddingBottom: count === 1 ? "56.25%" : "100%",
-            background: "rgba(255, 255, 255, 0.03)",
+            background: "rgba(var(--ink-rgb), 0.03)",
             ...(count === 3 && i === 0 ? { gridRow: "1 / 3" } : {}),
           }}
         >
@@ -119,8 +119,8 @@ function ParameterChips({ snapshot }) {
             gap: "0.2rem",
             padding: "0.15rem 0.45rem",
             borderRadius: "50px",
-            background: "rgba(255, 255, 255, 0.04)",
-            border: "1px solid rgba(255, 255, 255, 0.08)",
+            background: "rgba(var(--ink-rgb), 0.04)",
+            border: "1px solid rgba(var(--ink-rgb), 0.13)",
             fontSize: "0.65rem",
             color: "var(--text-secondary)",
           }}
@@ -171,8 +171,8 @@ export function CurrentCard({ current, onProfileClick, casualModeActive = false 
         display: "flex",
         flexDirection: "column",
         gap: "0.75rem",
-        border: "1px solid rgba(255, 255, 255, 0.06)",
-        background: "rgba(255, 255, 255, 0.02)",
+        border: "1px solid rgba(var(--ink-rgb), 0.11)",
+        background: "rgba(var(--ink-rgb), 0.03)",
         transition: "border-color 0.2s ease",
       }}
       aria-label={`Post by ${profile?.display_name || current.author_wallet}`}
@@ -225,7 +225,7 @@ export function CurrentCard({ current, onProfileClick, casualModeActive = false 
           <p style={{
             margin: 0,
             fontSize: "0.85rem",
-            color: "#e5e7eb",
+            color: "var(--text-primary)",
             lineHeight: "1.6",
             whiteSpace: "pre-wrap",
             wordBreak: "break-word",
@@ -335,10 +335,10 @@ export function CurrentCard({ current, onProfileClick, casualModeActive = false 
                 borderRadius: "50px",
                 border: watching
                   ? "1px solid rgba(52, 211, 153, 0.3)"
-                  : "1px solid rgba(255, 255, 255, 0.08)",
+                  : "1px solid rgba(var(--ink-rgb), 0.13)",
                 background: watching
                   ? "rgba(52, 211, 153, 0.08)"
-                  : "rgba(255, 255, 255, 0.03)",
+                  : "rgba(var(--ink-rgb), 0.03)",
                 color: watching ? "var(--accent-green, #34d399)" : "var(--text-muted)",
                 fontSize: "0.65rem",
                 cursor: "pointer",

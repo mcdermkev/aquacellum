@@ -55,9 +55,9 @@ function CommentInput({ onSubmit, placeholder = "Write a comment...", autoFocus 
           resize: "none",
           padding: "0.5rem 0.75rem",
           borderRadius: "8px",
-          border: "1px solid rgba(255, 255, 255, 0.08)",
-          background: "rgba(255, 255, 255, 0.03)",
-          color: "#fff",
+          border: "1px solid rgba(var(--ink-rgb), 0.13)",
+          background: "rgba(var(--ink-rgb), 0.03)",
+          color: "var(--text-primary)",
           fontSize: "0.8rem",
           lineHeight: "1.5",
           fontFamily: "inherit",
@@ -68,7 +68,7 @@ function CommentInput({ onSubmit, placeholder = "Write a comment...", autoFocus 
           overflow: "auto",
         }}
         onFocus={(e) => { e.target.style.borderColor = "rgba(56, 189, 248, 0.3)"; }}
-        onBlur={(e) => { e.target.style.borderColor = "rgba(255, 255, 255, 0.08)"; }}
+        onBlur={(e) => { e.target.style.borderColor = "rgba(var(--ink-rgb), 0.13)"; }}
         onKeyDown={(e) => {
           if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();
@@ -86,7 +86,7 @@ function CommentInput({ onSubmit, placeholder = "Write a comment...", autoFocus 
           border: "none",
           background: text.trim()
             ? "linear-gradient(135deg, #0ea5e9, #0369a1)"
-            : "rgba(255, 255, 255, 0.05)",
+            : "rgba(var(--ink-rgb), 0.05)",
           color: text.trim() ? "#fff" : "var(--text-muted)",
           fontSize: "0.75rem",
           fontWeight: 600,
@@ -113,7 +113,7 @@ function SingleComment({ comment, onReply, isReply = false }) {
         flexDirection: "column",
         gap: "0.3rem",
         paddingLeft: isReply ? "1.5rem" : "0",
-        borderLeft: isReply ? "2px solid rgba(255, 255, 255, 0.06)" : "none",
+        borderLeft: isReply ? "2px solid rgba(var(--ink-rgb), 0.11)" : "none",
         marginLeft: isReply ? "0.5rem" : "0",
       }}
     >
@@ -156,7 +156,7 @@ function SingleComment({ comment, onReply, isReply = false }) {
             borderRadius: "4px",
             transition: "color 0.15s ease",
           }}
-          onMouseEnter={(e) => { e.currentTarget.style.color = "#fff"; }}
+          onMouseEnter={(e) => { e.currentTarget.style.color = "var(--text-primary)"; }}
           onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)"; }}
         >
           ↩ Reply
@@ -250,7 +250,7 @@ export function CommentThread({ currentId, initialCount = 0 }) {
           borderRadius: "4px",
           transition: "color 0.15s ease",
         }}
-        onMouseEnter={(e) => { e.currentTarget.style.color = "#fff"; }}
+        onMouseEnter={(e) => { e.currentTarget.style.color = "var(--text-primary)"; }}
         onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)"; }}
         aria-expanded={expanded}
         aria-label={`${commentCount} comments, click to ${expanded ? "collapse" : "expand"}`}
@@ -267,8 +267,8 @@ export function CommentThread({ currentId, initialCount = 0 }) {
             gap: "0.75rem",
             padding: "0.75rem",
             borderRadius: "8px",
-            background: "rgba(255, 255, 255, 0.02)",
-            border: "1px solid rgba(255, 255, 255, 0.05)",
+            background: "rgba(var(--ink-rgb), 0.03)",
+            border: "1px solid rgba(var(--ink-rgb), 0.1)",
           }}
         >
           {loading && (
@@ -303,7 +303,7 @@ export function CommentThread({ currentId, initialCount = 0 }) {
           ))}
 
           {/* New comment input */}
-          <div style={{ paddingTop: "0.5rem", borderTop: "1px solid rgba(255, 255, 255, 0.04)" }}>
+          <div style={{ paddingTop: "0.5rem", borderTop: "1px solid rgba(var(--ink-rgb), 0.09)" }}>
             <CommentInput onSubmit={(text) => handlePostComment(text, null)} />
           </div>
         </div>

@@ -128,7 +128,7 @@ export function UnlockPrompt({ privilege, casualModeActive = false, onClose }) {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: "rgba(0, 0, 0, 0.7)",
+        background: "rgba(11, 37, 48, 0.45)",
         backdropFilter: "blur(8px)",
         padding: "1rem",
       }}
@@ -145,7 +145,7 @@ export function UnlockPrompt({ privilege, casualModeActive = false, onClose }) {
           padding: "2rem",
           borderRadius: "16px",
           border: `1px solid ${requiredTier.color}33`,
-          background: "rgba(15, 23, 42, 0.98)",
+          background: "var(--bg-secondary)",
           textAlign: "center",
         }}
       >
@@ -155,7 +155,7 @@ export function UnlockPrompt({ privilege, casualModeActive = false, onClose }) {
         {/* Title */}
         <h3
           id="unlock-prompt-title"
-          style={{ margin: "0 0 0.5rem", fontSize: "1.1rem", fontWeight: 700, color: "#fff" }}
+          style={{ margin: "0 0 0.5rem", fontSize: "1.1rem", fontWeight: 700, color: "var(--text-primary)" }}
         >
           {featureLabel}
         </h3>
@@ -184,8 +184,8 @@ export function UnlockPrompt({ privilege, casualModeActive = false, onClose }) {
         <div style={{
           padding: "1rem 1.25rem",
           borderRadius: "12px",
-          background: "rgba(255, 255, 255, 0.03)",
-          border: "1px solid rgba(255, 255, 255, 0.06)",
+          background: "rgba(var(--ink-rgb), 0.03)",
+          border: "1px solid rgba(var(--ink-rgb), 0.11)",
           marginBottom: "1.25rem",
         }}>
           {/* Current → Required tier display */}
@@ -210,7 +210,7 @@ export function UnlockPrompt({ privilege, casualModeActive = false, onClose }) {
             width: "100%",
             height: "8px",
             borderRadius: "4px",
-            background: "rgba(255, 255, 255, 0.06)",
+            background: "rgba(var(--ink-rgb), 0.06)",
             overflow: "hidden",
             marginBottom: "0.5rem",
           }}>
@@ -236,7 +236,7 @@ export function UnlockPrompt({ privilege, casualModeActive = false, onClose }) {
 
         {/* How to earn XP */}
         <div style={{ textAlign: "left", marginBottom: "1.5rem" }}>
-          <p style={{ margin: "0 0 0.6rem", fontSize: "0.75rem", fontWeight: 600, color: "#fff" }}>
+          <p style={{ margin: "0 0 0.6rem", fontSize: "0.75rem", fontWeight: 600, color: "var(--text-primary)" }}>
             {casualModeActive ? "How to level up:" : "Earn XP by:"}
           </p>
           <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
@@ -260,7 +260,7 @@ export function UnlockPrompt({ privilege, casualModeActive = false, onClose }) {
             borderRadius: "8px",
             border: "none",
             background: `linear-gradient(135deg, ${currentTier.color}40, ${requiredTier.color}40)`,
-            color: "#fff",
+            color: "var(--text-primary)",
             fontSize: "0.8rem",
             fontWeight: 600,
             cursor: "pointer",

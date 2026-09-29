@@ -126,7 +126,7 @@ export function BackupSection({ casualModeActive }) {
         }}
       >
         <span style={{ color: "var(--accent-blue)", fontSize: "0.9rem" }}>ℹ️</span>
-        <span style={{ fontSize: "0.75rem", color: "rgba(255, 255, 255, 0.8)", lineHeight: "1.4" }}>
+        <span style={{ fontSize: "0.75rem", color: "rgba(var(--ink-rgb), 0.8)", lineHeight: "1.4" }}>
           All database records are stored locally in your browser's offline storage. Backing up regularly ensures your data remains secure even if you clear your browser cache.
         </span>
       </div>

@@ -121,7 +121,7 @@ const styles = {
     fontSize: "1.15rem",
     fontFamily: "'Outfit', sans-serif",
     fontWeight: 700,
-    color: "#f8fafc",
+    color: "var(--text-primary)",
     flex: 1,
   },
   versionBadge: {
@@ -130,7 +130,7 @@ const styles = {
     padding: "0.2rem 0.5rem",
     borderRadius: "12px",
     background: "rgba(56, 189, 248, 0.12)",
-    color: "#38bdf8",
+    color: "var(--accent-blue)",
     border: "1px solid rgba(56, 189, 248, 0.25)",
   },
   entries: {
@@ -145,8 +145,8 @@ const styles = {
   entry: {
     padding: "0.75rem",
     borderRadius: "8px",
-    background: "rgba(255, 255, 255, 0.02)",
-    border: "1px solid rgba(255, 255, 255, 0.06)",
+    background: "rgba(var(--ink-rgb), 0.02)",
+    border: "1px solid rgba(var(--ink-rgb), 0.11)",
   },
   entryHeader: {
     display: "flex",
@@ -157,7 +157,7 @@ const styles = {
   entryTitle: {
     fontSize: "0.85rem",
     fontWeight: 600,
-    color: "#f8fafc",
+    color: "var(--text-primary)",
   },
   entryDate: {
     fontSize: "0.65rem",
@@ -173,7 +173,7 @@ const styles = {
   },
   item: {
     fontSize: "0.78rem",
-    color: "#94a3b8",
+    color: "var(--text-secondary)",
     lineHeight: 1.4,
     paddingLeft: "0.25rem",
   },
@@ -187,7 +187,7 @@ const styles = {
     fontWeight: 500,
     fontSize: "0.9rem",
     cursor: "pointer",
-    boxShadow: "0 4px 14px rgba(2, 132, 199, 0.4)",
+    boxShadow: "0 4px 14px rgba(2, 132, 199, 0.25)",
     transition: "all 0.3s ease",
     width: "100%",
   },
