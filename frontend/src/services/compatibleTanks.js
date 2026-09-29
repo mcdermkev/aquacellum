@@ -39,7 +39,12 @@ export function tankFitInputs(tank) {
     : log.temp != null ? Number(log.temp) : undefined;
   const ph = log.phX10 != null ? Number(log.phX10) / 10
     : log.ph != null ? Number(log.ph) : undefined;
-  return { volume: Number.isFinite(gallons) ? Math.round(gallons) : 0, temp, ph, waterType: tankWaterType(tank?.tankType) };
+  const waterType = tankWaterType(tank?.tankType);
+  return {
+    volume: Number.isFinite(gallons) ? Math.round(gallons) : 0, temp, ph, waterType,
+    // Corals need a reef; a fish-only saltwater tank can't host them.
+    ...(waterType === "marine" ? { reef: tank?.marineStyle !== "fish_only" } : {}),
+  };
 }
 
 /**

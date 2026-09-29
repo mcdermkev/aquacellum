@@ -147,11 +147,12 @@ describe("catalog water types and the first marine fish", () => {
   it("every record has a water type, from FishBase or marked curated", () => {
     for (const r of CATALOG) {
       expect(Array.isArray(r.waterTypes) && r.waterTypes.length > 0, r.scientificName).toBe(true);
-      expect(["fishbase", "curated"]).toContain(r.waterTypesSource);
+      expect(["fishbase", "curated", "worms"]).toContain(r.waterTypesSource);
     }
   });
   it("adds the marine batch from FishBase, with reef-safety notes and no duplicate ids or names", () => {
-    const marine = CATALOG.filter((r) => r.waterTypes.includes("marine"));
+    // Marine FISH; corals and inverts come from WoRMS (reef.test.js).
+    const marine = CATALOG.filter((r) => r.waterTypes.includes("marine") && r.type === "fish");
     expect(marine.length).toBeGreaterThanOrEqual(33);
     for (const r of marine) {
       expect(r.waterTypesSource, r.scientificName).toBe("fishbase");
@@ -165,10 +166,13 @@ describe("catalog water types and the first marine fish", () => {
   it("marine cards show marine ranges, never freshwater ones", () => {
     const clown = CATALOG.find((r) => r.scientificName === "Amphiprion ocellaris");
     expect(catalogWaterGroup(clown)).toBe("marine");
-    const entry = toCatalogEntry(clown);
-    expect(entry).toMatchObject({ waterGroup: "marine", minPh: 8.0, maxPh: 8.4, reefSafe: "yes" });
-    // The honest profile still says "unknown".
-    expect(entry.profile.phRange).toBeNull();
+    // Curated care is used when present…
+    expect(toCatalogEntry(clown)).toMatchObject({ waterGroup: "marine", minPh: 8.1, maxPh: 8.4, reefSafe: "yes" });
+    // …and a marine record without it falls back to marine display ranges,
+    // while its profile stays honest (unknown).
+    const bare = toCatalogEntry({ scientificName: "X y", waterTypes: ["marine"] });
+    expect(bare).toMatchObject({ minPh: 8.0, maxPh: 8.4 });
+    expect(bare.profile.phRange).toBeNull();
     expect(toCatalogEntry({ scientificName: "X y" }).minPh).toBe(6.5);
   });
 });

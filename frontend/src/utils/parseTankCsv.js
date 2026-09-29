@@ -132,8 +132,10 @@ function cell(row, idx) {
 function parseTankType(str) {
   const s = str.toLowerCase().trim();
   if (!s) return { code: 0, warning: null };
-  if (s.includes("salt") || s.includes("marine") || s.includes("reef") || s === "sw" || s === "fowlr") {
-    return { code: 1, warning: null };
+  if (s.includes("salt") || s.includes("marine") || s.includes("reef") || s === "sw" || s.includes("fowlr") || s.includes("fish only") || s.includes("fish-only")) {
+    // "Fish only" / FOWLR picks the fish-only style; everything else salt is a reef.
+    const fishOnly = s.includes("fowlr") || s.includes("fish only") || s.includes("fish-only") || s === "fo";
+    return { code: 1, warning: null, marineStyle: fishOnly ? "fish_only" : "reef" };
   }
   const match = TANK_TYPE_OPTIONS.find((o) => o.label.toLowerCase() === s || s.startsWith(o.label.toLowerCase()));
   if (match) return { code: match.id, warning: null };
@@ -171,13 +173,14 @@ export function rowToTankSpec(row, mapping) {
     warnings.push(`Volume blank; defaulted to ${DEFAULT_VOLUME_GAL} gal`);
   }
 
-  const { code: tankType, warning: typeWarning } = parseTankType(cell(row, mapping.tankType));
+  const { code: tankType, warning: typeWarning, marineStyle } = parseTankType(cell(row, mapping.tankType));
   if (typeWarning) warnings.push(typeWarning);
 
   const spec = {
     name,
     volumeLiters,
     tankType,
+    ...(marineStyle ? { marineStyle } : {}),
     containment: parseContainment(cell(row, mapping.containment)),
     facility: cell(row, mapping.facility),
     room: cell(row, mapping.room),

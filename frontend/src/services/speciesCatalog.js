@@ -198,6 +198,12 @@ export function toCatalogEntry(record = {}) {
     profile: normalizeSpeciesProfile(record),
     waterGroup,
     reefSafe: record.marine?.reefSafe ?? null,
+    // "fish" | "plant" | "invertebrate" | "coral" when the record says (the Category filter reads it).
+    type: record.type || null,
+    // Reef care for corals (light / flow / placement), from scripts/add-reef-batch.mjs.
+    reefCare: record.type === "coral" && record.marine
+      ? { coralType: record.marine.coralType, light: record.marine.light, flow: record.marine.flow, placement: record.marine.placement, aggression: record.marine.aggression, feeding: record.marine.feeding }
+      : null,
   };
 }
 

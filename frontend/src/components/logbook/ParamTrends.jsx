@@ -77,7 +77,8 @@ export function ParamTrends({ tank, tanks, title, readingsOverride }) {
     return <p className="pt-empty">Loading parameter history…</p>;
   }
 
-  const env = getWaterEnvelope(envTankType);
+  const envTank = rackMode ? tanks[0] : tank;
+  const env = getWaterEnvelope(envTankType, { marineStyle: envTank?.marineStyle });
 
   return (
     <div className="param-trends">

@@ -85,6 +85,27 @@ export function waterTypeFit(speciesWaterTypes, tankWater) {
   return { verdict: "caution", reason: "This species isn't recorded in brackish water; check it tolerates salt before adding." };
 }
 
+/**
+ * Reef rules for a saltwater tank (docs/SALTWATER_SPEC.md). A coral or anemone
+ * needs a reef, so a fish-only tank blocks it. A fish or invert that isn't reef
+ * safe is a caution in a reef. Only applies to saltwater tanks that say which
+ * style they are (`reef` true/false).
+ * @returns {{ verdict:('ok'|'caution'|'blocked'), reason:(string|null) }}
+ */
+export function reefFit(profile = {}, tank = {}) {
+  if (tank?.waterType !== "marine" || typeof tank.reef !== "boolean") return { verdict: "ok", reason: null };
+  if (profile.requiresReef && !tank.reef) {
+    return { verdict: "blocked", reason: "Corals and anemones need a reef tank, and this one is set to fish only." };
+  }
+  if (tank.reef && profile.reefSafe === "no") {
+    return { verdict: "caution", reason: "Not reef safe: it's likely to eat or damage corals or invertebrates." };
+  }
+  if (tank.reef && profile.reefSafe === "with caution") {
+    return { verdict: "caution", reason: "Reef safe with caution: some individuals pick at corals or invertebrates." };
+  }
+  return { verdict: "ok", reason: null };
+}
+
 export function evaluateTankFit(speciesProfile = {}, displayTank) {
   if (!displayTank) {
     return { score: 0, verdict: "caution", reasons: ["No tank context provided."] };
@@ -96,7 +117,11 @@ export function evaluateTankFit(speciesProfile = {}, displayTank) {
   if (water.verdict === "blocked") {
     return { score: 0, verdict: "blocked", reasons: [water.reason] };
   }
-  const waterCaution = water.verdict === "caution" ? water.reason : null;
+  const reef = reefFit(speciesProfile, displayTank);
+  if (reef.verdict === "blocked") {
+    return { score: 0, verdict: "blocked", reasons: [reef.reason] };
+  }
+  const waterCaution = [water, reef].filter((x) => x.verdict === "caution").map((x) => x.reason).join(" ") || null;
   const withWater = (result) => {
     if (!waterCaution) return result;
     return {

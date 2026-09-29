@@ -109,7 +109,8 @@ export function WantedBoard({
       const entry = {
         photo: s.masterPhotoUrl || "",
         specCode: s.specCode ?? s.speciesId,
-        isPlant: s.type === "plant" || Number(s.specCode) >= 9000,
+        // Plants use the hand-assigned 90001–90999 band; many real fish have SpecCodes above 9000.
+        isPlant: s.type === "plant" || (Number(s.specCode) >= 90000 && Number(s.specCode) <= 90999),
       };
       if (s.commonName) byName.set(normalizeName(s.commonName), entry);
       if (s.scientificName) byName.set(normalizeName(s.scientificName), entry);

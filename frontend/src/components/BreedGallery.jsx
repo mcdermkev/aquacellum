@@ -2425,8 +2425,10 @@ export function BreedGallery({
                   {[
                     { val: "All", label: "All" },
                     { val: "Fish", label: "Fish" },
-                    { val: "Plant", label: "Plants" }
-                  ].map(opt => {
+                    { val: "Plant", label: "Plants" },
+                    { val: "Coral", label: "Corals" },
+                    { val: "Invertebrate", label: "Inverts" }
+                  ].filter(opt => opt.val === "All" || opt.val === "Fish" || opt.val === "Plant" || (facets.type[opt.val] || 0) > 0).map(opt => {
                     const isActive = filters.type === opt.val;
                     const count = facets.type[opt.val] || 0;
                     return (

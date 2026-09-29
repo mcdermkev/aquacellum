@@ -6,7 +6,7 @@
  * magnesium and phosphate are optional number fields, because many fish-only
  * keepers don't test them. A blank field isn't saved (see marineLogFields).
  */
-import { getTrackBackground, getWaterEnvelope, isInsideEnvelope } from "../utils/tankUtils";
+import { envelopeForTank, getTrackBackground, isInsideEnvelope } from "../utils/tankUtils";
 import { normalizeReading } from "../utils/tankHealth";
 
 const labelStyle = { display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.25rem" };
@@ -108,12 +108,13 @@ export function MarineTestFields({ formData, setFormData, env }) {
 export function MarineReadingTile({ tank }) {
   const r = normalizeReading(tank?.latestLog);
   if (!r) return null;
-  const env = getWaterEnvelope(tank.tankType);
+  const env = envelopeForTank(tank);
   const rows = [
     r.salinity !== undefined && { label: "Salinity", value: `${r.salinity.toFixed(3)} SG`, ok: isInsideEnvelope(r.salinity, env.salinityMin, env.salinityMax) },
-    r.ca !== undefined && { label: "Calcium", value: `${Math.round(r.ca)} ppm`, ok: isInsideEnvelope(r.ca, env.caMin, env.caMax) },
-    r.mg !== undefined && { label: "Magnesium", value: `${Math.round(r.mg)} ppm`, ok: isInsideEnvelope(r.mg, env.mgMin, env.mgMax) },
-    r.po4 !== undefined && { label: "Phosphate", value: `${r.po4.toFixed(2)} ppm`, ok: r.po4 <= env.po4Max },
+    // A fish-only tank has no Ca/Mg/PO4 target: show the value without judging it.
+    r.ca !== undefined && { label: "Calcium", value: `${Math.round(r.ca)} ppm`, ok: env.caMin == null || isInsideEnvelope(r.ca, env.caMin, env.caMax) },
+    r.mg !== undefined && { label: "Magnesium", value: `${Math.round(r.mg)} ppm`, ok: env.mgMin == null || isInsideEnvelope(r.mg, env.mgMin, env.mgMax) },
+    r.po4 !== undefined && { label: "Phosphate", value: `${r.po4.toFixed(2)} ppm`, ok: env.po4Max == null || r.po4 <= env.po4Max },
   ].filter(Boolean);
   if (!rows.length) return null;
   return (

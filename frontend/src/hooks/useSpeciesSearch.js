@@ -58,12 +58,19 @@ export const getPhRangeNormalized = (item) => {
   return { min: Number(min), max: Number(max) };
 };
 
+// Hand-assigned plant IDs live in 90001–90999. (This used to test ">= 9000",
+// which also caught every FishBase fish with a SpecCode above 9000 and filed
+// them under Plants.)
+const PLANT_ID_BAND = [90000, 90999];
+const inPlantBand = (v) => Number(v) >= PLANT_ID_BAND[0] && Number(v) <= PLANT_ID_BAND[1];
+
 export const getTypeNormalized = (item) => {
-  const isPlant =
-    item.type === "plant" ||
-    Number(item.speciesId) >= 9000 ||
-    Number(item.specCode) >= 9000;
-  return isPlant ? "Plant" : "Fish";
+  const type = String(item.type || "").toLowerCase();
+  if (type === "plant" || inPlantBand(item.speciesId) || inPlantBand(item.specCode)) return "Plant";
+  // Corals, anemones and inverts (docs/SALTWATER_SPEC.md).
+  if (type === "coral") return "Coral";
+  if (type === "invertebrate") return "Invertebrate";
+  return "Fish";
 };
 
 export const getOriginFromBiotope = (item) => {
@@ -311,6 +318,8 @@ export function useSpeciesSearch(customList = null, options = {}) {
         ).length,
         Fish: getTypeCount("Fish"),
         Plant: getTypeCount("Plant"),
+        Coral: getTypeCount("Coral"),
+        Invertebrate: getTypeCount("Invertebrate"),
       },
       difficulty: {
         All: searchedItems.filter(

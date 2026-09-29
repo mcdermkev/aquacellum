@@ -1,0 +1,301 @@
+{
+  "_source": "Curated from widely published marine aquarium husbandry guidance, 2026-09-30; not FishBase",
+  "_reviewedBy": "pending",
+  "Amphiprion ocellaris": {
+    "tempRangeCelsius": [23, 27],
+    "phRange": [8.1, 8.4],
+    "minVolumeGallons": 20,
+    "difficulty": "Beginner",
+    "temperament": "Peaceful, hardy community clownfish",
+    "swimmingLevel": "Mid, Bottom",
+    "notes": "Captive-bred fish are hardy and do not need an anemone. Keep a single pair; adding more clowns later usually leads to fighting."
+  },
+  "Amphiprion percula": {
+    "tempRangeCelsius": [23, 27],
+    "phRange": [8.1, 8.4],
+    "minVolumeGallons": 20,
+    "difficulty": "Beginner",
+    "temperament": "Peaceful, hardy community clownfish",
+    "swimmingLevel": "Mid, Bottom",
+    "notes": "Care matches the ocellaris; choose captive-bred fish. Keep a single pair per tank."
+  },
+  "Amphiprion biaculeatus": {
+    "tempRangeCelsius": [23, 27],
+    "phRange": [8.1, 8.4],
+    "minVolumeGallons": 50,
+    "difficulty": "Beginner",
+    "temperament": "Aggressive, especially large females",
+    "swimmingLevel": "Mid, Bottom",
+    "notes": "The most aggressive common clownfish; females grow large and dominate their area of the tank. Add it last and avoid other clownfish."
+  },
+  "Chrysiptera parasema": {
+    "tempRangeCelsius": [23, 27],
+    "phRange": [8.1, 8.4],
+    "minVolumeGallons": 30,
+    "difficulty": "Beginner",
+    "temperament": "Semi-aggressive, one of the milder damsels",
+    "swimmingLevel": "Mid, Bottom",
+    "notes": "Hardy and small, but still a damsel; it can harass new or smaller fish. Provide rockwork with hiding places."
+  },
+  "Chromis viridis": {
+    "tempRangeCelsius": [23, 27],
+    "phRange": [8.1, 8.4],
+    "minVolumeGallons": 55,
+    "difficulty": "Beginner",
+    "temperament": "Peaceful schooling fish",
+    "swimmingLevel": "Mid",
+    "notes": "Kept in groups, which need open swimming room; groups often dwindle as dominant fish bully the weakest. Feed small meals several times a day."
+  },
+  "Dascyllus aruanus": {
+    "tempRangeCelsius": [23, 27],
+    "phRange": [8.1, 8.4],
+    "minVolumeGallons": 40,
+    "difficulty": "Beginner",
+    "temperament": "Aggressive and territorial as it matures",
+    "swimmingLevel": "Mid, Bottom",
+    "notes": "Very hardy, but adults defend a coral head or rock and chase tankmates. Hard to remove from a reef once established."
+  },
+  "Zebrasoma flavescens": {
+    "tempRangeCelsius": [23, 27],
+    "phRange": [8.1, 8.4],
+    "minVolumeGallons": 100,
+    "difficulty": "Intermediate",
+    "temperament": "Semi-aggressive, intolerant of other tangs",
+    "swimmingLevel": "Mid",
+    "notes": "Needs a long tank with swimming room and a steady supply of marine algae (nori). Quarantine before adding; tangs are prone to ich and HLLE."
+  },
+  "Paracanthurus hepatus": {
+    "tempRangeCelsius": [23, 27],
+    "phRange": [8.1, 8.4],
+    "minVolumeGallons": 125,
+    "difficulty": "Intermediate",
+    "temperament": "Peaceful with most fish; may spar with other tangs",
+    "swimmingLevel": "Mid",
+    "notes": "Grows to about 30 cm and needs a long tank with rockwork to wedge into. Very ich-prone, so quarantine carefully and feed algae plus meaty foods."
+  },
+  "Acanthurus leucosternon": {
+    "tempRangeCelsius": [24, 27],
+    "phRange": [8.1, 8.4],
+    "minVolumeGallons": 125,
+    "difficulty": "Advanced",
+    "temperament": "Semi-aggressive; aggressive toward other tangs",
+    "swimmingLevel": "Mid",
+    "notes": "Notoriously ich-prone and stress-sensitive; needs careful quarantine, high oxygen and very stable water. Add it to a mature tank with plenty of algae to graze."
+  },
+  "Zebrasoma xanthurum": {
+    "tempRangeCelsius": [23, 27],
+    "phRange": [8.1, 8.4],
+    "minVolumeGallons": 125,
+    "difficulty": "Intermediate",
+    "temperament": "Semi-aggressive, especially toward other tangs",
+    "swimmingLevel": "Mid",
+    "notes": "One of the more combative Zebrasoma tangs, so add it last among tangs. Needs algae in the diet and swimming room."
+  },
+  "Centropyge loriculus": {
+    "tempRangeCelsius": [23, 27],
+    "phRange": [8.1, 8.4],
+    "minVolumeGallons": 70,
+    "difficulty": "Intermediate",
+    "temperament": "Semi-aggressive; keep one dwarf angel per tank",
+    "swimmingLevel": "Bottom, Mid",
+    "notes": "Needs mature live rock to graze. May nip at LPS corals and clam mantles, so it is reef safe only with caution."
+  },
+  "Centropyge bispinosa": {
+    "tempRangeCelsius": [23, 27],
+    "phRange": [8.1, 8.4],
+    "minVolumeGallons": 70,
+    "difficulty": "Intermediate",
+    "temperament": "Semi-aggressive; keep one dwarf angel per tank",
+    "swimmingLevel": "Bottom, Mid",
+    "notes": "One of the hardier dwarf angels; grazes on live rock. Some individuals pick at soft and LPS corals."
+  },
+  "Pomacanthus imperator": {
+    "tempRangeCelsius": [23, 27],
+    "phRange": [8.1, 8.4],
+    "minVolumeGallons": 180,
+    "difficulty": "Advanced",
+    "temperament": "Semi-aggressive; aggressive toward other large angels",
+    "swimmingLevel": "Mid, Bottom",
+    "notes": "Reaches about 40 cm, so it needs a very large fish-only tank with mature rock. Feed a varied diet that includes sponge-based foods; not reef safe."
+  },
+  "Gramma loreto": {
+    "tempRangeCelsius": [23, 27],
+    "phRange": [8.1, 8.4],
+    "minVolumeGallons": 30,
+    "difficulty": "Beginner",
+    "temperament": "Peaceful; claims a favored cave",
+    "swimmingLevel": "Bottom, Mid",
+    "notes": "Hardy and reef safe; needs caves or overhangs to hover in. Keep one per tank unless the tank is large, and use a lid because it can jump."
+  },
+  "Pseudochromis fridmani": {
+    "tempRangeCelsius": [23, 27],
+    "phRange": [8.1, 8.4],
+    "minVolumeGallons": 30,
+    "difficulty": "Beginner",
+    "temperament": "Semi-aggressive, the mildest of the dottybacks",
+    "swimmingLevel": "Bottom, Mid",
+    "notes": "Usually captive-bred and very hardy; needs rockwork with hiding places. Keep one per tank and avoid similar-shaped small fish."
+  },
+  "Synchiropus splendidus": {
+    "tempRangeCelsius": [23, 27],
+    "phRange": [8.1, 8.4],
+    "minVolumeGallons": 30,
+    "difficulty": "Advanced",
+    "temperament": "Peaceful and shy",
+    "swimmingLevel": "Bottom",
+    "notes": "Needs an established tank (six months or more) with a large copepod population, ideally supported by a mature refugium; many starve without it. Keep one male per tank and avoid fast competing feeders."
+  },
+  "Elacatinus oceanops": {
+    "tempRangeCelsius": [23, 27],
+    "phRange": [8.1, 8.4],
+    "minVolumeGallons": 20,
+    "difficulty": "Beginner",
+    "temperament": "Peaceful cleaner goby",
+    "swimmingLevel": "Bottom",
+    "notes": "Widely captive-bred and short-lived (about one to two years). Accepts prepared foods and picks parasites from other fish."
+  },
+  "Nemateleotris magnifica": {
+    "tempRangeCelsius": [23, 27],
+    "phRange": [8.1, 8.4],
+    "minVolumeGallons": 30,
+    "difficulty": "Beginner",
+    "temperament": "Peaceful and timid",
+    "swimmingLevel": "Bottom, Mid",
+    "notes": "An accomplished jumper, so a tight-fitting lid is essential. Keep singly or as a mated pair and avoid boisterous tankmates."
+  },
+  "Amblygobius phalaena": {
+    "tempRangeCelsius": [23, 27],
+    "phRange": [8.1, 8.4],
+    "minVolumeGallons": 50,
+    "difficulty": "Intermediate",
+    "temperament": "Peaceful sand-sifting goby",
+    "swimmingLevel": "Bottom",
+    "notes": "Needs a large, mature sand bed to sift, plus supplemental feeding; it often slowly starves in small or new tanks. Can jump."
+  },
+  "Salarias fasciatus": {
+    "tempRangeCelsius": [23, 27],
+    "phRange": [8.1, 8.4],
+    "minVolumeGallons": 50,
+    "difficulty": "Intermediate",
+    "temperament": "Peaceful with most fish; keep one per tank",
+    "swimmingLevel": "Bottom",
+    "notes": "Depends on film algae and often starves once a tank's algae is gone; offer nori or algae-based foods. Intolerant of other blennies."
+  },
+  "Ecsenius bicolor": {
+    "tempRangeCelsius": [23, 27],
+    "phRange": [8.1, 8.4],
+    "minVolumeGallons": 30,
+    "difficulty": "Beginner",
+    "temperament": "Semi-aggressive toward similar-shaped fish",
+    "swimmingLevel": "Bottom",
+    "notes": "Hardy omnivore that grazes algae and takes prepared foods. Occasionally nips at LPS corals and clams."
+  },
+  "Pterapogon kauderni": {
+    "tempRangeCelsius": [24, 28],
+    "phRange": [8.1, 8.4],
+    "minVolumeGallons": 30,
+    "difficulty": "Beginner",
+    "temperament": "Peaceful; adult males may squabble",
+    "swimmingLevel": "Mid",
+    "notes": "Endangered in the wild, so buy captive-bred fish, which are far hardier. A male mouthbroods the eggs and fry can be raised on small foods."
+  },
+  "Sphaeramia nematoptera": {
+    "tempRangeCelsius": [23, 27],
+    "phRange": [8.1, 8.4],
+    "minVolumeGallons": 30,
+    "difficulty": "Beginner",
+    "temperament": "Peaceful, slow schooling cardinal",
+    "swimmingLevel": "Mid",
+    "notes": "Hardy and calm; keep in a small group with peaceful tankmates. Most active at dusk, so feed when lights dim if it hangs back."
+  },
+  "Pterois volitans": {
+    "tempRangeCelsius": [23, 27],
+    "phRange": [8.1, 8.4],
+    "minVolumeGallons": 120,
+    "difficulty": "Intermediate",
+    "temperament": "Predator; swallows fish and shrimp that fit in its mouth",
+    "swimmingLevel": "Mid, Bottom",
+    "notes": "Dorsal spines are venomous, so handle maintenance with care. Wean onto frozen meaty foods instead of live feeder fish."
+  },
+  "Labroides dimidiatus": {
+    "tempRangeCelsius": [23, 27],
+    "phRange": [8.1, 8.4],
+    "minVolumeGallons": 55,
+    "difficulty": "Expert",
+    "temperament": "Peaceful obligate cleaner",
+    "swimmingLevel": "Mid, Bottom",
+    "notes": "Feeds on parasites and mucus of other fish and rarely thrives in aquariums, often starving within months. Many hobbyists recommend leaving it on the reef."
+  },
+  "Halichoeres chrysus": {
+    "tempRangeCelsius": [23, 27],
+    "phRange": [8.1, 8.4],
+    "minVolumeGallons": 50,
+    "difficulty": "Beginner",
+    "temperament": "Peaceful reef wrasse",
+    "swimmingLevel": "Mid, Bottom",
+    "notes": "Needs a sand bed of at least 5 cm to bury in at night. Hunts small pests such as flatworms; keep a lid on the tank because wrasses jump."
+  },
+  "Pseudanthias squamipinnis": {
+    "tempRangeCelsius": [23, 27],
+    "phRange": [8.1, 8.4],
+    "minVolumeGallons": 125,
+    "difficulty": "Intermediate",
+    "temperament": "Peaceful schooling fish; one male per group",
+    "swimmingLevel": "Mid, Top",
+    "notes": "An active planktivore that needs several small feedings a day. Keep one male with several females in a large tank with open swimming room."
+  },
+  "Chelmon rostratus": {
+    "tempRangeCelsius": [24, 27],
+    "phRange": [8.1, 8.4],
+    "minVolumeGallons": 125,
+    "difficulty": "Advanced",
+    "temperament": "Peaceful and shy",
+    "swimmingLevel": "Mid, Bottom",
+    "notes": "Often hard to wean onto frozen foods; add it to a mature tank and start with live or fresh foods. Eats Aiptasia but may also pick at tube worms and some corals."
+  },
+  "Hippocampus kuda": {
+    "tempRangeCelsius": [22, 26],
+    "phRange": [8.1, 8.4],
+    "minVolumeGallons": 30,
+    "difficulty": "Advanced",
+    "temperament": "Peaceful, slow and easily outcompeted",
+    "swimmingLevel": "Mid, Bottom",
+    "notes": "Best in a tall species tank with gentle flow and hitching posts; buy captive-bred fish trained on frozen mysis. Keeping it on the cooler side lowers bacterial infection risk."
+  },
+  "Siganus vulpinus": {
+    "tempRangeCelsius": [23, 27],
+    "phRange": [8.1, 8.4],
+    "minVolumeGallons": 100,
+    "difficulty": "Beginner",
+    "temperament": "Peaceful; may spar with other rabbitfish",
+    "swimmingLevel": "Mid",
+    "notes": "Hardy algae grazer that needs plenty of vegetable matter. Its fin spines are venomous, so handle with care."
+  },
+  "Oxycirrhites typus": {
+    "tempRangeCelsius": [23, 27],
+    "phRange": [8.1, 8.4],
+    "minVolumeGallons": 50,
+    "difficulty": "Beginner",
+    "temperament": "Semi-aggressive; eats small shrimp",
+    "swimmingLevel": "Bottom, Mid",
+    "notes": "Perches on rock and gorgonians and eats small shrimp and very small fish. Keep a lid on the tank because it can jump."
+  },
+  "Canthigaster valentini": {
+    "tempRangeCelsius": [23, 27],
+    "phRange": [8.1, 8.4],
+    "minVolumeGallons": 30,
+    "difficulty": "Beginner",
+    "temperament": "Semi-aggressive; nips fins and invertebrates",
+    "swimmingLevel": "Mid, Bottom",
+    "notes": "Offer hard-shelled foods such as clams and snails to keep its beak worn down. Nips at invertebrates, corals and slow fish."
+  },
+  "Opistognathus aurifrons": {
+    "tempRangeCelsius": [23, 27],
+    "phRange": [8.1, 8.4],
+    "minVolumeGallons": 30,
+    "difficulty": "Intermediate",
+    "temperament": "Peaceful burrow dweller",
+    "swimmingLevel": "Bottom",
+    "notes": "Needs a sand bed at least 8 to 10 cm deep with mixed grain sizes and rubble to build a burrow. A notorious jumper, so a tight-fitting lid is essential."
+  }
+}

@@ -209,6 +209,7 @@ export async function relayRegisterTank({
   room = "",
   rack = "",
   ownerAddress = "",
+  marineStyle = null,
 } = {}) {
   try {
     // Generate a local tank ID (timestamp-based, unique enough for beta)
@@ -230,6 +231,8 @@ export async function relayRegisterTank({
       logs: [],
       latestLog: null,
       specimens: [],
+      // Saltwater only (docs/SALTWATER_SPEC.md); local, not on chain.
+      ...(Number(tankType) === 1 ? { marineStyle: marineStyle === "fish_only" ? "fish_only" : "reef" } : {}),
     };
 
     // Store in Dexie
@@ -250,6 +253,27 @@ export async function relayRegisterTank({
   } catch (err) {
     console.error("[Relayer] Local tank registration failed:", err);
     return { success: false, error: err.message || "Failed to save tank" };
+  }
+}
+
+/**
+ * Set a saltwater tank's style: "reef" or "fish_only" (docs/SALTWATER_SPEC.md).
+ * Local field only; the on-chain type stays Saltwater, so nothing is enqueued.
+ */
+export async function relaySetMarineStyle(tankId, style) {
+  if (style !== "reef" && style !== "fish_only") return { success: false, error: "Unknown style" };
+  try {
+    const id = Number(tankId);
+    const tank = await db.tanks.get(id);
+    if (!tank) return { success: false, error: "Tank not found" };
+    if (Number(tank.tankType) !== 1) return { success: false, error: "Only saltwater tanks have a style" };
+    await db.tanks.update(id, { marineStyle: style });
+    const updated = await db.tanks.get(id);
+    if (updated) syncTankToCloud(updated).catch(() => {});
+    return { success: true };
+  } catch (err) {
+    console.error("[Relayer] Set marine style failed:", err);
+    return { success: false, error: err.message || "Failed to save" };
   }
 }
 
@@ -283,6 +307,7 @@ function _tankRow(spec, id, owner, creationTimestamp) {
     logs: [],
     latestLog: null,
     specimens: [],
+    ...(Number(spec.tankType) === 1 ? { marineStyle: spec.marineStyle === "fish_only" ? "fish_only" : "reef" } : {}),
   };
 }
 
@@ -438,6 +463,7 @@ export async function relayImportTanks({ ownerAddress = "", tanks = [], seedInit
         {
           name: String(spec.name ?? "").trim() || "Unnamed Tank",
           tankType: spec.tankType,
+          marineStyle: spec.marineStyle,
           volumeLiters: spec.volumeLiters,
           containment: spec.containment,
           facility: spec.facility,

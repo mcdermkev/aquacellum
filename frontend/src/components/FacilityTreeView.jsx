@@ -9,7 +9,7 @@ import { putTankPhoto } from "../services/tankMedia";
 import { db } from "../db";
 import { useContractSpecies } from "../hooks/useSpeciesData";
 import { useTankGroups } from "../hooks/useTankGroups";
-import { TANK_TYPE_OPTIONS, tankTypeLabel } from "../utils/tankUtils";
+import { MARINE_STYLES, TANK_TYPE_OPTIONS, tankTypeLabel } from "../utils/tankUtils";
 import { useUnitPrefs } from "../hooks/useUnitPrefs";
 import { formatVolume } from "../utils/units";
 import { BulkTankModal } from "./BulkTankModal";
@@ -254,6 +254,7 @@ export function FacilityTreeView({ contractAddress, walletAccount, onSelectTank,
       const result = await relayRegisterTank({
         name: registerForm.name,
         tankType: Number(registerForm.tankType),
+        marineStyle: registerForm.marineStyle || "reef",
         volumeLiters: Math.round(Number(registerForm.volumeLiters) * 3.78541),
         containment: Number(registerForm.containment),
         parentUnitId: Number(registerForm.parentUnitId),
@@ -763,6 +764,16 @@ export function FacilityTreeView({ contractAddress, walletAccount, onSelectTank,
                   >
                     {TANK_TYPE_OPTIONS.map((opt) => <option key={opt.id} value={String(opt.id)}>{opt.label}</option>)}
                   </select>
+                  {registerForm.tankType === "1" && (
+                    <select
+                      aria-label="Saltwater style"
+                      value={registerForm.marineStyle || "reef"}
+                      onChange={(e) => setRegisterForm({ ...registerForm, marineStyle: e.target.value })}
+                      style={{ width: "100%", marginTop: "0.4rem", padding: "0.5rem", background: "rgba(8,12,20,0.9)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px" }}
+                    >
+                      {MARINE_STYLES.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
+                    </select>
+                  )}
                 </div>
                 <div>
                   <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.25rem" }}>Volume (Gallons)</label>

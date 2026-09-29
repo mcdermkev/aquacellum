@@ -18,7 +18,7 @@
  */
 
 import { deriveTankHealth } from "./tankHealth";
-import { getWaterEnvelope } from "./tankUtils";
+import { envelopeForTank } from "./tankUtils";
 
 function labelScheduleKind(kind) {
   switch (kind) {
@@ -74,7 +74,7 @@ function scheduleGuidance(kind) {
 export function explainTankFlags(tank, opts = {}) {
   const { readings = [], schedules = [], now = Date.now() } = opts;
   const health = deriveTankHealth(tank, { readings, schedules, now });
-  const env = getWaterEnvelope(tank?.tankType);
+  const env = envelopeForTank(tank);
   const r = health.latest || {};
   const items = [];
 

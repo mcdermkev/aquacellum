@@ -159,6 +159,7 @@ export function FishFinder({
     ? {
         volume: displayTank.volume, temp: displayTank.temp, ph: displayTank.ph,
         waterType: displayTank.waterType || (selectedTank ? tankFitInputs(selectedTank).waterType : undefined),
+        reef: displayTank.reef ?? (selectedTank ? tankFitInputs(selectedTank).reef : undefined),
       }
     : null;
 
@@ -205,7 +206,9 @@ export function FishFinder({
     onClearPendingSpeciesSearch?.();
   }, [pendingSpeciesSearch, onClearPendingSpeciesSearch]);
 
-  const discoveryActive = !!activeIntent || !!searchText.trim();
+  // Picking a water type is a browse on its own (e.g. "show me corals"), so it
+  // opens the results like an intent chip does.
+  const discoveryActive = !!activeIntent || !!searchText.trim() || waterFilter !== "all";
 
   const discoveryResults = useMemo(() => {
     if (!discoveryActive) return [];
@@ -247,6 +250,7 @@ export function FishFinder({
   const handleClearDiscovery = () => {
     setActiveIntent(null);
     setSearchText("");
+    setWaterFilter("all");
   };
 
   // Selection wiring into the inner BreedGallery's existing detail view.

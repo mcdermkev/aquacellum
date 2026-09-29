@@ -99,12 +99,58 @@ const WATER_ENVELOPES = {
 };
 
 /**
+ * Saltwater tanks come in two styles (docs/SALTWATER_SPEC.md). Stored as a
+ * local field on the tank (`marineStyle`); the on-chain type stays Saltwater.
+ * A saltwater tank with no style set is treated as a reef: the stricter
+ * targets, and what every saltwater tank used before styles existed.
+ */
+export const MARINE_STYLES = Object.freeze([
+  { id: "reef", label: "Reef (corals)" },
+  { id: "fish_only", label: "Fish only (FOWLR)" },
+]);
+
+/** "reef" | "fish_only" for a saltwater tank, else null. */
+export function marineStyleOf(tank) {
+  if (!isSaltwaterTank(tank)) return null;
+  return tank?.marineStyle === "fish_only" ? "fish_only" : "reef";
+}
+
+/** True when a tank is a reef (saltwater, not fish-only). */
+export function isReefTank(tank) {
+  return marineStyleOf(tank) === "reef";
+}
+
+/** "Saltwater · Reef" style label, for places that show the full kind. */
+export function tankKindLabel(tank) {
+  const base = tankTypeLabel(tank?.tankType);
+  const style = marineStyleOf(tank);
+  if (!style) return base;
+  return `${base} · ${style === "reef" ? "Reef" : "Fish only"}`;
+}
+
+// Reef keepers hold nitrate and phosphate low for corals; fish-only tanks are
+// fine higher and rarely test calcium or magnesium.
+const MARINE_STYLE_OVERRIDES = {
+  reef: { nitrateMax: 10 },
+  fish_only: { nitrateMax: 40, caMin: null, caMax: null, mgMin: null, mgMax: null, po4Max: null },
+};
+
+/**
  * Full safe envelope for a tankType. Unknown indices fall back to Freshwater.
  * @param {number} tankType
+ * @param {{ marineStyle?: ("reef"|"fish_only") }} [opts] - saltwater only; default reef
  */
-export function getWaterEnvelope(tankType) {
+export function getWaterEnvelope(tankType, opts = {}) {
   const base = WATER_ENVELOPES[Number(tankType)] || WATER_ENVELOPES[0];
-  return { ...base, ...NITROGEN_LIMITS };
+  const env = { ...base, ...NITROGEN_LIMITS };
+  if (Number(tankType) !== SALTWATER) return env;
+  const style = opts.marineStyle === "fish_only" ? "fish_only" : "reef";
+  return { ...env, ...MARINE_STYLE_OVERRIDES[style] };
+}
+
+/** The envelope for a tank record (its type and, for saltwater, its style). */
+export function envelopeForTank(tank) {
+  return getWaterEnvelope(tank?.tankType, { marineStyle: tank?.marineStyle });
 }
 
 /** Which test fields a water-test form should offer for a tank type. */
@@ -121,8 +167,8 @@ export function waterTestFields(tankType) {
  * @param {number} tankType
  * @param {{temp?:number, ph?:number, ammonia?:number, nitrite?:number, nitrate?:number, gh?:number, kh?:number, tal?:number, salinity?:number, ca?:number, mg?:number, po4?:number}} r
  */
-export function evaluateReading(tankType, r = {}) {
-  const env = getWaterEnvelope(tankType);
+export function evaluateReading(tankType, r = {}, opts = {}) {
+  const env = getWaterEnvelope(tankType, opts);
   const flags = [];
   const has = (v) => v !== undefined && v !== null && v !== "" && !Number.isNaN(Number(v));
   const within = (v, min, max) => !has(v) || min == null || max == null || isInsideEnvelope(Number(v), min, max);

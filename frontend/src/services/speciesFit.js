@@ -83,7 +83,10 @@ export function speciesProfileForFit(entry, { fishbaseData = [] } = {}) {
     ? base.waterTypes
     : (Array.isArray(master?.waterTypes) && master.waterTypes.length ? master.waterTypes : null);
 
-  return { ...base, minVolumeGallons, adultSizeCm, waterTypes };
+  const requiresReef = base.requiresReef === true || master?.marine?.requiresReef === true;
+  const reefSafe = base.reefSafe ?? master?.marine?.reefSafe ?? null;
+
+  return { ...base, minVolumeGallons, adultSizeCm, waterTypes, requiresReef, reefSafe };
 }
 
 /**

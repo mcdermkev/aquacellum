@@ -16,7 +16,7 @@ import { useUserTanks } from "../hooks/useUserTanks";
 import { useSpeciesData } from "../hooks/useSpeciesData";
 import { useContractSpecies } from "../hooks/useSpeciesData";
 import { useQueryClient } from "@tanstack/react-query";
-import { relayMoveSpecimen, relayLogWaterParameters, relayMintSpecimen } from "../services/relayer";
+import { relayMoveSpecimen, relayLogWaterParameters, relayMintSpecimen, relaySetMarineStyle } from "../services/relayer";
 import { archiveSpecimens, retireSpecimens } from "../services/specimenLifecycle";
 import {
   RETIREMENT_OUTCOMES,
@@ -64,7 +64,7 @@ import { LivingTank } from "./logbook/LivingTank";
 import { deriveTankHealth } from "../utils/tankHealth";
 import { getOrInitTankSchedules } from "../services/tankSchedules";
 import { getTankPhoto, putTankPhoto, putSpecimenPhoto, resolveSpecimenPhoto } from "../services/tankMedia";
-import { isInsideEnvelope, getTrackBackground, CONTAINMENT_TYPES, getWaterEnvelope, tankTypeLabel, isSaltwaterTank, marineLogFields, marineFormFromLog } from "../utils/tankUtils";
+import { isInsideEnvelope, getTrackBackground, CONTAINMENT_TYPES, getWaterEnvelope, envelopeForTank, tankTypeLabel, tankKindLabel, isSaltwaterTank, marineLogFields, marineFormFromLog, MARINE_STYLES } from "../utils/tankUtils";
 import { MarineReadingTile, MarineTestFields } from "./MarineTestFields";
 export function TankList({ contractAddress, walletAccount, onViewLineage, onListOnMarketplace, onSelectSpecimen, casualModeActive = false }) {
   const queryClient = useQueryClient();
@@ -1326,7 +1326,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
   const selectedLogTank = tanks.find(t => t.id.toString() === quickLogTankId.toString()) || activeTank || tanks[0];
   // Safe ranges come from the single envelope source (tankUtils.getWaterEnvelope),
   // not an inline per-type if/else. Saltwater is gone; unknown types fall back to FW.
-  const _env = getWaterEnvelope(selectedLogTank ? selectedLogTank.tankType : 0);
+  const _env = selectedLogTank ? envelopeForTank(selectedLogTank) : getWaterEnvelope(0);
   const minSafeTemp = _env.tempMin;
   const maxSafeTemp = _env.tempMax;
   const minSafePh = _env.phMin;
@@ -1660,7 +1660,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
   // source (tankUtils), not copy-pasted magic numbers.
   const getChemistryAlerts = (tank) => {
     if (!tank.latestLog) return [];
-    const env = getWaterEnvelope(tank.tankType);
+    const env = envelopeForTank(tank);
     const ammonia = Number(tank.latestLog.ammoniaPpmX100) / 100;
     const nitrite = Number(tank.latestLog.nitritePpmX100) / 100;
     const nitrate = Number(tank.latestLog.nitratePpmX100) / 100;
@@ -2971,9 +2971,39 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                           <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>💧 Water Type</span>
                         </div>
                         <strong style={{ fontSize: "1.25rem", color: "#fff", display: "block", marginTop: "0.5rem" }}>
-                          {tankTypeLabel(activeTank.tankType)}
+                          {tankKindLabel(activeTank)}
                         </strong>
                         <span style={{ fontSize: "0.65rem", color: "var(--text-muted)" }}>{tankTypeLabel(activeTank.tankType)} ecosystem</span>
+                        {/* Reef vs fish-only sets the targets and whether corals fit (docs/SALTWATER_SPEC.md). */}
+                        {isSaltwaterTank(activeTank) && (
+                          <div role="group" aria-label="Saltwater style" style={{ display: "flex", gap: "0.35rem", marginTop: "0.5rem", flexWrap: "wrap" }}>
+                            {MARINE_STYLES.map((s) => {
+                              const on = (activeTank.marineStyle === "fish_only" ? "fish_only" : "reef") === s.id;
+                              return (
+                                <button
+                                  key={s.id}
+                                  type="button"
+                                  aria-pressed={on}
+                                  onClick={async () => {
+                                    if (on) return;
+                                    const r = await relaySetMarineStyle(activeTank.id, s.id);
+                                    if (!r.success) { showToast(`Couldn't change the style: ${r.error}`); return; }
+                                    setActiveTank((cur) => (cur && cur.id === activeTank.id ? { ...cur, marineStyle: s.id } : cur));
+                                    queryClient.invalidateQueries({ queryKey: ["tanks", walletAccount] });
+                                    showToast(s.id === "reef" ? "🪸 Set to reef: coral targets apply." : "🐠 Set to fish only: nitrate up to 40 ppm, no coral targets.");
+                                  }}
+                                  style={{
+                                    minHeight: "32px", padding: "0 0.6rem", borderRadius: "6px", fontSize: "0.7rem", fontWeight: 700, cursor: "pointer",
+                                    border: `1px solid ${on ? "rgba(56,189,248,0.7)" : "var(--glass-border)"}`,
+                                    background: on ? "rgba(56,189,248,0.18)" : "transparent", color: on ? "#e0f2fe" : "var(--text-secondary)",
+                                  }}
+                                >
+                                  {s.label}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
 
                       {/* Volume */}

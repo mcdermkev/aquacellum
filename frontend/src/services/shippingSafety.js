@@ -111,6 +111,10 @@ export function normalizeSpeciesProfile(record = {}) {
     scientificName: record.scientificName || null,
     commonName: record.commonName || null,
     waterTypes: waterTypes && waterTypes.length ? waterTypes : null,
+    // Reef facts (docs/SALTWATER_SPEC.md): corals and anemones need a reef tank;
+    // reefSafe is "yes" | "with caution" | "no" for marine fish and inverts.
+    requiresReef: record.marine?.requiresReef === true,
+    reefSafe: record.marine?.reefSafe ?? null,
     adultSizeCm,
     tempRange,
     phRange,

@@ -126,7 +126,7 @@ export function deriveTankHealth(tank, opts = {}) {
 
   const latest = pickLatest(readings, tank?.latestLog);
   const { flags: paramFlags, tempOk, phOk, ammoniaOk, nitriteOk, nitrateOk, salinityOk = true } =
-    latest ? evaluateReading(tankType, latest) : { flags: [], tempOk: true, phOk: true, ammoniaOk: true, nitriteOk: true, nitrateOk: true, salinityOk: true };
+    latest ? evaluateReading(tankType, latest, { marineStyle: tank?.marineStyle }) : { flags: [], tempOk: true, phOk: true, ammoniaOk: true, nitriteOk: true, nitrateOk: true, salinityOk: true };
 
   // Overdue schedules
   const nowSec = toSeconds(now);

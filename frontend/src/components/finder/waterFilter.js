@@ -9,7 +9,15 @@ export const WATER_FILTERS = Object.freeze([
   { id: "all", label: "All", icon: "🌊" },
   { id: "freshwater", label: "Freshwater", icon: "💧" },
   { id: "marine", label: "Saltwater", icon: "🐠" },
+  { id: "reef_life", label: "Corals & inverts", icon: "🪸" },
 ]);
+
+/** A marine coral, anemone or invertebrate (the reef cleanup crew and display animals). */
+export function isReefLife(record) {
+  const type = String(record?.type || "").toLowerCase();
+  const marine = Array.isArray(record?.waterTypes) && record.waterTypes.includes("marine");
+  return marine && (type === "coral" || type === "invertebrate");
+}
 
 const nameKey = (e) => String(e?.scientificName || "").toLowerCase();
 
@@ -35,5 +43,6 @@ export function entryWaterGroup(entry, fishbaseByName) {
 export function filterByWater(entries = [], water = "all", fishbaseData = []) {
   if (water === "all") return entries;
   const byName = new Map((fishbaseData || []).map((r) => [nameKey(r), r]));
+  if (water === "reef_life") return entries.filter((e) => isReefLife(byName.get(nameKey(e)) || e));
   return entries.filter((e) => entryWaterGroup(e, byName) === water);
 }

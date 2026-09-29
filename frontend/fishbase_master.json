@@ -27114,7 +27114,16 @@
     "maxLengthCm": 11,
     "masterPhotoUrl": "",
     "tankMetrics": {
-      "difficulty": "Unknown"
+      "tempRangeCelsius": [
+        23,
+        27
+      ],
+      "phRange": [
+        8.1,
+        8.4
+      ],
+      "minVolumeGallons": 20,
+      "difficulty": "Beginner"
     },
     "enhanced": false,
     "waterTypes": [
@@ -27153,7 +27162,13 @@
         "casual": "The classic false percula clown; hardy, captive-bred, and happy with or without an anemone. Generally reef safe.",
         "pro": "Amphiprion ocellaris (Clown anemonefish). Generally reef safe. Natural-history claims are from FishBase; check captive care with specialist guidance."
       }
-    }
+    },
+    "behavior": {
+      "temperament": "Peaceful, hardy community clownfish",
+      "swimmingLevel": "Mid, Bottom",
+      "notes": "Captive-bred fish are hardy and do not need an anemone. Keep a single pair; adding more clowns later usually leads to fighting."
+    },
+    "careSource": "curated"
   },
   {
     "specCode": 9209,
@@ -27167,7 +27182,16 @@
     "maxLengthCm": 11,
     "masterPhotoUrl": "",
     "tankMetrics": {
-      "difficulty": "Unknown"
+      "tempRangeCelsius": [
+        23,
+        27
+      ],
+      "phRange": [
+        8.1,
+        8.4
+      ],
+      "minVolumeGallons": 20,
+      "difficulty": "Beginner"
     },
     "enhanced": false,
     "waterTypes": [
@@ -27206,7 +27230,13 @@
         "casual": "The true percula, with thicker black margins than the ocellaris; widely captive-bred. Generally reef safe.",
         "pro": "Amphiprion percula (Orange clownfish). Generally reef safe. Natural-history claims are from FishBase; check captive care with specialist guidance."
       }
-    }
+    },
+    "behavior": {
+      "temperament": "Peaceful, hardy community clownfish",
+      "swimmingLevel": "Mid, Bottom",
+      "notes": "Care matches the ocellaris; choose captive-bred fish. Keep a single pair per tank."
+    },
+    "careSource": "curated"
   },
   {
     "specCode": 6632,
@@ -27220,7 +27250,16 @@
     "maxLengthCm": 17,
     "masterPhotoUrl": "",
     "tankMetrics": {
-      "difficulty": "Unknown"
+      "tempRangeCelsius": [
+        23,
+        27
+      ],
+      "phRange": [
+        8.1,
+        8.4
+      ],
+      "minVolumeGallons": 50,
+      "difficulty": "Beginner"
     },
     "enhanced": false,
     "waterTypes": [
@@ -27259,7 +27298,13 @@
         "casual": "The largest common clownfish, often sold as Premnas; females can be territorial. Generally reef safe.",
         "pro": "Amphiprion biaculeatus (Spinecheek anemonefish). Generally reef safe. Natural-history claims are from FishBase; check captive care with specialist guidance."
       }
-    }
+    },
+    "behavior": {
+      "temperament": "Aggressive, especially large females",
+      "swimmingLevel": "Mid, Bottom",
+      "notes": "The most aggressive common clownfish; females grow large and dominate their area of the tank. Add it last and avoid other clownfish."
+    },
+    "careSource": "curated"
   },
   {
     "specCode": 12448,
@@ -27273,7 +27318,16 @@
     "maxLengthCm": 7,
     "masterPhotoUrl": "",
     "tankMetrics": {
-      "difficulty": "Unknown"
+      "tempRangeCelsius": [
+        23,
+        27
+      ],
+      "phRange": [
+        8.1,
+        8.4
+      ],
+      "minVolumeGallons": 30,
+      "difficulty": "Beginner"
     },
     "enhanced": false,
     "waterTypes": [
@@ -27312,7 +27366,13 @@
         "casual": "One of the more peaceful damsels: electric blue with a yellow tail. Generally reef safe.",
         "pro": "Chrysiptera parasema (Goldtail demoiselle). Generally reef safe. Natural-history claims are from FishBase; check captive care with specialist guidance."
       }
-    }
+    },
+    "behavior": {
+      "temperament": "Semi-aggressive, one of the milder damsels",
+      "swimmingLevel": "Mid, Bottom",
+      "notes": "Hardy and small, but still a damsel; it can harass new or smaller fish. Provide rockwork with hiding places."
+    },
+    "careSource": "curated"
   },
   {
     "specCode": 5679,
@@ -27326,7 +27386,16 @@
     "maxLengthCm": 10,
     "masterPhotoUrl": "",
     "tankMetrics": {
-      "difficulty": "Unknown"
+      "tempRangeCelsius": [
+        23,
+        27
+      ],
+      "phRange": [
+        8.1,
+        8.4
+      ],
+      "minVolumeGallons": 55,
+      "difficulty": "Beginner"
     },
     "enhanced": false,
     "waterTypes": [
@@ -27365,7 +27434,13 @@
         "casual": "A schooling damselfish for the open water column of a larger tank. Generally reef safe.",
         "pro": "Chromis viridis (Blue green damselfish). Generally reef safe. Natural-history claims are from FishBase; check captive care with specialist guidance."
       }
-    }
+    },
+    "behavior": {
+      "temperament": "Peaceful schooling fish",
+      "swimmingLevel": "Mid",
+      "notes": "Kept in groups, which need open swimming room; groups often dwindle as dominant fish bully the weakest. Feed small meals several times a day."
+    },
+    "careSource": "curated"
   },
   {
     "specCode": 5110,
@@ -27379,7 +27454,16 @@
     "maxLengthCm": 10,
     "masterPhotoUrl": "",
     "tankMetrics": {
-      "difficulty": "Unknown"
+      "tempRangeCelsius": [
+        23,
+        27
+      ],
+      "phRange": [
+        8.1,
+        8.4
+      ],
+      "minVolumeGallons": 40,
+      "difficulty": "Beginner"
     },
     "enhanced": false,
     "waterTypes": [
@@ -27418,7 +27502,13 @@
         "casual": "Tough and striking, but aggressive as it grows; plan tankmates around it. Generally reef safe.",
         "pro": "Dascyllus aruanus (Whitetail dascyllus). Generally reef safe. Natural-history claims are from FishBase; check captive care with specialist guidance."
       }
-    }
+    },
+    "behavior": {
+      "temperament": "Aggressive and territorial as it matures",
+      "swimmingLevel": "Mid, Bottom",
+      "notes": "Very hardy, but adults defend a coral head or rock and chase tankmates. Hard to remove from a reef once established."
+    },
+    "careSource": "curated"
   },
   {
     "specCode": 6018,
@@ -27432,7 +27522,16 @@
     "maxLengthCm": 20,
     "masterPhotoUrl": "",
     "tankMetrics": {
-      "difficulty": "Unknown"
+      "tempRangeCelsius": [
+        23,
+        27
+      ],
+      "phRange": [
+        8.1,
+        8.4
+      ],
+      "minVolumeGallons": 100,
+      "difficulty": "Intermediate"
     },
     "enhanced": false,
     "waterTypes": [
@@ -27471,7 +27570,13 @@
         "casual": "The bright yellow grazer of reef tanks; needs swimming room and plenty of algae. Generally reef safe.",
         "pro": "Zebrasoma flavescens (Yellow tang). Generally reef safe. Natural-history claims are from FishBase; check captive care with specialist guidance."
       }
-    }
+    },
+    "behavior": {
+      "temperament": "Semi-aggressive, intolerant of other tangs",
+      "swimmingLevel": "Mid",
+      "notes": "Needs a long tank with swimming room and a steady supply of marine algae (nori). Quarantine before adding; tangs are prone to ich and HLLE."
+    },
+    "careSource": "curated"
   },
   {
     "specCode": 6017,
@@ -27485,7 +27590,16 @@
     "maxLengthCm": 31,
     "masterPhotoUrl": "",
     "tankMetrics": {
-      "difficulty": "Unknown"
+      "tempRangeCelsius": [
+        23,
+        27
+      ],
+      "phRange": [
+        8.1,
+        8.4
+      ],
+      "minVolumeGallons": 125,
+      "difficulty": "Intermediate"
     },
     "enhanced": false,
     "waterTypes": [
@@ -27524,7 +27638,13 @@
         "casual": "The palette surgeonfish; active and fast-growing, so it needs a large tank. Generally reef safe.",
         "pro": "Paracanthurus hepatus (Palette surgeonfish). Generally reef safe. Natural-history claims are from FishBase; check captive care with specialist guidance."
       }
-    }
+    },
+    "behavior": {
+      "temperament": "Peaceful with most fish; may spar with other tangs",
+      "swimmingLevel": "Mid",
+      "notes": "Grows to about 30 cm and needs a long tank with rockwork to wedge into. Very ich-prone, so quarantine carefully and feed algae plus meaty foods."
+    },
+    "careSource": "curated"
   },
   {
     "specCode": 1257,
@@ -27538,7 +27658,16 @@
     "maxLengthCm": 54,
     "masterPhotoUrl": "",
     "tankMetrics": {
-      "difficulty": "Unknown"
+      "tempRangeCelsius": [
+        24,
+        27
+      ],
+      "phRange": [
+        8.1,
+        8.4
+      ],
+      "minVolumeGallons": 125,
+      "difficulty": "Advanced"
     },
     "enhanced": false,
     "waterTypes": [
@@ -27577,7 +27706,13 @@
         "casual": "A beautiful but sensitive surgeonfish that is prone to stress and ich. Generally reef safe.",
         "pro": "Acanthurus leucosternon (Powderblue surgeonfish). Generally reef safe. Natural-history claims are from FishBase; check captive care with specialist guidance."
       }
-    }
+    },
+    "behavior": {
+      "temperament": "Semi-aggressive; aggressive toward other tangs",
+      "swimmingLevel": "Mid",
+      "notes": "Notoriously ich-prone and stress-sensitive; needs careful quarantine, high oxygen and very stable water. Add it to a mature tank with plenty of algae to graze."
+    },
+    "careSource": "curated"
   },
   {
     "specCode": 12023,
@@ -27591,7 +27726,16 @@
     "maxLengthCm": 36.7,
     "masterPhotoUrl": "",
     "tankMetrics": {
-      "difficulty": "Unknown"
+      "tempRangeCelsius": [
+        23,
+        27
+      ],
+      "phRange": [
+        8.1,
+        8.4
+      ],
+      "minVolumeGallons": 125,
+      "difficulty": "Intermediate"
     },
     "enhanced": false,
     "waterTypes": [
@@ -27630,7 +27774,13 @@
         "casual": "A deep purple tang from the Red Sea; territorial with other tangs. Generally reef safe.",
         "pro": "Zebrasoma xanthurum (Yellowtail tang). Generally reef safe. Natural-history claims are from FishBase; check captive care with specialist guidance."
       }
-    }
+    },
+    "behavior": {
+      "temperament": "Semi-aggressive, especially toward other tangs",
+      "swimmingLevel": "Mid",
+      "notes": "One of the more combative Zebrasoma tangs, so add it last among tangs. Needs algae in the diet and swimming room."
+    },
+    "careSource": "curated"
   },
   {
     "specCode": 7814,
@@ -27644,7 +27794,16 @@
     "maxLengthCm": 15,
     "masterPhotoUrl": "",
     "tankMetrics": {
-      "difficulty": "Unknown"
+      "tempRangeCelsius": [
+        23,
+        27
+      ],
+      "phRange": [
+        8.1,
+        8.4
+      ],
+      "minVolumeGallons": 70,
+      "difficulty": "Intermediate"
     },
     "enhanced": false,
     "waterTypes": [
@@ -27684,7 +27843,13 @@
         "casual": "A vivid dwarf angel that may pick at corals and clam mantles. Reef safe with caution.",
         "pro": "Centropyge loriculus (Flame angel). Reef safe with caution. Natural-history claims are from FishBase; check captive care with specialist guidance."
       }
-    }
+    },
+    "behavior": {
+      "temperament": "Semi-aggressive; keep one dwarf angel per tank",
+      "swimmingLevel": "Bottom, Mid",
+      "notes": "Needs mature live rock to graze. May nip at LPS corals and clam mantles, so it is reef safe only with caution."
+    },
+    "careSource": "curated"
   },
   {
     "specCode": 5458,
@@ -27698,7 +27863,16 @@
     "maxLengthCm": 11.5,
     "masterPhotoUrl": "",
     "tankMetrics": {
-      "difficulty": "Unknown"
+      "tempRangeCelsius": [
+        23,
+        27
+      ],
+      "phRange": [
+        8.1,
+        8.4
+      ],
+      "minVolumeGallons": 70,
+      "difficulty": "Intermediate"
     },
     "enhanced": false,
     "waterTypes": [
@@ -27737,7 +27911,13 @@
         "casual": "A hardy dwarf angel; some individuals nip at soft corals. Reef safe with caution.",
         "pro": "Centropyge bispinosa (Twospined angelfish). Reef safe with caution. Natural-history claims are from FishBase; check captive care with specialist guidance."
       }
-    }
+    },
+    "behavior": {
+      "temperament": "Semi-aggressive; keep one dwarf angel per tank",
+      "swimmingLevel": "Bottom, Mid",
+      "notes": "One of the hardier dwarf angels; grazes on live rock. Some individuals pick at soft and LPS corals."
+    },
+    "careSource": "curated"
   },
   {
     "specCode": 6504,
@@ -27751,7 +27931,16 @@
     "maxLengthCm": 40,
     "masterPhotoUrl": "",
     "tankMetrics": {
-      "difficulty": "Unknown"
+      "tempRangeCelsius": [
+        23,
+        27
+      ],
+      "phRange": [
+        8.1,
+        8.4
+      ],
+      "minVolumeGallons": 180,
+      "difficulty": "Advanced"
     },
     "enhanced": false,
     "waterTypes": [
@@ -27790,7 +27979,13 @@
         "casual": "A large angel whose juvenile and adult colors differ completely; eats corals and sponges. Not reef safe.",
         "pro": "Pomacanthus imperator (Emperor angelfish). Not reef safe. Natural-history claims are from FishBase; check captive care with specialist guidance."
       }
-    }
+    },
+    "behavior": {
+      "temperament": "Semi-aggressive; aggressive toward other large angels",
+      "swimmingLevel": "Mid, Bottom",
+      "notes": "Reaches about 40 cm, so it needs a very large fish-only tank with mature rock. Feed a varied diet that includes sponge-based foods; not reef safe."
+    },
+    "careSource": "curated"
   },
   {
     "specCode": 5281,
@@ -27804,7 +27999,16 @@
     "maxLengthCm": 8,
     "masterPhotoUrl": "",
     "tankMetrics": {
-      "difficulty": "Unknown"
+      "tempRangeCelsius": [
+        23,
+        27
+      ],
+      "phRange": [
+        8.1,
+        8.4
+      ],
+      "minVolumeGallons": 30,
+      "difficulty": "Beginner"
     },
     "enhanced": false,
     "waterTypes": [
@@ -27843,7 +28047,13 @@
         "casual": "A small purple-and-yellow cave dweller; peaceful and hardy. Generally reef safe.",
         "pro": "Gramma loreto (Royal gramma). Generally reef safe. Natural-history claims are from FishBase; check captive care with specialist guidance."
       }
-    }
+    },
+    "behavior": {
+      "temperament": "Peaceful; claims a favored cave",
+      "swimmingLevel": "Bottom, Mid",
+      "notes": "Hardy and reef safe; needs caves or overhangs to hover in. Keep one per tank unless the tank is large, and use a lid because it can jump."
+    },
+    "careSource": "curated"
   },
   {
     "specCode": 12741,
@@ -27857,7 +28067,16 @@
     "maxLengthCm": 6.3,
     "masterPhotoUrl": "",
     "tankMetrics": {
-      "difficulty": "Unknown"
+      "tempRangeCelsius": [
+        23,
+        27
+      ],
+      "phRange": [
+        8.1,
+        8.4
+      ],
+      "minVolumeGallons": 30,
+      "difficulty": "Beginner"
     },
     "enhanced": false,
     "waterTypes": [
@@ -27896,7 +28115,13 @@
         "casual": "A captive-bred Red Sea dottyback, calmer than most of its family. Generally reef safe.",
         "pro": "Pseudochromis fridmani (Orchid dottyback). Generally reef safe. Natural-history claims are from FishBase; check captive care with specialist guidance."
       }
-    }
+    },
+    "behavior": {
+      "temperament": "Semi-aggressive, the mildest of the dottybacks",
+      "swimmingLevel": "Bottom, Mid",
+      "notes": "Usually captive-bred and very hardy; needs rockwork with hiding places. Keep one per tank and avoid similar-shaped small fish."
+    },
+    "careSource": "curated"
   },
   {
     "specCode": 12644,
@@ -27910,7 +28135,16 @@
     "maxLengthCm": 7,
     "masterPhotoUrl": "",
     "tankMetrics": {
-      "difficulty": "Unknown"
+      "tempRangeCelsius": [
+        23,
+        27
+      ],
+      "phRange": [
+        8.1,
+        8.4
+      ],
+      "minVolumeGallons": 30,
+      "difficulty": "Advanced"
     },
     "enhanced": false,
     "waterTypes": [
@@ -27949,7 +28183,13 @@
         "casual": "Stunning but a specialist feeder that needs a mature tank full of copepods. Generally reef safe.",
         "pro": "Synchiropus splendidus (Mandarinfish). Generally reef safe. Natural-history claims are from FishBase; check captive care with specialist guidance."
       }
-    }
+    },
+    "behavior": {
+      "temperament": "Peaceful and shy",
+      "swimmingLevel": "Bottom",
+      "notes": "Needs an established tank (six months or more) with a large copepod population, ideally supported by a mature refugium; many starve without it. Keep one male per tank and avoid fast competing feeders."
+    },
+    "careSource": "curated"
   },
   {
     "specCode": 3876,
@@ -27963,7 +28203,16 @@
     "maxLengthCm": 5,
     "masterPhotoUrl": "",
     "tankMetrics": {
-      "difficulty": "Unknown"
+      "tempRangeCelsius": [
+        23,
+        27
+      ],
+      "phRange": [
+        8.1,
+        8.4
+      ],
+      "minVolumeGallons": 20,
+      "difficulty": "Beginner"
     },
     "enhanced": false,
     "waterTypes": [
@@ -28002,7 +28251,13 @@
         "casual": "A tiny cleaner goby, often captive-bred, that sets up cleaning stations. Generally reef safe.",
         "pro": "Elacatinus oceanops (Neon goby). Generally reef safe. Natural-history claims are from FishBase; check captive care with specialist guidance."
       }
-    }
+    },
+    "behavior": {
+      "temperament": "Peaceful cleaner goby",
+      "swimmingLevel": "Bottom",
+      "notes": "Widely captive-bred and short-lived (about one to two years). Accepts prepared foods and picks parasites from other fish."
+    },
+    "careSource": "curated"
   },
   {
     "specCode": 6629,
@@ -28016,7 +28271,16 @@
     "maxLengthCm": 9,
     "masterPhotoUrl": "",
     "tankMetrics": {
-      "difficulty": "Unknown"
+      "tempRangeCelsius": [
+        23,
+        27
+      ],
+      "phRange": [
+        8.1,
+        8.4
+      ],
+      "minVolumeGallons": 30,
+      "difficulty": "Beginner"
     },
     "enhanced": false,
     "waterTypes": [
@@ -28055,7 +28319,13 @@
         "casual": "Hovers near its burrow and darts in when startled; keep a tight lid. Generally reef safe.",
         "pro": "Nemateleotris magnifica (Fire goby). Generally reef safe. Natural-history claims are from FishBase; check captive care with specialist guidance."
       }
-    }
+    },
+    "behavior": {
+      "temperament": "Peaceful and timid",
+      "swimmingLevel": "Bottom, Mid",
+      "notes": "An accomplished jumper, so a tight-fitting lid is essential. Keep singly or as a mated pair and avoid boisterous tankmates."
+    },
+    "careSource": "curated"
   },
   {
     "specCode": 7198,
@@ -28069,7 +28339,16 @@
     "maxLengthCm": 15,
     "masterPhotoUrl": "",
     "tankMetrics": {
-      "difficulty": "Unknown"
+      "tempRangeCelsius": [
+        23,
+        27
+      ],
+      "phRange": [
+        8.1,
+        8.4
+      ],
+      "minVolumeGallons": 50,
+      "difficulty": "Intermediate"
     },
     "enhanced": false,
     "waterTypes": [
@@ -28108,7 +28387,13 @@
         "casual": "Sifts sand all day, which keeps the sand bed turned over. Generally reef safe.",
         "pro": "Amblygobius phalaena (Whitebarred goby). Generally reef safe. Natural-history claims are from FishBase; check captive care with specialist guidance."
       }
-    }
+    },
+    "behavior": {
+      "temperament": "Peaceful sand-sifting goby",
+      "swimmingLevel": "Bottom",
+      "notes": "Needs a large, mature sand bed to sift, plus supplemental feeding; it often slowly starves in small or new tanks. Can jump."
+    },
+    "careSource": "curated"
   },
   {
     "specCode": 6058,
@@ -28122,7 +28407,16 @@
     "maxLengthCm": 14,
     "masterPhotoUrl": "",
     "tankMetrics": {
-      "difficulty": "Unknown"
+      "tempRangeCelsius": [
+        23,
+        27
+      ],
+      "phRange": [
+        8.1,
+        8.4
+      ],
+      "minVolumeGallons": 50,
+      "difficulty": "Intermediate"
     },
     "enhanced": false,
     "waterTypes": [
@@ -28162,7 +28456,13 @@
         "casual": "A comical algae grazer that perches on rock and needs algae to eat. Generally reef safe.",
         "pro": "Salarias fasciatus (Jewelled blenny). Generally reef safe. Natural-history claims are from FishBase; check captive care with specialist guidance."
       }
-    }
+    },
+    "behavior": {
+      "temperament": "Peaceful with most fish; keep one per tank",
+      "swimmingLevel": "Bottom",
+      "notes": "Depends on film algae and often starves once a tank's algae is gone; offer nori or algae-based foods. Intolerant of other blennies."
+    },
+    "careSource": "curated"
   },
   {
     "specCode": 6033,
@@ -28176,7 +28476,16 @@
     "maxLengthCm": 11,
     "masterPhotoUrl": "",
     "tankMetrics": {
-      "difficulty": "Unknown"
+      "tempRangeCelsius": [
+        23,
+        27
+      ],
+      "phRange": [
+        8.1,
+        8.4
+      ],
+      "minVolumeGallons": 30,
+      "difficulty": "Beginner"
     },
     "enhanced": false,
     "waterTypes": [
@@ -28215,7 +28524,13 @@
         "casual": "A lively rock-hopping blenny; now and then one nips at corals. Reef safe with caution.",
         "pro": "Ecsenius bicolor (Bicolor blenny). Reef safe with caution. Natural-history claims are from FishBase; check captive care with specialist guidance."
       }
-    }
+    },
+    "behavior": {
+      "temperament": "Semi-aggressive toward similar-shaped fish",
+      "swimmingLevel": "Bottom",
+      "notes": "Hardy omnivore that grazes algae and takes prepared foods. Occasionally nips at LPS corals and clams."
+    },
+    "careSource": "curated"
   },
   {
     "specCode": 15426,
@@ -28229,7 +28544,16 @@
     "maxLengthCm": 8.6,
     "masterPhotoUrl": "",
     "tankMetrics": {
-      "difficulty": "Unknown"
+      "tempRangeCelsius": [
+        24,
+        28
+      ],
+      "phRange": [
+        8.1,
+        8.4
+      ],
+      "minVolumeGallons": 30,
+      "difficulty": "Beginner"
     },
     "enhanced": false,
     "waterTypes": [
@@ -28268,7 +28592,13 @@
         "casual": "A mouthbrooder that is easy to breed in captivity; buy captive-bred. Generally reef safe.",
         "pro": "Pterapogon kauderni (Banggai cardinal fish). Generally reef safe. Natural-history claims are from FishBase; check captive care with specialist guidance."
       }
-    }
+    },
+    "behavior": {
+      "temperament": "Peaceful; adult males may squabble",
+      "swimmingLevel": "Mid",
+      "notes": "Endangered in the wild, so buy captive-bred fish, which are far hardier. A male mouthbroods the eggs and fry can be raised on small foods."
+    },
+    "careSource": "curated"
   },
   {
     "specCode": 5778,
@@ -28282,7 +28612,16 @@
     "maxLengthCm": 8.5,
     "masterPhotoUrl": "",
     "tankMetrics": {
-      "difficulty": "Unknown"
+      "tempRangeCelsius": [
+        23,
+        27
+      ],
+      "phRange": [
+        8.1,
+        8.4
+      ],
+      "minVolumeGallons": 30,
+      "difficulty": "Beginner"
     },
     "enhanced": false,
     "waterTypes": [
@@ -28321,7 +28660,13 @@
         "casual": "A calm, slow schooling cardinal with big eyes and polka dots. Generally reef safe.",
         "pro": "Sphaeramia nematoptera (Pajama cardinalfish). Generally reef safe. Natural-history claims are from FishBase; check captive care with specialist guidance."
       }
-    }
+    },
+    "behavior": {
+      "temperament": "Peaceful, slow schooling cardinal",
+      "swimmingLevel": "Mid",
+      "notes": "Hardy and calm; keep in a small group with peaceful tankmates. Most active at dusk, so feed when lights dim if it hangs back."
+    },
+    "careSource": "curated"
   },
   {
     "specCode": 5195,
@@ -28335,7 +28680,16 @@
     "maxLengthCm": 45.7,
     "masterPhotoUrl": "",
     "tankMetrics": {
-      "difficulty": "Unknown"
+      "tempRangeCelsius": [
+        23,
+        27
+      ],
+      "phRange": [
+        8.1,
+        8.4
+      ],
+      "minVolumeGallons": 120,
+      "difficulty": "Intermediate"
     },
     "enhanced": false,
     "waterTypes": [
@@ -28374,7 +28728,13 @@
         "casual": "Leaves corals alone but eats small fish and shrimp; its spines are venomous. Reef safe with caution.",
         "pro": "Pterois volitans (Red lionfish). Reef safe with caution. Natural-history claims are from FishBase; check captive care with specialist guidance."
       }
-    }
+    },
+    "behavior": {
+      "temperament": "Predator; swallows fish and shrimp that fit in its mouth",
+      "swimmingLevel": "Mid, Bottom",
+      "notes": "Dorsal spines are venomous, so handle maintenance with care. Wean onto frozen meaty foods instead of live feeder fish."
+    },
+    "careSource": "curated"
   },
   {
     "specCode": 5459,
@@ -28388,7 +28748,16 @@
     "maxLengthCm": 14,
     "masterPhotoUrl": "",
     "tankMetrics": {
-      "difficulty": "Unknown"
+      "tempRangeCelsius": [
+        23,
+        27
+      ],
+      "phRange": [
+        8.1,
+        8.4
+      ],
+      "minVolumeGallons": 55,
+      "difficulty": "Expert"
     },
     "enhanced": false,
     "waterTypes": [
@@ -28427,7 +28796,13 @@
         "casual": "Cleans other fish in the wild but often starves in aquariums; best left in the reef. Generally reef safe.",
         "pro": "Labroides dimidiatus (Bluestreak cleaner wrasse). Generally reef safe. Natural-history claims are from FishBase; check captive care with specialist guidance."
       }
-    }
+    },
+    "behavior": {
+      "temperament": "Peaceful obligate cleaner",
+      "swimmingLevel": "Mid, Bottom",
+      "notes": "Feeds on parasites and mucus of other fish and rarely thrives in aquariums, often starving within months. Many hobbyists recommend leaving it on the reef."
+    },
+    "careSource": "curated"
   },
   {
     "specCode": 4855,
@@ -28441,7 +28816,16 @@
     "maxLengthCm": 12,
     "masterPhotoUrl": "",
     "tankMetrics": {
-      "difficulty": "Unknown"
+      "tempRangeCelsius": [
+        23,
+        27
+      ],
+      "phRange": [
+        8.1,
+        8.4
+      ],
+      "minVolumeGallons": 50,
+      "difficulty": "Beginner"
     },
     "enhanced": false,
     "waterTypes": [
@@ -28480,7 +28864,13 @@
         "casual": "A bright wrasse that buries itself in sand at night and hunts pests by day. Generally reef safe.",
         "pro": "Halichoeres chrysus (Canary wrasse). Generally reef safe. Natural-history claims are from FishBase; check captive care with specialist guidance."
       }
-    }
+    },
+    "behavior": {
+      "temperament": "Peaceful reef wrasse",
+      "swimmingLevel": "Mid, Bottom",
+      "notes": "Needs a sand bed of at least 5 cm to bury in at night. Hunts small pests such as flatworms; keep a lid on the tank because wrasses jump."
+    },
+    "careSource": "curated"
   },
   {
     "specCode": 6568,
@@ -28494,7 +28884,16 @@
     "maxLengthCm": 15,
     "masterPhotoUrl": "",
     "tankMetrics": {
-      "difficulty": "Unknown"
+      "tempRangeCelsius": [
+        23,
+        27
+      ],
+      "phRange": [
+        8.1,
+        8.4
+      ],
+      "minVolumeGallons": 125,
+      "difficulty": "Intermediate"
     },
     "enhanced": false,
     "waterTypes": [
@@ -28533,7 +28932,13 @@
         "casual": "A schooling planktivore that needs several feedings a day. Generally reef safe.",
         "pro": "Pseudanthias squamipinnis (Sea goldie). Generally reef safe. Natural-history claims are from FishBase; check captive care with specialist guidance."
       }
-    }
+    },
+    "behavior": {
+      "temperament": "Peaceful schooling fish; one male per group",
+      "swimmingLevel": "Mid, Top",
+      "notes": "An active planktivore that needs several small feedings a day. Keep one male with several females in a large tank with open swimming room."
+    },
+    "careSource": "curated"
   },
   {
     "specCode": 5483,
@@ -28547,7 +28952,16 @@
     "maxLengthCm": 20,
     "masterPhotoUrl": "",
     "tankMetrics": {
-      "difficulty": "Unknown"
+      "tempRangeCelsius": [
+        24,
+        27
+      ],
+      "phRange": [
+        8.1,
+        8.4
+      ],
+      "minVolumeGallons": 125,
+      "difficulty": "Advanced"
     },
     "enhanced": false,
     "waterTypes": [
@@ -28587,7 +29001,13 @@
         "casual": "Famous for eating Aiptasia, but can also pick at some corals and tube worms. Reef safe with caution.",
         "pro": "Chelmon rostratus (Copperband butterflyfish). Reef safe with caution. Natural-history claims are from FishBase; check captive care with specialist guidance."
       }
-    }
+    },
+    "behavior": {
+      "temperament": "Peaceful and shy",
+      "swimmingLevel": "Mid, Bottom",
+      "notes": "Often hard to wean onto frozen foods; add it to a mature tank and start with live or fresh foods. Eats Aiptasia but may also pick at tube worms and some corals."
+    },
+    "careSource": "curated"
   },
   {
     "specCode": 5955,
@@ -28601,7 +29021,16 @@
     "maxLengthCm": 30,
     "masterPhotoUrl": "",
     "tankMetrics": {
-      "difficulty": "Unknown"
+      "tempRangeCelsius": [
+        22,
+        26
+      ],
+      "phRange": [
+        8.1,
+        8.4
+      ],
+      "minVolumeGallons": 30,
+      "difficulty": "Advanced"
     },
     "enhanced": false,
     "waterTypes": [
@@ -28641,7 +29070,13 @@
         "casual": "A slow grazer best kept in a species tank with gentle flow and frozen mysis. Generally reef safe.",
         "pro": "Hippocampus kuda (Spotted seahorse). Generally reef safe. Natural-history claims are from FishBase; check captive care with specialist guidance."
       }
-    }
+    },
+    "behavior": {
+      "temperament": "Peaceful, slow and easily outcompeted",
+      "swimmingLevel": "Mid, Bottom",
+      "notes": "Best in a tall species tank with gentle flow and hitching posts; buy captive-bred fish trained on frozen mysis. Keeping it on the cooler side lowers bacterial infection risk."
+    },
+    "careSource": "curated"
   },
   {
     "specCode": 4629,
@@ -28655,7 +29090,16 @@
     "maxLengthCm": 25,
     "masterPhotoUrl": "",
     "tankMetrics": {
-      "difficulty": "Unknown"
+      "tempRangeCelsius": [
+        23,
+        27
+      ],
+      "phRange": [
+        8.1,
+        8.4
+      ],
+      "minVolumeGallons": 100,
+      "difficulty": "Beginner"
     },
     "enhanced": false,
     "waterTypes": [
@@ -28694,7 +29138,13 @@
         "casual": "An algae eater with venomous spines that may nibble some corals. Reef safe with caution.",
         "pro": "Siganus vulpinus (Foxface). Reef safe with caution. Natural-history claims are from FishBase; check captive care with specialist guidance."
       }
-    }
+    },
+    "behavior": {
+      "temperament": "Peaceful; may spar with other rabbitfish",
+      "swimmingLevel": "Mid",
+      "notes": "Hardy algae grazer that needs plenty of vegetable matter. Its fin spines are venomous, so handle with care."
+    },
+    "careSource": "curated"
   },
   {
     "specCode": 5833,
@@ -28708,7 +29158,16 @@
     "maxLengthCm": 13,
     "masterPhotoUrl": "",
     "tankMetrics": {
-      "difficulty": "Unknown"
+      "tempRangeCelsius": [
+        23,
+        27
+      ],
+      "phRange": [
+        8.1,
+        8.4
+      ],
+      "minVolumeGallons": 50,
+      "difficulty": "Beginner"
     },
     "enhanced": false,
     "waterTypes": [
@@ -28747,7 +29206,13 @@
         "casual": "Perches on rock and gorgonians; will eat small shrimp. Reef safe with caution.",
         "pro": "Oxycirrhites typus (Longnose hawkfish). Reef safe with caution. Natural-history claims are from FishBase; check captive care with specialist guidance."
       }
-    }
+    },
+    "behavior": {
+      "temperament": "Semi-aggressive; eats small shrimp",
+      "swimmingLevel": "Bottom, Mid",
+      "notes": "Perches on rock and gorgonians and eats small shrimp and very small fish. Keep a lid on the tank because it can jump."
+    },
+    "careSource": "curated"
   },
   {
     "specCode": 6544,
@@ -28761,7 +29226,16 @@
     "maxLengthCm": 11,
     "masterPhotoUrl": "",
     "tankMetrics": {
-      "difficulty": "Unknown"
+      "tempRangeCelsius": [
+        23,
+        27
+      ],
+      "phRange": [
+        8.1,
+        8.4
+      ],
+      "minVolumeGallons": 30,
+      "difficulty": "Beginner"
     },
     "enhanced": false,
     "waterTypes": [
@@ -28800,7 +29274,13 @@
         "casual": "A small sharpnose puffer that may nip at inverts and fins. Reef safe with caution.",
         "pro": "Canthigaster valentini (Valentin's sharpnose puffer). Reef safe with caution. Natural-history claims are from FishBase; check captive care with specialist guidance."
       }
-    }
+    },
+    "behavior": {
+      "temperament": "Semi-aggressive; nips fins and invertebrates",
+      "swimmingLevel": "Mid, Bottom",
+      "notes": "Offer hard-shelled foods such as clams and snails to keep its beak worn down. Nips at invertebrates, corals and slow fish."
+    },
+    "careSource": "curated"
   },
   {
     "specCode": 3684,
@@ -28814,7 +29294,16 @@
     "maxLengthCm": 10,
     "masterPhotoUrl": "",
     "tankMetrics": {
-      "difficulty": "Unknown"
+      "tempRangeCelsius": [
+        23,
+        27
+      ],
+      "phRange": [
+        8.1,
+        8.4
+      ],
+      "minVolumeGallons": 30,
+      "difficulty": "Intermediate"
     },
     "enhanced": false,
     "waterTypes": [
@@ -28852,6 +29341,2184 @@
       "flavorText": {
         "casual": "Digs a burrow in deep sand and hovers above it; jumps, so keep a lid. Generally reef safe.",
         "pro": "Opistognathus aurifrons (Yellowhead jawfish). Generally reef safe. Natural-history claims are from FishBase; check captive care with specialist guidance."
+      }
+    },
+    "behavior": {
+      "temperament": "Peaceful burrow dweller",
+      "swimmingLevel": "Bottom",
+      "notes": "Needs a sand bed at least 8 to 10 cm deep with mixed grain sizes and rubble to build a burrow. A notorious jumper, so a tight-fitting lid is essential."
+    },
+    "careSource": "curated"
+  },
+  {
+    "specCode": 200001,
+    "scientificName": "Acropora millepora",
+    "genus": "Acropora",
+    "species": "millepora",
+    "commonName": "Millepora acropora",
+    "family": "Acroporidae (Coral)",
+    "type": "coral",
+    "maxLengthCm": null,
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "minVolumeGallons": 30,
+      "tempRangeCelsius": [
+        24,
+        27
+      ],
+      "phRange": [
+        8,
+        8.4
+      ],
+      "difficulty": "Advanced"
+    },
+    "waterTypes": [
+      "marine"
+    ],
+    "waterTypesSource": "worms",
+    "marine": {
+      "reefSafe": "yes",
+      "requiresReef": true,
+      "aphiaId": 207023,
+      "coralType": "SPS",
+      "light": "high",
+      "flow": "high",
+      "placement": "top",
+      "aggression": "peaceful",
+      "feeding": "photosynthetic"
+    },
+    "sources": [
+      {
+        "name": "WoRMS",
+        "url": "https://www.marinespecies.org/aphia.php?p=taxdetails&id=207023",
+        "type": "Taxonomy"
+      }
+    ],
+    "ecology": {
+      "comments": "Small-polyp stony coral that needs very stable alkalinity, calcium and magnesium, low but non-zero nutrients, and intense light. Sensitive to parameter swings; best added once a tank has been stable for many months.",
+      "phMin": 8,
+      "phMax": 8.4
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "A short-branched, colorful Acropora for a stable, mature reef with strong light and flow.",
+        "pro": "Acropora millepora; Acroporidae. Small-polyp stony coral (SPS): high light, high flow, top placement."
+      },
+      "flavorText": {
+        "casual": "A short-branched, colorful Acropora for a stable, mature reef with strong light and flow. Give it high light and high flow, placed high on the rockwork. Peaceful toward neighbors.",
+        "pro": "Acropora millepora (Acroporidae, WoRMS AphiaID 207023). Small-polyp stony coral (SPS); high light, high flow, top placement, peaceful, photosynthetic. Husbandry: 24–27 °C, pH 8–8.4, 30 gal minimum. Taxonomy from WoRMS; care values are curated reef-keeping guidance, not FishBase."
+      }
+    }
+  },
+  {
+    "specCode": 200002,
+    "scientificName": "Montipora capricornis",
+    "genus": "Montipora",
+    "species": "capricornis",
+    "commonName": "Montipora cap (plating montipora)",
+    "family": "Acroporidae (Coral)",
+    "type": "coral",
+    "maxLengthCm": null,
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "minVolumeGallons": 20,
+      "tempRangeCelsius": [
+        24,
+        27
+      ],
+      "phRange": [
+        8,
+        8.4
+      ],
+      "difficulty": "Intermediate"
+    },
+    "waterTypes": [
+      "marine"
+    ],
+    "waterTypesSource": "worms",
+    "marine": {
+      "reefSafe": "yes",
+      "requiresReef": true,
+      "aphiaId": 287698,
+      "coralType": "SPS",
+      "light": "medium",
+      "flow": "medium",
+      "placement": "middle",
+      "aggression": "peaceful",
+      "feeding": "photosynthetic"
+    },
+    "sources": [
+      {
+        "name": "WoRMS",
+        "url": "https://www.marinespecies.org/aphia.php?p=taxdetails&id=287698",
+        "type": "Taxonomy"
+      }
+    ],
+    "ecology": {
+      "comments": "Forms thin whorled plates that can shade corals beneath them as they grow. More forgiving than Acropora but still needs stable alkalinity and calcium. Watch for montipora-eating nudibranchs on new frags.",
+      "phMin": 8,
+      "phMax": 8.4
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "A plating montipora that grows in swirling shelves; a common first SPS.",
+        "pro": "Montipora capricornis; Acroporidae. Small-polyp stony coral (SPS): medium light, medium flow, middle placement."
+      },
+      "flavorText": {
+        "casual": "A plating montipora that grows in swirling shelves; a common first SPS. Give it medium light and medium flow, placed mid-rockwork. Peaceful toward neighbors.",
+        "pro": "Montipora capricornis (Acroporidae, WoRMS AphiaID 287698). Small-polyp stony coral (SPS); medium light, medium flow, middle placement, peaceful, photosynthetic. Husbandry: 24–27 °C, pH 8–8.4, 20 gal minimum. Taxonomy from WoRMS; care values are curated reef-keeping guidance, not FishBase."
+      }
+    }
+  },
+  {
+    "specCode": 200003,
+    "scientificName": "Montipora digitata",
+    "genus": "Montipora",
+    "species": "digitata",
+    "commonName": "Montipora digitata (finger montipora)",
+    "family": "Acroporidae (Coral)",
+    "type": "coral",
+    "maxLengthCm": null,
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "minVolumeGallons": 20,
+      "tempRangeCelsius": [
+        24,
+        27
+      ],
+      "phRange": [
+        8,
+        8.4
+      ],
+      "difficulty": "Intermediate"
+    },
+    "waterTypes": [
+      "marine"
+    ],
+    "waterTypesSource": "worms",
+    "marine": {
+      "reefSafe": "yes",
+      "requiresReef": true,
+      "aphiaId": 207185,
+      "coralType": "SPS",
+      "light": "medium",
+      "flow": "medium",
+      "placement": "middle",
+      "aggression": "peaceful",
+      "feeding": "photosynthetic"
+    },
+    "sources": [
+      {
+        "name": "WoRMS",
+        "url": "https://www.marinespecies.org/aphia.php?p=taxdetails&id=207185",
+        "type": "Taxonomy"
+      }
+    ],
+    "ecology": {
+      "comments": "Branching small-polyp stony coral that tolerates a wider range of light than most SPS. Grows quickly once settled and is often used to learn stony-coral dosing.",
+      "phMin": 8,
+      "phMax": 8.4
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "A fast-growing branching montipora that is one of the hardier SPS corals.",
+        "pro": "Montipora digitata; Acroporidae. Small-polyp stony coral (SPS): medium light, medium flow, middle placement."
+      },
+      "flavorText": {
+        "casual": "A fast-growing branching montipora that is one of the hardier SPS corals. Give it medium light and medium flow, placed mid-rockwork. Peaceful toward neighbors.",
+        "pro": "Montipora digitata (Acroporidae, WoRMS AphiaID 207185). Small-polyp stony coral (SPS); medium light, medium flow, middle placement, peaceful, photosynthetic. Husbandry: 24–27 °C, pH 8–8.4, 20 gal minimum. Taxonomy from WoRMS; care values are curated reef-keeping guidance, not FishBase."
+      }
+    }
+  },
+  {
+    "specCode": 200004,
+    "scientificName": "Seriatopora hystrix",
+    "genus": "Seriatopora",
+    "species": "hystrix",
+    "commonName": "Bird's nest coral",
+    "family": "Pocilloporidae (Coral)",
+    "type": "coral",
+    "maxLengthCm": null,
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "minVolumeGallons": 30,
+      "tempRangeCelsius": [
+        24,
+        27
+      ],
+      "phRange": [
+        8,
+        8.4
+      ],
+      "difficulty": "Advanced"
+    },
+    "waterTypes": [
+      "marine"
+    ],
+    "waterTypesSource": "worms",
+    "marine": {
+      "reefSafe": "yes",
+      "requiresReef": true,
+      "aphiaId": 206973,
+      "coralType": "SPS",
+      "light": "high",
+      "flow": "high",
+      "placement": "top",
+      "aggression": "peaceful",
+      "feeding": "photosynthetic"
+    },
+    "sources": [
+      {
+        "name": "WoRMS",
+        "url": "https://www.marinespecies.org/aphia.php?p=taxdetails&id=206973",
+        "type": "Taxonomy"
+      }
+    ],
+    "ecology": {
+      "comments": "Delicate branching SPS that needs strong light and flow and stable water. Branches are brittle and it can be quickly stung by neighbors, so give it space.",
+      "phMin": 8,
+      "phMax": 8.4
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "Thin, pointed branches that form a dense nest; pink and green forms are common.",
+        "pro": "Seriatopora hystrix; Pocilloporidae. Small-polyp stony coral (SPS): high light, high flow, top placement."
+      },
+      "flavorText": {
+        "casual": "Thin, pointed branches that form a dense nest; pink and green forms are common. Give it high light and high flow, placed high on the rockwork. Peaceful toward neighbors.",
+        "pro": "Seriatopora hystrix (Pocilloporidae, WoRMS AphiaID 206973). Small-polyp stony coral (SPS); high light, high flow, top placement, peaceful, photosynthetic. Husbandry: 24–27 °C, pH 8–8.4, 30 gal minimum. Taxonomy from WoRMS; care values are curated reef-keeping guidance, not FishBase."
+      }
+    }
+  },
+  {
+    "specCode": 200005,
+    "scientificName": "Stylophora pistillata",
+    "genus": "Stylophora",
+    "species": "pistillata",
+    "commonName": "Stylophora (cat's paw coral)",
+    "family": "Pocilloporidae (Coral)",
+    "type": "coral",
+    "maxLengthCm": null,
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "minVolumeGallons": 20,
+      "tempRangeCelsius": [
+        24,
+        27
+      ],
+      "phRange": [
+        8,
+        8.4
+      ],
+      "difficulty": "Intermediate"
+    },
+    "waterTypes": [
+      "marine"
+    ],
+    "waterTypesSource": "worms",
+    "marine": {
+      "reefSafe": "yes",
+      "requiresReef": true,
+      "aphiaId": 206982,
+      "coralType": "SPS",
+      "light": "medium",
+      "flow": "high",
+      "placement": "middle",
+      "aggression": "peaceful",
+      "feeding": "photosynthetic"
+    },
+    "sources": [
+      {
+        "name": "WoRMS",
+        "url": "https://www.marinespecies.org/aphia.php?p=taxdetails&id=206982",
+        "type": "Taxonomy"
+      }
+    ],
+    "ecology": {
+      "comments": "Branching small-polyp stony coral with thick, rounded branch tips. Tolerates moderate light and grows steadily with good flow and stable alkalinity.",
+      "phMin": 8,
+      "phMax": 8.4
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "A blunt-branched SPS that is widely aquacultured and relatively forgiving.",
+        "pro": "Stylophora pistillata; Pocilloporidae. Small-polyp stony coral (SPS): medium light, high flow, middle placement."
+      },
+      "flavorText": {
+        "casual": "A blunt-branched SPS that is widely aquacultured and relatively forgiving. Give it medium light and high flow, placed mid-rockwork. Peaceful toward neighbors.",
+        "pro": "Stylophora pistillata (Pocilloporidae, WoRMS AphiaID 206982). Small-polyp stony coral (SPS); medium light, high flow, middle placement, peaceful, photosynthetic. Husbandry: 24–27 °C, pH 8–8.4, 20 gal minimum. Taxonomy from WoRMS; care values are curated reef-keeping guidance, not FishBase."
+      }
+    }
+  },
+  {
+    "specCode": 200006,
+    "scientificName": "Pocillopora damicornis",
+    "genus": "Pocillopora",
+    "species": "damicornis",
+    "commonName": "Pocillopora (cauliflower coral)",
+    "family": "Pocilloporidae (Coral)",
+    "type": "coral",
+    "maxLengthCm": null,
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "minVolumeGallons": 20,
+      "tempRangeCelsius": [
+        24,
+        27
+      ],
+      "phRange": [
+        8,
+        8.4
+      ],
+      "difficulty": "Intermediate"
+    },
+    "waterTypes": [
+      "marine"
+    ],
+    "waterTypesSource": "worms",
+    "marine": {
+      "reefSafe": "yes",
+      "requiresReef": true,
+      "aphiaId": 206953,
+      "coralType": "SPS",
+      "light": "medium",
+      "flow": "medium",
+      "placement": "middle",
+      "aggression": "peaceful",
+      "feeding": "photosynthetic"
+    },
+    "sources": [
+      {
+        "name": "WoRMS",
+        "url": "https://www.marinespecies.org/aphia.php?p=taxdetails&id=206953",
+        "type": "Taxonomy"
+      }
+    ],
+    "ecology": {
+      "comments": "Hardy for an SPS and one of the few corals that often releases planula larvae in aquariums, so new colonies can appear on the rockwork.",
+      "phMin": 8,
+      "phMax": 8.4
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "A fast-growing branching SPS that can seed new colonies around the tank.",
+        "pro": "Pocillopora damicornis; Pocilloporidae. Small-polyp stony coral (SPS): medium light, medium flow, middle placement."
+      },
+      "flavorText": {
+        "casual": "A fast-growing branching SPS that can seed new colonies around the tank. Give it medium light and medium flow, placed mid-rockwork. Peaceful toward neighbors.",
+        "pro": "Pocillopora damicornis (Pocilloporidae, WoRMS AphiaID 206953). Small-polyp stony coral (SPS); medium light, medium flow, middle placement, peaceful, photosynthetic. Husbandry: 24–27 °C, pH 8–8.4, 20 gal minimum. Taxonomy from WoRMS; care values are curated reef-keeping guidance, not FishBase."
+      }
+    }
+  },
+  {
+    "specCode": 200007,
+    "scientificName": "Euphyllia glabrescens",
+    "genus": "Euphyllia",
+    "species": "glabrescens",
+    "commonName": "Torch coral",
+    "family": "Euphylliidae (Coral)",
+    "type": "coral",
+    "maxLengthCm": null,
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "minVolumeGallons": 30,
+      "tempRangeCelsius": [
+        24,
+        27
+      ],
+      "phRange": [
+        8,
+        8.4
+      ],
+      "difficulty": "Intermediate"
+    },
+    "waterTypes": [
+      "marine"
+    ],
+    "waterTypesSource": "worms",
+    "marine": {
+      "reefSafe": "yes",
+      "requiresReef": true,
+      "aphiaId": 207617,
+      "coralType": "LPS",
+      "light": "medium",
+      "flow": "medium",
+      "placement": "middle",
+      "aggression": "aggressive",
+      "feeding": "photosynthetic + target feed"
+    },
+    "sources": [
+      {
+        "name": "WoRMS",
+        "url": "https://www.marinespecies.org/aphia.php?p=taxdetails&id=207617",
+        "type": "Taxonomy"
+      }
+    ],
+    "ecology": {
+      "comments": "Large-polyp stony coral with long sweeper tentacles that sting nearby corals; leave at least 15 cm of space around it. Prefers moderate, alternating flow that moves the tentacles without tearing them.",
+      "phMin": 8,
+      "phMax": 8.4
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "Long flowing tentacles with bright tips; a favorite host for clownfish.",
+        "pro": "Euphyllia glabrescens; Euphylliidae. Large-polyp stony coral (LPS): medium light, medium flow, middle placement."
+      },
+      "flavorText": {
+        "casual": "Long flowing tentacles with bright tips; a favorite host for clownfish. Give it medium light and medium flow, placed mid-rockwork. Has a strong sting or sweeper tentacles, so give it plenty of space.",
+        "pro": "Euphyllia glabrescens (Euphylliidae, WoRMS AphiaID 207617). Large-polyp stony coral (LPS); medium light, medium flow, middle placement, aggressive, photosynthetic + target feed. Husbandry: 24–27 °C, pH 8–8.4, 30 gal minimum. Taxonomy from WoRMS; care values are curated reef-keeping guidance, not FishBase."
+      }
+    }
+  },
+  {
+    "specCode": 200008,
+    "scientificName": "Fimbriaphyllia ancora",
+    "genus": "Fimbriaphyllia",
+    "species": "ancora",
+    "commonName": "Hammer coral",
+    "family": "Euphylliidae (Coral)",
+    "type": "coral",
+    "maxLengthCm": null,
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "minVolumeGallons": 30,
+      "tempRangeCelsius": [
+        24,
+        27
+      ],
+      "phRange": [
+        8,
+        8.4
+      ],
+      "difficulty": "Intermediate"
+    },
+    "waterTypes": [
+      "marine"
+    ],
+    "waterTypesSource": "worms",
+    "marine": {
+      "reefSafe": "yes",
+      "requiresReef": true,
+      "aphiaId": 1048073,
+      "coralType": "LPS",
+      "light": "medium",
+      "flow": "medium",
+      "placement": "middle",
+      "aggression": "aggressive",
+      "feeding": "photosynthetic + target feed"
+    },
+    "sources": [
+      {
+        "name": "WoRMS",
+        "url": "https://www.marinespecies.org/aphia.php?p=taxdetails&id=1048073",
+        "type": "Taxonomy"
+      }
+    ],
+    "ecology": {
+      "comments": "Large-polyp stony coral with stinging sweeper tentacles; give it room from other corals. Wall and branching forms are both common in the trade.",
+      "phMin": 8,
+      "phMax": 8.4
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "Hammer- or anchor-shaped tentacle tips that sway in moderate flow.",
+        "pro": "Fimbriaphyllia ancora; Euphylliidae. Large-polyp stony coral (LPS): medium light, medium flow, middle placement."
+      },
+      "flavorText": {
+        "casual": "Hammer- or anchor-shaped tentacle tips that sway in moderate flow. Give it medium light and medium flow, placed mid-rockwork. Has a strong sting or sweeper tentacles, so give it plenty of space.",
+        "pro": "Fimbriaphyllia ancora (Euphylliidae, WoRMS AphiaID 1048073). Sold as Euphyllia ancora. WoRMS lists Euphyllia ancora (AphiaID 207614) as a superseded combination; the accepted name is Fimbriaphyllia ancora. Large-polyp stony coral (LPS); medium light, medium flow, middle placement, aggressive, photosynthetic + target feed. Husbandry: 24–27 °C, pH 8–8.4, 30 gal minimum. Taxonomy from WoRMS; care values are curated reef-keeping guidance, not FishBase."
+      }
+    }
+  },
+  {
+    "specCode": 200009,
+    "scientificName": "Duncanopsammia axifuga",
+    "genus": "Duncanopsammia",
+    "species": "axifuga",
+    "commonName": "Duncan coral",
+    "family": "Dendrophylliidae (Coral)",
+    "type": "coral",
+    "maxLengthCm": null,
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "minVolumeGallons": 20,
+      "tempRangeCelsius": [
+        24,
+        27
+      ],
+      "phRange": [
+        8,
+        8.4
+      ],
+      "difficulty": "Beginner"
+    },
+    "waterTypes": [
+      "marine"
+    ],
+    "waterTypesSource": "worms",
+    "marine": {
+      "reefSafe": "yes",
+      "requiresReef": true,
+      "aphiaId": 289843,
+      "coralType": "LPS",
+      "light": "low",
+      "flow": "low",
+      "placement": "bottom",
+      "aggression": "peaceful",
+      "feeding": "photosynthetic + target feed"
+    },
+    "sources": [
+      {
+        "name": "WoRMS",
+        "url": "https://www.marinespecies.org/aphia.php?p=taxdetails&id=289843",
+        "type": "Taxonomy"
+      }
+    ],
+    "ecology": {
+      "comments": "Hardy large-polyp stony coral that responds well to regular target feeding with small meaty foods. Grows by adding new heads on tube-like branches.",
+      "phMin": 8,
+      "phMax": 8.4
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "Big green polyps on branching tubes that eagerly take food.",
+        "pro": "Duncanopsammia axifuga; Dendrophylliidae. Large-polyp stony coral (LPS): low light, low flow, bottom placement."
+      },
+      "flavorText": {
+        "casual": "Big green polyps on branching tubes that eagerly take food. Give it low light and low flow, placed low in the tank. Peaceful toward neighbors.",
+        "pro": "Duncanopsammia axifuga (Dendrophylliidae, WoRMS AphiaID 289843). Large-polyp stony coral (LPS); low light, low flow, bottom placement, peaceful, photosynthetic + target feed. Husbandry: 24–27 °C, pH 8–8.4, 20 gal minimum. Taxonomy from WoRMS; care values are curated reef-keeping guidance, not FishBase."
+      }
+    }
+  },
+  {
+    "specCode": 200010,
+    "scientificName": "Fungia fungites",
+    "genus": "Fungia",
+    "species": "fungites",
+    "commonName": "Plate coral",
+    "family": "Fungiidae (Coral)",
+    "type": "coral",
+    "maxLengthCm": null,
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "minVolumeGallons": 30,
+      "tempRangeCelsius": [
+        24,
+        27
+      ],
+      "phRange": [
+        8,
+        8.4
+      ],
+      "difficulty": "Intermediate"
+    },
+    "waterTypes": [
+      "marine"
+    ],
+    "waterTypesSource": "worms",
+    "marine": {
+      "reefSafe": "yes",
+      "requiresReef": true,
+      "aphiaId": 207350,
+      "coralType": "LPS",
+      "light": "medium",
+      "flow": "low",
+      "placement": "bottom",
+      "aggression": "semi-aggressive",
+      "feeding": "photosynthetic + target feed"
+    },
+    "sources": [
+      {
+        "name": "WoRMS",
+        "url": "https://www.marinespecies.org/aphia.php?p=taxdetails&id=207350",
+        "type": "Taxonomy"
+      }
+    ],
+    "ecology": {
+      "comments": "Solitary, free-living stony coral kept on the sand bed, not the rockwork. Tentacles extend and can sting neighbors; avoid placing it where it can wander into other corals.",
+      "phMin": 8,
+      "phMax": 8.4
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "A free-living disc coral that sits on the sand and can move slowly.",
+        "pro": "Fungia fungites; Fungiidae. Large-polyp stony coral (LPS): medium light, low flow, bottom placement."
+      },
+      "flavorText": {
+        "casual": "A free-living disc coral that sits on the sand and can move slowly. Give it medium light and low flow, placed low in the tank. Can sting or crowd close neighbors, so leave some space.",
+        "pro": "Fungia fungites (Fungiidae, WoRMS AphiaID 207350). Plate corals are sold at genus level as Fungia; Fungia fungites, the type species, is used here. Large-polyp stony coral (LPS); medium light, low flow, bottom placement, semi-aggressive, photosynthetic + target feed. Husbandry: 24–27 °C, pH 8–8.4, 30 gal minimum. Taxonomy from WoRMS; care values are curated reef-keeping guidance, not FishBase."
+      }
+    }
+  },
+  {
+    "specCode": 200011,
+    "scientificName": "Trachyphyllia geoffroyi",
+    "genus": "Trachyphyllia",
+    "species": "geoffroyi",
+    "commonName": "Open brain coral",
+    "family": "Merulinidae (Coral)",
+    "type": "coral",
+    "maxLengthCm": null,
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "minVolumeGallons": 30,
+      "tempRangeCelsius": [
+        24,
+        27
+      ],
+      "phRange": [
+        8,
+        8.4
+      ],
+      "difficulty": "Intermediate"
+    },
+    "waterTypes": [
+      "marine"
+    ],
+    "waterTypesSource": "worms",
+    "marine": {
+      "reefSafe": "yes",
+      "requiresReef": true,
+      "aphiaId": 207495,
+      "coralType": "LPS",
+      "light": "medium",
+      "flow": "low",
+      "placement": "bottom",
+      "aggression": "semi-aggressive",
+      "feeding": "photosynthetic + target feed"
+    },
+    "sources": [
+      {
+        "name": "WoRMS",
+        "url": "https://www.marinespecies.org/aphia.php?p=taxdetails&id=207495",
+        "type": "Taxonomy"
+      }
+    ],
+    "ecology": {
+      "comments": "Free-living large-polyp stony coral kept on the sand bed. Inflates its tissue in low flow and extends feeding tentacles at night; target feed small meaty foods.",
+      "phMin": 8,
+      "phMax": 8.4
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "A fleshy, often fluorescent brain coral that sits on the sand.",
+        "pro": "Trachyphyllia geoffroyi; Merulinidae. Large-polyp stony coral (LPS): medium light, low flow, bottom placement."
+      },
+      "flavorText": {
+        "casual": "A fleshy, often fluorescent brain coral that sits on the sand. Give it medium light and low flow, placed low in the tank. Can sting or crowd close neighbors, so leave some space.",
+        "pro": "Trachyphyllia geoffroyi (Merulinidae, WoRMS AphiaID 207495). Large-polyp stony coral (LPS); medium light, low flow, bottom placement, semi-aggressive, photosynthetic + target feed. Husbandry: 24–27 °C, pH 8–8.4, 30 gal minimum. Taxonomy from WoRMS; care values are curated reef-keeping guidance, not FishBase."
+      }
+    }
+  },
+  {
+    "specCode": 200012,
+    "scientificName": "Micromussa lordhowensis",
+    "genus": "Micromussa",
+    "species": "lordhowensis",
+    "commonName": "Acan (Acan lord)",
+    "family": "Lobophylliidae (Coral)",
+    "type": "coral",
+    "maxLengthCm": null,
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "minVolumeGallons": 20,
+      "tempRangeCelsius": [
+        24,
+        27
+      ],
+      "phRange": [
+        8,
+        8.4
+      ],
+      "difficulty": "Intermediate"
+    },
+    "waterTypes": [
+      "marine"
+    ],
+    "waterTypesSource": "worms",
+    "marine": {
+      "reefSafe": "yes",
+      "requiresReef": true,
+      "aphiaId": 886929,
+      "coralType": "LPS",
+      "light": "low",
+      "flow": "low",
+      "placement": "bottom",
+      "aggression": "semi-aggressive",
+      "feeding": "photosynthetic + target feed"
+    },
+    "sources": [
+      {
+        "name": "WoRMS",
+        "url": "https://www.marinespecies.org/aphia.php?p=taxdetails&id=886929",
+        "type": "Taxonomy"
+      }
+    ],
+    "ecology": {
+      "comments": "Encrusting large-polyp stony coral that grows well under modest light when target fed. Extends short sweeper tentacles at night, so leave a little space around it.",
+      "phMin": 8,
+      "phMax": 8.4
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "Fleshy, multicolored polyps that are collected for their color morphs.",
+        "pro": "Micromussa lordhowensis; Lobophylliidae. Large-polyp stony coral (LPS): low light, low flow, bottom placement."
+      },
+      "flavorText": {
+        "casual": "Fleshy, multicolored polyps that are collected for their color morphs. Give it low light and low flow, placed low in the tank. Can sting or crowd close neighbors, so leave some space.",
+        "pro": "Micromussa lordhowensis (Lobophylliidae, WoRMS AphiaID 886929). Long sold as Acanthastrea lordhowensis; the accepted WoRMS name is Micromussa lordhowensis. Large-polyp stony coral (LPS); low light, low flow, bottom placement, semi-aggressive, photosynthetic + target feed. Husbandry: 24–27 °C, pH 8–8.4, 20 gal minimum. Taxonomy from WoRMS; care values are curated reef-keeping guidance, not FishBase."
+      }
+    }
+  },
+  {
+    "specCode": 200013,
+    "scientificName": "Caulastraea furcata",
+    "genus": "Caulastraea",
+    "species": "furcata",
+    "commonName": "Candy cane coral",
+    "family": "Merulinidae (Coral)",
+    "type": "coral",
+    "maxLengthCm": null,
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "minVolumeGallons": 20,
+      "tempRangeCelsius": [
+        24,
+        27
+      ],
+      "phRange": [
+        8,
+        8.4
+      ],
+      "difficulty": "Beginner"
+    },
+    "waterTypes": [
+      "marine"
+    ],
+    "waterTypesSource": "worms",
+    "marine": {
+      "reefSafe": "yes",
+      "requiresReef": true,
+      "aphiaId": 289577,
+      "coralType": "LPS",
+      "light": "medium",
+      "flow": "medium",
+      "placement": "middle",
+      "aggression": "semi-aggressive",
+      "feeding": "photosynthetic + target feed"
+    },
+    "sources": [
+      {
+        "name": "WoRMS",
+        "url": "https://www.marinespecies.org/aphia.php?p=taxdetails&id=289577",
+        "type": "Taxonomy"
+      }
+    ],
+    "ecology": {
+      "comments": "Hardy large-polyp stony coral and a common first LPS. Extends short sweepers at night; accepts small meaty foods and grows new heads steadily.",
+      "phMin": 8,
+      "phMax": 8.4
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "Striped tube-shaped heads that branch and grow into a bouquet.",
+        "pro": "Caulastraea furcata; Merulinidae. Large-polyp stony coral (LPS): medium light, medium flow, middle placement."
+      },
+      "flavorText": {
+        "casual": "Striped tube-shaped heads that branch and grow into a bouquet. Give it medium light and medium flow, placed mid-rockwork. Can sting or crowd close neighbors, so leave some space.",
+        "pro": "Caulastraea furcata (Merulinidae, WoRMS AphiaID 289577). Large-polyp stony coral (LPS); medium light, medium flow, middle placement, semi-aggressive, photosynthetic + target feed. Husbandry: 24–27 °C, pH 8–8.4, 20 gal minimum. Taxonomy from WoRMS; care values are curated reef-keeping guidance, not FishBase."
+      }
+    }
+  },
+  {
+    "specCode": 200014,
+    "scientificName": "Blastomussa wellsi",
+    "genus": "Blastomussa",
+    "species": "wellsi",
+    "commonName": "Blastomussa",
+    "family": "Plerogyridae (Coral)",
+    "type": "coral",
+    "maxLengthCm": null,
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "minVolumeGallons": 20,
+      "tempRangeCelsius": [
+        24,
+        27
+      ],
+      "phRange": [
+        8,
+        8.4
+      ],
+      "difficulty": "Beginner"
+    },
+    "waterTypes": [
+      "marine"
+    ],
+    "waterTypesSource": "worms",
+    "marine": {
+      "reefSafe": "yes",
+      "requiresReef": true,
+      "aphiaId": 207386,
+      "coralType": "LPS",
+      "light": "low",
+      "flow": "low",
+      "placement": "bottom",
+      "aggression": "peaceful",
+      "feeding": "photosynthetic + target feed"
+    },
+    "sources": [
+      {
+        "name": "WoRMS",
+        "url": "https://www.marinespecies.org/aphia.php?p=taxdetails&id=207386",
+        "type": "Taxonomy"
+      }
+    ],
+    "ecology": {
+      "comments": "Large-polyp stony coral that prefers low light and gentle flow. Polyps inflate strongly when conditions suit it; small meaty foods help growth.",
+      "phMin": 8,
+      "phMax": 8.4
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "Fleshy, inflated polyps in red, pink, and green; happy in shaded spots.",
+        "pro": "Blastomussa wellsi; Plerogyridae. Large-polyp stony coral (LPS): low light, low flow, bottom placement."
+      },
+      "flavorText": {
+        "casual": "Fleshy, inflated polyps in red, pink, and green; happy in shaded spots. Give it low light and low flow, placed low in the tank. Peaceful toward neighbors.",
+        "pro": "Blastomussa wellsi (Plerogyridae, WoRMS AphiaID 207386). Large-polyp stony coral (LPS); low light, low flow, bottom placement, peaceful, photosynthetic + target feed. Husbandry: 24–27 °C, pH 8–8.4, 20 gal minimum. Taxonomy from WoRMS; care values are curated reef-keeping guidance, not FishBase."
+      }
+    }
+  },
+  {
+    "specCode": 200015,
+    "scientificName": "Sarcophyton glaucum",
+    "genus": "Sarcophyton",
+    "species": "glaucum",
+    "commonName": "Toadstool leather coral",
+    "family": "Sarcophytidae (Coral)",
+    "type": "coral",
+    "maxLengthCm": null,
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "minVolumeGallons": 20,
+      "tempRangeCelsius": [
+        24,
+        27
+      ],
+      "phRange": [
+        8,
+        8.4
+      ],
+      "difficulty": "Beginner"
+    },
+    "waterTypes": [
+      "marine"
+    ],
+    "waterTypesSource": "worms",
+    "marine": {
+      "reefSafe": "yes",
+      "requiresReef": true,
+      "aphiaId": 209621,
+      "coralType": "soft",
+      "light": "medium",
+      "flow": "medium",
+      "placement": "middle",
+      "aggression": "semi-aggressive",
+      "feeding": "photosynthetic"
+    },
+    "sources": [
+      {
+        "name": "WoRMS",
+        "url": "https://www.marinespecies.org/aphia.php?p=taxdetails&id=209621",
+        "type": "Taxonomy"
+      }
+    ],
+    "ecology": {
+      "comments": "Hardy soft coral that releases chemical compounds (terpenes) that can irritate nearby stony corals; activated carbon helps in mixed reefs. Periodically sheds a waxy film and stays closed for a few days.",
+      "phMin": 8,
+      "phMax": 8.4
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "A mushroom-shaped leather coral with a cap of long polyps.",
+        "pro": "Sarcophyton glaucum; Sarcophytidae. Soft coral: medium light, medium flow, middle placement."
+      },
+      "flavorText": {
+        "casual": "A mushroom-shaped leather coral with a cap of long polyps. Give it medium light and medium flow, placed mid-rockwork. Can sting or crowd close neighbors, so leave some space.",
+        "pro": "Sarcophyton glaucum (Sarcophytidae, WoRMS AphiaID 209621). Leather corals are sold at genus level as Sarcophyton; Sarcophyton glaucum is used here as a well-known accepted species. Soft coral; medium light, medium flow, middle placement, semi-aggressive, photosynthetic. Husbandry: 24–27 °C, pH 8–8.4, 20 gal minimum. Taxonomy from WoRMS; care values are curated reef-keeping guidance, not FishBase."
+      }
+    }
+  },
+  {
+    "specCode": 200016,
+    "scientificName": "Sclerophytum flexibile",
+    "genus": "Sclerophytum",
+    "species": "flexibile",
+    "commonName": "Finger leather coral",
+    "family": "Sarcophytidae (Coral)",
+    "type": "coral",
+    "maxLengthCm": null,
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "minVolumeGallons": 20,
+      "tempRangeCelsius": [
+        24,
+        27
+      ],
+      "phRange": [
+        8,
+        8.4
+      ],
+      "difficulty": "Beginner"
+    },
+    "waterTypes": [
+      "marine"
+    ],
+    "waterTypesSource": "worms",
+    "marine": {
+      "reefSafe": "yes",
+      "requiresReef": true,
+      "aphiaId": 1608860,
+      "coralType": "soft",
+      "light": "medium",
+      "flow": "medium",
+      "placement": "middle",
+      "aggression": "semi-aggressive",
+      "feeding": "photosynthetic"
+    },
+    "sources": [
+      {
+        "name": "WoRMS",
+        "url": "https://www.marinespecies.org/aphia.php?p=taxdetails&id=1608860",
+        "type": "Taxonomy"
+      }
+    ],
+    "ecology": {
+      "comments": "Hardy soft coral that grows quickly and propagates easily. Like other leathers it can release chemicals that affect stony corals; run carbon in mixed reefs.",
+      "phMin": 8,
+      "phMax": 8.4
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "Soft, swaying fingers that move gracefully in the current.",
+        "pro": "Sclerophytum flexibile; Sarcophytidae. Soft coral: medium light, medium flow, middle placement."
+      },
+      "flavorText": {
+        "casual": "Soft, swaying fingers that move gracefully in the current. Give it medium light and medium flow, placed mid-rockwork. Can sting or crowd close neighbors, so leave some space.",
+        "pro": "Sclerophytum flexibile (Sarcophytidae, WoRMS AphiaID 1608860). Sold as Sinularia flexibilis. WoRMS lists Sinularia flexibilis (AphiaID 288521) as a superseded combination; the accepted name is Sclerophytum flexibile. The hobby genus-level name is Sinularia. Soft coral; medium light, medium flow, middle placement, semi-aggressive, photosynthetic. Husbandry: 24–27 °C, pH 8–8.4, 20 gal minimum. Taxonomy from WoRMS; care values are curated reef-keeping guidance, not FishBase."
+      }
+    }
+  },
+  {
+    "specCode": 200017,
+    "scientificName": "Xenia umbellata",
+    "genus": "Xenia",
+    "species": "umbellata",
+    "commonName": "Pulsing xenia",
+    "family": "Xeniidae (Coral)",
+    "type": "coral",
+    "maxLengthCm": null,
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "minVolumeGallons": 10,
+      "tempRangeCelsius": [
+        24,
+        27
+      ],
+      "phRange": [
+        8,
+        8.4
+      ],
+      "difficulty": "Beginner"
+    },
+    "waterTypes": [
+      "marine"
+    ],
+    "waterTypesSource": "worms",
+    "marine": {
+      "reefSafe": "yes",
+      "requiresReef": true,
+      "aphiaId": 210023,
+      "coralType": "soft",
+      "light": "medium",
+      "flow": "medium",
+      "placement": "any",
+      "aggression": "peaceful",
+      "feeding": "photosynthetic"
+    },
+    "sources": [
+      {
+        "name": "WoRMS",
+        "url": "https://www.marinespecies.org/aphia.php?p=taxdetails&id=210023",
+        "type": "Taxonomy"
+      }
+    ],
+    "ecology": {
+      "comments": "Soft coral that spreads rapidly across rock and can overgrow slower corals. Easiest to control on an isolated rock. Growth and pulsing vary between tanks.",
+      "phMin": 8,
+      "phMax": 8.4
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "Feathery polyps that open and close in a rhythmic pulse.",
+        "pro": "Xenia umbellata; Xeniidae. Soft coral: medium light, medium flow, any placement."
+      },
+      "flavorText": {
+        "casual": "Feathery polyps that open and close in a rhythmic pulse. Give it medium light and medium flow, placed anywhere in the tank. Peaceful toward neighbors.",
+        "pro": "Xenia umbellata (Xeniidae, WoRMS AphiaID 210023). Pulsing corals are sold as Xenia or Heteroxenia; Xenia umbellata is used here as a well-known accepted species. Soft coral; medium light, medium flow, any placement, peaceful, photosynthetic. Husbandry: 24–27 °C, pH 8–8.4, 10 gal minimum. Taxonomy from WoRMS; care values are curated reef-keeping guidance, not FishBase."
+      }
+    }
+  },
+  {
+    "specCode": 200018,
+    "scientificName": "Clavularia viridis",
+    "genus": "Clavularia",
+    "species": "viridis",
+    "commonName": "Clove polyp",
+    "family": "Clavulariidae (Coral)",
+    "type": "coral",
+    "maxLengthCm": null,
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "minVolumeGallons": 10,
+      "tempRangeCelsius": [
+        24,
+        27
+      ],
+      "phRange": [
+        8,
+        8.4
+      ],
+      "difficulty": "Beginner"
+    },
+    "waterTypes": [
+      "marine"
+    ],
+    "waterTypesSource": "worms",
+    "marine": {
+      "reefSafe": "yes",
+      "requiresReef": true,
+      "aphiaId": 517695,
+      "coralType": "soft",
+      "light": "medium",
+      "flow": "medium",
+      "placement": "any",
+      "aggression": "peaceful",
+      "feeding": "photosynthetic"
+    },
+    "sources": [
+      {
+        "name": "WoRMS",
+        "url": "https://www.marinespecies.org/aphia.php?p=taxdetails&id=517695",
+        "type": "Taxonomy"
+      }
+    ],
+    "ecology": {
+      "comments": "Hardy soft coral that spreads by stolons and can cover rock quickly. A good beginner coral; place it where spreading will not crowd other corals.",
+      "phMin": 8,
+      "phMax": 8.4
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "Eight-armed feathery polyps that spread across rock on runners.",
+        "pro": "Clavularia viridis; Clavulariidae. Soft coral: medium light, medium flow, any placement."
+      },
+      "flavorText": {
+        "casual": "Eight-armed feathery polyps that spread across rock on runners. Give it medium light and medium flow, placed anywhere in the tank. Peaceful toward neighbors.",
+        "pro": "Clavularia viridis (Clavulariidae, WoRMS AphiaID 517695). Clove polyps are sold at genus level as Clavularia; Clavularia viridis is used here as a well-known accepted species. Soft coral; medium light, medium flow, any placement, peaceful, photosynthetic. Husbandry: 24–27 °C, pH 8–8.4, 10 gal minimum. Taxonomy from WoRMS; care values are curated reef-keeping guidance, not FishBase."
+      }
+    }
+  },
+  {
+    "specCode": 200019,
+    "scientificName": "Briareum violaceum",
+    "genus": "Briareum",
+    "species": "violaceum",
+    "commonName": "Green star polyp (GSP)",
+    "family": "Briareidae (Coral)",
+    "type": "coral",
+    "maxLengthCm": null,
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "minVolumeGallons": 10,
+      "tempRangeCelsius": [
+        24,
+        27
+      ],
+      "phRange": [
+        8,
+        8.4
+      ],
+      "difficulty": "Beginner"
+    },
+    "waterTypes": [
+      "marine"
+    ],
+    "waterTypesSource": "worms",
+    "marine": {
+      "reefSafe": "yes",
+      "requiresReef": true,
+      "aphiaId": 517640,
+      "coralType": "soft",
+      "light": "medium",
+      "flow": "medium",
+      "placement": "any",
+      "aggression": "peaceful",
+      "feeding": "photosynthetic"
+    },
+    "sources": [
+      {
+        "name": "WoRMS",
+        "url": "https://www.marinespecies.org/aphia.php?p=taxdetails&id=517640",
+        "type": "Taxonomy"
+      }
+    ],
+    "ecology": {
+      "comments": "Very hardy and fast-spreading encrusting coral that can overgrow rock, glass, and other corals. Many keepers grow it on an isolated rock to keep it in check.",
+      "phMin": 8,
+      "phMax": 8.4
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "A glowing green carpet of polyps on a purple mat.",
+        "pro": "Briareum violaceum; Briareidae. Soft coral: medium light, medium flow, any placement."
+      },
+      "flavorText": {
+        "casual": "A glowing green carpet of polyps on a purple mat. Give it medium light and medium flow, placed anywhere in the tank. Peaceful toward neighbors.",
+        "pro": "Briareum violaceum (Briareidae, WoRMS AphiaID 517640). Often sold as Pachyclavularia violacea, which WoRMS lists as a superseded combination (AphiaID 1346552) of Briareum violaceum. Taxonomically an encrusting briareid; treated as a soft coral in the hobby. Soft coral; medium light, medium flow, any placement, peaceful, photosynthetic. Husbandry: 24–27 °C, pH 8–8.4, 10 gal minimum. Taxonomy from WoRMS; care values are curated reef-keeping guidance, not FishBase."
+      }
+    }
+  },
+  {
+    "specCode": 200020,
+    "scientificName": "Zoanthus sociatus",
+    "genus": "Zoanthus",
+    "species": "sociatus",
+    "commonName": "Zoanthid (zoa)",
+    "family": "Zoanthidae (Coral)",
+    "type": "coral",
+    "maxLengthCm": null,
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "minVolumeGallons": 10,
+      "tempRangeCelsius": [
+        24,
+        27
+      ],
+      "phRange": [
+        8,
+        8.4
+      ],
+      "difficulty": "Beginner"
+    },
+    "waterTypes": [
+      "marine"
+    ],
+    "waterTypesSource": "worms",
+    "marine": {
+      "reefSafe": "yes",
+      "requiresReef": true,
+      "aphiaId": 288843,
+      "coralType": "zoanthid",
+      "light": "medium",
+      "flow": "medium",
+      "placement": "any",
+      "aggression": "peaceful",
+      "feeding": "photosynthetic"
+    },
+    "sources": [
+      {
+        "name": "WoRMS",
+        "url": "https://www.marinespecies.org/aphia.php?p=taxdetails&id=288843",
+        "type": "Taxonomy"
+      }
+    ],
+    "ecology": {
+      "comments": "Hardy colonial zoanthid that spreads across rock. Some zoanthids contain palytoxin: wear gloves and eye protection when handling or fragging, and never boil rock with them attached.",
+      "phMin": 8,
+      "phMax": 8.4
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "Colonies of small colorful polyps, collected in endless named color morphs.",
+        "pro": "Zoanthus sociatus; Zoanthidae. Zoanthid: medium light, medium flow, any placement."
+      },
+      "flavorText": {
+        "casual": "Colonies of small colorful polyps, collected in endless named color morphs. Give it medium light and medium flow, placed anywhere in the tank. Peaceful toward neighbors.",
+        "pro": "Zoanthus sociatus (Zoanthidae, WoRMS AphiaID 288843). Zoanthids are sold by color-morph trade names at genus level (Zoanthus); Zoanthus sociatus is used here as a well-known accepted species. WoRMS also holds a homonym record (AphiaID 869585, taxon inquirendum); the accepted record is used. Zoanthid; medium light, medium flow, any placement, peaceful, photosynthetic. Husbandry: 24–27 °C, pH 8–8.4, 10 gal minimum. Taxonomy from WoRMS; care values are curated reef-keeping guidance, not FishBase."
+      }
+    }
+  },
+  {
+    "specCode": 200021,
+    "scientificName": "Palythoa grandis",
+    "genus": "Palythoa",
+    "species": "grandis",
+    "commonName": "Palythoa (button polyp)",
+    "family": "Sphenopidae (Coral)",
+    "type": "coral",
+    "maxLengthCm": null,
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "minVolumeGallons": 10,
+      "tempRangeCelsius": [
+        24,
+        27
+      ],
+      "phRange": [
+        8,
+        8.4
+      ],
+      "difficulty": "Beginner"
+    },
+    "waterTypes": [
+      "marine"
+    ],
+    "waterTypesSource": "worms",
+    "marine": {
+      "reefSafe": "yes",
+      "requiresReef": true,
+      "aphiaId": 288461,
+      "coralType": "zoanthid",
+      "light": "medium",
+      "flow": "medium",
+      "placement": "any",
+      "aggression": "peaceful",
+      "feeding": "photosynthetic + target feed"
+    },
+    "sources": [
+      {
+        "name": "WoRMS",
+        "url": "https://www.marinespecies.org/aphia.php?p=taxdetails&id=288461",
+        "type": "Taxonomy"
+      }
+    ],
+    "ecology": {
+      "comments": "Hardy colonial zoanthid. Palythoa species can contain high levels of palytoxin, a dangerous toxin: wear gloves and eye protection when handling or fragging, avoid splashing, and never boil or scrub rock with them attached.",
+      "phMin": 8,
+      "phMax": 8.4
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "Larger polyps than Zoanthus that grow quickly and eat more readily.",
+        "pro": "Palythoa grandis; Sphenopidae. Zoanthid: medium light, medium flow, any placement."
+      },
+      "flavorText": {
+        "casual": "Larger polyps than Zoanthus that grow quickly and eat more readily. Give it medium light and medium flow, placed anywhere in the tank. Peaceful toward neighbors.",
+        "pro": "Palythoa grandis (Sphenopidae, WoRMS AphiaID 288461). Palys are sold at genus level as Palythoa; Palythoa grandis is used here as a well-known accepted species. Zoanthid; medium light, medium flow, any placement, peaceful, photosynthetic + target feed. Husbandry: 24–27 °C, pH 8–8.4, 10 gal minimum. Taxonomy from WoRMS; care values are curated reef-keeping guidance, not FishBase."
+      }
+    }
+  },
+  {
+    "specCode": 200022,
+    "scientificName": "Discosoma nummiforme",
+    "genus": "Discosoma",
+    "species": "nummiforme",
+    "commonName": "Discosoma mushroom",
+    "family": "Discosomidae (Coral)",
+    "type": "coral",
+    "maxLengthCm": null,
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "minVolumeGallons": 10,
+      "tempRangeCelsius": [
+        24,
+        27
+      ],
+      "phRange": [
+        8,
+        8.4
+      ],
+      "difficulty": "Beginner"
+    },
+    "waterTypes": [
+      "marine"
+    ],
+    "waterTypesSource": "worms",
+    "marine": {
+      "reefSafe": "yes",
+      "requiresReef": true,
+      "aphiaId": 411031,
+      "coralType": "mushroom",
+      "light": "low",
+      "flow": "low",
+      "placement": "bottom",
+      "aggression": "semi-aggressive",
+      "feeding": "photosynthetic"
+    },
+    "sources": [
+      {
+        "name": "WoRMS",
+        "url": "https://www.marinespecies.org/aphia.php?p=taxdetails&id=411031",
+        "type": "Taxonomy"
+      }
+    ],
+    "ecology": {
+      "comments": "Very hardy corallimorph that prefers low light and gentle flow. Spreads by budding and can crowd or shade neighboring corals over time.",
+      "phMin": 8,
+      "phMax": 8.4
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "Smooth, flat discs in many colors that thrive in shaded spots.",
+        "pro": "Discosoma nummiforme; Discosomidae. Mushroom coral (corallimorph): low light, low flow, bottom placement."
+      },
+      "flavorText": {
+        "casual": "Smooth, flat discs in many colors that thrive in shaded spots. Give it low light and low flow, placed low in the tank. Can sting or crowd close neighbors, so leave some space.",
+        "pro": "Discosoma nummiforme (Discosomidae, WoRMS AphiaID 411031). Mushrooms are sold at genus level as Discosoma; Discosoma nummiforme is used here as an accepted Indo-Pacific species. Mushroom coral (corallimorph); low light, low flow, bottom placement, semi-aggressive, photosynthetic. Husbandry: 24–27 °C, pH 8–8.4, 10 gal minimum. Taxonomy from WoRMS; care values are curated reef-keeping guidance, not FishBase."
+      }
+    }
+  },
+  {
+    "specCode": 200023,
+    "scientificName": "Rhodactis indosinensis",
+    "genus": "Rhodactis",
+    "species": "indosinensis",
+    "commonName": "Hairy mushroom",
+    "family": "Discosomidae (Coral)",
+    "type": "coral",
+    "maxLengthCm": null,
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "minVolumeGallons": 10,
+      "tempRangeCelsius": [
+        24,
+        27
+      ],
+      "phRange": [
+        8,
+        8.4
+      ],
+      "difficulty": "Beginner"
+    },
+    "waterTypes": [
+      "marine"
+    ],
+    "waterTypesSource": "worms",
+    "marine": {
+      "reefSafe": "yes",
+      "requiresReef": true,
+      "aphiaId": 290981,
+      "coralType": "mushroom",
+      "light": "low",
+      "flow": "low",
+      "placement": "bottom",
+      "aggression": "semi-aggressive",
+      "feeding": "photosynthetic + target feed"
+    },
+    "sources": [
+      {
+        "name": "WoRMS",
+        "url": "https://www.marinespecies.org/aphia.php?p=taxdetails&id=290981",
+        "type": "Taxonomy"
+      }
+    ],
+    "ecology": {
+      "comments": "Hardy corallimorph that accepts small meaty foods. Can sting and overgrow nearby corals, so give it its own space.",
+      "phMin": 8,
+      "phMax": 8.4
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "A fuzzy-textured mushroom that can fold up around food.",
+        "pro": "Rhodactis indosinensis; Discosomidae. Mushroom coral (corallimorph): low light, low flow, bottom placement."
+      },
+      "flavorText": {
+        "casual": "A fuzzy-textured mushroom that can fold up around food. Give it low light and low flow, placed low in the tank. Can sting or crowd close neighbors, so leave some space.",
+        "pro": "Rhodactis indosinensis (Discosomidae, WoRMS AphiaID 290981). Hairy mushrooms are sold at genus level as Rhodactis; Rhodactis indosinensis is used here as a well-known accepted species. Mushroom coral (corallimorph); low light, low flow, bottom placement, semi-aggressive, photosynthetic + target feed. Husbandry: 24–27 °C, pH 8–8.4, 10 gal minimum. Taxonomy from WoRMS; care values are curated reef-keeping guidance, not FishBase."
+      }
+    }
+  },
+  {
+    "specCode": 200024,
+    "scientificName": "Ricordea florida",
+    "genus": "Ricordea",
+    "species": "florida",
+    "commonName": "Ricordea mushroom",
+    "family": "Ricordeidae (Coral)",
+    "type": "coral",
+    "maxLengthCm": null,
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "minVolumeGallons": 20,
+      "tempRangeCelsius": [
+        24,
+        27
+      ],
+      "phRange": [
+        8,
+        8.4
+      ],
+      "difficulty": "Intermediate"
+    },
+    "waterTypes": [
+      "marine"
+    ],
+    "waterTypesSource": "worms",
+    "marine": {
+      "reefSafe": "yes",
+      "requiresReef": true,
+      "aphiaId": 290995,
+      "coralType": "mushroom",
+      "light": "low",
+      "flow": "low",
+      "placement": "bottom",
+      "aggression": "peaceful",
+      "feeding": "photosynthetic + target feed"
+    },
+    "sources": [
+      {
+        "name": "WoRMS",
+        "url": "https://www.marinespecies.org/aphia.php?p=taxdetails&id=290995",
+        "type": "Taxonomy"
+      }
+    ],
+    "ecology": {
+      "comments": "Corallimorph covered in short bubble-like tentacles. Prefers low to moderate light and gentle flow; benefits from occasional target feeding. Slower to spread than Discosoma.",
+      "phMin": 8,
+      "phMax": 8.4
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "Bubbly, bright Caribbean mushrooms prized for their color combinations.",
+        "pro": "Ricordea florida; Ricordeidae. Mushroom coral (corallimorph): low light, low flow, bottom placement."
+      },
+      "flavorText": {
+        "casual": "Bubbly, bright Caribbean mushrooms prized for their color combinations. Give it low light and low flow, placed low in the tank. Peaceful toward neighbors.",
+        "pro": "Ricordea florida (Ricordeidae, WoRMS AphiaID 290995). Mushroom coral (corallimorph); low light, low flow, bottom placement, peaceful, photosynthetic + target feed. Husbandry: 24–27 °C, pH 8–8.4, 20 gal minimum. Taxonomy from WoRMS; care values are curated reef-keeping guidance, not FishBase."
+      }
+    }
+  },
+  {
+    "specCode": 200025,
+    "scientificName": "Entacmaea quadricolor",
+    "genus": "Entacmaea",
+    "species": "quadricolor",
+    "commonName": "Bubble tip anemone (BTA)",
+    "family": "Actiniidae (Coral)",
+    "type": "coral",
+    "maxLengthCm": null,
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "minVolumeGallons": 30,
+      "tempRangeCelsius": [
+        24,
+        27
+      ],
+      "phRange": [
+        8,
+        8.4
+      ],
+      "difficulty": "Advanced"
+    },
+    "waterTypes": [
+      "marine"
+    ],
+    "waterTypesSource": "worms",
+    "marine": {
+      "reefSafe": "yes",
+      "requiresReef": true,
+      "aphiaId": 289898,
+      "coralType": "anemone",
+      "light": "high",
+      "flow": "medium",
+      "placement": "any",
+      "aggression": "aggressive",
+      "feeding": "photosynthetic + target feed"
+    },
+    "sources": [
+      {
+        "name": "WoRMS",
+        "url": "https://www.marinespecies.org/aphia.php?p=taxdetails&id=289898",
+        "type": "Taxonomy"
+      }
+    ],
+    "ecology": {
+      "comments": "Add only to a mature, stable tank. Anemones wander until they find a spot they like and can sting corals along the way; cover pump and overflow intakes. Needs strong light plus occasional feeding of meaty foods.",
+      "phMin": 8,
+      "phMax": 8.4
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "The classic clownfish host anemone, with bulb-tipped tentacles.",
+        "pro": "Entacmaea quadricolor; Actiniidae. Anemone: high light, medium flow, any placement."
+      },
+      "flavorText": {
+        "casual": "The classic clownfish host anemone, with bulb-tipped tentacles. Give it high light and medium flow, placed anywhere in the tank. Has a strong sting or sweeper tentacles, so give it plenty of space.",
+        "pro": "Entacmaea quadricolor (Actiniidae, WoRMS AphiaID 289898). Anemone; high light, medium flow, any placement, aggressive, photosynthetic + target feed. Husbandry: 24–27 °C, pH 8–8.4, 30 gal minimum. Taxonomy from WoRMS; care values are curated reef-keeping guidance, not FishBase."
+      }
+    }
+  },
+  {
+    "specCode": 200026,
+    "scientificName": "Lysmata amboinensis",
+    "genus": "Lysmata",
+    "species": "amboinensis",
+    "commonName": "Skunk cleaner shrimp",
+    "family": "Lysmatidae (Invertebrate)",
+    "type": "invertebrate",
+    "maxLengthCm": 6,
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "minVolumeGallons": 20,
+      "tempRangeCelsius": [
+        24,
+        27
+      ],
+      "phRange": [
+        8,
+        8.4
+      ],
+      "difficulty": "Beginner"
+    },
+    "waterTypes": [
+      "marine"
+    ],
+    "waterTypesSource": "worms",
+    "marine": {
+      "reefSafe": "yes",
+      "requiresReef": false,
+      "aphiaId": 241289,
+      "role": "cleaner",
+      "notes": "Sets up cleaning stations and picks parasites off fish. Sensitive to copper and to salinity swings; drip acclimate."
+    },
+    "sources": [
+      {
+        "name": "WoRMS",
+        "url": "https://www.marinespecies.org/aphia.php?p=taxdetails&id=241289",
+        "type": "Taxonomy"
+      }
+    ],
+    "ecology": {
+      "comments": "Peaceful cleaner shrimp that also scavenges leftover food. Molts regularly; leave the shed shell for it to eat. Keep salinity stable and never dose copper.",
+      "phMin": 8,
+      "phMax": 8.4
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "The red-and-white striped cleaner that will even pick at your fingers.",
+        "pro": "Lysmata amboinensis; marine Lysmatidae. Cleaner. Reef safe."
+      },
+      "flavorText": {
+        "casual": "The red-and-white striped cleaner that will even pick at your fingers. Reef safe. Sets up cleaning stations and picks parasites off fish. Sensitive to copper and to salinity swings; drip acclimate.",
+        "pro": "Lysmata amboinensis (Lysmatidae, WoRMS AphiaID 241289). Role: cleaner. Reef safe. Husbandry: 24–27 °C, pH 8–8.4, 20 gal minimum. Taxonomy from WoRMS; care values are curated reef-keeping guidance, not FishBase."
+      }
+    }
+  },
+  {
+    "specCode": 200027,
+    "scientificName": "Lysmata debelius",
+    "genus": "Lysmata",
+    "species": "debelius",
+    "commonName": "Fire shrimp (blood red shrimp)",
+    "family": "Lysmatidae (Invertebrate)",
+    "type": "invertebrate",
+    "maxLengthCm": 5,
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "minVolumeGallons": 20,
+      "tempRangeCelsius": [
+        24,
+        27
+      ],
+      "phRange": [
+        8,
+        8.4
+      ],
+      "difficulty": "Intermediate"
+    },
+    "waterTypes": [
+      "marine"
+    ],
+    "waterTypesSource": "worms",
+    "marine": {
+      "reefSafe": "yes",
+      "requiresReef": false,
+      "aphiaId": 515365,
+      "role": "cleaner",
+      "notes": "More reclusive than the skunk cleaner; provide caves. Sensitive to copper and to salinity swings; drip acclimate."
+    },
+    "sources": [
+      {
+        "name": "WoRMS",
+        "url": "https://www.marinespecies.org/aphia.php?p=taxdetails&id=515365",
+        "type": "Taxonomy"
+      }
+    ],
+    "ecology": {
+      "comments": "Peaceful cleaner shrimp that is shyer than Lysmata amboinensis and prefers shaded overhangs. Scavenges leftover food; never dose copper.",
+      "phMin": 8,
+      "phMax": 8.4
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "A deep red shrimp with white spots that stays close to caves.",
+        "pro": "Lysmata debelius; marine Lysmatidae. Cleaner. Reef safe."
+      },
+      "flavorText": {
+        "casual": "A deep red shrimp with white spots that stays close to caves. Reef safe. More reclusive than the skunk cleaner; provide caves. Sensitive to copper and to salinity swings; drip acclimate.",
+        "pro": "Lysmata debelius (Lysmatidae, WoRMS AphiaID 515365). Role: cleaner. Reef safe. Husbandry: 24–27 °C, pH 8–8.4, 20 gal minimum. Taxonomy from WoRMS; care values are curated reef-keeping guidance, not FishBase."
+      }
+    }
+  },
+  {
+    "specCode": 200028,
+    "scientificName": "Lysmata wurdemanni",
+    "genus": "Lysmata",
+    "species": "wurdemanni",
+    "commonName": "Peppermint shrimp",
+    "family": "Lysmatidae (Invertebrate)",
+    "type": "invertebrate",
+    "maxLengthCm": 5,
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "minVolumeGallons": 10,
+      "tempRangeCelsius": [
+        24,
+        27
+      ],
+      "phRange": [
+        8,
+        8.4
+      ],
+      "difficulty": "Beginner"
+    },
+    "waterTypes": [
+      "marine"
+    ],
+    "waterTypesSource": "worms",
+    "marine": {
+      "reefSafe": "yes",
+      "requiresReef": false,
+      "aphiaId": 158365,
+      "role": "cleanup crew",
+      "notes": "Kept to eat Aiptasia pest anemones; results vary between individuals. Several look-alike Lysmata species are sold as peppermint shrimp."
+    },
+    "sources": [
+      {
+        "name": "WoRMS",
+        "url": "https://www.marinespecies.org/aphia.php?p=taxdetails&id=158365",
+        "type": "Taxonomy"
+      }
+    ],
+    "ecology": {
+      "comments": "Peaceful scavenger that often eats Aiptasia. Well-fed individuals may ignore Aiptasia, and a rare few pick at zoanthids. Sensitive to copper.",
+      "phMin": 8,
+      "phMax": 8.4
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "A small striped shrimp famous for eating pest Aiptasia anemones.",
+        "pro": "Lysmata wurdemanni; marine Lysmatidae. Cleanup crew. Reef safe."
+      },
+      "flavorText": {
+        "casual": "A small striped shrimp famous for eating pest Aiptasia anemones. Reef safe. Kept to eat Aiptasia pest anemones; results vary between individuals. Several look-alike Lysmata species are sold as peppermint shrimp.",
+        "pro": "Lysmata wurdemanni (Lysmatidae, WoRMS AphiaID 158365). Role: cleanup crew. Reef safe. Husbandry: 24–27 °C, pH 8–8.4, 10 gal minimum. Taxonomy from WoRMS; care values are curated reef-keeping guidance, not FishBase."
+      }
+    }
+  },
+  {
+    "specCode": 200029,
+    "scientificName": "Stenopus hispidus",
+    "genus": "Stenopus",
+    "species": "hispidus",
+    "commonName": "Coral banded shrimp",
+    "family": "Stenopodidae (Invertebrate)",
+    "type": "invertebrate",
+    "maxLengthCm": 7,
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "minVolumeGallons": 30,
+      "tempRangeCelsius": [
+        24,
+        27
+      ],
+      "phRange": [
+        8,
+        8.4
+      ],
+      "difficulty": "Beginner"
+    },
+    "waterTypes": [
+      "marine"
+    ],
+    "waterTypesSource": "worms",
+    "marine": {
+      "reefSafe": "with caution",
+      "requiresReef": false,
+      "aphiaId": 210370,
+      "role": "display",
+      "notes": "Leaves corals alone but fights other shrimp and may catch very small fish. Keep one, or a mated pair."
+    },
+    "sources": [
+      {
+        "name": "WoRMS",
+        "url": "https://www.marinespecies.org/aphia.php?p=taxdetails&id=210370",
+        "type": "Taxonomy"
+      }
+    ],
+    "ecology": {
+      "comments": "Hardy boxer shrimp that scavenges and sometimes cleans fish. Territorial toward other shrimp, including its own kind unless paired.",
+      "phMin": 8,
+      "phMax": 8.4
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "A long-armed, red-and-white banded shrimp with dramatic white antennae.",
+        "pro": "Stenopus hispidus; marine Stenopodidae. Display. Reef safe with caution."
+      },
+      "flavorText": {
+        "casual": "A long-armed, red-and-white banded shrimp with dramatic white antennae. Reef safe with caution. Leaves corals alone but fights other shrimp and may catch very small fish. Keep one, or a mated pair.",
+        "pro": "Stenopus hispidus (Stenopodidae, WoRMS AphiaID 210370). Role: display. Reef safe with caution. Husbandry: 24–27 °C, pH 8–8.4, 30 gal minimum. Taxonomy from WoRMS; care values are curated reef-keeping guidance, not FishBase."
+      }
+    }
+  },
+  {
+    "specCode": 200030,
+    "scientificName": "Trochus histrio",
+    "genus": "Trochus",
+    "species": "histrio",
+    "commonName": "Trochus snail (banded trochus)",
+    "family": "Trochidae (Invertebrate)",
+    "type": "invertebrate",
+    "maxLengthCm": 3,
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "minVolumeGallons": 10,
+      "tempRangeCelsius": [
+        24,
+        27
+      ],
+      "phRange": [
+        8,
+        8.4
+      ],
+      "difficulty": "Beginner"
+    },
+    "waterTypes": [
+      "marine"
+    ],
+    "waterTypesSource": "worms",
+    "marine": {
+      "reefSafe": "yes",
+      "requiresReef": false,
+      "aphiaId": 718918,
+      "role": "cleanup crew",
+      "notes": "Grazes film algae and diatoms; can right itself if flipped, unlike many turbo and astraea snails. Sold at genus level as Trochus; Trochus histrio is used here as a well-known accepted species."
+    },
+    "sources": [
+      {
+        "name": "WoRMS",
+        "url": "https://www.marinespecies.org/aphia.php?p=taxdetails&id=718918",
+        "type": "Taxonomy"
+      }
+    ],
+    "ecology": {
+      "comments": "Hardy algae grazer that often breeds in aquariums. Does not need supplemental food while algae and biofilm are available.",
+      "phMin": 8,
+      "phMax": 8.4
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "A cone-shaped grazing snail that keeps glass and rock clean.",
+        "pro": "Trochus histrio; marine Trochidae. Cleanup crew. Reef safe."
+      },
+      "flavorText": {
+        "casual": "A cone-shaped grazing snail that keeps glass and rock clean. Reef safe. Grazes film algae and diatoms; can right itself if flipped, unlike many turbo and astraea snails. Sold at genus level as Trochus; Trochus histrio is used here as a well-known accepted species.",
+        "pro": "Trochus histrio (Trochidae, WoRMS AphiaID 718918). Role: cleanup crew. Reef safe. Husbandry: 24–27 °C, pH 8–8.4, 10 gal minimum. Taxonomy from WoRMS; care values are curated reef-keeping guidance, not FishBase."
+      }
+    }
+  },
+  {
+    "specCode": 200031,
+    "scientificName": "Lithopoma tectum",
+    "genus": "Lithopoma",
+    "species": "tectum",
+    "commonName": "Astraea snail",
+    "family": "Turbinidae (Invertebrate)",
+    "type": "invertebrate",
+    "maxLengthCm": 5,
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "minVolumeGallons": 10,
+      "tempRangeCelsius": [
+        24,
+        27
+      ],
+      "phRange": [
+        8,
+        8.4
+      ],
+      "difficulty": "Beginner"
+    },
+    "waterTypes": [
+      "marine"
+    ],
+    "waterTypesSource": "worms",
+    "marine": {
+      "reefSafe": "yes",
+      "requiresReef": false,
+      "aphiaId": 419499,
+      "role": "cleanup crew",
+      "notes": "Grazes film and hair algae. Often cannot right itself if it falls onto its back; turn it over if you see it. Sold as Astraea tecta, a name WoRMS does not return as a marine record; Lithopoma tectum is the accepted name."
+    },
+    "sources": [
+      {
+        "name": "WoRMS",
+        "url": "https://www.marinespecies.org/aphia.php?p=taxdetails&id=419499",
+        "type": "Taxonomy"
+      }
+    ],
+    "ecology": {
+      "comments": "Hardy algae-grazing turban snail, a staple of reef cleanup crews. Keep a few per tank and add more only if algae outpaces them.",
+      "phMin": 8,
+      "phMax": 8.4
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "A pyramid-shaped grazer that works rock and glass all day.",
+        "pro": "Lithopoma tectum; marine Turbinidae. Cleanup crew. Reef safe."
+      },
+      "flavorText": {
+        "casual": "A pyramid-shaped grazer that works rock and glass all day. Reef safe. Grazes film and hair algae. Often cannot right itself if it falls onto its back; turn it over if you see it. Sold as Astraea tecta, a name WoRMS does not return as a marine record; Lithopoma tectum is the accepted name.",
+        "pro": "Lithopoma tectum (Turbinidae, WoRMS AphiaID 419499). Role: cleanup crew. Reef safe. Husbandry: 24–27 °C, pH 8–8.4, 10 gal minimum. Taxonomy from WoRMS; care values are curated reef-keeping guidance, not FishBase."
+      }
+    }
+  },
+  {
+    "specCode": 200032,
+    "scientificName": "Phrontis vibex",
+    "genus": "Phrontis",
+    "species": "vibex",
+    "commonName": "Nassarius snail",
+    "family": "Nassariidae (Invertebrate)",
+    "type": "invertebrate",
+    "maxLengthCm": 2,
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "minVolumeGallons": 10,
+      "tempRangeCelsius": [
+        24,
+        27
+      ],
+      "phRange": [
+        8,
+        8.4
+      ],
+      "difficulty": "Beginner"
+    },
+    "waterTypes": [
+      "marine"
+    ],
+    "waterTypesSource": "worms",
+    "marine": {
+      "reefSafe": "yes",
+      "requiresReef": false,
+      "aphiaId": 877061,
+      "role": "cleanup crew",
+      "notes": "Sold as Nassarius vibex; WoRMS lists Nassarius vibex (AphiaID 160401) as unaccepted, with Phrontis vibex accepted. Burrows in sand and eats leftover meaty food; needs a sand bed."
+    },
+    "sources": [
+      {
+        "name": "WoRMS",
+        "url": "https://www.marinespecies.org/aphia.php?p=taxdetails&id=877061",
+        "type": "Taxonomy"
+      }
+    ],
+    "ecology": {
+      "comments": "Scavenging snail that turns over the top of the sand bed and cleans up uneaten food. Needs a sand bed and does not graze algae.",
+      "phMin": 8,
+      "phMax": 8.4
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "A sand-sifting scavenger that pops out of the sand when food lands.",
+        "pro": "Phrontis vibex; marine Nassariidae. Cleanup crew. Reef safe."
+      },
+      "flavorText": {
+        "casual": "A sand-sifting scavenger that pops out of the sand when food lands. Reef safe. Sold as Nassarius vibex; WoRMS lists Nassarius vibex (AphiaID 160401) as unaccepted, with Phrontis vibex accepted. Burrows in sand and eats leftover meaty food; needs a sand bed.",
+        "pro": "Phrontis vibex (Nassariidae, WoRMS AphiaID 877061). Role: cleanup crew. Reef safe. Husbandry: 24–27 °C, pH 8–8.4, 10 gal minimum. Taxonomy from WoRMS; care values are curated reef-keeping guidance, not FishBase."
+      }
+    }
+  },
+  {
+    "specCode": 200033,
+    "scientificName": "Clibanarius tricolor",
+    "genus": "Clibanarius",
+    "species": "tricolor",
+    "commonName": "Blue leg hermit crab",
+    "family": "Diogenidae (Invertebrate)",
+    "type": "invertebrate",
+    "maxLengthCm": 2.5,
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "minVolumeGallons": 10,
+      "tempRangeCelsius": [
+        24,
+        27
+      ],
+      "phRange": [
+        8,
+        8.4
+      ],
+      "difficulty": "Beginner"
+    },
+    "waterTypes": [
+      "marine"
+    ],
+    "waterTypesSource": "worms",
+    "marine": {
+      "reefSafe": "with caution",
+      "requiresReef": false,
+      "aphiaId": 367527,
+      "role": "cleanup crew",
+      "notes": "Grazes algae and scavenges, but may kill snails to take their shells. Provide spare empty shells."
+    },
+    "sources": [
+      {
+        "name": "WoRMS",
+        "url": "https://www.marinespecies.org/aphia.php?p=taxdetails&id=367527",
+        "type": "Taxonomy"
+      }
+    ],
+    "ecology": {
+      "comments": "Small reef-safe hermit crab that eats algae and detritus. Offering a few empty shells one size up reduces fights and snail losses.",
+      "phMin": 8,
+      "phMax": 8.4
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "A tiny hermit with bright blue legs that scours rock for algae.",
+        "pro": "Clibanarius tricolor; marine Diogenidae. Cleanup crew. Reef safe with caution."
+      },
+      "flavorText": {
+        "casual": "A tiny hermit with bright blue legs that scours rock for algae. Reef safe with caution. Grazes algae and scavenges, but may kill snails to take their shells. Provide spare empty shells.",
+        "pro": "Clibanarius tricolor (Diogenidae, WoRMS AphiaID 367527). Role: cleanup crew. Reef safe with caution. Husbandry: 24–27 °C, pH 8–8.4, 10 gal minimum. Taxonomy from WoRMS; care values are curated reef-keeping guidance, not FishBase."
+      }
+    }
+  },
+  {
+    "specCode": 200034,
+    "scientificName": "Mithraculus sculptus",
+    "genus": "Mithraculus",
+    "species": "sculptus",
+    "commonName": "Emerald crab",
+    "family": "Mithracidae (Invertebrate)",
+    "type": "invertebrate",
+    "maxLengthCm": 5,
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "minVolumeGallons": 20,
+      "tempRangeCelsius": [
+        24,
+        27
+      ],
+      "phRange": [
+        8,
+        8.4
+      ],
+      "difficulty": "Beginner"
+    },
+    "waterTypes": [
+      "marine"
+    ],
+    "waterTypesSource": "worms",
+    "marine": {
+      "reefSafe": "with caution",
+      "requiresReef": false,
+      "aphiaId": 421990,
+      "role": "cleanup crew",
+      "notes": "Known for eating bubble algae. Most leave corals alone, but some large or underfed individuals pick at corals or small fish."
+    },
+    "sources": [
+      {
+        "name": "WoRMS",
+        "url": "https://www.marinespecies.org/aphia.php?p=taxdetails&id=421990",
+        "type": "Taxonomy"
+      }
+    ],
+    "ecology": {
+      "comments": "Algae-eating crab that also scavenges. Feed occasionally if algae runs out to discourage it from picking at corals.",
+      "phMin": 8,
+      "phMax": 8.4
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "A green crab often added to eat bubble algae.",
+        "pro": "Mithraculus sculptus; marine Mithracidae. Cleanup crew. Reef safe with caution."
+      },
+      "flavorText": {
+        "casual": "A green crab often added to eat bubble algae. Reef safe with caution. Known for eating bubble algae. Most leave corals alone, but some large or underfed individuals pick at corals or small fish.",
+        "pro": "Mithraculus sculptus (Mithracidae, WoRMS AphiaID 421990). Role: cleanup crew. Reef safe with caution. Husbandry: 24–27 °C, pH 8–8.4, 20 gal minimum. Taxonomy from WoRMS; care values are curated reef-keeping guidance, not FishBase."
+      }
+    }
+  },
+  {
+    "specCode": 200035,
+    "scientificName": "Mespilia globulus",
+    "genus": "Mespilia",
+    "species": "globulus",
+    "commonName": "Tuxedo urchin",
+    "family": "Temnopleuridae (Invertebrate)",
+    "type": "invertebrate",
+    "maxLengthCm": 5,
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "minVolumeGallons": 30,
+      "tempRangeCelsius": [
+        24,
+        27
+      ],
+      "phRange": [
+        8,
+        8.4
+      ],
+      "difficulty": "Intermediate"
+    },
+    "waterTypes": [
+      "marine"
+    ],
+    "waterTypesSource": "worms",
+    "marine": {
+      "reefSafe": "yes",
+      "requiresReef": false,
+      "aphiaId": 214476,
+      "role": "cleanup crew",
+      "notes": "A strong algae grazer that also eats coralline algae. It can carry or knock over loose frags, so glue frags down."
+    },
+    "sources": [
+      {
+        "name": "WoRMS",
+        "url": "https://www.marinespecies.org/aphia.php?p=taxdetails&id=214476",
+        "type": "Taxonomy"
+      }
+    ],
+    "ecology": {
+      "comments": "Algae-grazing urchin that stays small enough for mid-sized reef tanks. Sensitive to salinity changes; drip acclimate. Needs a steady supply of algae or supplemental seaweed.",
+      "phMin": 8,
+      "phMax": 8.4
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "A small banded urchin that decorates itself with bits of shell and rubble.",
+        "pro": "Mespilia globulus; marine Temnopleuridae. Cleanup crew. Reef safe."
+      },
+      "flavorText": {
+        "casual": "A small banded urchin that decorates itself with bits of shell and rubble. Reef safe. A strong algae grazer that also eats coralline algae. It can carry or knock over loose frags, so glue frags down.",
+        "pro": "Mespilia globulus (Temnopleuridae, WoRMS AphiaID 214476). Role: cleanup crew. Reef safe. Husbandry: 24–27 °C, pH 8–8.4, 30 gal minimum. Taxonomy from WoRMS; care values are curated reef-keeping guidance, not FishBase."
+      }
+    }
+  },
+  {
+    "specCode": 200036,
+    "scientificName": "Tridacna maxima",
+    "genus": "Tridacna",
+    "species": "maxima",
+    "commonName": "Maxima clam",
+    "family": "Cardiidae (Invertebrate)",
+    "type": "invertebrate",
+    "maxLengthCm": 35,
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "minVolumeGallons": 50,
+      "tempRangeCelsius": [
+        24,
+        27
+      ],
+      "phRange": [
+        8,
+        8.4
+      ],
+      "difficulty": "Advanced"
+    },
+    "waterTypes": [
+      "marine"
+    ],
+    "waterTypesSource": "worms",
+    "marine": {
+      "reefSafe": "yes",
+      "requiresReef": false,
+      "aphiaId": 207675,
+      "role": "display",
+      "notes": "Mostly photosynthetic (hosts zooxanthellae in its mantle) with some filter feeding, so it needs strong light. Place on rock or sand where fish cannot pick at the mantle; some angelfish and wrasses will."
+    },
+    "sources": [
+      {
+        "name": "WoRMS",
+        "url": "https://www.marinespecies.org/aphia.php?p=taxdetails&id=207675",
+        "type": "Taxonomy"
+      }
+    ],
+    "ecology": {
+      "comments": "Needs a mature tank with strong lighting and stable calcium and alkalinity. Watch for pyramidellid snails that parasitize clams.",
+      "phMin": 8,
+      "phMax": 8.4
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "A giant clam with a vividly patterned mantle that opens toward the light.",
+        "pro": "Tridacna maxima; marine Cardiidae. Display. Reef safe."
+      },
+      "flavorText": {
+        "casual": "A giant clam with a vividly patterned mantle that opens toward the light. Reef safe. Mostly photosynthetic (hosts zooxanthellae in its mantle) with some filter feeding, so it needs strong light. Place on rock or sand where fish cannot pick at the mantle; some angelfish and wrasses will.",
+        "pro": "Tridacna maxima (Cardiidae, WoRMS AphiaID 207675). Role: display. Reef safe. Husbandry: 24–27 °C, pH 8–8.4, 50 gal minimum. Taxonomy from WoRMS; care values are curated reef-keeping guidance, not FishBase."
+      }
+    }
+  },
+  {
+    "specCode": 200037,
+    "scientificName": "Linckia laevigata",
+    "genus": "Linckia",
+    "species": "laevigata",
+    "commonName": "Blue linckia starfish",
+    "family": "Ophidiasteridae (Invertebrate)",
+    "type": "invertebrate",
+    "maxLengthCm": 30,
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "minVolumeGallons": 75,
+      "tempRangeCelsius": [
+        24,
+        27
+      ],
+      "phRange": [
+        8,
+        8.4
+      ],
+      "difficulty": "Expert"
+    },
+    "waterTypes": [
+      "marine"
+    ],
+    "waterTypesSource": "worms",
+    "marine": {
+      "reefSafe": "yes",
+      "requiresReef": false,
+      "aphiaId": 207610,
+      "role": "display",
+      "notes": "Harmless to corals and fish but often starves in aquariums; needs a large, long-established tank with plenty of biofilm. Very sensitive to acclimation; drip acclimate slowly."
+    },
+    "sources": [
+      {
+        "name": "WoRMS",
+        "url": "https://www.marinespecies.org/aphia.php?p=taxdetails&id=207610",
+        "type": "Taxonomy"
+      }
+    ],
+    "ecology": {
+      "comments": "Grazes biofilm and detritus. Losses in the first months are common, so it suits only large, mature reefs. Do not expose it to air during acclimation.",
+      "phMin": 8,
+      "phMax": 8.4
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "A striking cobalt-blue sea star that grazes biofilm on the rockwork.",
+        "pro": "Linckia laevigata; marine Ophidiasteridae. Display. Reef safe."
+      },
+      "flavorText": {
+        "casual": "A striking cobalt-blue sea star that grazes biofilm on the rockwork. Reef safe. Harmless to corals and fish but often starves in aquariums; needs a large, long-established tank with plenty of biofilm. Very sensitive to acclimation; drip acclimate slowly.",
+        "pro": "Linckia laevigata (Ophidiasteridae, WoRMS AphiaID 207610). Role: display. Reef safe. Husbandry: 24–27 °C, pH 8–8.4, 75 gal minimum. Taxonomy from WoRMS; care values are curated reef-keeping guidance, not FishBase."
       }
     }
   }
