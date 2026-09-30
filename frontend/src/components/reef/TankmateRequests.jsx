@@ -8,6 +8,7 @@
 import React from "react";
 import { ProfileCard } from "./ProfileCard";
 import { usePendingRequests, useRespondToRequest } from "../../hooks/useReefProfile";
+import "./ReefDaylight.css";
 
 function timeAgo(dateString) {
   const seconds = Math.floor((new Date() - new Date(dateString)) / 1000);
@@ -24,39 +25,14 @@ export function TankmateRequests({ onNavigateProfile, casualModeActive = false }
   if (isLoading || !requests || requests.length === 0) return null;
 
   return (
-    <div
-      style={{
-        padding: "1rem",
-        borderRadius: "12px",
-        background: "rgba(56, 189, 248, 0.03)",
-        border: "1px solid rgba(56, 189, 248, 0.12)",
-        marginBottom: "1rem",
-      }}
-    >
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.75rem" }}>
-        <h3 style={{ margin: 0, fontSize: "0.8rem", fontWeight: 600, color: "var(--text-primary)" }}>
-          🤝 {casualModeActive ? "Tankmate Requests" : "Connection Requests"} ({requests.length})
-        </h3>
-      </div>
-
-      <div style={{ display: "flex", flexDirection: "column", gap: "0.65rem" }}>
+    <section className="reef-inbox-card" aria-label="Tankmate requests">
+      <h3>{casualModeActive ? "Tankmate requests" : "Connection requests"} ({requests.length})</h3>
+      <ul className="reef-inbox-list">
         {requests.map((req) => {
           const profile = req.from_profile;
           return (
-            <div
-              key={req.id}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "0.6rem",
-                padding: "0.5rem 0.6rem",
-                borderRadius: "8px",
-                background: "rgba(var(--ink-rgb), 0.03)",
-                border: "1px solid rgba(var(--ink-rgb), 0.1)",
-              }}
-            >
-              {/* Profile info */}
-              <div style={{ flex: 1, minWidth: 0 }}>
+            <li key={req.id} className="reef-inbox-row">
+              <div className="reef-inbox-row-text">
                 <ProfileCard
                   walletAddress={profile?.wallet_address || req.from_wallet}
                   displayName={profile?.display_name}
@@ -65,67 +41,31 @@ export function TankmateRequests({ onNavigateProfile, casualModeActive = false }
                   size="small"
                   onClick={() => onNavigateProfile?.(req.from_wallet)}
                 />
-                {req.message && (
-                  <p style={{
-                    margin: "0.25rem 0 0 2rem",
-                    fontSize: "0.7rem",
-                    color: "var(--text-muted)",
-                    fontStyle: "italic",
-                  }}>
-                    "{req.message}"
-                  </p>
-                )}
+                {req.message && <span className="reef-inbox-row-meta">&ldquo;{req.message}&rdquo;</span>}
+                <span className="reef-inbox-row-meta">{timeAgo(req.created_at)}</span>
               </div>
-
-              {/* Time */}
-              <span style={{ fontSize: "0.6rem", color: "var(--text-muted)", flexShrink: 0 }}>
-                {timeAgo(req.created_at)}
-              </span>
-
-              {/* Action buttons */}
-              <div style={{ display: "flex", gap: "0.3rem", flexShrink: 0 }}>
+              <div className="reef-inbox-row-actions">
                 <button
+                  type="button"
+                  className="reef-btn reef-btn--sm reef-btn--primary"
                   onClick={() => respond.mutate({ requestId: req.id, accept: true })}
                   disabled={respond.isPending}
-                  style={{
-                    padding: "0.3rem 0.6rem",
-                    borderRadius: "6px",
-                    border: "none",
-                    background: "rgba(52, 211, 153, 0.15)",
-                    color: "var(--accent-green, #34d399)",
-                    fontSize: "0.65rem",
-                    fontWeight: 600,
-                    cursor: "pointer",
-                    transition: "background 0.15s ease",
-                  }}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(52, 211, 153, 0.25)"; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(52, 211, 153, 0.15)"; }}
                 >
-                  ✓ Accept
+                  Accept
                 </button>
                 <button
+                  type="button"
+                  className="reef-btn reef-btn--sm"
                   onClick={() => respond.mutate({ requestId: req.id, accept: false })}
                   disabled={respond.isPending}
-                  style={{
-                    padding: "0.3rem 0.6rem",
-                    borderRadius: "6px",
-                    border: "1px solid rgba(var(--ink-rgb), 0.13)",
-                    background: "transparent",
-                    color: "var(--text-muted)",
-                    fontSize: "0.65rem",
-                    cursor: "pointer",
-                    transition: "color 0.15s ease",
-                  }}
-                  onMouseEnter={(e) => { e.currentTarget.style.color = "var(--text-primary)"; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)"; }}
                 >
-                  ✕
+                  Decline
                 </button>
               </div>
-            </div>
+            </li>
           );
         })}
-      </div>
-    </div>
+      </ul>
+    </section>
   );
 }

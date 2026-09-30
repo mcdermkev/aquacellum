@@ -10,6 +10,7 @@ import React, { useState, useEffect } from "react";
 import { getReactions, toggleReaction } from "../../services/reefApi";
 import { getCurrentWallet } from "../../services/supabaseClient";
 import { useAuth } from "../../contexts/AuthContext";
+import "./ReefDaylight.css";
 
 const EMOJIS = ["🔥", "🐟", "💧", "🌿", "👏", "⭐"];
 
@@ -65,24 +66,17 @@ export function ReactionBar({ currentId, compact = false }) {
     }
   };
 
-  // In compact mode, only show emojis that have reactions
-  const visibleEmojis = compact
+  // Compact mode, and anyone signed out (who can't react), only see the
+  // reactions a post actually has, rather than a row of disabled buttons.
+  const readOnly = !walletAddress;
+  const visibleEmojis = compact || readOnly
     ? EMOJIS.filter((e) => reactions[e]?.count > 0)
     : EMOJIS;
 
-  if (compact && visibleEmojis.length === 0) return null;
+  if (visibleEmojis.length === 0) return null;
 
   return (
-    <div
-      style={{
-        display: "flex",
-        gap: "0.35rem",
-        flexWrap: "wrap",
-        alignItems: "center",
-      }}
-      role="group"
-      aria-label="Reactions"
-    >
+    <div className="reef-reactions" role="group" aria-label="Reactions">
       {visibleEmojis.map((emoji) => {
         const data = reactions[emoji] || { count: 0, userReacted: false };
         const isActive = data.userReacted;
@@ -90,52 +84,16 @@ export function ReactionBar({ currentId, compact = false }) {
         return (
           <button
             key={emoji}
+            type="button"
+            className="reef-reaction"
             onClick={() => handleReact(emoji)}
-            disabled={!walletAddress}
-            aria-label={`React with ${emoji}${data.count > 0 ? `, ${data.count} reactions` : ""}`}
+            disabled={readOnly}
+            aria-label={`React with ${emoji}${data.count > 0 ? `, ${data.count} ${data.count === 1 ? "reaction" : "reactions"}` : ""}`}
             aria-pressed={isActive}
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "0.2rem",
-              padding: "0.25rem 0.5rem",
-              borderRadius: "50px",
-              border: isActive
-                ? "1px solid rgba(56, 189, 248, 0.4)"
-                : "1px solid rgba(var(--ink-rgb), 0.13)",
-              background: isActive
-                ? "rgba(56, 189, 248, 0.1)"
-                : "rgba(var(--ink-rgb), 0.03)",
-              cursor: walletAddress ? "pointer" : "default",
-              fontSize: "0.8rem",
-              transition: "all 0.15s ease",
-              opacity: walletAddress ? 1 : 0.5,
-            }}
-            onMouseEnter={(e) => {
-              if (walletAddress) {
-                e.currentTarget.style.background = isActive
-                  ? "rgba(56, 189, 248, 0.15)"
-                  : "rgba(var(--ink-rgb), 0.06)";
-              }
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = isActive
-                ? "rgba(56, 189, 248, 0.1)"
-                : "rgba(var(--ink-rgb), 0.03)";
-            }}
+            title={readOnly ? "Sign in to react" : undefined}
           >
-            <span>{emoji}</span>
-            {data.count > 0 && (
-              <span
-                style={{
-                  fontSize: "0.65rem",
-                  fontWeight: 600,
-                  color: isActive ? "var(--accent-blue, #38bdf8)" : "var(--text-muted, #9ca3af)",
-                }}
-              >
-                {data.count}
-              </span>
-            )}
+            <span aria-hidden="true">{emoji}</span>
+            {data.count > 0 && <span className="reef-reaction-count">{data.count}</span>}
           </button>
         );
       })}

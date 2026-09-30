@@ -1,0 +1,92 @@
+/* What's New: a Daylight card, same shape as TankLabelDialog. */
+
+.modal-inner-card.whatsnew-card {
+  width: min(480px, calc(100vw - 2rem));
+  max-width: 480px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+}
+
+.whatsnew {
+  padding: 1.35rem 1.35rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-height: min(86vh, 720px);
+  font-family: var(--font-body);
+  color: var(--text-primary);
+}
+.whatsnew-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.75rem; }
+.whatsnew-kicker {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent-teal);
+}
+.whatsnew-title {
+  margin: 0.2rem 0 0;
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+.whatsnew-version {
+  flex-shrink: 0;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  background: #e8f5f3;
+  color: var(--accent-teal);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+.whatsnew-date { margin: -0.25rem 0 0; font-size: 0.82rem; color: var(--text-muted); }
+.whatsnew-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  overflow-y: auto;
+}
+.whatsnew-list li {
+  position: relative;
+  padding: 0.5rem 0.75rem 0.5rem 1.9rem;
+  border-radius: 12px;
+  background: var(--bg-band);
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: var(--text-primary);
+}
+.whatsnew-list li::before {
+  content: "";
+  position: absolute;
+  left: 0.8rem;
+  top: 0.95rem;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: #0d9488;
+}
+.whatsnew-close {
+  align-self: stretch;
+  min-height: 48px;
+  margin-top: 0.25rem;
+  border: none;
+  border-radius: 999px;
+  background: var(--accent-teal);
+  color: #fff;
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.whatsnew-close:hover { background: #0d5f58; }
+.whatsnew-close:focus-visible { outline: 2px solid var(--accent-teal); outline-offset: 3px; }
+
+/* Sit above the floating Feedback and Poseidon buttons (z-index 9999/10000),
+   which otherwise covered the "Got it" button on phones. */
+.specimen-detail-modal-backdrop:has(.whatsnew-card) { z-index: 10060; }

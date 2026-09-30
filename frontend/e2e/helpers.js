@@ -39,7 +39,8 @@ export async function gotoDashboard(page, { casual = true } = {}) {
     // Suppress the "What's New" changelog modal (WhatsNewModal.jsx) and the
     // onboarding-tour "beta welcome" one-time popups — neither is under test
     // here and both intercept clicks with a fullscreen backdrop.
-    window.localStorage.setItem("aquadex_last_seen_version", "0.9.1");
+    // Keep in step with CURRENT_VERSION in WhatsNewModal.jsx.
+    window.localStorage.setItem("aquadex_last_seen_version", "0.10.0");
   }, casual);
   await page.goto("/app/tanks?e2e=1");
   await page.waitForFunction(() => typeof window.__seedForE2E === "function");

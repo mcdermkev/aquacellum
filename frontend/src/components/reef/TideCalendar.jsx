@@ -1,19 +1,26 @@
 /**
  * TideCalendar.jsx
- * 
- * Grid/list view of upcoming Tides sorted by start_time.
- * Features: filter by type/school, RSVP, countdown timers, "My Tides" section.
+ *
+ * The Events tab (events are "tides" in the data model). Upcoming events come
+ * first, soonest at the top, then a separate "Past events" section. Each card
+ * has a date block, title, type, host, and an RSVP where the event allows one.
+ * Events whose end time has passed are listed as past even if their status was
+ * never moved on (see reefEvents.js). No counts are shown that the data doesn't
+ * carry.
  */
 
-import { useState, useEffect } from "react";
-import { useUpcomingTides, useMyTides, useRsvp } from "../../hooks/useTides";
-import { ProfileCard } from "./ProfileCard";
+import { useState, useEffect, useMemo } from "react";
+import { MapPin, VideoCamera, Trophy, Gavel, Clock, UsersThree, CalendarBlank } from "@phosphor-icons/react";
+import { useUpcomingTides, usePastTides, useMyTides, useRsvp } from "../../hooks/useTides";
+import { useSchoolById } from "../../hooks/useSchools";
+import { splitEvents } from "./reefEvents";
+import "./ReefDaylight.css";
 
 const TIDE_TYPE_LABELS = {
-  expo: { label: "Expo", icon: "📍", color: "#047857" },
-  virtual: { label: "Virtual", icon: "🎥", color: "#6366f1" },
-  challenge: { label: "Challenge", icon: "🏆", color: "#b45309" },
-  auction: { label: "Auction", icon: "🔨", color: "#b91c1c" },
+  expo: { label: "Expo", Icon: MapPin },
+  virtual: { label: "Virtual", Icon: VideoCamera },
+  challenge: { label: "Challenge", Icon: Trophy },
+  auction: { label: "Auction", Icon: Gavel },
 };
 
 function CountdownTimer({ targetTime }) {
@@ -21,28 +28,18 @@ function CountdownTimer({ targetTime }) {
 
   useEffect(() => {
     function update() {
-      const now = Date.now();
-      const target = new Date(targetTime).getTime();
-      const diff = target - now;
-
+      const diff = new Date(targetTime).getTime() - Date.now();
       if (diff <= 0) {
-        setTimeLeft("Starting now!");
+        setTimeLeft("Starting now");
         return;
       }
-
       const days = Math.floor(diff / (1000 * 60 * 60 * 24));
       const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
       const minutes = Math.floor((diff / (1000 * 60)) % 60);
-
-      if (days > 0) {
-        setTimeLeft(`${days}d ${hours}h`);
-      } else if (hours > 0) {
-        setTimeLeft(`${hours}h ${minutes}m`);
-      } else {
-        setTimeLeft(`${minutes}m`);
-      }
+      if (days > 0) setTimeLeft(`Starts in ${days}d ${hours}h`);
+      else if (hours > 0) setTimeLeft(`Starts in ${hours}h ${minutes}m`);
+      else setTimeLeft(`Starts in ${minutes}m`);
     }
-
     update();
     const interval = setInterval(update, 60000);
     return () => clearInterval(interval);
@@ -51,235 +48,178 @@ function CountdownTimer({ targetTime }) {
   return <span className="tide-countdown">{timeLeft}</span>;
 }
 
-function TideCard({ tide, onSelect }) {
+function DateBlock({ iso }) {
+  const d = new Date(iso);
+  const showYear = d.getFullYear() !== new Date().getFullYear();
+  return (
+    <div className="reef-date" aria-hidden="true">
+      <span className="reef-date-month">{d.toLocaleDateString(undefined, { month: "short" })}</span>
+      <span className="reef-date-day">{d.getDate()}</span>
+      {showYear && <span className="reef-date-year">{d.getFullYear()}</span>}
+    </div>
+  );
+}
+
+function HostLine({ tide }) {
+  const { data: clubResult } = useSchoolById(tide.host_school_id || null);
+  const clubName = clubResult?.data?.name;
+  const person = tide.host_profile?.display_name;
+  if (clubName) return <span><UsersThree size={15} aria-hidden="true" /> Hosted by {clubName}</span>;
+  if (person) return <span>Hosted by {person}</span>;
+  return null;
+}
+
+function formatWhen(tide) {
+  const start = new Date(tide.start_time);
+  const opts = { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" };
+  const startText = start.toLocaleString(undefined, opts);
+  if (!tide.end_time) return startText;
+  const end = new Date(tide.end_time);
+  const endText = start.toDateString() === end.toDateString()
+    ? end.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })
+    : end.toLocaleString(undefined, opts);
+  return `${startText} to ${endText}`;
+}
+
+function TideCard({ tide, onSelect, past = false, going = false, signedIn, onRequireSignIn }) {
   const typeInfo = TIDE_TYPE_LABELS[tide.tide_type] || TIDE_TYPE_LABELS.expo;
-  const isLive = tide.status === "live";
-  const startDate = new Date(tide.start_time);
+  const TypeIcon = typeInfo.Icon;
+  const isLive = !past && tide.status === "live";
 
   // The RSVP mutation lives on the card, not the calendar, because useRsvp is
-  // scoped to a single tide id. The parent used to hold a `handleRsvp` that
-  // ignored its own `status` argument and just called onSelectTide — so the
-  // button labelled "RSVP" was a navigation link, and `useRsvp` sat imported and
-  // uncalled at the top of the file.
+  // scoped to a single tide id. (An earlier version labelled a navigation link
+  // "RSVP"; this one really RSVPs.)
   const rsvpMutation = useRsvp(tide.id);
   const [rsvpError, setRsvpError] = useState(null);
+  const [rsvpDone, setRsvpDone] = useState(false);
 
-  const handleRsvpClick = (e) => {
-    e.stopPropagation();
+  const handleRsvpClick = () => {
+    if (!signedIn) return onRequireSignIn?.();
     setRsvpError(null);
     rsvpMutation.mutate("going", {
       onSuccess: (res) => {
-        if (res?.error) {
-          setRsvpError(typeof res.error === "string" ? res.error : res.error.message);
-        }
+        if (res?.error) setRsvpError(typeof res.error === "string" ? res.error : res.error.message);
+        else setRsvpDone(true);
       },
       onError: (err) => setRsvpError(err?.message || "Couldn't RSVP"),
     });
   };
 
+  const alreadyGoing = going || rsvpDone || !!tide.my_rsvp;
+
   return (
-    <article
-      className={`tide-card ${isLive ? "tide-card--live" : ""}`}
-      onClick={() => onSelect(tide.id)}
-      role="button"
-      tabIndex={0}
-      onKeyDown={(e) => e.key === "Enter" && onSelect(tide.id)}
-      aria-label={`${tide.title} — ${typeInfo.label} tide`}
-    >
-      {tide.banner_url && (
-        <div className="tide-card__banner">
-          <img src={tide.banner_url} alt="" loading="lazy" />
-          {isLive && <span className="tide-card__live-badge">🔴 LIVE</span>}
+    <li className={`reef-event ${past ? "reef-event--past" : ""} ${isLive ? "reef-event--live" : ""}`}>
+      <DateBlock iso={tide.start_time} />
+      <div className="reef-event-main">
+        <button type="button" className="reef-event-open" onClick={() => onSelect(tide.id)}>
+          <h4 className="reef-event-title">{tide.title}</h4>
+        </button>
+        <div className="reef-event-meta">
+          <span><TypeIcon size={15} aria-hidden="true" /> {typeInfo.label}</span>
+          {isLive && <span style={{ color: "var(--accent-red)", fontWeight: 700 }}><span className="reef-live-dot" aria-hidden="true" /> Live now</span>}
+          <span><Clock size={15} aria-hidden="true" /> <time dateTime={tide.start_time}>{formatWhen(tide)}</time></span>
+          <HostLine tide={tide} />
+          {tide.attendee_count !== undefined && (
+            <span>{tide.attendee_count} going</span>
+          )}
         </div>
-      )}
-
-      <div className="tide-card__content">
-        <div className="tide-card__header">
-          <span
-            className="tide-card__type-badge"
-            style={{ backgroundColor: typeInfo.color, color: "#fff" }}
-          >
-            {typeInfo.icon} {typeInfo.label}
-          </span>
-          {!isLive && <CountdownTimer targetTime={tide.start_time} />}
-        </div>
-
-        <h3 className="tide-card__title">{tide.title}</h3>
-
         {tide.description && (
-          <p className="tide-card__desc">
-            {tide.description.length > 100
-              ? tide.description.slice(0, 100) + "…"
-              : tide.description}
+          <p className="reef-event-desc">
+            {tide.description.length > 140 ? tide.description.slice(0, 140) + "…" : tide.description}
           </p>
         )}
-
-        <div className="tide-card__meta">
-          <time dateTime={tide.start_time}>
-            {startDate.toLocaleDateString(undefined, {
-              weekday: "short",
-              month: "short",
-              day: "numeric",
-              hour: "numeric",
-              minute: "2-digit",
-            })}
-          </time>
-          {tide.attendee_count !== undefined && (
-            <span className="tide-card__attendees">
-              👥 {tide.attendee_count}
-            </span>
-          )}
-        </div>
-
-        {tide.host_profile && (
-          <div className="tide-card__host">
-            <ProfileCard
-                walletAddress={tide.host_profile?.wallet_address}
-                displayName={tide.host_profile?.display_name}
-                avatarUrl={tide.host_profile?.avatar_url}
-                companionTier={tide.host_profile?.companion_tier}
-                size="small"
-              />
-          </div>
-        )}
-
-        <div className="tide-card__actions">
-          {tide.my_rsvp ? (
-            <span className="tide-card__rsvp-status">
-              ✓ {tide.my_rsvp === "checked_in" ? "Checked In" : "Going"}
+        <div className="reef-event-actions">
+          {!past && !isLive && <span className="reef-section-sub" style={{ margin: 0 }}><CountdownTimer targetTime={tide.start_time} /></span>}
+          {!past && (alreadyGoing ? (
+            <span className="reef-event-status">
+              {tide.my_rsvp === "checked_in" ? "Checked in" : "You're going"}
             </span>
           ) : (
-            <button
-              className="btn btn--sm btn--primary"
-              onClick={handleRsvpClick}
-              disabled={rsvpMutation.isPending}
-            >
-              {rsvpMutation.isPending ? "RSVPing…" : "RSVP"}
+            <button type="button" className="reef-btn reef-btn--sm reef-btn--primary" onClick={handleRsvpClick} disabled={rsvpMutation.isPending}>
+              {rsvpMutation.isPending ? "Saving…" : signedIn ? "RSVP" : "Sign in to RSVP"}
             </button>
-          )}
-          {rsvpError && (
-            <span className="tide-card__rsvp-error" role="alert">{rsvpError}</span>
-          )}
+          ))}
+          <button type="button" className="reef-btn reef-btn--sm" onClick={() => onSelect(tide.id)}>
+            {past ? "View event" : "Details"}
+          </button>
+          {rsvpError && <span className="reef-event-error" role="alert">{rsvpError}</span>}
         </div>
       </div>
-    </article>
+    </li>
   );
 }
 
-export function TideCalendar({ onSelectTide, casualModeActive = false }) {
+export function TideCalendar({ onSelectTide, signedIn = false, onRequireSignIn, onHost = null }) {
   const [filterType, setFilterType] = useState(null);
-  const [viewMode, setViewMode] = useState("grid"); // grid | list
 
-  const { data: upcomingTides = [], isLoading } = useUpcomingTides({
-    tideType: filterType,
-  });
+  const { data: upcomingRows = [], isLoading } = useUpcomingTides({ tideType: filterType });
+  const { data: pastRows = [], isLoading: pastLoading } = usePastTides();
   const { data: myTides = [] } = useMyTides();
 
+  const myIds = useMemo(() => new Set(myTides.map((t) => t.id)), [myTides]);
+  const { upcoming, past } = useMemo(() => {
+    const typed = (rows) => (filterType ? rows.filter((t) => t.tide_type === filterType) : rows);
+    return splitEvents(typed(upcomingRows), typed(pastRows));
+  }, [upcomingRows, pastRows, filterType]);
 
-
-  const myUpcoming = myTides.filter(
-    (t) => t.status === "upcoming" || t.status === "live"
-  );
+  const cardProps = { onSelect: onSelectTide, signedIn, onRequireSignIn };
 
   return (
-    <section className="tide-calendar" aria-label={casualModeActive ? "Events Calendar" : "Tides Events Calendar"}>
-      {/* Header */}
-      <header className="tide-calendar__header">
-        <h2>{casualModeActive ? "📅 Events" : "🌊 Tides"}</h2>
-        <div className="tide-calendar__controls">
-          {/* Type filter */}
-          <div className="tide-calendar__filters" role="tablist" aria-label="Filter by type">
-            <button
-              role="tab"
-              aria-selected={filterType === null}
-              className={`filter-chip ${filterType === null ? "filter-chip--active" : ""}`}
-              onClick={() => setFilterType(null)}
-            >
-              All
-            </button>
-            {Object.entries(TIDE_TYPE_LABELS).map(([key, { label, icon }]) => (
-              <button
-                key={key}
-                role="tab"
-                aria-selected={filterType === key}
-                className={`filter-chip ${filterType === key ? "filter-chip--active" : ""}`}
-                onClick={() => setFilterType(key)}
-              >
-                {icon} {label}
-              </button>
-            ))}
-          </div>
+    <section className="reef-events" aria-label="Events">
+      <div className="reef-filters" role="group" aria-label="Event type" style={{ marginBottom: 0 }}>
+        <button type="button" className="reef-filter" aria-pressed={filterType === null} onClick={() => setFilterType(null)}>
+          All
+        </button>
+        {Object.entries(TIDE_TYPE_LABELS).map(([key, { label }]) => (
+          <button key={key} type="button" className="reef-filter" aria-pressed={filterType === key} onClick={() => setFilterType(key)}>
+            {label}
+          </button>
+        ))}
+      </div>
 
-          {/* View toggle */}
-          <div className="tide-calendar__view-toggle">
-            <button
-              className={viewMode === "grid" ? "active" : ""}
-              onClick={() => setViewMode("grid")}
-              aria-label="Grid view"
-              title="Grid view"
-            >
-              ▦
-            </button>
-            <button
-              className={viewMode === "list" ? "active" : ""}
-              onClick={() => setViewMode("list")}
-              aria-label="List view"
-              title="List view"
-            >
-              ☰
-            </button>
-          </div>
-        </div>
-      </header>
-
-      {/* My Upcoming Tides */}
-      {myUpcoming.length > 0 && (
-        <section className="tide-calendar__my-tides" aria-label={casualModeActive ? "My Upcoming Events" : "My Upcoming Tides"}>
-          <h3>{casualModeActive ? "My Upcoming Events" : "My Upcoming Tides"}</h3>
-          <div className="tide-calendar__my-tides-list">
-            {myUpcoming.map((tide) => (
-              <TideCard
-                key={tide.id}
-                tide={tide}
-                onSelect={onSelectTide}
-              />
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* All Upcoming */}
-      <section aria-label="All Upcoming Tides">
+      <section aria-labelledby="reef-upcoming-events">
+        <h3 id="reef-upcoming-events" className="reef-section-title" style={{ marginBottom: "0.8rem" }}>Upcoming events</h3>
         {isLoading ? (
-          <div className="tide-calendar__loading">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="tide-card tide-card--skeleton" aria-hidden="true">
-                <div className="skeleton-banner" />
-                <div className="skeleton-text" />
-                <div className="skeleton-text skeleton-text--short" />
-              </div>
-            ))}
+          <div className="reef-event-list" aria-busy="true">
+            {[1, 2].map((i) => <div key={i} className="reef-skeleton" style={{ height: 110 }} />)}
           </div>
-        ) : upcomingTides.length === 0 ? (
-          <div className="tide-calendar__empty">
-            <p>{casualModeActive ? "📅 No upcoming events." : "🌊 No upcoming tides."}</p>
-            <p className="tide-calendar__empty-sub">
-              {casualModeActive
-                ? "Check back soon or host your own event!"
-                : "Check back soon or create one from your School."
-              }
+        ) : upcoming.length === 0 ? (
+          <div className="reef-empty reef-empty--flat">
+            <span className="reef-empty-icon"><CalendarBlank size={24} aria-hidden="true" /></span>
+            <h3 className="reef-empty-title">No upcoming events right now</h3>
+            <p className="reef-empty-lead">
+              {filterType
+                ? "Nothing of this type is planned. Try All to see every event."
+                : "When a club or member plans a meetup, a virtual hangout or a challenge, it shows up here."}
             </p>
+            {onHost && !filterType && (
+              <div className="reef-empty-actions">
+                <button type="button" className="reef-btn reef-btn--primary" onClick={onHost}>Host an event</button>
+              </div>
+            )}
           </div>
         ) : (
-          <div className={`tide-calendar__grid tide-calendar__grid--${viewMode}`}>
-            {upcomingTides.map((tide) => (
-              <TideCard
-                key={tide.id}
-                tide={tide}
-                onSelect={onSelectTide}
-              />
+          <ul className="reef-event-list">
+            {upcoming.map((tide) => (
+              <TideCard key={tide.id} tide={tide} going={myIds.has(tide.id)} {...cardProps} />
             ))}
-          </div>
+          </ul>
+        )}
+      </section>
+
+      <section className="reef-past-head" aria-labelledby="reef-past-events">
+        <h3 id="reef-past-events" className="reef-section-title" style={{ marginBottom: "0.2rem" }}>Past events</h3>
+        <p className="reef-section-sub" style={{ marginBottom: "0.8rem" }}>Events that have already finished, newest first.</p>
+        {pastLoading ? (
+          <div className="reef-skeleton" style={{ height: 90, maxWidth: 760 }} />
+        ) : past.length === 0 ? (
+          <p className="reef-panel-note">No past events yet.</p>
+        ) : (
+          <ul className="reef-event-list">
+            {past.map((tide) => (
+              <TideCard key={tide.id} tide={tide} past {...cardProps} />
+            ))}
+          </ul>
         )}
       </section>
     </section>

@@ -21,6 +21,7 @@ import SwapSheet from "./SwapSheet";
 import { TideStreamPlayer } from "./TideStreamPlayer";
 import { TideLivePulse } from "./TideLivePulse";
 import { TIDE_VIDEO_ENABLED } from "../../config/liveEvents";
+import { isEventOver } from "./reefEvents";
 
 const TIDE_TYPE_LABELS = {
   expo: { label: "Expo", icon: "📍", color: "#047857" },
@@ -72,7 +73,7 @@ function TideCountdown({ startTime }) {
     function update() {
       const diff = new Date(startTime).getTime() - Date.now();
       if (diff <= 0) {
-        setTimeStr("Starting now!");
+        setTimeStr("Starting now");
         return;
       }
       const d = Math.floor(diff / 86400000);
@@ -117,7 +118,7 @@ function VirtualGatheringPanel({ isLive, isEnded, onOpenFeed, onOpenChat }) {
         {isEnded
           ? "Catch the recap and see what you missed."
           : isLive
-            ? "It's happening now — jump into the Live Feed and Chat to join the conversation and drop reactions."
+            ? "It's happening now. Join the Live Feed and Chat to talk with everyone and drop reactions."
             : "When this goes live, join the Live Feed and Chat to talk with everyone in real time. No camera needed."}
       </p>
       {isLive && (
@@ -145,6 +146,17 @@ export function TidePage({ tideId, onBack }) {
   const walletAddress = account || getCurrentWallet();
   const isHost = sameWallet(tide?.host_wallet, walletAddress);
 
+  // These two hooks used to sit below the loading/not-found early returns, so
+  // the first render after the tide loaded called more hooks than the one
+  // before it and React threw ("Rendered more hooks than during the previous
+  // render"). Hooks run on every render, before any return.
+  const [xpToast, setXpToast] = useState(null);
+  useEffect(() => {
+    if (!xpToast) return;
+    const t = setTimeout(() => setXpToast(null), 4000);
+    return () => clearTimeout(t);
+  }, [xpToast]);
+
   if (isLoading) {
     return (
       <div className="tide-page tide-page--loading">
@@ -157,16 +169,19 @@ export function TidePage({ tideId, onBack }) {
   if (!tide) {
     return (
       <div className="tide-page tide-page--error">
-        <button onClick={onBack} className="btn btn--ghost">← Back</button>
-        <p>Tide not found.</p>
+        <button onClick={onBack} className="btn btn--ghost">← All events</button>
+        <p>We couldn&apos;t find this event.</p>
       </div>
     );
   }
 
   const typeInfo = TIDE_TYPE_LABELS[tide.tide_type] || TIDE_TYPE_LABELS.expo;
   const isLive = tide.status === "live";
-  const isEnded = tide.status === "ended";
-  const isUpcoming = tide.status === "upcoming";
+  // Status only moves when a host presses Go Live / End, so an "upcoming" tide
+  // whose end time has passed is over: no RSVP or countdown for it.
+  const overByClock = tide.status === "upcoming" && isEventOver(tide);
+  const isEnded = tide.status === "ended" || overByClock;
+  const isUpcoming = tide.status === "upcoming" && !overByClock;
 
   // ── RSVP actions ──
   const handleRsvp = (status) => rsvpMutation.mutate(status);
@@ -174,23 +189,15 @@ export function TidePage({ tideId, onBack }) {
   // Award the check-in XP the button has always advertised. `xpClaimed` comes back
   // true only for the request that actually flipped tide_attendees.xp_awarded from
   // false, so a double-tap or a second device can't pay out twice.
-  const [xpToast, setXpToast] = useState(null);
   const handleCheckIn = () => {
     checkInMutation.mutate(undefined, {
       onSuccess: (res) => {
         if (!res?.xpClaimed) return;
         const { awarded } = awardXp("TIDE_CHECK_IN", { eventId: tideId });
-        if (awarded > 0) setXpToast(`+${awarded} XP — checked in!`);
+        if (awarded > 0) setXpToast(`Checked in. +${awarded} XP`);
       },
     });
   };
-
-  // Clear the toast after a few seconds.
-  useEffect(() => {
-    if (!xpToast) return;
-    const t = setTimeout(() => setXpToast(null), 4000);
-    return () => clearTimeout(t);
-  }, [xpToast]);
 
   // ── Host lifecycle actions ──
   const handleGoLive = () => startTideMutation.mutate();
@@ -215,7 +222,7 @@ export function TidePage({ tideId, onBack }) {
     <section className="tide-page" aria-label={`Tide: ${tide.title}`}>
       {/* Navigation */}
       <nav className="tide-page__nav">
-        <button onClick={onBack} className="btn btn--ghost">← Back to Tides</button>
+        <button onClick={onBack} className="btn btn--ghost">← All events</button>
       </nav>
 
       {/* Banner */}
@@ -308,7 +315,7 @@ export function TidePage({ tideId, onBack }) {
           )}
           {startTideMutation.isError && (
             <span style={{ fontSize: "0.68rem", color: "var(--accent-red)" }}>
-              Couldn&apos;t start — {startTideMutation.error?.message || "try again"}
+              Couldn&apos;t start: {startTideMutation.error?.message || "try again"}
             </span>
           )}
         </div>
@@ -385,7 +392,7 @@ export function TidePage({ tideId, onBack }) {
             <section aria-label="Attendees">
               <h3>Attendees ({attendees.length})</h3>
               {attendees.length === 0 ? (
-                <p className="text-muted">No RSVPs yet. Be the first!</p>
+                <p className="text-muted">No RSVPs yet.</p>
               ) : (
                 <div className="tide-page__attendee-grid">
                   {attendees.slice(0, 20).map((a) => (

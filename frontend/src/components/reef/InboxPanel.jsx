@@ -7,6 +7,8 @@
  */
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
+import { Tray } from "@phosphor-icons/react";
+import "./ReefDaylight.css";
 import { useUnreadCount, useNotifications, useMarkRead, useMarkAllRead } from "../../hooks/useSonar";
 import { useConversations, useUnreadDMCount } from "../../hooks/useMessages";
 import { isSupabaseConfigured } from "../../services/supabaseClient";
@@ -437,54 +439,25 @@ export function InboxPanel({ casualModeActive = false, initialView = null, pendi
   );
 }
 
+/**
+ * The inbox trigger: a labelled pill ("Inbox", plus an unread count) rather
+ * than a bare tray icon, so it reads the same as The Reef's other header tools.
+ * Styled by .reef-inbox-btn in ReefDaylight.css.
+ */
 function InboxButton({ totalUnread, isOpen, onClick }) {
   return (
     <button
+      type="button"
+      className="reef-inbox-btn"
       onClick={onClick}
-      style={{
-        position: "relative",
-        width: "34px",
-        height: "34px",
-        borderRadius: "8px",
-        border: isOpen ? "1px solid rgba(56, 189, 248, 0.25)" : "1px solid rgba(var(--ink-rgb), 0.13)",
-        background: isOpen ? "rgba(56, 189, 248, 0.08)" : "rgba(var(--ink-rgb), 0.03)",
-        color: "var(--text-muted)",
-        cursor: "pointer",
-        fontSize: "1rem",
-        transition: "all 0.15s ease",
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: 0,
-      }}
-      onMouseEnter={(e) => { e.currentTarget.style.color = "var(--text-primary)"; e.currentTarget.style.borderColor = "rgba(var(--ink-rgb), 0.2)"; }}
-      onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)"; e.currentTarget.style.borderColor = isOpen ? "rgba(56, 189, 248, 0.25)" : "rgba(var(--ink-rgb), 0.13)"; }}
-      title="Inbox"
+      title="Notifications and messages"
       aria-label={`Inbox${totalUnread > 0 ? `, ${totalUnread} unread` : ""}`}
       aria-expanded={isOpen}
     >
-      📥
+      <Tray size={18} aria-hidden="true" />
+      <span aria-hidden="true">Inbox</span>
       {totalUnread > 0 && (
-        <span
-          style={{
-            position: "absolute",
-            top: "-3px",
-            right: "-3px",
-            minWidth: "16px",
-            height: "16px",
-            borderRadius: "50px",
-            background: "#ef4444",
-            color: "#fff",
-            fontSize: "0.55rem",
-            fontWeight: 700,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "0 3px",
-            boxShadow: "0 0 6px rgba(239, 68, 68, 0.5)",
-          }}
-          aria-hidden="true"
-        >
+        <span className="reef-inbox-count" aria-hidden="true">
           {totalUnread > 99 ? "99+" : totalUnread}
         </span>
       )}

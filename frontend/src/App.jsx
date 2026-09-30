@@ -8,6 +8,7 @@ import { CartButton } from "./components/cart/CartButton";
 import { CartDrawer } from "./components/cart/CartDrawer";
 import { useCart } from "./contexts/CartContext";
 import { canonicalProductPath, resolveCommerceRoute } from "./services/commerceRoute";
+import { resolveReefRoute } from "./services/reefRoute";
 import { rememberSalesChannelFromUrl } from "./services/stripePayments";
 import { useFontSettings } from "./hooks/useFontSettings";
 import { useHighContrast } from "./hooks/useHighContrast";
@@ -367,6 +368,9 @@ export default function App() {
     () => resolveCommerceRoute(location.pathname, VALID_TABS),
     [location.pathname],
   );
+  // The Reef keeps its view (tab, open club, open event) in the query string, so
+  // /app/reef?club=<slug> and ?event=<id> are shareable (services/reefRoute.js).
+  const reefRoute = useMemo(() => resolveReefRoute(location.search), [location.search]);
   const isBareAppPath = location.pathname === "/app" || location.pathname === "/app/";
   const legacyHashTab = isBareAppPath ? location.hash.replace(/^#/, "") : "";
   const tabFromPath = location.pathname.replace(/^\/app\/?/, "").split("/")[0];
@@ -1270,6 +1274,9 @@ export default function App() {
               pendingConversation={pendingConversation}
               onConversationConsumed={() => setPendingConversation(null)}
               onCloseMessages={() => navigateCommerce("/app/reef", { params: { action: null, quantity: null } })}
+              route={reefRoute}
+              onRouteChange={(params, { replace = false } = {}) => navigateCommerce("/app/reef", { replace, params })}
+              onRequireSignIn={() => requireCommerceAuth()}
             />
           </Suspense>
         );

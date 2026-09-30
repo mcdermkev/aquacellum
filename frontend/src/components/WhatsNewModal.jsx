@@ -1,194 +1,89 @@
 import React, { useState, useEffect } from "react";
 import { Modal } from "./Modal";
+import { useAuth } from "../contexts/AuthContext";
+import "./WhatsNewModal.css";
 
 /**
- * WhatsNewModal — Shows recent changes when the app version bumps.
- * Triggered by comparing the current version against localStorage.
- * Displays a curated list of user-facing changes (not the full dev changelog).
+ * WhatsNewModal: a short list of recent changes, shown once per version.
+ *
+ * Shows only to signed-in people. A first-time visitor who hasn't signed in
+ * came to look around, not to read a changelog, so nothing covers the page for
+ * them. The seen flag is written on close, so the list appears once per
+ * version per browser, after sign-in.
+ *
+ * Entries are taken from the real change history (git log), in plain words.
  */
 
-// Bump this when deploying meaningful beta updates.
-// The modal will show once per version bump. Exported so Settings → App &
-// Support can display the running version (docs/SETTINGS_SPEC.md §6 #12 —
-// "version is never shown") without a second, driftable copy of the string.
-export const CURRENT_VERSION = "0.9.1";
+// Bump this when there is a meaningful set of changes to announce. Exported so
+// Settings > App & Support can show the running version (docs/SETTINGS_SPEC.md
+// §6 #12) without a second copy of the string.
+export const CURRENT_VERSION = "0.10.0";
 const VERSION_KEY = "aquadex_last_seen_version";
 
-// User-facing changelog entries (most recent first).
-// Keep this curated — only things beta testers care about.
-const CHANGELOG_ENTRIES = [
-  {
-    version: "0.9.1",
-    date: "June 20, 2026",
-    title: "Beta Polish & Security Hardening",
-    items: [
-      "🛡️ API endpoints now restricted to aquacellum.com (security fix)",
-      "⚡ Rate limiting added to protect the relayer wallet",
-      "🐛 New Feedback button — report bugs directly from the app",
-      "📋 Known Limitations section added to the beta banner",
-      "☁️ Cloud sync now shows status with retry on failure",
-      "🗑️ Reset Local Data button added in Settings (for stuck accounts)",
-      "🤖 Poseidon now asks for confirmation before taking actions",
-      "💬 Quick action chips below Poseidon chat (Log Feeding, Water Test...)",
-      "🗺️ Location prompt deferred — no more surprise geolocation popup",
-      "🥚 Echo egg now gently wobbles while waiting to hatch",
-      "🧪 Water test form pre-fills with your last reading",
-    ],
-  },
-  {
-    version: "0.9.0",
-    date: "June 19, 2026",
-    title: "Stripe Payments & Marketplace v2",
-    items: [
-      "💳 Fiat purchases via Stripe Checkout (no crypto needed)",
-      "🔗 New marketplace contract with fiat settlement support",
-      "📦 Batch and shipping checkout flows",
-      "🎥 Video uploads via Mux for tank content",
-    ],
-  },
-];
+// Most recent first. Keep it to what people will notice, 5 to 7 items.
+const RELEASE = {
+  date: "September 30, 2026",
+  items: [
+    "A lighter look across the app and the public pages, with one set of fonts everywhere.",
+    "Saltwater tanks: set a tank as reef or fish only, log marine water tests, and find corals and inverts in the species catalog.",
+    "Coral frags can be listed in the marketplace.",
+    "Clubs can run a live auction night, with a console for organizers and a room screen for the projector.",
+    "Tank service tools for people who look after other people's tanks.",
+    "My Aquariums tank labels can open a public page for the tank when you publish one.",
+    "Species pages show real values only, link to the right FishBase record, and list related clubs and events.",
+  ],
+};
 
 export function WhatsNewModal() {
   const [isOpen, setIsOpen] = useState(false);
+  const { account } = useAuth();
 
   useEffect(() => {
-    const lastSeen = localStorage.getItem(VERSION_KEY);
-    if (lastSeen !== CURRENT_VERSION) {
-      // Small delay so it doesn't flash on top of onboarding
-      const timer = setTimeout(() => setIsOpen(true), 1500);
-      return () => clearTimeout(timer);
+    if (!account) {
+      setIsOpen(false);
+      return;
     }
-  }, []);
+    let lastSeen = null;
+    try {
+      lastSeen = localStorage.getItem(VERSION_KEY);
+    } catch {
+      return;
+    }
+    if (lastSeen === CURRENT_VERSION) return;
+    // Small delay so it doesn't flash on top of sign-in or onboarding.
+    const timer = setTimeout(() => setIsOpen(true), 1500);
+    return () => clearTimeout(timer);
+  }, [account]);
 
   const handleClose = () => {
-    localStorage.setItem(VERSION_KEY, CURRENT_VERSION);
+    try {
+      localStorage.setItem(VERSION_KEY, CURRENT_VERSION);
+    } catch {
+      // Private mode: it just shows again next visit.
+    }
     setIsOpen(false);
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} ariaLabel="What's new in Aquacellum">
-      <div style={styles.content}>
-        <div style={styles.header}>
-          <span style={styles.sparkle}>✨</span>
-          <h3 style={styles.title}>What's New</h3>
-          <span style={styles.versionBadge}>v{CURRENT_VERSION}</span>
+    <Modal isOpen={isOpen} onClose={handleClose} ariaLabel="What's new in Aquacellum" className="whatsnew-card" fullScreenMobile={false}>
+      <div className="whatsnew">
+        <div className="whatsnew-head">
+          <div>
+            <p className="whatsnew-kicker">What&apos;s new</p>
+            <h3 className="whatsnew-title">Recent changes to Aquacellum</h3>
+          </div>
+          <span className="whatsnew-version">v{CURRENT_VERSION}</span>
         </div>
-
-        <div style={styles.entries}>
-          {CHANGELOG_ENTRIES.map((entry) => (
-            <div key={entry.version} style={styles.entry}>
-              <div style={styles.entryHeader}>
-                <span style={styles.entryTitle}>{entry.title}</span>
-                <span style={styles.entryDate}>{entry.date}</span>
-              </div>
-              <ul style={styles.itemList}>
-                {entry.items.map((item, i) => (
-                  <li key={i} style={styles.item}>{item}</li>
-                ))}
-              </ul>
-            </div>
+        <p className="whatsnew-date">{RELEASE.date}</p>
+        <ul className="whatsnew-list">
+          {RELEASE.items.map((item) => (
+            <li key={item}>{item}</li>
           ))}
-        </div>
-
-        <button onClick={handleClose} style={styles.closeBtn}>
-          Got it, let's go!
+        </ul>
+        <button type="button" onClick={handleClose} className="whatsnew-close">
+          Got it
         </button>
       </div>
     </Modal>
   );
 }
-
-const styles = {
-  content: {
-    padding: "1.5rem",
-    minWidth: "min(400px, 85vw)",
-    maxWidth: "460px",
-    maxHeight: "70vh",
-    display: "flex",
-    flexDirection: "column",
-  },
-  header: {
-    display: "flex",
-    alignItems: "center",
-    gap: "0.6rem",
-    marginBottom: "1.25rem",
-  },
-  sparkle: {
-    fontSize: "1.3rem",
-  },
-  title: {
-    margin: 0,
-    fontSize: "1.15rem",
-    fontFamily: "'Outfit', sans-serif",
-    fontWeight: 700,
-    color: "var(--text-primary)",
-    flex: 1,
-  },
-  versionBadge: {
-    fontSize: "0.65rem",
-    fontWeight: 600,
-    padding: "0.2rem 0.5rem",
-    borderRadius: "12px",
-    background: "rgba(56, 189, 248, 0.12)",
-    color: "var(--accent-blue)",
-    border: "1px solid rgba(56, 189, 248, 0.25)",
-  },
-  entries: {
-    flex: 1,
-    overflowY: "auto",
-    display: "flex",
-    flexDirection: "column",
-    gap: "1rem",
-    marginBottom: "1.25rem",
-    paddingRight: "0.25rem",
-  },
-  entry: {
-    padding: "0.75rem",
-    borderRadius: "8px",
-    background: "rgba(var(--ink-rgb), 0.02)",
-    border: "1px solid rgba(var(--ink-rgb), 0.11)",
-  },
-  entryHeader: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: "0.5rem",
-  },
-  entryTitle: {
-    fontSize: "0.85rem",
-    fontWeight: 600,
-    color: "var(--text-primary)",
-  },
-  entryDate: {
-    fontSize: "0.65rem",
-    color: "var(--text-muted)",
-  },
-  itemList: {
-    listStyle: "none",
-    margin: 0,
-    padding: 0,
-    display: "flex",
-    flexDirection: "column",
-    gap: "0.3rem",
-  },
-  item: {
-    fontSize: "0.78rem",
-    color: "var(--text-secondary)",
-    lineHeight: 1.4,
-    paddingLeft: "0.25rem",
-  },
-  closeBtn: {
-    padding: "0.75rem 1.5rem",
-    borderRadius: "8px",
-    border: "none",
-    background: "linear-gradient(135deg, #0284c7 0%, #0369a1 100%)",
-    color: "#fff",
-    fontFamily: "'Outfit', sans-serif",
-    fontWeight: 500,
-    fontSize: "0.9rem",
-    cursor: "pointer",
-    boxShadow: "0 4px 14px rgba(2, 132, 199, 0.25)",
-    transition: "all 0.3s ease",
-    width: "100%",
-  },
-};

@@ -10,6 +10,7 @@
  */
 
 import { useState, useRef, useEffect } from "react";
+import { MagnifyingGlass } from "@phosphor-icons/react";
 import { useReefSearch } from "../../hooks/useReefSearch";
 import { ProfileCard } from "./ProfileCard";
 
@@ -240,30 +241,14 @@ export function ReefSearchBar({
     <div className="reef-search" ref={containerRef}>
       {!expanded ? (
         <button
+          type="button"
           className="reef-search__trigger"
           onClick={handleExpand}
-          style={{
-            width: "34px",
-            height: "34px",
-            borderRadius: "8px",
-            border: "1px solid rgba(var(--ink-rgb), 0.13)",
-            background: "rgba(var(--ink-rgb), 0.03)",
-            color: "var(--text-muted)",
-            cursor: "pointer",
-            fontSize: "0.95rem",
-            transition: "all 0.15s ease",
-            display: "inline-flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: 0,
-            minHeight: "unset"
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.color = "var(--text-primary)"; e.currentTarget.style.borderColor = "rgba(var(--ink-rgb), 0.2)"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)"; e.currentTarget.style.borderColor = "rgba(var(--ink-rgb), 0.13)"; }}
-          title="Search"
+          title="Search people, posts, clubs and events (press /)"
           aria-label="Search The Reef"
         >
-          🔍
+          <MagnifyingGlass size={18} aria-hidden="true" />
+          <span aria-hidden="true">Search</span>
         </button>
       ) : (
         <div className="reef-search__expanded">
@@ -275,7 +260,7 @@ export function ReefSearchBar({
               className="reef-search__input"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder={casualModeActive ? "Search the reef…" : "Search profiles, posts, schools, events…"}
+              placeholder="Search people, posts, clubs, events"
               aria-label="Search"
               autoComplete="off"
             />
@@ -340,7 +325,7 @@ export function ReefSearchBar({
                   </SearchResultGroup>
 
                   <SearchResultGroup
-                    title="Schools"
+                    title="Clubs"
                     icon="🏫"
                     count={results.schools?.length}
                   >

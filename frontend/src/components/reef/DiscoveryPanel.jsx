@@ -170,11 +170,12 @@ export function DiscoveryPanel({ onProfileClick, casualModeActive = false }) {
     setExpandedSection((prev) => (prev === section ? null : section));
   };
 
+  // Daylight card, matching the Reef post cards.
   const sectionStyle = {
-    padding: "0.75rem",
-    borderRadius: "10px",
-    background: "rgba(var(--ink-rgb), 0.03)",
-    border: "1px solid rgba(var(--ink-rgb), 0.1)",
+    padding: "0.85rem 1rem",
+    borderRadius: "16px",
+    background: "#fff",
+    border: "1px solid var(--line)",
     marginBottom: "0.75rem",
   };
 

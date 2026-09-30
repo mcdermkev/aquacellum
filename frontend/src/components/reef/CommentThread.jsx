@@ -1,15 +1,18 @@
 /**
  * CommentThread.jsx
- * 
+ *
  * Threaded comment section for Currents.
  * Shows comments with 1-level threading (replies indented under parent).
  * Includes inline reply functionality and comment posting.
+ * Styles live in ReefDaylight.css.
  */
 
 import React, { useState, useEffect } from "react";
+import { ChatCircle } from "@phosphor-icons/react";
 import { ProfileCard } from "./ProfileCard";
 import { getComments, postComment } from "../../services/reefApi";
 import { getCurrentWallet } from "../../services/supabaseClient";
+import "./ReefDaylight.css";
 
 /**
  * Format relative time (e.g., "2h ago", "3d ago")
@@ -26,7 +29,7 @@ function timeAgo(dateString) {
   return date.toLocaleDateString();
 }
 
-function CommentInput({ onSubmit, placeholder = "Write a comment...", autoFocus = false }) {
+function CommentInput({ onSubmit, placeholder = "Write a comment", autoFocus = false }) {
   const [text, setText] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const walletAddress = getCurrentWallet();
@@ -39,36 +42,19 @@ function CommentInput({ onSubmit, placeholder = "Write a comment...", autoFocus 
     setSubmitting(false);
   };
 
-  if (!walletAddress) return null;
+  if (!walletAddress) {
+    return <p className="reef-comment-note">Sign in to join the conversation.</p>;
+  }
 
   return (
-    <div style={{ display: "flex", gap: "0.5rem", alignItems: "flex-end" }}>
+    <div className="reef-comment-form">
       <textarea
         value={text}
         onChange={(e) => setText(e.target.value.slice(0, 1000))}
         placeholder={placeholder}
         autoFocus={autoFocus}
         rows={1}
-        className="reef-comment-input"
-        style={{
-          flex: 1,
-          resize: "none",
-          padding: "0.5rem 0.75rem",
-          borderRadius: "8px",
-          border: "1px solid rgba(var(--ink-rgb), 0.13)",
-          background: "rgba(var(--ink-rgb), 0.03)",
-          color: "var(--text-primary)",
-          fontSize: "0.8rem",
-          lineHeight: "1.5",
-          fontFamily: "inherit",
-          outline: "none",
-          transition: "border-color 0.15s ease",
-          minHeight: "36px",
-          maxHeight: "120px",
-          overflow: "auto",
-        }}
-        onFocus={(e) => { e.target.style.borderColor = "rgba(56, 189, 248, 0.3)"; }}
-        onBlur={(e) => { e.target.style.borderColor = "rgba(var(--ink-rgb), 0.13)"; }}
+        className="reef-input reef-comment-input"
         onKeyDown={(e) => {
           if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();
@@ -78,25 +64,13 @@ function CommentInput({ onSubmit, placeholder = "Write a comment...", autoFocus 
         aria-label={placeholder}
       />
       <button
+        type="button"
+        className="reef-btn reef-btn--primary"
         onClick={handleSubmit}
         disabled={!text.trim() || submitting}
-        style={{
-          padding: "0.45rem 0.75rem",
-          borderRadius: "8px",
-          border: "none",
-          background: text.trim()
-            ? "linear-gradient(135deg, #0ea5e9, #0369a1)"
-            : "rgba(var(--ink-rgb), 0.05)",
-          color: text.trim() ? "#fff" : "var(--text-muted)",
-          fontSize: "0.75rem",
-          fontWeight: 600,
-          cursor: text.trim() ? "pointer" : "default",
-          transition: "all 0.15s ease",
-          opacity: submitting ? 0.5 : 1,
-        }}
         aria-label="Post comment"
       >
-        {submitting ? "..." : "Post"}
+        {submitting ? "Posting…" : "Post"}
       </button>
     </div>
   );
@@ -107,17 +81,8 @@ function SingleComment({ comment, onReply, isReply = false }) {
   const profile = comment.profiles;
 
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: "0.3rem",
-        paddingLeft: isReply ? "1.5rem" : "0",
-        borderLeft: isReply ? "2px solid rgba(var(--ink-rgb), 0.11)" : "none",
-        marginLeft: isReply ? "0.5rem" : "0",
-      }}
-    >
-      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+    <div className={`reef-comment ${isReply ? "reef-comment--reply" : ""}`}>
+      <div className="reef-comment-head">
         <ProfileCard
           walletAddress={profile?.wallet_address || comment.author_wallet}
           displayName={profile?.display_name}
@@ -126,54 +91,27 @@ function SingleComment({ comment, onReply, isReply = false }) {
           size="small"
           showTier={false}
         />
-        <span style={{ fontSize: "0.65rem", color: "var(--text-muted)" }}>
-          {timeAgo(comment.created_at)}
-        </span>
+        <span className="reef-comment-time">{timeAgo(comment.created_at)}</span>
       </div>
 
-      <p style={{
-        margin: 0,
-        fontSize: "0.8rem",
-        color: "var(--text-secondary, #d1d5db)",
-        lineHeight: "1.5",
-        paddingLeft: "0.3rem",
-      }}>
-        {comment.body}
-      </p>
+      <p className="reef-comment-body">{comment.body}</p>
 
       {/* Reply button (only for top-level comments) */}
-      {!isReply && (
-        <button
-          onClick={() => setShowReplyInput(!showReplyInput)}
-          style={{
-            alignSelf: "flex-start",
-            padding: "0.15rem 0.4rem",
-            fontSize: "0.65rem",
-            color: "var(--text-muted)",
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            borderRadius: "4px",
-            transition: "color 0.15s ease",
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.color = "var(--text-primary)"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)"; }}
-        >
-          ↩ Reply
+      {!isReply && getCurrentWallet() && (
+        <button type="button" className="reef-link" style={{ alignSelf: "flex-start", fontSize: "0.8rem" }} onClick={() => setShowReplyInput(!showReplyInput)}>
+          Reply
         </button>
       )}
 
       {showReplyInput && (
-        <div style={{ paddingLeft: "0.5rem", paddingTop: "0.25rem" }}>
-          <CommentInput
-            placeholder="Write a reply..."
-            autoFocus
-            onSubmit={async (text) => {
-              await onReply(text, comment.id);
-              setShowReplyInput(false);
-            }}
-          />
-        </div>
+        <CommentInput
+          placeholder="Write a reply"
+          autoFocus
+          onSubmit={async (text) => {
+            await onReply(text, comment.id);
+            setShowReplyInput(false);
+          }}
+        />
       )}
     </div>
   );
@@ -206,9 +144,7 @@ export function CommentThread({ currentId, initialCount = 0 }) {
   }, [currentId]);
 
   const handleExpand = () => {
-    if (!loaded) {
-      loadComments();
-    }
+    if (!loaded) loadComments();
     setExpanded(!expanded);
   };
 
@@ -225,85 +161,40 @@ export function CommentThread({ currentId, initialCount = 0 }) {
   const replies = comments.filter((c) => c.parent_comment_id);
   const replyMap = {};
   for (const reply of replies) {
-    if (!replyMap[reply.parent_comment_id]) {
-      replyMap[reply.parent_comment_id] = [];
-    }
+    if (!replyMap[reply.parent_comment_id]) replyMap[reply.parent_comment_id] = [];
     replyMap[reply.parent_comment_id].push(reply);
   }
 
+  const toggleLabel = commentCount > 0 ? `${commentCount} comment${commentCount !== 1 ? "s" : ""}` : "Comment";
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-      {/* Toggle button */}
+    <div className="reef-comments">
       <button
+        type="button"
+        className="reef-btn reef-btn--sm reef-btn--ghost reef-comments-toggle"
         onClick={handleExpand}
-        style={{
-          alignSelf: "flex-start",
-          display: "inline-flex",
-          alignItems: "center",
-          gap: "0.35rem",
-          padding: "0.3rem 0.6rem",
-          fontSize: "0.75rem",
-          color: "var(--text-muted)",
-          background: "none",
-          border: "none",
-          cursor: "pointer",
-          borderRadius: "4px",
-          transition: "color 0.15s ease",
-        }}
-        onMouseEnter={(e) => { e.currentTarget.style.color = "var(--text-primary)"; }}
-        onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)"; }}
         aria-expanded={expanded}
-        aria-label={`${commentCount} comments, click to ${expanded ? "collapse" : "expand"}`}
       >
-        💬 {commentCount > 0 ? `${commentCount} comment${commentCount !== 1 ? "s" : ""}` : "Comment"}
+        <ChatCircle size={17} aria-hidden="true" />
+        {expanded && commentCount > 0 ? `Hide ${toggleLabel}` : toggleLabel}
       </button>
 
-      {/* Expanded comment section */}
       {expanded && (
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "0.75rem",
-            padding: "0.75rem",
-            borderRadius: "8px",
-            background: "rgba(var(--ink-rgb), 0.03)",
-            border: "1px solid rgba(var(--ink-rgb), 0.1)",
-          }}
-        >
-          {loading && (
-            <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", textAlign: "center" }}>
-              Loading comments...
-            </p>
-          )}
+        <div className="reef-comments-panel">
+          {loading && <p className="reef-comment-note">Loading comments…</p>}
 
-          {!loading && topLevel.length === 0 && (
-            <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", textAlign: "center", padding: "0.5rem" }}>
-              No comments yet. Be the first!
-            </p>
-          )}
+          {!loading && topLevel.length === 0 && <p className="reef-comment-note">No comments yet.</p>}
 
-          {/* Comment list */}
           {topLevel.map((comment) => (
-            <div key={comment.id} style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-              <SingleComment
-                comment={comment}
-                onReply={handlePostComment}
-              />
-              {/* Replies */}
+            <div key={comment.id} className="reef-comments">
+              <SingleComment comment={comment} onReply={handlePostComment} />
               {replyMap[comment.id]?.map((reply) => (
-                <SingleComment
-                  key={reply.id}
-                  comment={reply}
-                  onReply={handlePostComment}
-                  isReply
-                />
+                <SingleComment key={reply.id} comment={reply} onReply={handlePostComment} isReply />
               ))}
             </div>
           ))}
 
-          {/* New comment input */}
-          <div style={{ paddingTop: "0.5rem", borderTop: "1px solid rgba(var(--ink-rgb), 0.09)" }}>
+          <div className="reef-comment-compose">
             <CommentInput onSubmit={(text) => handlePostComment(text, null)} />
           </div>
         </div>

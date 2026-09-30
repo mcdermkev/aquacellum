@@ -9,6 +9,7 @@ import React, { useState, useEffect } from "react";
 import { followUser, unfollowUser, isFollowingUser } from "../../services/reefApi";
 import { getCurrentWallet } from "../../services/supabaseClient";
 import { useAuth } from "../../contexts/AuthContext";
+import "./ReefDaylight.css";
 
 export function FollowButton({ targetWallet, compact = false, onFollowChange }) {
   const [following, setFollowing] = useState(null); // null = loading
@@ -58,31 +59,18 @@ export function FollowButton({ targetWallet, compact = false, onFollowChange }) 
   // Still loading initial state
   if (following === null) return null;
 
+  // Compact is the feed-card variant; styled by .reef-follow (ReefDaylight.css).
   if (compact) {
     return (
       <button
+        type="button"
+        className="reef-follow"
         onClick={handleToggle}
         disabled={loading}
-        style={{
-          padding: "0.2rem 0.5rem",
-          borderRadius: "50px",
-          border: following
-            ? "1px solid rgba(52, 211, 153, 0.3)"
-            : "1px solid rgba(56, 189, 248, 0.3)",
-          background: following
-            ? "rgba(52, 211, 153, 0.08)"
-            : "rgba(56, 189, 248, 0.08)",
-          color: following ? "var(--accent-green)" : "var(--accent-blue)",
-          fontSize: "0.6rem",
-          fontWeight: 600,
-          cursor: loading ? "default" : "pointer",
-          transition: "all 0.15s ease",
-          opacity: loading ? 0.6 : 1,
-          whiteSpace: "nowrap",
-        }}
-        aria-label={following ? "Unfollow" : "Follow"}
+        aria-pressed={following}
+        title={following ? "You follow this keeper. Tap to unfollow." : "Follow to see their posts in your feed"}
       >
-        {following ? "✓ Following" : "+ Follow"}
+        {following ? "Following" : "Follow"}
       </button>
     );
   }

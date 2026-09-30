@@ -1,12 +1,16 @@
 /**
  * SchoolPage.jsx
- * 
- * Full school view with tabs: Feed / Members / Challenges / Chat / Settings.
+ *
+ * A club's page inside The Reef (clubs are "schools" in the data model).
+ * Daylight hero, about, tracked species, member count, upcoming events, then
+ * the existing tabs: Posts / Members / Challenges / Chat / Settings.
  */
 
-import React, { useState } from "react";
-import { useSchoolById, useMySchoolRole, useSchoolMembers, useSchoolChallenges, useLeaveSchool, useUpdateMemberRole, useRemoveMember, useCreateChallenge, useUpdateSchool, useSchoolPosts, useCreateSchoolPost, useDeleteSchoolPost, useSetSchoolPostPinned, useToggleSchoolPostReaction } from "../../hooks/useSchools";
+import React, { useMemo, useState } from "react";
+import { ArrowLeft, SealCheck, Lock, Users, CalendarBlank } from "@phosphor-icons/react";
+import { useSchoolById, useMySchoolRole, useSchoolMembers, useSchoolChallenges, useJoinSchool, useLeaveSchool, useUpdateMemberRole, useRemoveMember, useCreateChallenge, useUpdateSchool, useSchoolPosts, useCreateSchoolPost, useDeleteSchoolPost, useSetSchoolPostPinned, useToggleSchoolPostReaction } from "../../hooks/useSchools";
 import { useChallengeParticipants, useChallengeSubmissions, useJoinChallenge, useLeaveChallenge, useSubmitChallengeEntry, useVoteForEntry, useFinalizeChallenge, useClaimChallengeReward } from "../../hooks/useSchools";
+import { useUpcomingTides } from "../../hooks/useTides";
 import { getCurrentWallet } from "../../services/supabaseClient";
 import { sameWallet } from "../../utils/wallet";
 import { awardXp } from "../../utils/xp";
@@ -22,26 +26,33 @@ import {
 import { ProfileCard } from "./ProfileCard";
 import { SchoolChat } from "./SchoolChat";
 import { ChallengeCard } from "./ChallengeCard";
-import { useScrollAffordance } from "../../hooks/useScrollAffordance";
+import { ClubBanner } from "./SchoolDirectory";
+import { splitEvents } from "./reefEvents";
+import { findSpecies, speciesHref, trackedSpeciesLabel, useSpeciesLookup } from "./reefSpecies";
+import "./ReefDaylight.css";
 
-const TYPE_EMOJI = {
-  species: "🐟",
-  regional: "🌍",
-  breeding: "🧬",
-  conservation: "🌿",
-  equipment: "⚙️",
-  open: "🌊",
+const TYPE_LABELS = {
+  species: "Species club",
+  regional: "Regional club",
+  breeding: "Breeding club",
+  conservation: "Conservation club",
+  equipment: "Equipment club",
+  open: "Open club",
+  club: "Club",
 };
 
-export function SchoolPage({ schoolId, onBack, onViewProfile }) {
-  const tabsScrollRef = useScrollAffordance();
+export function SchoolPage({ schoolId, onBack, onViewProfile, onOpenEvent, signedIn = false, onRequireSignIn }) {
   const [activeTab, setActiveTab] = useState("feed");
-  
+  const [membershipError, setMembershipError] = useState(null);
+  const lookup = useSpeciesLookup();
+
   const { data: schoolResult, isLoading } = useSchoolById(schoolId);
   const { data: myRole } = useMySchoolRole(schoolId);
   const { data: membersResult } = useSchoolMembers(schoolId);
   const { data: challengesResult } = useSchoolChallenges(schoolId);
-  
+  const { data: clubTides = [] } = useUpcomingTides({ schoolId });
+
+  const joinSchoolMutation = useJoinSchool();
   const leaveSchoolMutation = useLeaveSchool();
   const updateRoleMutation = useUpdateMemberRole();
   const removeMemberMutation = useRemoveMember();
@@ -54,176 +65,253 @@ export function SchoolPage({ schoolId, onBack, onViewProfile }) {
   // rather than being handed a composer whose insert RLS would reject.
   const isMember = myRole === "founder" || myRole === "elder" || myRole === "member";
   const myWallet = getCurrentWallet();
+  const upcomingEvents = useMemo(() => splitEvents(clubTides, []).upcoming, [clubTides]);
+
+  const backButton = (
+    <button type="button" className="reef-btn reef-btn--ghost reef-back" onClick={onBack}>
+      <ArrowLeft size={18} aria-hidden="true" /> All clubs
+    </button>
+  );
 
   if (isLoading) {
     return (
-      <div className="glass-card" style={{ padding: "2rem", textAlign: "center", color: "var(--text-muted)" }}>
-        Loading school...
+      <div className="school-page" aria-busy="true">
+        {backButton}
+        <div className="reef-skeleton" style={{ height: 240, marginBottom: "1rem" }} />
+        <div className="reef-skeleton" style={{ height: 120 }} />
       </div>
     );
   }
 
   if (!school) {
     return (
-      <div className="glass-card" style={{ padding: "2rem", textAlign: "center", color: "var(--text-muted)" }}>
-        School not found.
-        <button onClick={onBack} className="btn-secondary" style={{ marginTop: "1rem", display: "block", marginLeft: "auto", marginRight: "auto" }}>
-          ← Back to Directory
-        </button>
+      <div className="school-page">
+        {backButton}
+        <div className="reef-empty reef-empty--flat">
+          <h3 className="reef-empty-title">We couldn&apos;t find this club</h3>
+          <p className="reef-empty-lead">It may have been renamed or removed.</p>
+          <div className="reef-empty-actions">
+            <button type="button" className="reef-btn reef-btn--primary" onClick={onBack}>Browse clubs</button>
+          </div>
+        </div>
       </div>
     );
   }
 
+  const handleJoin = async () => {
+    if (!signedIn) return onRequireSignIn?.();
+    setMembershipError(null);
+    const res = await joinSchoolMutation.mutateAsync(schoolId).catch((err) => ({ error: err }));
+    if (res?.error) setMembershipError("Couldn't join this club. Try again.");
+  };
+  const handleLeave = async () => {
+    setMembershipError(null);
+    const res = await leaveSchoolMutation.mutateAsync(schoolId).catch((err) => ({ error: err }));
+    if (res?.error) setMembershipError("Couldn't leave this club. Try again.");
+  };
+
+  const tracked = (Array.isArray(school.tracked_species) ? school.tracked_species : [])
+    .map(trackedSpeciesLabel)
+    .filter((s) => s.commonName || s.scientificName);
+  const memberCount = Number(school.member_count) || 0;
+
   const tabs = [
-    { id: "feed", label: "Feed" },
-    { id: "members", label: `Members (${school.member_count})` },
+    { id: "feed", label: "Posts" },
+    { id: "members", label: `Members (${memberCount})` },
     { id: "challenges", label: "Challenges" },
     { id: "chat", label: "Chat" },
-    ...(isAdmin ? [{ id: "settings", label: "⚙️" }] : []),
+    ...(isAdmin ? [{ id: "settings", label: "Settings" }] : []),
   ];
 
-  return (
-    <div className="school-page" style={{ maxWidth: "800px", margin: "0 auto" }}>
-      {/* Back Button */}
-      <button
-        onClick={onBack}
-        style={{
-          background: "none",
-          border: "none",
-          color: "var(--text-secondary)",
-          fontSize: "0.8rem",
-          cursor: "pointer",
-          marginBottom: "1rem",
-          padding: "0.3rem 0",
-        }}
-      >
-        ← Back to Schools
+  const onTabKeyDown = (e) => {
+    const index = tabs.findIndex((t) => t.id === activeTab);
+    let next = null;
+    if (e.key === "ArrowRight") next = (index + 1) % tabs.length;
+    else if (e.key === "ArrowLeft") next = (index - 1 + tabs.length) % tabs.length;
+    else if (e.key === "Home") next = 0;
+    else if (e.key === "End") next = tabs.length - 1;
+    if (next === null) return;
+    e.preventDefault();
+    setActiveTab(tabs[next].id);
+    document.getElementById(`club-tab-${tabs[next].id}`)?.focus();
+  };
+
+  let membershipControl = null;
+  if (myRole === "founder") {
+    membershipControl = <span className="reef-member-tag">You started this club</span>;
+  } else if (isMember) {
+    membershipControl = (
+      <button type="button" className="reef-btn" onClick={handleLeave} disabled={leaveSchoolMutation.isPending}>
+        {leaveSchoolMutation.isPending ? "Leaving…" : "Leave club"}
       </button>
+    );
+  } else if (school.is_invite_only) {
+    membershipControl = <span className="reef-badge reef-badge--plain"><Lock size={13} weight="bold" aria-hidden="true" /> Join by invite</span>;
+  } else {
+    membershipControl = (
+      <button type="button" className="reef-btn reef-btn--primary" onClick={handleJoin} disabled={joinSchoolMutation.isPending}>
+        {joinSchoolMutation.isPending ? "Joining…" : signedIn ? "Join club" : "Sign in to join"}
+      </button>
+    );
+  }
 
-      {/* School Header */}
-      <div className="glass-card" style={{
-        padding: "0",
-        borderRadius: "var(--radius-md)",
-        overflow: "hidden",
-        marginBottom: "1.5rem",
-        border: "1px solid rgba(56, 189, 248, 0.12)",
-      }}>
-        {/* Banner */}
-        <div style={{
-          height: "140px",
-          background: school.banner_url
-            ? `url(${school.banner_url}) center/cover`
-            : "linear-gradient(135deg, rgba(56, 189, 248, 0.2) 0%, rgba(168, 85, 247, 0.2) 100%)",
-        }} />
+  return (
+    <div className="school-page">
+      {backButton}
 
-        {/* Info */}
-        <div style={{ padding: "1.25rem 1.5rem" }}>
-          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "1rem" }}>
-            <div>
-              <h2 style={{ margin: "0 0 0.3rem", fontSize: "1.2rem", color: "var(--text-primary)" }}>
-                {TYPE_EMOJI[school.school_type]} {school.name}
-              </h2>
-              {school.description && (
-                <p style={{ margin: "0 0 0.75rem", fontSize: "0.8rem", color: "var(--text-secondary)", lineHeight: "1.5" }}>
-                  {school.description}
-                </p>
-              )}
-              <div style={{ display: "flex", gap: "1rem", fontSize: "0.7rem", color: "var(--text-muted)" }}>
-                <span>👥 {school.member_count} member{school.member_count !== 1 ? "s" : ""}</span>
-                <span style={{ textTransform: "capitalize" }}>{school.school_type}</span>
-                {school.is_invite_only && <span>🔒 Invite only</span>}
+      {/* Hero */}
+      <section className="reef-club-hero" aria-labelledby="club-title">
+        <ClubBanner school={school} lookup={lookup}>
+          <span className="reef-club-flags">
+            {school.is_official && (
+              <span className="reef-badge reef-badge--official"><SealCheck size={14} weight="fill" aria-hidden="true" /> Official</span>
+            )}
+          </span>
+        </ClubBanner>
+        <div className="reef-club-hero-body">
+          <div className="reef-club-hero-top">
+            <div style={{ minWidth: 0, flex: "1 1 260px" }}>
+              <h2 id="club-title" className="reef-club-hero-title">{school.name}</h2>
+              <div className="reef-club-facts" style={{ marginTop: "0.45rem" }}>
+                <span><Users size={16} aria-hidden="true" /> {memberCount} {memberCount === 1 ? "member" : "members"}</span>
+                {TYPE_LABELS[school.school_type] && <span>{TYPE_LABELS[school.school_type]}</span>}
+                {school.is_invite_only && <span><Lock size={14} aria-hidden="true" /> Invite only</span>}
               </div>
             </div>
-
-            {myRole && myRole !== "founder" && (
-              <button
-                onClick={() => leaveSchoolMutation.mutate(schoolId)}
-                className="btn-secondary"
-                style={{ padding: "0.4rem 0.8rem", fontSize: "0.7rem", whiteSpace: "nowrap" }}
-              >
-                Leave
-              </button>
-            )}
+            {membershipControl}
           </div>
+          {membershipError && <p className="reef-event-error" role="alert">{membershipError}</p>}
+          {school.description ? (
+            <p className="reef-club-about">{school.description}</p>
+          ) : (
+            <p className="reef-club-about">This club hasn&apos;t written a description yet.</p>
+          )}
         </div>
+      </section>
+
+      {/* Tracked species + upcoming events */}
+      <div className="reef-club-grid-2">
+        <section className="reef-panel" aria-labelledby="club-species">
+          <h3 id="club-species" className="reef-panel-title">Species this club follows</h3>
+          {tracked.length === 0 ? (
+            <p className="reef-panel-note">No species listed yet.</p>
+          ) : (
+            <ul className="reef-species-list">
+              {tracked.map((s) => {
+                const match = findSpecies(lookup, s);
+                const inner = (
+                  <>
+                    {match?.photo ? <img src={match.photo} alt="" loading="lazy" /> : <span className="reef-species-ph" aria-hidden="true" />}
+                    <span style={{ minWidth: 0 }}>
+                      <strong>{s.commonName || match?.name || s.scientificName}</strong>
+                      {s.scientificName && <em>{s.scientificName}</em>}
+                    </span>
+                  </>
+                );
+                return (
+                  <li key={`${s.scientificName}-${s.commonName}`}>
+                    {match ? (
+                      <a className="reef-species-row" href={speciesHref(match.slug)}>{inner}</a>
+                    ) : (
+                      <span className="reef-species-row">{inner}</span>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
+
+        <section className="reef-panel" aria-labelledby="club-events">
+          <h3 id="club-events" className="reef-panel-title">Upcoming events</h3>
+          {upcomingEvents.length === 0 ? (
+            <p className="reef-panel-note">No upcoming events for this club.</p>
+          ) : (
+            <ul className="reef-rail-list" style={{ margin: 0 }}>
+              {upcomingEvents.slice(0, 4).map((tide) => {
+                const d = new Date(tide.start_time);
+                return (
+                  <li key={tide.id}>
+                    <button type="button" className="reef-rail-item" onClick={() => onOpenEvent?.(tide.id)}>
+                      <span className="reef-mini-badge" aria-hidden="true"><CalendarBlank size={18} /></span>
+                      <span className="reef-rail-item-text">
+                        <span className="reef-rail-item-name">{tide.title}</span>
+                        <span className="reef-rail-item-meta">
+                          {d.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
+                        </span>
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
       </div>
 
       {/* Tabs */}
-      <div className="scroll-fade" ref={tabsScrollRef} style={{
-        display: "flex",
-        gap: "0.25rem",
-        marginBottom: "1.5rem",
-        overflowX: "auto",
-        paddingBottom: "0.25rem",
-      }}>
+      <div className="reef-subtabs" role="tablist" aria-label={`${school.name} sections`} onKeyDown={onTabKeyDown}>
         {tabs.map((tab) => (
           <button
             key={tab.id}
+            id={`club-tab-${tab.id}`}
+            type="button"
+            role="tab"
+            aria-selected={activeTab === tab.id}
+            aria-controls="club-tabpanel"
+            tabIndex={activeTab === tab.id ? 0 : -1}
+            className="reef-subtab"
             onClick={() => setActiveTab(tab.id)}
-            style={{
-              padding: "0.5rem 1rem",
-              borderRadius: "var(--radius-sm)",
-              border: `1px solid ${activeTab === tab.id ? "rgba(56, 189, 248, 0.3)" : "transparent"}`,
-              background: activeTab === tab.id ? "rgba(56, 189, 248, 0.1)" : "transparent",
-              color: activeTab === tab.id ? "var(--text-primary)" : "var(--text-secondary)",
-              fontSize: "0.8rem",
-              cursor: "pointer",
-              whiteSpace: "nowrap",
-              transition: "all 0.2s ease",
-            }}
           >
             {tab.label}
           </button>
         ))}
       </div>
 
-      {/* Tab Content */}
-      {activeTab === "feed" && (
-        <SchoolFeedTab
-          school={school}
-          schoolId={schoolId}
-          isMember={isMember}
-          isAdmin={isAdmin}
-          myWallet={myWallet}
-          onViewProfile={onViewProfile}
-        />
-      )}
+      <div id="club-tabpanel" role="tabpanel" aria-labelledby={`club-tab-${activeTab}`}>
+        {activeTab === "feed" && (
+          <SchoolFeedTab
+            school={school}
+            schoolId={schoolId}
+            isMember={isMember}
+            isAdmin={isAdmin}
+            myWallet={myWallet}
+            onViewProfile={onViewProfile}
+          />
+        )}
 
-      {activeTab === "members" && (
-        <MembersTab
-          members={members}
-          isAdmin={isAdmin}
-          schoolId={schoolId}
-          onViewProfile={onViewProfile}
-          onPromote={(wallet) => updateRoleMutation.mutate({ schoolId, targetWallet: wallet, newRole: "elder" })}
-          onDemote={(wallet) => updateRoleMutation.mutate({ schoolId, targetWallet: wallet, newRole: "member" })}
-          // Removing a member was a single unguarded click sitting next to
-          // Promote/Demote, with no way back — the kicked member has to be
-          // re-invited. Destructive and irreversible actions get a confirm.
-          onKick={(wallet, label) => {
-            if (!confirm(`Remove ${label || "this member"} from the school? They'll need to be invited back.`)) return;
-            removeMemberMutation.mutate({ schoolId, targetWallet: wallet });
-          }}
-        />
-      )}
+        {activeTab === "members" && (
+          <MembersTab
+            members={members}
+            isAdmin={isAdmin}
+            schoolId={schoolId}
+            onViewProfile={onViewProfile}
+            onPromote={(wallet) => updateRoleMutation.mutate({ schoolId, targetWallet: wallet, newRole: "elder" })}
+            onDemote={(wallet) => updateRoleMutation.mutate({ schoolId, targetWallet: wallet, newRole: "member" })}
+            // Removing a member was a single unguarded click sitting next to
+            // Promote/Demote, with no way back (the kicked member has to be
+            // re-invited). Destructive and irreversible actions get a confirm.
+            onKick={(wallet, label) => {
+              if (!confirm(`Remove ${label || "this member"} from the club? They'll need to be invited back.`)) return;
+              removeMemberMutation.mutate({ schoolId, targetWallet: wallet });
+            }}
+          />
+        )}
 
-      {activeTab === "challenges" && (
-        <ChallengesTab
-          challenges={challenges}
-          schoolId={schoolId}
-          isAdmin={isAdmin}
-          isMember={isMember}
-          myWallet={myWallet}
-        />
-      )}
+        {activeTab === "challenges" && (
+          <ChallengesTab
+            challenges={challenges}
+            schoolId={schoolId}
+            isAdmin={isAdmin}
+            isMember={isMember}
+            myWallet={myWallet}
+          />
+        )}
 
-      {activeTab === "chat" && (
-        <SchoolChat schoolId={schoolId} isAdmin={isAdmin} />
-      )}
+        {activeTab === "chat" && <SchoolChat schoolId={schoolId} isAdmin={isAdmin} />}
 
-      {activeTab === "settings" && isAdmin && (
-        <SettingsTab school={school} schoolId={schoolId} />
-      )}
+        {activeTab === "settings" && isAdmin && <SettingsTab school={school} schoolId={schoolId} />}
+      </div>
     </div>
   );
 }
@@ -285,7 +373,7 @@ function SchoolFeedTab({ school, schoolId, isMember, isAdmin, myWallet, onViewPr
           <textarea
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
-            placeholder={`Share something with ${school?.name || "the school"}…`}
+            placeholder={`Share something with ${school?.name || "the club"}…`}
             rows={3}
             maxLength={2000}
             aria-label="Write a post"
@@ -307,35 +395,23 @@ function SchoolFeedTab({ school, schoolId, isMember, isAdmin, myWallet, onViewPr
         </div>
       ) : (
         <p className="school-feed__gate text-muted">
-          Join this school to post to its feed.
+          Join this club to post here.
         </p>
       )}
 
-      {/* Tracked species — this was stored on every school and never read
-          anywhere in the UI, so members had no idea what the school followed. */}
-      {Array.isArray(school?.tracked_species) && school.tracked_species.length > 0 && (
-        <div className="school-feed__tracked">
-          <span className="text-muted">Tracking</span>
-          {school.tracked_species.slice(0, 8).map((s) => (
-            <span key={typeof s === "string" ? s : s?.name} className="school-feed__species-chip">
-              {typeof s === "string" ? s : s?.name || s?.common_name}
-            </span>
-          ))}
-        </div>
-      )}
+      {/* Tracked species now sit in the club hero ("Species this club follows"). */}
 
       {isLoading ? (
-        <p className="text-muted">Loading the feed…</p>
+        <p className="text-muted">Loading posts…</p>
       ) : loadError ? (
-        <p className="school-feed__error" role="alert">Couldn't load the feed. {String(loadError)}</p>
+        <p className="school-feed__error" role="alert">Couldn't load the posts. {String(loadError)}</p>
       ) : posts.length === 0 ? (
-        <div className="school-feed__empty">
-          <div style={{ fontSize: "1.5rem", marginBottom: "0.5rem" }}>📰</div>
-          <p>No posts yet.</p>
-          <p className="text-muted">
+        <div className="reef-empty reef-empty--flat">
+          <h3 className="reef-empty-title">No posts yet</h3>
+          <p className="reef-empty-lead" style={{ marginBottom: 0 }}>
             {isMember
-              ? "Be the first — share a spawn, ask a question, or introduce yourself."
-              : "This school hasn't posted anything yet."}
+              ? "Members can post here. Share a spawn, ask a question or say hello."
+              : "Members can post here."}
           </p>
         </div>
       ) : (
@@ -474,7 +550,7 @@ function SchoolPostCard({
 
 function MembersTab({ members, isAdmin, schoolId, onViewProfile, onPromote, onDemote, onKick }) {
   const rolePriority = { founder: 0, elder: 1, member: 2, visitor: 3 };
-  const sorted = [...members].sort((a, b) => (rolePriority[a.role] || 3) - (rolePriority[b.role] || 3));
+  const sorted = [...members].sort((a, b) => (rolePriority[a.role] ?? 3) - (rolePriority[b.role] ?? 3));
 
   const roleLabels = {
     founder: { label: "Founder", color: "#b45309" },
@@ -483,82 +559,55 @@ function MembersTab({ members, isAdmin, schoolId, onViewProfile, onPromote, onDe
     visitor: { label: "Visitor", color: "var(--text-muted)" },
   };
 
+  const visibleMembers = sorted.filter((m) => m.profile);
+  if (visibleMembers.length === 0) {
+    return <p className="reef-panel-note">No members to show yet.</p>;
+  }
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-      {sorted.map((member) => {
+    <ul className="reef-inbox-list" style={{ maxWidth: 680 }}>
+      {visibleMembers.map((member) => {
         const profile = member.profile;
-        if (!profile) return null;
         const roleInfo = roleLabels[member.role] || roleLabels.member;
+        const name = profile.display_name || `${profile.wallet_address.slice(0, 6)}…${profile.wallet_address.slice(-4)}`;
 
         return (
-          <div
-            key={profile.wallet_address}
-            className="glass-card"
-            style={{
-              padding: "0.75rem 1rem",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              borderRadius: "var(--radius-sm)",
-              border: "1px solid rgba(var(--ink-rgb), 0.11)",
-            }}
-          >
-            <div
-              style={{ display: "flex", alignItems: "center", gap: "0.75rem", cursor: "pointer" }}
-              onClick={() => onViewProfile?.(profile.wallet_address)}
-            >
-              <div style={{
-                width: "32px",
-                height: "32px",
-                borderRadius: "50%",
-                background: profile.avatar_url
-                  ? `url(${profile.avatar_url}) center/cover`
-                  : "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                flexShrink: 0,
-              }} />
-              <div>
-                <div style={{ fontSize: "0.8rem", color: "var(--text-primary)", fontWeight: "500" }}>
-                  {profile.display_name || `${profile.wallet_address.slice(0, 6)}...${profile.wallet_address.slice(-4)}`}
-                </div>
-                <span style={{ fontSize: "0.65rem", color: roleInfo.color, fontWeight: "600" }}>
-                  {roleInfo.label}
-                </span>
-              </div>
-            </div>
+          <li key={profile.wallet_address} className="reef-inbox-row" style={{ background: "#fff", border: "1px solid var(--line)" }}>
+            <button type="button" className="reef-author" onClick={() => onViewProfile?.(profile.wallet_address)}>
+              <span className="reef-avatar" aria-hidden="true">
+                {profile.avatar_url ? <img src={profile.avatar_url} alt="" loading="lazy" /> : name.slice(0, 2).toUpperCase()}
+              </span>
+              <span className="reef-author-text">
+                <span className="reef-author-name">{name}</span>
+                <span className="reef-author-meta" style={{ color: roleInfo.color, fontWeight: 600 }}>{roleInfo.label}</span>
+              </span>
+            </button>
 
             {isAdmin && member.role !== "founder" && (
-              <div style={{ display: "flex", gap: "0.3rem" }}>
+              <div className="reef-inbox-row-actions">
                 {member.role === "member" && (
-                  <button
-                    onClick={() => onPromote(profile.wallet_address)}
-                    style={{ background: "none", border: "none", color: "var(--accent-blue)", fontSize: "0.65rem", cursor: "pointer" }}
-                    title="Promote to Elder"
-                  >
-                    ⬆️
+                  <button type="button" className="reef-btn reef-btn--sm reef-btn--ghost" onClick={() => onPromote(profile.wallet_address)}>
+                    Make elder
                   </button>
                 )}
                 {member.role === "elder" && (
-                  <button
-                    onClick={() => onDemote(profile.wallet_address)}
-                    style={{ background: "none", border: "none", color: "var(--text-muted)", fontSize: "0.65rem", cursor: "pointer" }}
-                    title="Demote to Member"
-                  >
-                    ⬇️
+                  <button type="button" className="reef-btn reef-btn--sm reef-btn--ghost" onClick={() => onDemote(profile.wallet_address)}>
+                    Make member
                   </button>
                 )}
                 <button
+                  type="button"
+                  className="reef-btn reef-btn--sm reef-btn--ghost reef-btn--danger"
                   onClick={() => onKick(profile.wallet_address, profile.display_name)}
-                  style={{ background: "none", border: "none", color: "var(--accent-red)", fontSize: "0.65rem", cursor: "pointer" }}
-                  title="Remove from school"
                 >
-                  ✕
+                  Remove
                 </button>
               </div>
             )}
-          </div>
+          </li>
         );
       })}
-    </div>
+    </ul>
   );
 }
 
@@ -585,21 +634,8 @@ function ChallengesTab({ challenges, schoolId, isAdmin, isMember, myWallet }) {
       {isAdmin && (
         <div style={{ marginBottom: "1rem" }}>
           {!showForm ? (
-            <button
-              onClick={() => setShowForm(true)}
-              style={{
-                padding: "0.5rem 1rem",
-                borderRadius: "8px",
-                border: "none",
-                background: "linear-gradient(135deg, #f59e0b, #d97706)",
-                color: "#fff",
-                fontSize: "0.75rem",
-                fontWeight: 600,
-                cursor: "pointer",
-                boxShadow: "0 3px 10px rgba(245, 158, 11, 0.2)",
-              }}
-            >
-              🏆 + Create Challenge
+            <button type="button" className="reef-btn reef-btn--soft" onClick={() => setShowForm(true)}>
+              Create a challenge
             </button>
           ) : (
             <CreateChallengeForm
@@ -612,15 +648,13 @@ function ChallengesTab({ challenges, schoolId, isAdmin, isMember, myWallet }) {
       )}
 
       {live.length === 0 && completed.length === 0 && !showForm ? (
-        <div style={{ textAlign: "center", padding: "2rem 1rem", color: "var(--text-muted)" }}>
-          <div style={{ fontSize: "1.5rem", marginBottom: "0.5rem" }}>🏆</div>
-          <p style={{ fontSize: "0.85rem" }}>No challenges yet.</p>
-          {isAdmin && (
-            <p style={{ fontSize: "0.7rem" }}>Click "Create Challenge" above to get your school started!</p>
-          )}
-          {!isAdmin && (
-            <p style={{ fontSize: "0.7rem" }}>Your school's admins can create challenges for members to compete in.</p>
-          )}
+        <div className="reef-empty reef-empty--flat">
+          <h3 className="reef-empty-title">No challenges yet</h3>
+          <p className="reef-empty-lead" style={{ marginBottom: 0 }}>
+            {isAdmin
+              ? "Use Create a challenge above to start one for your members."
+              : "Club admins can set up challenges for members to take part in."}
+          </p>
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>

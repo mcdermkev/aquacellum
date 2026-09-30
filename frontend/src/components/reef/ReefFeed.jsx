@@ -1,13 +1,28 @@
 /**
  * ReefFeed.jsx
- * 
- * Main social feed view for The Reef.
- * Reorganized with clear tab navigation: Feed | Explore | Groups | Events
- * Combined Inbox (Notifications + Messages), onboarding overlay, and
- * casual mode labels throughout for discoverability.
+ *
+ * The Reef: tank updates, clubs and events. Daylight layout (ReefDaylight.css)
+ * matching My Aquariums.
+ *
+ * View state (tab, open club, open event) comes from the URL when App passes
+ * `route` + `onRouteChange` (services/reefRoute.js), so /app/reef?club=<slug>,
+ * ?event=<id> and ?tab=<name> are shareable deep links. Without those props the
+ * same state is kept locally.
  */
 
-import React, { useState, useCallback, useRef } from "react";
+import React, { useState, useCallback, useRef, useMemo } from "react";
+import {
+  Newspaper,
+  Compass,
+  UsersThree,
+  CalendarBlank,
+  UserCircle,
+  ArrowClockwise,
+  Plus,
+  Info,
+  WarningCircle,
+  Camera,
+} from "@phosphor-icons/react";
 import { CurrentCard } from "./CurrentCard";
 import { ContentComposer } from "./ContentComposer";
 import { InboxPanel } from "./InboxPanel";
@@ -23,22 +38,54 @@ import { CreateTide } from "./CreateTide";
 import { ReefSearchBar } from "./ReefSearchBar";
 import { DiscoveryPanel } from "./DiscoveryPanel";
 import { UnlockPrompt, useUnlockGate } from "./UnlockPrompt";
+import { splitEvents, clubInitials } from "./reefEvents";
 import { useFollowingFeed, useDiscoverFeed } from "../../hooks/useReefFeed";
 import { useEnsureProfile } from "../../hooks/useReefProfile";
-import { getCurrentWallet, isSupabaseConfigured } from "../../services/supabaseClient";
+import { useSchool, useSchoolDirectory } from "../../hooks/useSchools";
+import { useTide, useUpcomingTides } from "../../hooks/useTides";
+import { isSupabaseConfigured } from "../../services/supabaseClient";
+import { reefRouteParams } from "../../services/reefRoute";
 import { useQueryClient } from "@tanstack/react-query";
-import { useScrollAffordance } from "../../hooks/useScrollAffordance";
+import "./ReefDaylight.css";
 
-export function ReefFeed({ casualModeActive = false, walletAddress, onNavigateProfile, openMessages = false, pendingConversation = null, onConversationConsumed, onCloseMessages }) {
-  const tabsScrollRef = useScrollAffordance();
-  const [activeTab, setActiveTab] = useState("feed");
+const TABS = [
+  { key: "feed", label: "My feed", Icon: Newspaper },
+  { key: "explore", label: "Explore", Icon: Compass },
+  { key: "clubs", label: "Clubs", Icon: UsersThree },
+  { key: "events", label: "Events", Icon: CalendarBlank },
+];
+
+export function ReefFeed({
+  casualModeActive = false,
+  walletAddress,
+  openMessages = false,
+  pendingConversation = null,
+  onConversationConsumed,
+  onCloseMessages,
+  route: routeProp = null,
+  onRouteChange = null,
+  onRequireSignIn = null,
+}) {
+  const [localRoute, setLocalRoute] = useState(() => routeProp || {});
+  const route = (onRouteChange ? routeProp : localRoute) || {};
+  const go = useCallback(
+    (next, options) => {
+      const params = reefRouteParams(next);
+      if (onRouteChange) onRouteChange(params, options);
+      else setLocalRoute(params);
+    },
+    [onRouteChange]
+  );
+
   const [composerOpen, setComposerOpen] = useState(false);
   const [viewingProfile, setViewingProfile] = useState(null);
-  const [viewingSchool, setViewingSchool] = useState(null);
+  // Clubs opened without a slug (an invite only carries the id) stay local.
+  const [localSchoolId, setLocalSchoolId] = useState(null);
   const [creatingSchool, setCreatingSchool] = useState(false);
-  const [viewingTide, setViewingTide] = useState(null);
   const [creatingTide, setCreatingTide] = useState(false);
   const queryClient = useQueryClient();
+  const signedIn = !!walletAddress;
+  const configured = isSupabaseConfigured();
 
   // XP unlock gates
   const createSchoolGate = useUnlockGate("canCreateSchools");
@@ -47,33 +94,38 @@ export function ReefFeed({ casualModeActive = false, walletAddress, onNavigatePr
   // Ensure profile exists on load
   useEnsureProfile(walletAddress);
 
-  // NOTE: a `reef_open_composer` listener lived here, which opened the composer
-  // preselected to a tank. The chain feeding it (retired "Welcome aboard" modal
-  // → `reef_share_tank` → App bridge) is gone, so nothing could dispatch it.
-  // Removed rather than left one-sided — see the seam inventory guard. Sharing a
-  // tank still works from TankList's share action and from the composer's own
-  // tank picker.
-
   // Listen for "View Profile" event from header profile chip
   React.useEffect(() => {
     const handleViewProfile = (e) => {
-      if (e.detail?.wallet) {
-        setViewingProfile(e.detail.wallet);
-      }
+      if (e.detail?.wallet) setViewingProfile(e.detail.wallet);
     };
     window.addEventListener("reef_view_profile", handleViewProfile);
     return () => window.removeEventListener("reef_view_profile", handleViewProfile);
   }, []);
 
-  // Feed queries
-  const following = useFollowingFeed(activeTab === "feed", walletAddress);
-  const discover = useDiscoverFeed(activeTab === "explore");
+  // ── Deep-linked club and event ────────────────────────────────────────────
+  const clubQuery = useSchool(route.club || null);
+  const linkedClub = clubQuery.data?.data || null;
+  const clubMissing = !!route.badClub || (!!route.club && !clubQuery.isLoading && !linkedClub);
+  const tideQuery = useTide(route.event || null);
+  const eventMissing = !!route.badEvent || (!!route.event && !tideQuery.isLoading && (tideQuery.isError || !tideQuery.data));
 
+  // ── Which tab ─────────────────────────────────────────────────────────────
+  // Someone who follows nobody would open onto an empty feed, and there are only
+  // a handful of public posts in total, so with no tab in the URL The Reef opens
+  // on Explore unless the signed-in feed actually has something in it.
+  const requestedTab = clubMissing ? "clubs" : eventMissing ? "events" : route.tab || null;
+  const following = useFollowingFeed(signedIn && (!requestedTab || requestedTab === "feed"), walletAddress);
+  const followingItems = following.data?.pages?.flatMap((page) => page.data) || [];
+  const followingEmpty = signedIn && following.isSuccess && followingItems.length === 0;
+  const activeTab = requestedTab || (!signedIn || followingEmpty || !configured ? "explore" : "feed");
+  const exploreByDefault = !requestedTab && activeTab === "explore";
+
+  const discover = useDiscoverFeed(activeTab === "explore");
   const activeFeed = activeTab === "feed" ? following : discover;
-  const items = activeFeed.data?.pages?.flatMap((page) => page.data) || [];
-  const isLoading = activeFeed.isLoading;
-  const hasNextPage = activeFeed.hasNextPage;
-  const isFetchingNextPage = activeFeed.isFetchingNextPage;
+  const items = activeTab === "feed" ? followingItems : discover.data?.pages?.flatMap((page) => page.data) || [];
+  const isLoading = activeTab === "feed" ? signedIn && following.isLoading : activeFeed.isLoading;
+  const { hasNextPage, isFetchingNextPage } = activeFeed;
 
   // Infinite scroll observer
   const observerRef = useRef(null);
@@ -81,75 +133,124 @@ export function ReefFeed({ casualModeActive = false, walletAddress, onNavigatePr
     (node) => {
       if (isFetchingNextPage) return;
       if (observerRef.current) observerRef.current.disconnect();
-
       observerRef.current = new IntersectionObserver((entries) => {
-        if (entries[0].isIntersecting && hasNextPage) {
-          activeFeed.fetchNextPage();
-        }
+        if (entries[0].isIntersecting && hasNextPage) activeFeed.fetchNextPage();
       });
-
       if (node) observerRef.current.observe(node);
     },
     [isFetchingNextPage, hasNextPage, activeFeed]
   );
 
-  const handleRefresh = () => {
-    queryClient.invalidateQueries({ queryKey: ["reef"] });
-  };
+  const handleRefresh = () => queryClient.invalidateQueries({ queryKey: ["reef"] });
+  const handlePostSuccess = () => queryClient.invalidateQueries({ queryKey: ["reef"] });
+  const handleProfileClick = (wallet) => setViewingProfile(wallet);
 
-  const handlePostSuccess = () => {
-    queryClient.invalidateQueries({ queryKey: ["reef"] });
+  const requireSignIn = () => onRequireSignIn?.();
+  const openComposer = () => {
+    if (!signedIn) return requireSignIn();
+    setComposerOpen(true);
   };
-
-  const handleProfileClick = (wallet) => {
-    setViewingProfile(wallet);
+  const setTab = (tab) => {
+    setLocalSchoolId(null);
+    go({ tab }, { replace: true });
   };
+  const openClub = (school) => {
+    if (!school) return;
+    if (school.slug) {
+      setLocalSchoolId(null);
+      go({ club: school.slug });
+    } else if (school.id) {
+      setLocalSchoolId(school.id);
+    }
+  };
+  const openEvent = (tideId) => tideId && go({ event: tideId });
 
   const handleCreateSchool = () => {
-    if (createSchoolGate.checkAccess()) {
-      setCreatingSchool(true);
-    }
+    if (!signedIn) return requireSignIn();
+    if (createSchoolGate.checkAccess()) setCreatingSchool(true);
   };
-
   const handleCreateTide = () => {
-    if (hostTideGate.checkAccess()) {
-      setCreatingTide(true);
-    }
+    if (!signedIn) return requireSignIn();
+    if (hostTideGate.checkAccess()) setCreatingTide(true);
   };
 
-  const configured = isSupabaseConfigured();
+  // Arrow keys move between tabs (WAI-ARIA tabs pattern).
+  const tabRefs = useRef({});
+  const onTabKeyDown = (e) => {
+    const index = TABS.findIndex((t) => t.key === activeTab);
+    let next = null;
+    if (e.key === "ArrowRight") next = (index + 1) % TABS.length;
+    else if (e.key === "ArrowLeft") next = (index - 1 + TABS.length) % TABS.length;
+    else if (e.key === "Home") next = 0;
+    else if (e.key === "End") next = TABS.length - 1;
+    if (next === null) return;
+    e.preventDefault();
+    const key = TABS[next].key;
+    setTab(key);
+    tabRefs.current[key]?.focus();
+  };
+
+  const unlockPrompts = (
+    <>
+      {createSchoolGate.showPrompt && (
+        <UnlockPrompt privilege="canCreateSchools" casualModeActive={casualModeActive} onClose={() => createSchoolGate.setShowPrompt(false)} />
+      )}
+      {hostTideGate.showPrompt && (
+        <UnlockPrompt privilege="canHostVirtualTides" casualModeActive={casualModeActive} onClose={() => hostTideGate.setShowPrompt(false)} />
+      )}
+    </>
+  );
 
   // ─────────────────────────────────────────────────────────────────────────
-  // SUB-VIEWS (profile, school detail, tide detail)
+  // SUB-VIEWS (profile, club, event)
   // ─────────────────────────────────────────────────────────────────────────
 
   if (viewingProfile) {
     return (
-      <PublicProfile
-        walletAddress={viewingProfile}
-        onBack={() => setViewingProfile(null)}
-        onNavigateProfile={handleProfileClick}
-        casualModeActive={casualModeActive}
-      />
+      <div className="reef">
+        <PublicProfile
+          walletAddress={viewingProfile}
+          onBack={() => setViewingProfile(null)}
+          onNavigateProfile={handleProfileClick}
+          casualModeActive={casualModeActive}
+        />
+      </div>
     );
   }
 
-  if (viewingSchool) {
+  const clubId = localSchoolId || (route.club && linkedClub ? linkedClub.id : null);
+  if (route.club && !localSchoolId && clubQuery.isLoading) {
     return (
-      <SchoolPage
-        schoolId={viewingSchool.id}
-        onBack={() => setViewingSchool(null)}
-        onViewProfile={handleProfileClick}
-      />
+      <div className="reef" aria-busy="true">
+        <div className="reef-skeleton" style={{ height: 220, marginBottom: "1rem" }} />
+        <div className="reef-skeleton" style={{ height: 120 }} />
+      </div>
+    );
+  }
+  if (clubId) {
+    return (
+      <div className="reef">
+        <SchoolPage
+          schoolId={clubId}
+          onBack={() => {
+            setLocalSchoolId(null);
+            go({ tab: "clubs" });
+          }}
+          onViewProfile={handleProfileClick}
+          onOpenEvent={openEvent}
+          signedIn={signedIn}
+          onRequireSignIn={requireSignIn}
+        />
+        {unlockPrompts}
+      </div>
     );
   }
 
-  if (viewingTide) {
+  if (route.event && !eventMissing) {
     return (
-      <TidePage
-        tideId={viewingTide}
-        onBack={() => setViewingTide(null)}
-      />
+      <div className="reef">
+        <TidePage tideId={route.event} onBack={() => go({ tab: "events" })} />
+      </div>
     );
   }
 
@@ -157,531 +258,403 @@ export function ReefFeed({ casualModeActive = false, walletAddress, onNavigatePr
   // MAIN LAYOUT
   // ─────────────────────────────────────────────────────────────────────────
 
-  return (
-    <div style={{ maxWidth: "640px", margin: "0 auto" }} className="reef-feed-container">
+  const showRail = activeTab === "feed" || activeTab === "explore";
 
-      {/* XP Unlock prompts */}
-      {createSchoolGate.showPrompt && (
-        <UnlockPrompt
-          privilege="canCreateSchools"
-          casualModeActive={casualModeActive}
-          onClose={() => createSchoolGate.setShowPrompt(false)}
-        />
-      )}
-      {hostTideGate.showPrompt && (
-        <UnlockPrompt
-          privilege="canHostVirtualTides"
-          casualModeActive={casualModeActive}
-          onClose={() => hostTideGate.setShowPrompt(false)}
-        />
-      )}
+  return (
+    <div className="reef reef-feed-container">
+      {unlockPrompts}
 
       {/* ─── HEADER ─── */}
-      <div style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        marginBottom: "1rem",
-      }}>
-        <div>
-          <h2 style={{ margin: 0, fontSize: "1.2rem", fontWeight: 700, color: "var(--text-primary)" }}>
-            {casualModeActive ? "🪸 Community" : "The Reef"}
-          </h2>
-          <p style={{ margin: "0.2rem 0 0", fontSize: "0.68rem", color: "var(--text-muted)" }}>
-            {casualModeActive
-              ? "Connect with fellow fishkeepers"
-              : "Your social command center"
-            }
-          </p>
+      <header className="reef-head">
+        <div className="reef-head-text">
+          <h2 className="reef-title">The Reef</h2>
+          <p className="reef-subtitle">Tank updates, clubs and events from people who keep fish.</p>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-          {walletAddress && (
-            <ReefSearchBar
-              onNavigateProfile={handleProfileClick}
-              onNavigateCurrent={(current) => {
-                if (current?.author?.wallet_address) {
-                  handleProfileClick(current.author.wallet_address);
-                }
-              }}
-              onNavigateSchool={(school) => setViewingSchool(school)}
-              onNavigateTide={(tide) => setViewingTide(tide.id)}
-              onNavigateInsight={(insight) => {
-                if (insight?.author?.wallet_address) {
-                  handleProfileClick(insight.author.wallet_address);
-                }
-              }}
-              casualModeActive={casualModeActive}
-            />
-          )}
-          {walletAddress && (
-            <button
-              onClick={() => handleProfileClick(walletAddress)}
-              style={{
-                width: "34px",
-                height: "34px",
-                borderRadius: "8px",
-                border: "1px solid rgba(var(--ink-rgb), 0.13)",
-                background: "rgba(var(--ink-rgb), 0.03)",
-                color: "var(--text-muted)",
-                cursor: "pointer",
-                fontSize: "1rem",
-                transition: "all 0.15s ease",
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                padding: 0
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.color = "var(--text-primary)"; e.currentTarget.style.borderColor = "rgba(var(--ink-rgb), 0.2)"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)"; e.currentTarget.style.borderColor = "rgba(var(--ink-rgb), 0.13)"; }}
-              title={casualModeActive ? "My Profile" : "Profile"}
-              aria-label="View my profile"
-            >
-              👤
-            </button>
-          )}
-          <InboxPanel
-            casualModeActive={casualModeActive}
-            initialView={openMessages ? "messages" : null}
-            pendingConversation={pendingConversation}
-            onConversationConsumed={onConversationConsumed}
-            onRouteClose={openMessages ? onCloseMessages : null}
-          />
-          <button
-            onClick={handleRefresh}
-            style={{
-              width: "34px",
-              height: "34px",
-              borderRadius: "8px",
-              border: "1px solid rgba(var(--ink-rgb), 0.13)",
-              background: "rgba(var(--ink-rgb), 0.03)",
-              color: "var(--text-muted)",
-              cursor: "pointer",
-              fontSize: "0.95rem",
-              transition: "all 0.15s ease",
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: 0
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.color = "var(--text-primary)"; e.currentTarget.style.borderColor = "rgba(var(--ink-rgb), 0.2)"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)"; e.currentTarget.style.borderColor = "rgba(var(--ink-rgb), 0.13)"; }}
-            title="Refresh"
-            aria-label="Refresh feed"
-          >
-            🔄
-          </button>
-        </div>
-      </div>
-
-      {/* ─── TAB NAVIGATION ─── */}
-      <div style={{
-        display: "flex",
-        gap: "0.2rem",
-        marginBottom: "1.25rem",
-        padding: "0.25rem",
-        borderRadius: "10px",
-        background: "rgba(var(--ink-rgb), 0.03)",
-        border: "1px solid rgba(var(--ink-rgb), 0.11)",
-        overflowX: "auto",
-      }} className="reef-feed-tabs scroll-fade" ref={tabsScrollRef}>
-        {getTabConfig(casualModeActive).map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
-            style={{
-              flex: 1,
-              padding: "0.5rem 0.4rem",
-              borderRadius: "8px",
-              border: "none",
-              background: activeTab === tab.key ? "rgba(56, 189, 248, 0.12)" : "transparent",
-              color: activeTab === tab.key ? "var(--text-primary)" : "var(--text-muted)",
-              fontSize: "0.72rem",
-              fontWeight: activeTab === tab.key ? 600 : 400,
-              cursor: "pointer",
-              transition: "all 0.15s ease",
-              whiteSpace: "nowrap",
-              minWidth: 0,
-            }}
-            aria-selected={activeTab === tab.key}
-            role="tab"
-          >
-            {tab.icon} {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {/* ─── TAB CONTENT ─── */}
-
-      {/* FEED TAB */}
-      {activeTab === "feed" && (
-        <>
-          {/* Welcome banner for first-time users */}
-          {localStorage.getItem("aquadex_posted_first_current") !== "true" && (
-            <WelcomeBanner casualModeActive={casualModeActive} />
-          )}
-
-          {/* Pending requests */}
-          <TankmateRequests onNavigateProfile={handleProfileClick} casualModeActive={casualModeActive} />
-          <SchoolInvites onNavigateSchool={(schoolId) => { setViewingSchool(schoolId); }} />
-
-          {/* Feed content */}
-          {renderFeedContent({
-            isLoading, items, configured, casualModeActive,
-            isFetchingNextPage, lastItemRef, handleProfileClick,
-            setActiveTab, setComposerOpen,
-          })}
-        </>
-      )}
-
-      {/* EXPLORE TAB */}
-      {activeTab === "explore" && (
-        <>
-          {walletAddress && (
-            <DiscoveryPanel
-              onProfileClick={handleProfileClick}
-              casualModeActive={casualModeActive}
-            />
-          )}
-          {renderFeedContent({
-            isLoading, items, configured, casualModeActive,
-            isFetchingNextPage, lastItemRef, handleProfileClick,
-            setActiveTab, setComposerOpen,
-            emptyIcon: "🔍",
-            emptyTitle: casualModeActive ? "Nothing to explore yet" : "Discover feed is empty",
-            emptySubtitle: casualModeActive ? "Be the first to share a tank update!" : "No public posts yet. Be the pioneer.",
-          })}
-        </>
-      )}
-
-      {/* GROUPS TAB */}
-      {activeTab === "groups" && (
-        <div>
-          <SchoolDirectory
-            onSelectSchool={(school) => setViewingSchool(school)}
-            onCreateSchool={handleCreateSchool}
-            casualModeActive={casualModeActive}
-          />
-          {creatingSchool && (
-            <CreateSchool
-              onClose={() => setCreatingSchool(false)}
-              onCreated={(school) => {
-                setCreatingSchool(false);
-                setViewingSchool(school);
-              }}
-            />
-          )}
-        </div>
-      )}
-
-      {/* EVENTS TAB */}
-      {activeTab === "events" && (
-        <div>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
-            <div>
-              <h3 style={{ margin: 0, fontSize: "1rem", fontWeight: 600, color: "var(--text-primary)" }}>
-                {casualModeActive ? "📅 Upcoming Events" : "🌊 Upcoming Tides"}
-              </h3>
-              <p style={{ margin: "0.2rem 0 0", fontSize: "0.68rem", color: "var(--text-muted)" }}>
-                {casualModeActive
-                  ? "Meetups, auctions, challenges, and more"
-                  : "Expos, virtual syncs, and auction events"
-                }
-              </p>
-            </div>
-            {walletAddress && (
+        <div className="reef-head-actions">
+          <div className="reef-head-tools">
+            {signedIn && (
+              <div className="reef-tool">
+                <ReefSearchBar
+                  onNavigateProfile={handleProfileClick}
+                  onNavigateCurrent={(current) => {
+                    if (current?.author?.wallet_address) handleProfileClick(current.author.wallet_address);
+                  }}
+                  onNavigateSchool={openClub}
+                  onNavigateTide={(tide) => openEvent(tide?.id)}
+                  onNavigateInsight={(insight) => {
+                    if (insight?.author?.wallet_address) handleProfileClick(insight.author.wallet_address);
+                  }}
+                  casualModeActive={casualModeActive}
+                />
+              </div>
+            )}
+            {(signedIn || openMessages) && (
+              <div className="reef-tool">
+                <InboxPanel
+                  casualModeActive={casualModeActive}
+                  initialView={openMessages ? "messages" : null}
+                  pendingConversation={pendingConversation}
+                  onConversationConsumed={onConversationConsumed}
+                  onRouteClose={openMessages ? onCloseMessages : null}
+                />
+              </div>
+            )}
+            {signedIn && (
               <button
-                onClick={handleCreateTide}
-                style={{
-                  padding: "0.45rem 1rem",
-                  borderRadius: "8px",
-                  border: "none",
-                  background: "linear-gradient(135deg, #0ea5e9, #0369a1)",
-                  color: "#fff",
-                  fontSize: "0.72rem",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  boxShadow: "0 3px 10px rgba(14, 165, 233, 0.2)",
-                  transition: "all 0.15s ease",
-                }}
+                type="button"
+                className="reef-btn"
+                onClick={() => handleProfileClick(walletAddress)}
+                title="Open your Reef profile"
               >
-                + {casualModeActive ? "Host Event" : "Create Tide"}
+                <UserCircle size={18} aria-hidden="true" />
+                <span>My profile</span>
               </button>
             )}
+            <button type="button" className="reef-btn" onClick={handleRefresh} title="Load the newest posts, clubs and events">
+              <ArrowClockwise size={18} aria-hidden="true" />
+              <span>Refresh</span>
+            </button>
           </div>
-          {creatingTide ? (
-            <CreateTide
-              onSuccess={(tide) => {
-                setCreatingTide(false);
-                setViewingTide(tide.id);
-              }}
-              onCancel={() => setCreatingTide(false)}
-            />
-          ) : (
-            <TideCalendar
-              onSelectTide={(tideId) => setViewingTide(tideId)}
-            />
+          <button
+            type="button"
+            className="reef-btn reef-btn--primary"
+            onClick={openComposer}
+            title={signedIn ? "Share a photo or note about one of your tanks" : "Sign in to share a tank update"}
+          >
+            <Camera size={18} weight="bold" aria-hidden="true" />
+            Share a tank update
+          </button>
+        </div>
+      </header>
+
+      {/* ─── TABS ─── */}
+      <div className="reef-tabs" role="tablist" aria-label="The Reef sections" onKeyDown={onTabKeyDown}>
+        {TABS.map(({ key, label, Icon }) => {
+          const selected = activeTab === key;
+          return (
+            <button
+              key={key}
+              ref={(el) => { tabRefs.current[key] = el; }}
+              type="button"
+              role="tab"
+              id={`reef-tab-${key}`}
+              aria-selected={selected}
+              aria-controls={`reef-panel-${key}`}
+              tabIndex={selected ? 0 : -1}
+              className="reef-tab"
+              onClick={() => setTab(key)}
+            >
+              <Icon size={18} weight={selected ? "fill" : "regular"} aria-hidden="true" />
+              {label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* ─── PANEL ─── */}
+      <div
+        role="tabpanel"
+        id={`reef-panel-${activeTab}`}
+        aria-labelledby={`reef-tab-${activeTab}`}
+        className={`reef-layout ${showRail ? "reef-layout--rail" : ""}`}
+      >
+        <div className="reef-main">
+          {clubMissing && activeTab === "clubs" && (
+            <Notice warn>We couldn&apos;t find a club at that link. Here are all the clubs.</Notice>
+          )}
+          {eventMissing && activeTab === "events" && (
+            <Notice warn>We couldn&apos;t find that event. It may have been removed. Here are all the events.</Notice>
+          )}
+
+          {!configured && (
+            <div className="reef-empty reef-empty--flat reef-config">
+              <h3 className="reef-empty-title">The Reef isn&apos;t connected here</h3>
+              <p className="reef-empty-lead">Posts, clubs and events load once the community backend is configured for this build.</p>
+            </div>
+          )}
+
+          {/* FEED */}
+          {configured && activeTab === "feed" && (
+            <>
+              {signedIn && (
+                <>
+                  <TankmateRequests onNavigateProfile={handleProfileClick} casualModeActive={casualModeActive} />
+                  <SchoolInvites onNavigateSchool={(schoolId) => openClub({ id: schoolId })} />
+                </>
+              )}
+              <FeedList
+                isLoading={isLoading}
+                items={items}
+                isFetchingNextPage={isFetchingNextPage}
+                lastItemRef={lastItemRef}
+                onProfileClick={handleProfileClick}
+                casualModeActive={casualModeActive}
+                empty={
+                  signedIn ? (
+                    <EmptyState
+                      icon={<Newspaper size={24} aria-hidden="true" />}
+                      title="Your feed is empty for now"
+                      lead="Follow keepers from Explore or join a club, and their tank updates show up here. Your own posts appear here too."
+                    >
+                      <button type="button" className="reef-btn reef-btn--primary" onClick={() => setTab("explore")}>Explore public posts</button>
+                      <button type="button" className="reef-btn" onClick={() => setTab("clubs")}>Browse clubs</button>
+                      <button type="button" className="reef-btn" onClick={openComposer}>Share a tank update</button>
+                    </EmptyState>
+                  ) : (
+                    <EmptyState
+                      icon={<Newspaper size={24} aria-hidden="true" />}
+                      title="Sign in to see your feed"
+                      lead="Your feed shows posts from keepers you follow and tanks you watch. Anyone can read the public posts on Explore."
+                    >
+                      <button type="button" className="reef-btn reef-btn--primary" onClick={requireSignIn}>Sign in</button>
+                      <button type="button" className="reef-btn" onClick={() => setTab("explore")}>Explore public posts</button>
+                    </EmptyState>
+                  )
+                }
+              />
+            </>
+          )}
+
+          {/* EXPLORE */}
+          {configured && activeTab === "explore" && (
+            <>
+              {exploreByDefault && signedIn && (
+                <Notice>
+                  You aren&apos;t following anyone yet, so The Reef opens on public posts. Follow keepers or join a club to build your own feed.
+                </Notice>
+              )}
+              {exploreByDefault && !signedIn && (
+                <Notice>
+                  You&apos;re reading public posts from the community.
+                  <button type="button" className="reef-link" onClick={requireSignIn}>Sign in</button> to follow keepers and share your own tanks.
+                </Notice>
+              )}
+              {signedIn && <DiscoveryPanel onProfileClick={handleProfileClick} casualModeActive={casualModeActive} />}
+              <FeedList
+                isLoading={isLoading}
+                items={items}
+                isFetchingNextPage={isFetchingNextPage}
+                lastItemRef={lastItemRef}
+                onProfileClick={handleProfileClick}
+                casualModeActive={casualModeActive}
+                empty={
+                  <EmptyState
+                    icon={<Compass size={24} aria-hidden="true" />}
+                    title="No public posts yet"
+                    lead="When a keeper shares a tank update publicly, it shows up here."
+                  >
+                    <button type="button" className="reef-btn reef-btn--primary" onClick={openComposer}>Share a tank update</button>
+                    <button type="button" className="reef-btn" onClick={() => setTab("clubs")}>Browse clubs</button>
+                  </EmptyState>
+                }
+              />
+            </>
+          )}
+
+          {/* CLUBS */}
+          {configured && activeTab === "clubs" && (
+            <>
+              <SchoolDirectory
+                onSelectSchool={openClub}
+                onCreateSchool={handleCreateSchool}
+                casualModeActive={casualModeActive}
+                signedIn={signedIn}
+                onRequireSignIn={requireSignIn}
+              />
+              {creatingSchool && (
+                <CreateSchool
+                  onClose={() => setCreatingSchool(false)}
+                  onCreated={(school) => {
+                    setCreatingSchool(false);
+                    openClub(school);
+                  }}
+                />
+              )}
+            </>
+          )}
+
+          {/* EVENTS */}
+          {configured && activeTab === "events" && (
+            <>
+              <div className="reef-section-head">
+                <div>
+                  <h3 className="reef-section-title">Events</h3>
+                  <p className="reef-section-sub">Meetups, virtual hangouts, challenges and auctions from clubs and members.</p>
+                </div>
+                {signedIn && !creatingTide && (
+                  <button type="button" className="reef-btn reef-btn--soft" onClick={handleCreateTide}>
+                    <Plus size={16} weight="bold" aria-hidden="true" />
+                    Host an event
+                  </button>
+                )}
+              </div>
+              {creatingTide ? (
+                <CreateTide
+                  onSuccess={(tide) => {
+                    setCreatingTide(false);
+                    openEvent(tide.id);
+                  }}
+                  onCancel={() => setCreatingTide(false)}
+                />
+              ) : (
+                <TideCalendar
+                  onSelectTide={openEvent}
+                  casualModeActive={casualModeActive}
+                  signedIn={signedIn}
+                  onRequireSignIn={requireSignIn}
+                  onHost={signedIn ? handleCreateTide : null}
+                />
+              )}
+            </>
           )}
         </div>
-      )}
 
-
-      {/* Not configured notice */}
-      {!configured && (
-        <div style={{
-          padding: "1rem",
-          borderRadius: "10px",
-          background: "rgba(251, 191, 36, 0.05)",
-          border: "1px solid rgba(251, 191, 36, 0.15)",
-          marginBottom: "1rem",
-          textAlign: "center",
-        }}>
-          <p style={{ margin: 0, fontSize: "0.8rem", color: "var(--text-secondary)" }}>
-            {casualModeActive
-              ? "🪸 The community features are ready once the backend is configured."
-              : "🪸 The Reef is ready to connect once Supabase is configured."
-            }
-          </p>
-        </div>
-      )}
-
-      {/* ─── FLOATING ACTION BUTTON ───
-       *
-       * Sits ABOVE the Feedback + Poseidon stack, not beside it. Those two are
-       * global chrome pinned to the bottom-right corner — Poseidon at bottom:2rem
-       * (z-index 10000) and Feedback at bottom:5.5rem (z-index 9999). This "+"
-       * used to be at bottom:2rem too, i.e. the exact same spot as the Poseidon
-       * pill, with a far lower z-index — so it rendered completely hidden behind
-       * "Poseidon" and the welcome banner's "Hit the + button" pointed at
-       * something no one could see. Stacked to 9rem it clears both pills.
-       *
-       * `bottom` is inline here (overriding the class) because the class carries
-       * only the mobile size override; the position lives with the component that
-       * knows about the corner it shares.
-       */}
-      {walletAddress && (
-        <button
-          onClick={() => setComposerOpen(true)}
-          className="reef-fab"
-          style={{
-            position: "fixed",
-            bottom: "9rem",
-            right: "2rem",
-            width: "56px",
-            height: "56px",
-            borderRadius: "50%",
-            border: "none",
-            background: "linear-gradient(135deg, #0ea5e9, #0369a1)",
-            color: "#fff",
-            fontSize: "1.5rem",
-            cursor: "pointer",
-            boxShadow: "0 4px 20px rgba(14, 165, 233, 0.4)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            transition: "transform 0.2s ease, box-shadow 0.2s ease",
-            zIndex: 1000,
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.transform = "scale(1.1)";
-            e.currentTarget.style.boxShadow = "0 6px 28px rgba(14, 165, 233, 0.5)";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = "scale(1)";
-            e.currentTarget.style.boxShadow = "0 4px 20px rgba(14, 165, 233, 0.4)";
-          }}
-          aria-label={casualModeActive ? "Share a tank update" : "New post"}
-          title={casualModeActive ? "Share a tank update" : "New Current"}
-        >
-          +
-        </button>
-      )}
+        {showRail && configured && (
+          <aside className="reef-rail" aria-label="Clubs and events">
+            <RailClubs onOpenClub={openClub} onBrowse={() => setTab("clubs")} />
+            <RailEvents onOpenEvent={openEvent} onBrowse={() => setTab("events")} />
+          </aside>
+        )}
+      </div>
 
       {/* Content Composer Modal */}
       <ContentComposer
         isOpen={composerOpen}
-        onClose={() => {
-          setComposerOpen(false);
-        }}
+        onClose={() => setComposerOpen(false)}
         onSuccess={handlePostSuccess}
         casualModeActive={casualModeActive}
       />
-
-      {/* Pulse animation keyframes */}
-      <style>{`
-        @keyframes pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.5; }
-        }
-      `}</style>
     </div>
   );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// HELPERS
+// PIECES
 // ─────────────────────────────────────────────────────────────────────────────
 
-function getTabConfig(casualMode) {
-  return [
-    { key: "feed", icon: "📰", label: casualMode ? "My Feed" : "Feed" },
-    { key: "explore", icon: "🔍", label: "Explore" },
-    { key: "groups", icon: "👥", label: casualMode ? "Groups" : "Schools" },
-    { key: "events", icon: "📅", label: casualMode ? "Events" : "Tides" },
-  ];
-}
-
-function WelcomeBanner({ casualModeActive }) {
+function Notice({ warn = false, children }) {
+  const Icon = warn ? WarningCircle : Info;
   return (
-    <div
-      className="glass-card"
-      style={{
-        padding: "1rem 1.25rem",
-        marginBottom: "1.25rem",
-        borderRadius: "12px",
-        border: "1px solid rgba(56, 189, 248, 0.15)",
-        background: "rgba(56, 189, 248, 0.03)",
-        display: "flex",
-        alignItems: "center",
-        gap: "1rem"
-      }}
-    >
-      <span style={{ fontSize: "1.75rem", flexShrink: 0 }}>🪸</span>
-      <div>
-        <p style={{ margin: 0, fontSize: "0.85rem", fontWeight: 600, color: "var(--text-primary)" }}>
-          {casualModeActive ? "Welcome to the community!" : "Welcome to The Reef"}
-        </p>
-        <p style={{ margin: "0.2rem 0 0", fontSize: "0.72rem", color: "var(--text-secondary)", lineHeight: "1.4" }}>
-          {casualModeActive
-            ? "Share photos of your tanks, follow other keepers, and join groups. Hit the + button to make your first post!"
-            : "Publish your first Current to establish your presence. Share tank status, parameters, and media."
-          }
-        </p>
-      </div>
+    <div className={`reef-notice ${warn ? "reef-notice--warn" : ""}`} role={warn ? "status" : undefined}>
+      <Icon size={18} weight="fill" aria-hidden="true" />
+      <p>{children}</p>
     </div>
   );
 }
 
-function renderFeedContent({
-  isLoading, items, configured, casualModeActive,
-  isFetchingNextPage, lastItemRef, handleProfileClick,
-  setActiveTab, setComposerOpen,
-  emptyIcon = "🪸",
-  emptyTitle,
-  emptySubtitle,
-}) {
+function EmptyState({ icon, title, lead, children }) {
+  return (
+    <div className="reef-empty">
+      {icon && <span className="reef-empty-icon">{icon}</span>}
+      <h3 className="reef-empty-title">{title}</h3>
+      <p className="reef-empty-lead">{lead}</p>
+      {children && <div className="reef-empty-actions">{children}</div>}
+    </div>
+  );
+}
+
+function FeedList({ isLoading, items, isFetchingNextPage, lastItemRef, onProfileClick, casualModeActive, empty }) {
   if (isLoading) {
     return (
-      <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+      <div className="reef-feed" aria-busy="true" aria-label="Loading posts">
         {[1, 2, 3].map((i) => (
-          <div
-            key={i}
-            style={{
-              height: "180px",
-              borderRadius: "12px",
-              background: "rgba(var(--ink-rgb), 0.03)",
-              border: "1px solid rgba(var(--ink-rgb), 0.1)",
-              animation: "pulse 1.5s ease-in-out infinite",
-            }}
-          />
+          <div key={i} className="reef-skeleton" style={{ height: 200 }} />
         ))}
       </div>
     );
   }
-
-  if (items.length > 0) {
-    return (
-      <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-        {items.map((current, index) => (
-          <div
-            key={current.id}
-            ref={index === items.length - 1 ? lastItemRef : undefined}
-          >
-            <CurrentCard
-              current={current}
-              casualModeActive={casualModeActive}
-              onProfileClick={handleProfileClick}
-            />
-          </div>
-        ))}
-        {isFetchingNextPage && (
-          <p style={{ textAlign: "center", fontSize: "0.75rem", color: "var(--text-muted)", padding: "1rem" }}>
-            Loading more...
-          </p>
-        )}
-      </div>
-    );
-  }
-
-  // Empty state
-  if (configured) {
-    return (
-      <div style={{
-        textAlign: "center",
-        padding: "3rem 1.5rem",
-        borderRadius: "12px",
-        background: "rgba(var(--ink-rgb), 0.03)",
-        border: "1px solid rgba(var(--ink-rgb), 0.1)",
-      }}>
-        <p style={{ fontSize: "2.5rem", margin: "0 0 0.75rem" }}>{emptyIcon}</p>
-        <p style={{ fontSize: "0.95rem", color: "var(--text-primary)", fontWeight: 600, margin: "0 0 0.5rem" }}>
-          {emptyTitle || (casualModeActive ? "Your feed is quiet" : "No activity yet")}
-        </p>
-        <p style={{ fontSize: "0.8rem", color: "var(--text-muted)", margin: "0 0 1.25rem", lineHeight: 1.5 }}>
-          {emptySubtitle || (casualModeActive
-            ? "Follow some fishkeepers or join a group to see their updates here. Or share your first tank post!"
-            : "Connect with breeders or join a School to populate your feed."
-          )}
-        </p>
-        <div style={{ display: "flex", gap: "0.5rem", justifyContent: "center", flexWrap: "wrap" }}>
-          <button
-            onClick={() => setActiveTab("explore")}
-            style={{
-              padding: "0.5rem 1rem",
-              borderRadius: "8px",
-              border: "1px solid rgba(56, 189, 248, 0.2)",
-              background: "rgba(56, 189, 248, 0.08)",
-              color: "var(--text-primary)",
-              fontSize: "0.75rem",
-              fontWeight: 600,
-              cursor: "pointer",
-            }}
-          >
-            {casualModeActive ? "🔍 Find People" : "Browse Discover"}
-          </button>
-          <button
-            onClick={() => setActiveTab("groups")}
-            style={{
-              padding: "0.5rem 1rem",
-              borderRadius: "8px",
-              border: "1px solid rgba(52, 211, 153, 0.2)",
-              background: "rgba(52, 211, 153, 0.08)",
-              color: "var(--text-primary)",
-              fontSize: "0.75rem",
-              fontWeight: 600,
-              cursor: "pointer",
-            }}
-          >
-            {casualModeActive ? "👥 Join a Group" : "Browse Schools"}
-          </button>
-          <button
-            onClick={() => setComposerOpen(true)}
-            style={{
-              padding: "0.5rem 1rem",
-              borderRadius: "8px",
-              border: "none",
-              background: "linear-gradient(135deg, #0ea5e9, #0369a1)",
-              color: "#fff",
-              fontSize: "0.75rem",
-              fontWeight: 600,
-              cursor: "pointer",
-            }}
-          >
-            {casualModeActive ? "📸 Share Your Tank" : "Post First Current"}
-          </button>
+  if (items.length === 0) return empty;
+  return (
+    <div className="reef-feed">
+      {items.map((current, index) => (
+        <div key={current.id} ref={index === items.length - 1 ? lastItemRef : undefined}>
+          <CurrentCard current={current} casualModeActive={casualModeActive} onProfileClick={onProfileClick} />
         </div>
-      </div>
-    );
-  }
+      ))}
+      {isFetchingNextPage && <p className="reef-section-sub" style={{ textAlign: "center" }}>Loading more posts…</p>}
+    </div>
+  );
+}
 
-  return null;
+function RailClubs({ onOpenClub, onBrowse }) {
+  const { data, isLoading } = useSchoolDirectory({ type: "all" });
+  // Official clubs first (they are the maintained species clubs), then by size.
+  const clubs = useMemo(
+    () =>
+      (data?.pages?.flatMap((p) => p.data) || [])
+        .filter((c) => !c.is_invite_only)
+        .sort((a, b) => Number(!!b.is_official) - Number(!!a.is_official) || (b.member_count || 0) - (a.member_count || 0))
+        .slice(0, 4),
+    [data]
+  );
+  return (
+    <section className="reef-rail-card">
+      <h3 className="reef-rail-title">Clubs</h3>
+      <p className="reef-rail-sub">Groups built around a species, a region or a shared interest.</p>
+      {isLoading ? (
+        <div className="reef-skeleton" style={{ height: 120, marginBottom: "0.6rem" }} />
+      ) : clubs.length === 0 ? (
+        <p className="reef-rail-empty">No clubs yet.</p>
+      ) : (
+        <ul className="reef-rail-list">
+          {clubs.map((club) => (
+            <li key={club.id}>
+              <button type="button" className="reef-rail-item" onClick={() => onOpenClub(club)}>
+                <span className="reef-mini-badge" aria-hidden="true">
+                  {club.banner_url ? <img src={club.banner_url} alt="" /> : clubInitials(club.name)}
+                </span>
+                <span className="reef-rail-item-text">
+                  <span className="reef-rail-item-name">{club.name}</span>
+                  <span className="reef-rail-item-meta">
+                    {club.member_count} {club.member_count === 1 ? "member" : "members"}
+                  </span>
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      <button type="button" className="reef-btn reef-btn--sm reef-btn--block" onClick={onBrowse}>
+        Browse all clubs
+      </button>
+    </section>
+  );
+}
+
+function RailEvents({ onOpenEvent, onBrowse }) {
+  const { data: upcomingRows = [], isLoading } = useUpcomingTides({});
+  const { upcoming } = useMemo(() => splitEvents(upcomingRows, []), [upcomingRows]);
+  const next = upcoming.slice(0, 3);
+  return (
+    <section className="reef-rail-card">
+      <h3 className="reef-rail-title">Upcoming events</h3>
+      {isLoading ? (
+        <div className="reef-skeleton" style={{ height: 80, margin: "0.6rem 0" }} />
+      ) : next.length === 0 ? (
+        <p className="reef-rail-empty">No upcoming events right now. Past events are still on the Events tab.</p>
+      ) : (
+        <ul className="reef-rail-list" style={{ marginTop: "0.6rem" }}>
+          {next.map((tide) => {
+            const d = new Date(tide.start_time);
+            return (
+              <li key={tide.id}>
+                <button type="button" className="reef-rail-item" onClick={() => onOpenEvent(tide.id)}>
+                  <span className="reef-mini-badge" aria-hidden="true">{d.getDate()}</span>
+                  <span className="reef-rail-item-text">
+                    <span className="reef-rail-item-name">{tide.title}</span>
+                    <span className="reef-rail-item-meta">
+                      {d.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}
+                    </span>
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      <button type="button" className="reef-btn reef-btn--sm reef-btn--block" onClick={onBrowse}>
+        See all events
+      </button>
+    </section>
+  );
 }
