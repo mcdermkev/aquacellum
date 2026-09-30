@@ -113,6 +113,32 @@ describe("Reef trust operations use verified server identity", () => {
   });
 });
 
+describe("opening a profile never asks the wallet to sign", () => {
+  // Every Reef trust request carries a fresh wallet signature. The mentorship
+  // reads used to run on mount, so viewing your own profile opened a wallet
+  // prompt (reported as MetaMask popping up on Profile).
+  const PANEL = stripComments(source("../components/reef/MentorshipPanel.jsx"));
+  const SMART_ACCOUNT = stripComments(source("../utils/smartAccount.js"));
+
+  it("loads mentorships and the mentor list only after the keeper asks", () => {
+    expect(PANEL).toContain("useMentorships(walletAddress, isOwnProfile && mentorshipsRequested)");
+    expect(PANEL).toContain("useAvailableMentors(isOwnProfile && showMentorList)");
+    expect(PANEL).toMatch(/useState\(false\);\s*\n\s*const \{ data: mentorshipsResult/);
+  });
+
+  it("does not adopt a MetaMask session while Privy is still loading", () => {
+    expect(AUTH).toContain("if (!window.ethereum || !privyReady || privyAuthenticated) return;");
+  });
+
+  it("never falls back to the injected wallet for a Privy session", () => {
+    const idx = SMART_ACCOUNT.indexOf("export async function getSigner()");
+    const block = SMART_ACCOUNT.slice(idx, SMART_ACCOUNT.indexOf("window.ethereum", idx));
+    expect(block).toContain("if (_privySignerResolver)");
+    expect(block).toContain("throw new Error(");
+    expect(block).not.toContain("catch");
+  });
+});
+
 describe("moderation decisions are atomic", () => {
   it("community and review handlers each call one service-role RPC", () => {
     const reefIdx = API.indexOf("async function handleReefModeration");

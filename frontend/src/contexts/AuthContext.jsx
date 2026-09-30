@@ -673,7 +673,12 @@ function PrivyAuthProvider({ children }) {
   // Restore MetaMask session on page reload (only if no Privy session active)
   // ─────────────────────────────────────────────────────────────────────────
   useEffect(() => {
-    if (!window.ethereum || privyAuthenticated) return;
+    // Wait for Privy to finish loading. Before this guard the check ran while
+    // Privy was still hydrating (privyAuthenticated reads false then), so a
+    // browser with MetaMask connected could adopt the MetaMask address and
+    // loginMethod "metamask" for an email or Google user. Signing requests then
+    // went to window.ethereum, which is how MetaMask opened on the profile page.
+    if (!window.ethereum || !privyReady || privyAuthenticated) return;
 
     const checkExistingSession = async () => {
       try {
@@ -696,7 +701,7 @@ function PrivyAuthProvider({ children }) {
 
     const timer = setTimeout(checkExistingSession, 300);
     return () => clearTimeout(timer);
-  }, [privyAuthenticated]);
+  }, [privyReady, privyAuthenticated]);
 
   // ─────────────────────────────────────────────────────────────────────────
   // Disconnect

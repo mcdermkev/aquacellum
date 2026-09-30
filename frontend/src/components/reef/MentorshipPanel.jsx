@@ -28,18 +28,25 @@ export function MentorshipPanel({ walletAddress, acceptingMentees = false, onVie
   // Mentoring is granted community authority, never an XP/Depth tier unlock.
   const mentorGate = useUnlockGate("canMentor");
 
-  const { data: mentorshipsResult } = useMentorships(walletAddress, isOwnProfile);
-  const { data: mentorsResult } = useAvailableMentors(isOwnProfile);
+  const [requestingMentor, setRequestingMentor] = useState(null);
+  const [requestMessage, setRequestMessage] = useState("");
+  const [showMentorList, setShowMentorList] = useState(false);
+  // Both reads below are Reef trust requests, and every Reef trust request
+  // carries a fresh wallet signature (reefTrustApi.js). Firing them on mount
+  // meant simply opening your own profile asked the wallet to sign twice,
+  // which is the "MetaMask pops up when I click Profile" report. They now run
+  // only after the keeper asks for them.
+  const [mentorshipsRequested, setMentorshipsRequested] = useState(false);
+
+  const { data: mentorshipsResult, isFetching: mentorshipsLoading } =
+    useMentorships(walletAddress, isOwnProfile && mentorshipsRequested);
+  const { data: mentorsResult } = useAvailableMentors(isOwnProfile && showMentorList);
   
   const requestMentorshipMutation = useRequestMentorship();
   const acceptMentorshipMutation = useAcceptMentorship();
   const declineMentorshipMutation = useDeclineMentorship();
   const endMentorshipMutation = useEndMentorship();
   const toggleMenteesMutation = useToggleAcceptingMentees();
-
-  const [requestingMentor, setRequestingMentor] = useState(null);
-  const [requestMessage, setRequestMessage] = useState("");
-  const [showMentorList, setShowMentorList] = useState(false);
 
   const mentorships = mentorshipsResult?.data || { asMentor: [], asMentee: [] };
   const availableMentors = mentorsResult?.data || [];
@@ -285,11 +292,37 @@ export function MentorshipPanel({ walletAddress, acceptingMentees = false, onVie
         </div>
       )}
 
+      {/* Your pairings load on request (see mentorshipsRequested above). */}
+      {isOwnProfile && !mentorshipsRequested && (
+        <button
+          type="button"
+          onClick={() => setMentorshipsRequested(true)}
+          className="btn-secondary"
+          style={{ width: "100%", padding: "0.7rem", fontSize: "0.8rem" }}
+        >
+          Show my mentorships
+        </button>
+      )}
+      {isOwnProfile && mentorshipsRequested && mentorshipsLoading && !mentorshipsResult && (
+        <p role="status" style={{ margin: 0, fontSize: "0.75rem", color: "var(--text-muted)" }}>
+          Loading your mentorships…
+        </p>
+      )}
+      {isOwnProfile && mentorshipsRequested && mentorshipsResult && !mentorshipsResult.error
+        && mentorships.asMentor.length === 0 && mentorships.asMentee.length === 0 && (
+        <p style={{ margin: 0, fontSize: "0.75rem", color: "var(--text-muted)" }}>
+          No mentorships yet.
+        </p>
+      )}
+
       {/* Find a Mentor Button */}
       {isOwnProfile && activeMenteePairings.length === 0 && (
         <div>
           <button
-            onClick={() => setShowMentorList(!showMentorList)}
+            onClick={() => {
+              setShowMentorList(!showMentorList);
+              setMentorshipsRequested(true);
+            }}
             className="btn-secondary"
             style={{ width: "100%", padding: "0.7rem", fontSize: "0.8rem" }}
           >
@@ -300,7 +333,7 @@ export function MentorshipPanel({ walletAddress, acceptingMentees = false, onVie
             <div style={{ marginTop: "0.75rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
               {availableMentors.length === 0 ? (
                 <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", textAlign: "center", padding: "1rem" }}>
-                  No mentors accepting mentees right now. Check back later!
+                  No mentors are taking mentees right now. Check back later.
                 </p>
               ) : (
                 availableMentors.map((mentor) => (

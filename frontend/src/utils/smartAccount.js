@@ -161,14 +161,13 @@ export function getSmartAccountAddress() {
  * for any client-side signing needs.
  */
 export async function getSigner() {
-  // If Privy auth is active, use its signer
+  // If Privy auth is active, use its signer. No fallback to the injected wallet:
+  // an email or Google user whose embedded wallet is still loading must get an
+  // error, not a MetaMask prompt for a different address.
   if (_privySignerResolver) {
-    try {
-      const signer = await _privySignerResolver();
-      if (signer) return signer;
-    } catch (err) {
-      console.warn("Privy signer unavailable, falling back to injected wallet:", err.message);
-    }
+    const signer = await _privySignerResolver();
+    if (signer) return signer;
+    throw new Error("Your account wallet is still loading. Try again in a moment.");
   }
 
   // Fallback: MetaMask / injected wallet
