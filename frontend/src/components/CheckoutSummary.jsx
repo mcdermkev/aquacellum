@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
-import { ethers, Contract, formatEther, parseEther } from "ethers";
+import { ethers, Contract, parseEther } from "ethers";
 import marketplaceAbi from "../abi/AquadexMarketplace.json";
 import managerAbi from "../abi/AquadexManager.json";
 import { awardXp, XP_ACTIONS } from "../utils/xp";
 import { getProvider } from "../utils/smartAccount";
 import { fetchListingsByBreed } from "../utils/listingManager";
+import { scanEscrowOrders } from "../services/orderEscrowScan";
 import {
   relayUpdateBatchOrder,
   relaySettleHandshake,
@@ -705,100 +706,16 @@ export function CheckoutSummary({
 
       const totalSpecimens = Number(await managerContract.totalSpecimensMinted());
 
-      // Parallel scan for shipping escrows (batched to avoid overwhelming RPC)
-      const BATCH_SIZE = 10;
-      const fetchedShipping = [];
-
-      for (let start = 1; start <= totalSpecimens; start += BATCH_SIZE) {
-        const end = Math.min(start + BATCH_SIZE - 1, totalSpecimens);
-        const batch = [];
-        for (let i = start; i <= end; i++) {
-          batch.push(
-            (async (tokenId) => {
-              try {
-                const esc = await marketContract.shippingEscrows(tokenId);
-                if (esc.buyer === "0x0000000000000000000000000000000000000000") return null;
-                const isBuyer = esc.buyer.toLowerCase() === walletAccount.toLowerCase();
-                const isSeller = esc.seller.toLowerCase() === walletAccount.toLowerCase();
-                if (!isBuyer && !isSeller && !isCurator) return null;
-
-                const spec = await managerContract.specimens(tokenId);
-                const species = await managerContract.speciesCatalog(Number(spec.speciesId));
-                return {
-                  tokenId,
-                  buyer: esc.buyer,
-                  seller: esc.seller,
-                  price: formatEther(esc.price),
-                  shippingFee: formatEther(esc.shippingFee),
-                  amountLocked: formatEther(esc.amountLocked),
-                  trackingNumber: esc.trackingNumber,
-                  dispatchTimestamp: Number(esc.dispatchTimestamp),
-                  status: Number(esc.status),
-                  commonName: species.commonName,
-                  role: isBuyer ? "Buyer" : isSeller ? "Seller" : "Curator"
-                };
-              } catch (e) {
-                return null;
-              }
-            })(i)
-          );
-        }
-        const results = await Promise.allSettled(batch);
-        for (const r of results) {
-          if (r.status === "fulfilled" && r.value) {
-            fetchedShipping.push(r.value);
-          }
-        }
-      }
-
-      // Parallel scan for batch purchases (IDs 1-50)
-      const fetchedBatches = [];
-      const batchPromises = [];
-      for (let i = 1; i <= 50; i++) {
-        batchPromises.push(
-          (async (purchaseId) => {
-            try {
-              const purch = await marketContract.escrowPurchases(purchaseId);
-              if (purch.buyer === "0x0000000000000000000000000000000000000000") return null;
-              const isBuyer = purch.buyer.toLowerCase() === walletAccount.toLowerCase();
-
-              const listing = await marketContract.batchListings(purch.listingId);
-              const isSeller = listing.seller.toLowerCase() === walletAccount.toLowerCase();
-
-              if (!isBuyer && !isSeller && !isCurator) return null;
-
-              let commonName = "Juvenile Fry Batch";
-              try {
-                const spawnRec = await managerContract.spawnRecords(listing.spawnId);
-                const sireSpec = await managerContract.specimens(Number(spawnRec.sireId || 1));
-                const species = await managerContract.speciesCatalog(Number(sireSpec.speciesId));
-                commonName = `${species.commonName} Fry`;
-              } catch (e) {}
-
-              return {
-                purchaseId,
-                listingId: Number(purch.listingId),
-                buyer: purch.buyer,
-                seller: listing.seller,
-                quantity: Number(purch.quantity),
-                amountLocked: formatEther(purch.amountLocked),
-                state: Number(purch.state),
-                fulfillmentType: Number(purch.fulfillmentType),
-                commonName,
-                role: isBuyer ? "Buyer" : isSeller ? "Seller" : "Curator"
-              };
-            } catch (e) {
-              return null;
-            }
-          })(i)
-        );
-      }
-      const batchResults = await Promise.allSettled(batchPromises);
-      for (const r of batchResults) {
-        if (r.status === "fulfilled" && r.value) {
-          fetchedBatches.push(r.value);
-        }
-      }
+      // Shipping escrows (1..totalSpecimens) and batch purchases (IDs 1-50),
+      // through Multicall3 (falls back to one eth_call per read). See
+      // services/orderEscrowScan.js. `isCurator` is this render's value, as before.
+      const { shipping: fetchedShipping, purchases: fetchedBatches } = await scanEscrowOrders({
+        managerContract,
+        marketContract,
+        walletAccount,
+        isCurator,
+        totalSpecimens,
+      });
 
       if (isStale()) return;
 

@@ -7,6 +7,7 @@ import { relayPurchaseBatch } from "../services/relayer";
 import { normalizePriceCents, formatPriceCents } from "../services/catalogQuery";
 import { db } from "../db";
 import { SpawnGrowoutTracker } from "./SpawnGrowoutTracker";
+import { readSpawnLogsForSpecies } from "../services/spawnLogScan";
 
 export function HatcheryLogs({ specCode, contractInstance, marketplaceAddress, walletAccount, onCheckoutSuccessRedirect }) {
   const [logs, setLogs] = useState([]);
@@ -64,54 +65,13 @@ export function HatcheryLogs({ specCode, contractInstance, marketplaceAddress, w
             marketplaceContract = new Contract(marketplaceAddress, marketplaceAbi, provider);
           }
 
-          let id = 1;
-          while (true) {
-            try {
-              const log = await contractInstance.spawnLogs(id);
-              if (!log || log.spawnId === 0n || Number(log.spawnId) === 0) {
-                break;
-              }
-              if (Number(log.speciesId) === Number(specCode)) {
-                const spawnId = Number(log.spawnId);
-                let listingDetails = null;
-
-                if (marketplaceContract) {
-                  try {
-                    const listingId = await marketplaceContract.spawnToListing(spawnId);
-                    if (listingId > 0n) {
-                      const listing = await marketplaceContract.batchListings(listingId);
-                      if (listing.isActive) {
-                        listingDetails = {
-                          listingId: Number(listing.listingId),
-                          spawnId: Number(listing.spawnId),
-                          quantity: Number(listing.quantity),
-                          pricePerFish: listing.pricePerFish.toString(),
-                          seller: listing.seller,
-                          isActive: listing.isActive
-                        };
-                      }
-                    }
-                  } catch (err) {
-                    console.error(`Error querying spawnToListing for spawn ${spawnId}:`, err);
-                  }
-                }
-
-                // Only add if not already present from local data
-                if (!fetchedLogs.some(l => l.spawnId === spawnId)) {
-                  fetchedLogs.push({
-                    spawnId: spawnId,
-                    speciesId: Number(log.speciesId),
-                    breeder: log.breeder,
-                    eggCount: Number(log.eggCount),
-                    eventTimestamp: Number(log.eventTimestamp),
-                    notesIpfsHash: log.notesIpfsHash,
-                    listing: listingDetails,
-                  });
-                }
-              }
-              id++;
-            } catch (err) {
-              break;
+          // Walks spawnLogs until the first empty record, through Multicall3
+          // (falls back to one eth_call per read). See services/spawnLogScan.js.
+          const onChainLogs = await readSpawnLogsForSpecies(contractInstance, marketplaceContract, specCode);
+          for (const row of onChainLogs) {
+            // Only add if not already present from local data
+            if (!fetchedLogs.some(l => l.spawnId === row.spawnId)) {
+              fetchedLogs.push(row);
             }
           }
         }
