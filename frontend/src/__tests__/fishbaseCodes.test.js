@@ -41,12 +41,28 @@ describe("fishbaseSpecCode", () => {
     }
   });
 
-  it("every record in the hand-numbered 10114-10281 band either has a FishBase code or is a known unresolved name", () => {
-    const UNRESOLVED = new Set([10264, 10265]); // Crenicichla compressiceps / marmorata: not under that name in the dump
+  it("every record in the hand-numbered 10114-10281 band has a FishBase code that is not its catalog ID", () => {
     for (const r of CATALOG.filter((x) => x.specCode >= 10114 && x.specCode <= 10281)) {
-      if (UNRESOLVED.has(r.specCode)) expect(r.fishbaseSpecCode).toBeUndefined();
-      else expect(r.fishbaseSpecCode).not.toBe(r.specCode);
+      expect(Number.isInteger(r.fishbaseSpecCode)).toBe(true);
+      expect(r.fishbaseSpecCode).not.toBe(r.specCode);
     }
+  });
+
+  it("maps genus moves checked by hand (catalog name kept, FishBase code of the current name)", () => {
+    // Crenicichla compressiceps = FishBase Wallaciia compressiceps (Ploeg, 1986)
+    expect(byId.get(10264)).toMatchObject({ scientificName: "Crenicichla compressiceps", fishbaseSpecCode: 46840 });
+    // Crenicichla marmorata = FishBase Lugubria marmorata (Pellegrin, 1904)
+    expect(byId.get(10265)).toMatchObject({ scientificName: "Crenicichla marmorata", fishbaseSpecCode: 52192 });
+  });
+
+  it("only the two known duplicates are FishBase fish without a code", () => {
+    // 70002 Hemigrammus rhodostomus duplicates 12370 Petitella rhodostoma and
+    // 70004 Brochis agassizii duplicates 10143 Corydoras agassizii. There is no
+    // alias/duplicate mechanism in the catalog yet, so both are left untouched.
+    const missing = CATALOG.filter((r) => !NON_FISHBASE(r) && !("fishbaseSpecCode" in r)).map((r) => r.specCode);
+    expect(missing.sort((a, b) => a - b)).toEqual([70002, 70004]);
+    expect(byId.get(12370)).toMatchObject({ scientificName: "Petitella rhodostoma", fishbaseSpecCode: 12370 });
+    expect(byId.get(10143)).toMatchObject({ scientificName: "Corydoras agassizii", fishbaseSpecCode: 13109 });
   });
 });
 
@@ -57,7 +73,7 @@ describe("FishBase links", () => {
   });
 
   it("fall back to the scientific name for fish without a known code", () => {
-    expect(fishbaseUrl(byId.get(10264))).toBe("https://www.fishbase.se/summary/Crenicichla-compressiceps.html");
+    expect(fishbaseUrl(byId.get(70004))).toBe("https://www.fishbase.se/summary/Brochis-agassizii.html");
   });
 
   it("are null for plants, inverts, corals and the axolotl", () => {

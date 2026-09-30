@@ -17,8 +17,14 @@
  * letter spelling variant in the same genus, that number is confirmed and used.
  * Failing that, a single same-genus FishBase epithet within 2 letters (gender
  * endings like "aureum" / "aureus") is used.
+ * Then MANUAL_MATCHES: genus moves a human checked against the dump (same
+ * epithet, same family, parenthesised author = original genus differs). The
+ * FishBase name at that code is asserted, so a changed dump fails loudly.
  * Anything else stays unresolved, is listed with same-epithet FishBase
  * candidates for a human to check, and gets no fishbaseSpecCode.
+ * Still unresolved on purpose: 70002 Hemigrammus rhodostomus and 70004 Brochis
+ * agassizii duplicate 12370 Petitella rhodostoma and 10143 Corydoras agassizii;
+ * the catalog has no alias/duplicate mechanism yet, so they are left as is.
  *
  * Not FishBase records (no fishbaseSpecCode): plants (90001-90999, type plant),
  * freshwater inverts (80001-80999, type invertebrate), corals and marine inverts
@@ -64,6 +70,11 @@ const NON_FISHBASE_BANDS = [
   [200001, Infinity], // corals and marine inverts (WoRMS)
 ];
 const FAMILY_SUFFIX = /\s*\((Plant|Invertebrate|Coral)\)$/;
+// catalog specCode -> [FishBase SpecCode, FishBase Genus Species at that code]
+const MANUAL_MATCHES = new Map([
+  [10264, [46840, "Wallaciia compressiceps"]], // Crenicichla compressiceps; FishBase: (Ploeg, 1986), Cichlidae
+  [10265, [52192, "Lugubria marmorata"]], // Crenicichla marmorata; FishBase: (Pellegrin, 1904), Cichlidae
+]);
 const TYPE_FIXES = new Map([
   ["Neocaridina davidi", "invertebrate"],
   ["Ambystoma mexicanum", "amphibian"],
@@ -218,6 +229,16 @@ async function main() {
         how = `spelling (FishBase name: ${fbName})`;
         renamed.push(`${r.specCode} ${r.scientificName} -> FishBase ${code} ${fbName} (spelling: ${epithet} / ${ep})`);
       }
+    }
+    if (code == null && MANUAL_MATCHES.has(Number(r.specCode))) {
+      const [manualCode, expected] = MANUAL_MATCHES.get(Number(r.specCode));
+      const fbName = fb.byCode.get(manualCode);
+      if (fbName !== expected) {
+        throw new Error(`MANUAL_MATCHES ${r.specCode}: FishBase ${manualCode} is "${fbName}", expected "${expected}"`);
+      }
+      code = manualCode;
+      how = `manual (FishBase name: ${fbName})`;
+      renamed.push(`${r.specCode} ${r.scientificName} -> FishBase ${code} ${fbName} (manual)`);
     }
     const mismatch = code == null ? null : code !== Number(r.specCode);
     rows.push({ specCode: r.specCode, name: r.scientificName, mismatch, code, how });

@@ -18580,6 +18580,7 @@
   },
   {
     "specCode": 10264,
+    "fishbaseSpecCode": 46840,
     "scientificName": "Crenicichla compressiceps",
     "commonName": "Dwarf Pike Cichlid",
     "tankMetrics": {
@@ -18633,6 +18634,7 @@
   },
   {
     "specCode": 10265,
+    "fishbaseSpecCode": 52192,
     "scientificName": "Crenicichla marmorata",
     "commonName": "Marbled Pike Cichlid",
     "tankMetrics": {
