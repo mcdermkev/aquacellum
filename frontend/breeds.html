@@ -19,7 +19,7 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/shared.css">
 
   <style>
@@ -27,7 +27,7 @@
        reference data (src/data/medakaMorphs.js) plus Steve's showcase media,
        with live price/stock read from the public listings view. */
     * { box-sizing: border-box; }
-    body { margin: 0; color: var(--text-primary); font-family: "DM Sans", sans-serif; }
+    body { margin: 0; color: var(--text-primary); font-family: var(--font-body); }
     a { color: inherit; }
     button { font: inherit; color: inherit; }
     .bg-wrap { width: min(1320px, calc(100% - 40px)); margin: 0 auto; }
@@ -47,7 +47,7 @@
     .bg-hero__inner { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 48px; align-items: center; padding: 72px 0 64px; }
     .bg-eyebrow { display: flex; align-items: center; gap: 10px; color: #0f766e; font-size: .72rem; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; margin-bottom: 20px; }
     .bg-eyebrow::before { content: ""; width: 34px; height: 1px; background: currentColor; }
-    .bg-hero h1 { margin: 0; font-family: "Manrope", sans-serif; font-size: clamp(2.7rem, 6.2vw, 5.8rem); line-height: .93; letter-spacing: -.06em; font-weight: 700; }
+    .bg-hero h1 { margin: 0; font-family: var(--font-display); font-size: clamp(2.7rem, 6.2vw, 5.8rem); line-height: 1.03; letter-spacing: -.03em; font-weight: 700; }
     .bg-hero h1 em { font-style: normal; color: #0f766e; }
     .bg-hero__copy { margin: 24px 0 0; max-width: 560px; color: var(--text-secondary); font-size: clamp(1rem, 1.4vw, 1.14rem); line-height: 1.65; }
     .bg-hero__actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 28px; }
@@ -58,7 +58,7 @@
     .bg-stats { position: relative; display: grid; grid-template-columns: repeat(4, 1fr); border-bottom: 1px solid var(--line); background: #fff; }
     .bg-stat { padding: 22px 8px; text-align: center; border-right: 1px solid var(--line); }
     .bg-stat:last-child { border-right: 0; }
-    .bg-stat strong { display: block; font-family: "Manrope", sans-serif; font-size: 1.6rem; font-variant-numeric: tabular-nums; }
+    .bg-stat strong { display: block; font-family: var(--font-display); font-size: 1.6rem; font-variant-numeric: tabular-nums; }
     .bg-stat span { color: var(--text-muted); font-size: .66rem; text-transform: uppercase; letter-spacing: .12em; }
 
     /* Sections */
@@ -66,7 +66,7 @@
     .bg-section--tint { background: var(--bg-deep); border-block: 1px solid var(--line); }
     .bg-head { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin-bottom: 28px; }
     .bg-kicker { color: #6d28d9; font-size: .7rem; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; margin-bottom: 10px; }
-    .bg-section h2 { margin: 0; font-family: "Manrope", sans-serif; font-size: clamp(1.9rem, 3.8vw, 3.4rem); line-height: 1; letter-spacing: -.045em; }
+    .bg-section h2 { margin: 0; font-family: var(--font-display); font-size: clamp(1.9rem, 3.8vw, 3.4rem); line-height: 1.06; letter-spacing: -.025em; }
     .bg-intro { max-width: 520px; margin: 0; color: var(--text-secondary); line-height: 1.65; font-size: .92rem; }
 
     .bg-chips { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; margin-bottom: 24px; }
@@ -90,7 +90,7 @@
     .bg-count { position: absolute; right: 12px; bottom: 12px; z-index: 2; padding: 5px 9px; border-radius: 999px; background: rgba(var(--ink-rgb),.62); color: #fff; font-size: .64rem; font-weight: 600; }
     .bg-card__body { padding: 16px 2px 0; display: flex; flex-direction: column; flex: 1; }
     .bg-card__row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
-    .bg-card h3 { margin: 0; font-family: "Manrope", sans-serif; font-size: 1.3rem; letter-spacing: -.025em; }
+    .bg-card h3 { margin: 0; font-family: var(--font-display); font-size: 1.3rem; letter-spacing: -.01em; }
     .bg-card__price { flex: none; font-weight: 700; font-size: .9rem; font-variant-numeric: tabular-nums; }
     .bg-card__sci { margin-top: 3px; color: var(--text-muted); font-size: .74rem; }
     .bg-card__sci i { font-style: italic; }
@@ -104,14 +104,14 @@
     .bg-card__actions .bg-btn { flex: 1; }
 
     .bg-empty { grid-column: 1 / -1; padding: 48px 24px; border: 1px dashed var(--line); background: #fff; text-align: center; }
-    .bg-empty h3 { margin: 0 0 6px; font-family: "Manrope", sans-serif; }
+    .bg-empty h3 { margin: 0 0 6px; font-family: var(--font-display); }
     .bg-empty p { margin: 0; color: var(--text-secondary); font-size: .86rem; }
 
     /* Breeder band */
     .bg-breeder { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); border: 1px solid var(--line); background: #fff; box-shadow: var(--shadow-sm); }
     .bg-breeder__photo { min-height: 340px; background: var(--bg-deep) center/cover no-repeat; }
     .bg-breeder__body { padding: 40px; display: flex; flex-direction: column; justify-content: center; }
-    .bg-breeder h3 { margin: 0; font-family: "Manrope", sans-serif; font-size: clamp(1.6rem, 3vw, 2.4rem); letter-spacing: -.04em; }
+    .bg-breeder h3 { margin: 0; font-family: var(--font-display); font-size: clamp(1.6rem, 3vw, 2.4rem); letter-spacing: -.02em; }
     .bg-breeder__loc { margin-top: 6px; color: var(--text-secondary); font-size: .86rem; }
     .bg-breeder p { margin: 16px 0 0; color: var(--text-secondary); line-height: 1.65; font-size: .92rem; max-width: 560px; }
     .bg-breeder__actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px; }
@@ -119,7 +119,7 @@
     .bg-honest { display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--line); background: #fff; box-shadow: var(--shadow-sm); }
     .bg-honest > div { padding: 26px; border-right: 1px solid var(--line); }
     .bg-honest > div:last-child { border-right: 0; }
-    .bg-honest h3 { margin: 0 0 8px; font-family: "Manrope", sans-serif; font-size: 1rem; }
+    .bg-honest h3 { margin: 0 0 8px; font-family: var(--font-display); font-size: 1rem; }
     .bg-honest p { margin: 0; color: var(--text-secondary); font-size: .8rem; line-height: 1.6; }
     .bg-honest a { color: #0f766e; font-weight: 700; }
 
@@ -137,9 +137,9 @@
     .bg-thumb--video::after { content: "\25B6"; position: absolute; inset: 0; display: grid; place-items: center; color: #fff; font-size: .8rem; background: rgba(0,0,0,.4); }
     .bg-dialog__body { position: relative; padding: 36px 30px; display: flex; flex-direction: column; }
     .bg-dialog__close { position: absolute; top: 12px; right: 12px; width: 40px; height: 40px; border: 1px solid var(--line); border-radius: 50%; background: #fff; cursor: pointer; font-size: 1rem; }
-    .bg-dialog__body h2 { margin: 18px 0 4px; font-family: "Manrope", sans-serif; font-size: 1.9rem; letter-spacing: -.04em; }
-    .bg-dialog__price { margin: 16px 0 0; font-family: "Manrope", sans-serif; font-size: 1.3rem; }
-    .bg-dialog__price span { color: var(--text-muted); font-family: "DM Sans", sans-serif; font-size: .82rem; }
+    .bg-dialog__body h2 { margin: 18px 0 4px; font-family: var(--font-display); font-size: 1.9rem; letter-spacing: -.02em; }
+    .bg-dialog__price { margin: 16px 0 0; font-family: var(--font-display); font-size: 1.3rem; }
+    .bg-dialog__price span { color: var(--text-muted); font-family: var(--font-body); font-size: .82rem; }
     .bg-dialog__actions { display: grid; gap: 8px; margin-top: auto; padding-top: 22px; }
 
     @media (max-width: 1060px) {

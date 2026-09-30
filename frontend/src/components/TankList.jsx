@@ -4783,7 +4783,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                             color: "var(--accent-green)",
                             cursor: "pointer",
                             transition: "all 0.2s ease",
-                            fontFamily: "'Plus Jakarta Sans', sans-serif",
+                            fontFamily: "var(--font-body)",
                           }}
                           onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(52, 211, 153, 0.1)"; e.currentTarget.style.borderColor = "rgba(52, 211, 153, 0.5)"; }}
                           onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(52, 211, 153, 0.04)"; e.currentTarget.style.borderColor = "rgba(52, 211, 153, 0.3)"; }}

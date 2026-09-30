@@ -128,11 +128,6 @@ body {
   position: relative;
 }
 
-/* Transitional: components that still name the old family inline fall back to
-   the shared body face instead of the browser default. Remove once no
-   `'Plus Jakarta Sans'` remains in src/. */
-[style*="Plus Jakarta Sans"] { font-family: var(--font-body) !important; }
-
 /* Ambient glows were for the dark theme; off in daylight. */
 body::before, body::after {
   content: none;

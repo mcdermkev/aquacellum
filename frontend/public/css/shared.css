@@ -22,9 +22,8 @@
    View Transitions rule below. Keep the two sides in step.
    ========================================= */
 
-/* The shared type pair. Same URL most pages already <link>, so the browser
-   reuses the response; pages that load other families (marketplace, order)
-   still get the nav and footer in the right fonts. */
+/* The shared type pair. Same URL every public page <links>, so the browser
+   reuses one response. Keep the URL identical when editing either side. */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap');
 
 /* ─── CROSS-PAGE TRANSITIONS ─────────────── */
@@ -117,12 +116,16 @@
   /* Motion */
   --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   --transition-fast: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Type: one pair everywhere, same values as src/styles/index.css. */
+  --font-body: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-display: 'Outfit', 'Inter', system-ui, sans-serif;
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { font-size: 16px; scroll-behavior: smooth; }
 body {
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-body);
   background-color: var(--bg-void);
   /* Morning light from above: a soft sun glow fading into clear water. */
   background-image:
@@ -143,7 +146,7 @@ ul, ol { list-style: none; }
 :focus-visible { outline: 2px solid var(--teal-400); outline-offset: 2px; }
 
 /* ─── TYPOGRAPHY ─────────────────────────── */
-.font-display { font-family: 'Outfit', sans-serif; }
+.font-display { font-family: var(--font-display); }
 .font-mono    { font-family: 'JetBrains Mono', monospace; }
 
 .text-gradient {

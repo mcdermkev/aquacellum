@@ -14,7 +14,7 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/shared.css">
 
   <style>
@@ -22,7 +22,7 @@
        publication API (/api/storefront-detail?action=showcase-room). Live
        stock is read from the public listings view via /js/public-listings.js. */
     * { box-sizing: border-box; }
-    body { margin: 0; color: var(--text-primary); font-family: "DM Sans", sans-serif; }
+    body { margin: 0; color: var(--text-primary); font-family: var(--font-body); }
     a { color: inherit; }
     button { font: inherit; color: inherit; }
     .sc-wrap { width: min(1320px, calc(100% - 40px)); margin: 0 auto; }
@@ -39,7 +39,7 @@
 
     /* Loading / error panel */
     .sc-state { max-width: 560px; margin: 0 auto; padding: 120px 20px; text-align: center; }
-    .sc-state h3 { font-family: "Manrope", sans-serif; font-size: 1.5rem; letter-spacing: -.02em; margin-bottom: .6rem; }
+    .sc-state h3 { font-family: var(--font-display); font-size: 1.5rem; letter-spacing: -.01em; margin-bottom: .6rem; }
     .sc-state p { color: var(--text-secondary); line-height: 1.6; }
     .sc-state__links { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
 
@@ -53,7 +53,7 @@
     .sc-hero--solo .sc-hero__inner { grid-template-columns: minmax(0, 1fr); min-height: 0; padding: 80px 0; }
     .sc-eyebrow { display: flex; align-items: center; gap: 10px; color: #0f766e; font-size: .72rem; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; margin-bottom: 20px; }
     .sc-eyebrow::before { content: ""; width: 34px; height: 1px; background: currentColor; }
-    .sc-hero h1 { margin: 0; font-family: "Manrope", sans-serif; font-size: clamp(2.6rem, 5.6vw, 5.4rem); line-height: .95; letter-spacing: -.055em; font-weight: 700; overflow-wrap: anywhere; }
+    .sc-hero h1 { margin: 0; font-family: var(--font-display); font-size: clamp(2.6rem, 5.6vw, 5.4rem); line-height: 1.04; letter-spacing: -.03em; font-weight: 700; overflow-wrap: anywhere; }
     .sc-hero__copy { margin: 24px 0 0; max-width: 560px; color: var(--text-secondary); font-size: clamp(1rem, 1.4vw, 1.14rem); line-height: 1.65; }
     .sc-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 28px; min-height: 44px; }
     .sc-hero__meta { margin-top: 18px; color: var(--text-muted); font-size: .8rem; }
@@ -75,7 +75,7 @@
     .sc-stat:last-child { border-right: 0; }
     .sc-stats[data-count="3"] { grid-template-columns: repeat(3, 1fr); }
     .sc-stats[data-count="2"] { grid-template-columns: repeat(2, 1fr); }
-    .sc-stat strong { display: block; font-family: "Manrope", sans-serif; font-size: 1.6rem; font-variant-numeric: tabular-nums; }
+    .sc-stat strong { display: block; font-family: var(--font-display); font-size: 1.6rem; font-variant-numeric: tabular-nums; }
     .sc-stat span { color: var(--text-muted); font-size: .66rem; text-transform: uppercase; letter-spacing: .12em; }
 
     /* Sections */
@@ -83,7 +83,7 @@
     .sc-section--tint { background: var(--bg-deep); border-block: 1px solid var(--line); }
     .sc-head { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin-bottom: 30px; }
     .sc-kicker { color: #6d28d9; font-size: .7rem; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; margin-bottom: 10px; }
-    .sc-section h2 { margin: 0; font-family: "Manrope", sans-serif; font-size: clamp(1.9rem, 3.8vw, 3.4rem); line-height: 1; letter-spacing: -.045em; }
+    .sc-section h2 { margin: 0; font-family: var(--font-display); font-size: clamp(1.9rem, 3.8vw, 3.4rem); line-height: 1.06; letter-spacing: -.025em; }
     .sc-intro { max-width: 520px; margin: 0; color: var(--text-secondary); line-height: 1.65; font-size: .92rem; }
 
     /* Tank / line cards */
@@ -103,7 +103,7 @@
     .is-playing > .sc-clip-hint { opacity: 0; }
     .sc-card__body { padding: 16px 2px 0; display: flex; flex-direction: column; flex: 1; }
     .sc-card__row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
-    .sc-card h3 { margin: 0; font-family: "Manrope", sans-serif; font-size: 1.3rem; letter-spacing: -.025em; }
+    .sc-card h3 { margin: 0; font-family: var(--font-display); font-size: 1.3rem; letter-spacing: -.01em; }
     .sc-card__price { flex: none; font-weight: 700; font-size: .9rem; font-variant-numeric: tabular-nums; }
     .sc-card__sci { margin-top: 3px; color: var(--text-muted); font-size: .74rem; }
     .sc-card__sci i { font-style: italic; }
@@ -121,7 +121,7 @@
     .sc-card--feature { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, .75fr); gap: 36px; align-items: center; }
     .sc-card--feature .sc-card__media { aspect-ratio: 16 / 10; }
     .sc-card--feature .sc-card__body { padding: 0; }
-    .sc-card--feature h3 { font-size: clamp(1.6rem, 3vw, 2.4rem); letter-spacing: -.04em; }
+    .sc-card--feature h3 { font-size: clamp(1.6rem, 3vw, 2.4rem); letter-spacing: -.02em; }
     .sc-card--feature .sc-card__desc { font-size: .95rem; }
 
     /* Clip gallery */
@@ -135,7 +135,7 @@
     .sc-play { position: absolute; left: 12px; bottom: 12px; z-index: 3; min-height: 40px; display: inline-flex; align-items: center; gap: 8px; padding: 0 14px; border: 0; border-radius: 999px; background: rgba(255,255,255,.95); color: var(--text-primary); box-shadow: var(--shadow-sm); font-size: .74rem; font-weight: 700; cursor: pointer; }
     .sc-play:disabled { opacity: .7; cursor: wait; }
     .sc-play__icon { font-size: .7rem; }
-    .sc-clip h3 { margin: 14px 0 4px; font-family: "Manrope", sans-serif; font-size: 1.05rem; letter-spacing: -.02em; }
+    .sc-clip h3 { margin: 14px 0 4px; font-family: var(--font-display); font-size: 1.05rem; letter-spacing: -.01em; }
     .sc-clip p { margin: 0; color: var(--text-secondary); font-size: .8rem; line-height: 1.55; }
 
     /* Breeder band */
@@ -144,7 +144,7 @@
     .sc-breeder__photo { position: relative; min-height: 340px; background: var(--bg-deep); overflow: hidden; }
     .sc-breeder__photo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
     .sc-breeder__body { padding: 40px; display: flex; flex-direction: column; justify-content: center; }
-    .sc-breeder h3 { margin: 0; font-family: "Manrope", sans-serif; font-size: clamp(1.6rem, 3vw, 2.4rem); letter-spacing: -.04em; }
+    .sc-breeder h3 { margin: 0; font-family: var(--font-display); font-size: clamp(1.6rem, 3vw, 2.4rem); letter-spacing: -.02em; }
     .sc-breeder__loc { margin-top: 6px; color: var(--text-secondary); font-size: .86rem; }
     .sc-breeder p { margin: 16px 0 0; color: var(--text-secondary); line-height: 1.65; font-size: .92rem; max-width: 560px; }
     .sc-breeder__actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px; }

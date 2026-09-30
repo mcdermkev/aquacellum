@@ -16,14 +16,14 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/shared.css">
 
   <style>
     /* Medaka Morph Guide (Daylight). Built from src/data/medakaMorphs.js; the
        photos and clips are the breeder's own showcase media. */
     * { box-sizing: border-box; }
-    body { margin: 0; color: var(--text-primary); font-family: "DM Sans", sans-serif; }
+    body { margin: 0; color: var(--text-primary); font-family: var(--font-body); }
     a { color: inherit; }
     .mg-wrap { width: min(1320px, calc(100% - 40px)); margin: 0 auto; }
 
@@ -43,7 +43,7 @@
     .mg-hero__inner { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 48px; align-items: center; padding: 64px 0 60px; }
     .mg-eyebrow { display: flex; align-items: center; gap: 10px; color: #0f766e; font-size: .72rem; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; margin-bottom: 20px; }
     .mg-eyebrow::before { content: ""; width: 34px; height: 1px; background: currentColor; }
-    .mg-hero h1 { margin: 0; font-family: "Manrope", sans-serif; font-size: clamp(2.6rem, 6vw, 5.4rem); line-height: .94; letter-spacing: -.06em; font-weight: 700; }
+    .mg-hero h1 { margin: 0; font-family: var(--font-display); font-size: clamp(2.6rem, 6vw, 5.4rem); line-height: 1.03; letter-spacing: -.03em; font-weight: 700; }
     .mg-hero h1 em { font-style: normal; color: #0f766e; }
     .mg-hero__copy { margin: 24px 0 0; max-width: 560px; color: var(--text-secondary); font-size: clamp(1rem, 1.4vw, 1.12rem); line-height: 1.65; }
     .mg-hero__actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 28px; }
@@ -58,7 +58,7 @@
     .mg-section { padding: 72px 0; }
     .mg-head { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin-bottom: 28px; }
     .mg-kicker { color: #6d28d9; font-size: .7rem; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; margin-bottom: 10px; }
-    .mg-section h2 { margin: 0; font-family: "Manrope", sans-serif; font-size: clamp(1.9rem, 3.8vw, 3.2rem); line-height: 1; letter-spacing: -.045em; }
+    .mg-section h2 { margin: 0; font-family: var(--font-display); font-size: clamp(1.9rem, 3.8vw, 3.2rem); line-height: 1.06; letter-spacing: -.025em; }
     .mg-intro { max-width: 520px; margin: 0; color: var(--text-secondary); line-height: 1.65; font-size: .92rem; }
     .mg-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 34px 20px; }
     .mg-card { min-width: 0; display: flex; flex-direction: column; scroll-margin-top: 90px; }
@@ -72,7 +72,7 @@
     .mg-hint { position: absolute; right: 12px; bottom: 12px; z-index: 2; padding: 5px 9px; border-radius: 999px; background: rgba(var(--ink-rgb),.66); color: #fff; font-size: .64rem; font-weight: 600; transition: opacity .3s; }
     .mg-card__media.is-playing .mg-hint { opacity: 0; }
     .mg-card__body { padding: 16px 2px 0; display: flex; flex-direction: column; flex: 1; }
-    .mg-card h3 { margin: 0; font-family: "Manrope", sans-serif; font-size: 1.3rem; letter-spacing: -.025em; }
+    .mg-card h3 { margin: 0; font-family: var(--font-display); font-size: 1.3rem; letter-spacing: -.01em; }
     .mg-card__sci { margin-top: 3px; color: var(--text-muted); font-size: .74rem; }
     .mg-card__sci i { font-style: italic; }
     .mg-traits { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
