@@ -1231,7 +1231,7 @@ function SettingsTab({ school, schoolId }) {
   const handleSave = async () => {
     setError("");
     setSaved(false);
-    if (!name.trim()) { setError("School name is required."); return; }
+    if (!name.trim()) { setError("Give the club a name."); return; }
 
     setSaving(true);
     const result = await updateSchoolMutation.mutateAsync({
@@ -1247,151 +1247,104 @@ function SettingsTab({ school, schoolId }) {
 
     setSaving(false);
     if (result?.error) {
-      setError(result.error.message || "Failed to update school.");
+      setError(result.error.message || "Could not save the club settings. Try again.");
     } else {
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     }
   };
 
-  return (
-    <div className="glass-card" style={{
-      padding: "1.5rem",
-      borderRadius: "var(--radius-sm)",
-      border: "1px solid rgba(var(--ink-rgb), 0.11)",
-    }}>
-      <h3 style={{ margin: "0 0 1.25rem", fontSize: "1rem", color: "var(--text-primary)" }}>⚙️ School Settings</h3>
+  const safeBanner = /^https:\/\//i.test(bannerUrl.trim()) ? bannerUrl.trim() : "";
 
-      {/* Name */}
-      <div style={{ marginBottom: "1rem" }}>
-        <label style={{ display: "block", fontSize: "0.72rem", color: "var(--text-secondary)", marginBottom: "0.3rem", fontWeight: 600 }}>School Name *</label>
+  return (
+    <section className="reef-panel reef-form" aria-labelledby="club-settings-title">
+      <h3 className="reef-panel-title" id="club-settings-title">Club settings</h3>
+      <p className="reef-panel-note">Only club admins see this tab. Changes show on the club page and on its public page.</p>
+
+      <div className="reef-form-field">
+        <label className="reef-form-label" htmlFor="club-set-name">Club name</label>
         <input
+          id="club-set-name"
+          className="reef-form-input"
           type="text"
           value={name}
+          maxLength={60}
           onChange={(e) => setName(e.target.value.slice(0, 60))}
-          style={{
-            width: "100%", padding: "0.55rem 0.85rem", borderRadius: "8px",
-            border: "1px solid rgba(var(--ink-rgb), 0.15)", background: "rgba(var(--ink-rgb), 0.04)",
-            color: "var(--text-primary)", fontSize: "0.85rem",
-          }}
+          required
         />
       </div>
 
-      {/* Description */}
-      <div style={{ marginBottom: "1rem" }}>
-        <label style={{ display: "block", fontSize: "0.72rem", color: "var(--text-secondary)", marginBottom: "0.3rem", fontWeight: 600 }}>Description</label>
+      <div className="reef-form-field">
+        <label className="reef-form-label" htmlFor="club-set-desc">About the club <span className="reef-form-optional">(optional)</span></label>
         <textarea
+          id="club-set-desc"
+          className="reef-form-input reef-form-textarea"
           value={description}
           onChange={(e) => setDescription(e.target.value.slice(0, 500))}
-          placeholder="What is this school about?"
+          placeholder="Who the club is for and what you do together"
           rows={3}
-          style={{
-            width: "100%", padding: "0.55rem 0.85rem", borderRadius: "8px",
-            border: "1px solid rgba(var(--ink-rgb), 0.15)", background: "rgba(var(--ink-rgb), 0.04)",
-            color: "var(--text-primary)", fontSize: "0.85rem", resize: "vertical",
-          }}
         />
+        <span className="reef-form-hint">{description.length}/500</span>
       </div>
 
-      {/* Banner URL */}
-      <div style={{ marginBottom: "1rem" }}>
-        <label style={{ display: "block", fontSize: "0.72rem", color: "var(--text-secondary)", marginBottom: "0.3rem", fontWeight: 600 }}>Banner Image URL</label>
+      <div className="reef-form-field">
+        <label className="reef-form-label" htmlFor="club-set-banner">Banner photo link <span className="reef-form-optional">(optional)</span></label>
         <input
+          id="club-set-banner"
+          className="reef-form-input"
           type="url"
           value={bannerUrl}
           onChange={(e) => setBannerUrl(e.target.value)}
-          placeholder="https://example.com/banner.jpg"
-          style={{
-            width: "100%", padding: "0.55rem 0.85rem", borderRadius: "8px",
-            border: "1px solid rgba(var(--ink-rgb), 0.15)", background: "rgba(var(--ink-rgb), 0.04)",
-            color: "var(--text-primary)", fontSize: "0.85rem",
-          }}
+          placeholder="https://"
+          inputMode="url"
         />
-        {bannerUrl && (
-          <div style={{ marginTop: "0.5rem", borderRadius: "8px", overflow: "hidden", height: "80px" }}>
-            <img src={bannerUrl} alt="Banner preview" style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={(e) => { e.target.style.display = "none"; }} />
+        <span className="reef-form-hint">An https link to a wide photo. Without one, the club shows its initials on a teal banner.</span>
+        {safeBanner && (
+          <div className="reef-form-banner">
+            <img src={safeBanner} alt="Banner preview" onError={(e) => { e.currentTarget.parentElement.style.display = "none"; }} />
           </div>
         )}
       </div>
 
-      {/* Invite Only Toggle */}
-      <div style={{ marginBottom: "1rem", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      <div className="reef-form-switch">
         <div>
-          <label style={{ fontSize: "0.72rem", color: "var(--text-secondary)", fontWeight: 600 }}>🔒 Invite Only</label>
-          <p style={{ margin: "0.1rem 0 0", fontSize: "0.62rem", color: "var(--text-muted)" }}>Only invited members can join</p>
+          <span className="reef-form-label" id="club-set-invite">Invite only</span>
+          <p className="reef-form-hint">When on, people need an invite from an admin to join.</p>
         </div>
         <button
-          onClick={() => setIsInviteOnly(!isInviteOnly)}
-          style={{
-            width: "44px", height: "24px", borderRadius: "12px", border: "none",
-            background: isInviteOnly ? "rgba(56, 189, 248, 0.5)" : "rgba(var(--ink-rgb), 0.1)",
-            cursor: "pointer", position: "relative", transition: "background 0.2s ease",
-          }}
+          type="button"
+          className="reef-switch"
           role="switch"
           aria-checked={isInviteOnly}
+          aria-labelledby="club-set-invite"
+          onClick={() => setIsInviteOnly(!isInviteOnly)}
         >
-          <div style={{
-            width: "18px", height: "18px", borderRadius: "50%", background: "#fff",
-            position: "absolute", top: "3px",
-            left: isInviteOnly ? "23px" : "3px",
-            transition: "left 0.2s ease",
-          }} />
+          <span aria-hidden="true" />
         </button>
       </div>
 
-      {/* Member Cap */}
-      <div style={{ marginBottom: "1.25rem" }}>
-        <label style={{ display: "block", fontSize: "0.72rem", color: "var(--text-secondary)", marginBottom: "0.3rem", fontWeight: 600 }}>Member Limit</label>
+      <div className="reef-form-field">
+        <label className="reef-form-label" htmlFor="club-set-cap">Member limit <span className="reef-form-optional">(optional)</span></label>
         <input
+          id="club-set-cap"
+          className="reef-form-input reef-form-input--short"
           type="number"
+          inputMode="numeric"
           value={memberCap}
           onChange={(e) => setMemberCap(e.target.value)}
           placeholder="No limit"
           min={1}
-          style={{
-            width: "120px", padding: "0.55rem 0.85rem", borderRadius: "8px",
-            border: "1px solid rgba(var(--ink-rgb), 0.15)", background: "rgba(var(--ink-rgb), 0.04)",
-            color: "var(--text-primary)", fontSize: "0.85rem",
-          }}
         />
-        <span style={{ fontSize: "0.62rem", color: "var(--text-muted)", marginLeft: "0.5rem" }}>Leave empty for unlimited</span>
       </div>
 
-      {/* Error */}
-      {error && (
-        <div style={{
-          marginBottom: "0.75rem", padding: "0.5rem 0.75rem",
-          background: "rgba(248, 113, 113, 0.1)", border: "1px solid rgba(248, 113, 113, 0.2)",
-          borderRadius: "8px", color: "var(--accent-red)", fontSize: "0.75rem",
-        }}>
-          {error}
-        </div>
-      )}
+      {error && <p className="reef-form-error" role="alert">{error}</p>}
+      <p className="reef-form-saved" role="status">{saved ? "Settings saved." : ""}</p>
 
-      {/* Success */}
-      {saved && (
-        <div style={{
-          marginBottom: "0.75rem", padding: "0.5rem 0.75rem",
-          background: "rgba(52, 211, 153, 0.08)", border: "1px solid rgba(52, 211, 153, 0.2)",
-          borderRadius: "8px", color: "var(--accent-green)", fontSize: "0.75rem",
-        }}>
-          ✓ Settings saved!
-        </div>
-      )}
-
-      {/* Save button */}
-      <button
-        onClick={handleSave}
-        disabled={saving}
-        style={{
-          padding: "0.6rem 1.5rem", borderRadius: "8px", border: "none",
-          background: "linear-gradient(135deg, #0ea5e9, #0369a1)",
-          color: "#fff", fontSize: "0.8rem", fontWeight: 600, cursor: "pointer",
-          opacity: saving ? 0.6 : 1, transition: "opacity 0.15s ease",
-        }}
-      >
-        {saving ? "Saving..." : "💾 Save Changes"}
-      </button>
-    </div>
+      <div className="reef-form-actions">
+        <button type="button" className="reef-btn reef-btn--primary" onClick={handleSave} disabled={saving} aria-busy={saving}>
+          {saving ? "Saving…" : "Save changes"}
+        </button>
+      </div>
+    </section>
   );
 }

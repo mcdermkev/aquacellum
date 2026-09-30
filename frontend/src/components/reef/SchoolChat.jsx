@@ -73,62 +73,30 @@ export function SchoolChat({ schoolId, isAdmin }) {
 
   // Group messages by date
   let lastDate = "";
+  const countLabel = `${messages.length} ${messages.length === 1 ? "message" : "messages"}`;
 
   return (
-    <div style={{
-      display: "flex",
-      flexDirection: "column",
-      height: "500px",
-      maxHeight: "60vh",
-      borderRadius: "var(--radius-sm)",
-      overflow: "hidden",
-      border: "1px solid rgba(var(--ink-rgb), 0.13)",
-    }}>
-      {/* Connection Status */}
-      <div style={{
-        padding: "0.4rem 1rem",
-        display: "flex",
-        alignItems: "center",
-        gap: "0.4rem",
-        borderBottom: "1px solid rgba(var(--ink-rgb), 0.11)",
-        background: "rgba(var(--ink-rgb), 0.03)",
-      }}>
-        <span style={{
-          width: "6px",
-          height: "6px",
-          borderRadius: "50%",
-          background: isConnected ? "var(--accent-green)" : "var(--accent-amber)",
-          boxShadow: isConnected ? "0 0 4px var(--accent-green)" : "none",
-        }} />
-        <span style={{ fontSize: "0.65rem", color: "var(--text-muted)" }}>
-          {isConnected ? "Connected" : "Connecting..."}
-        </span>
-        <span style={{ marginLeft: "auto", fontSize: "0.65rem", color: "var(--text-muted)" }}>
-          {messages.length} messages
-        </span>
+    <section className="reef-chat" aria-label="Club chat">
+      <div className="reef-chat-status">
+        <span className={`reef-chat-dot ${isConnected ? "is-live" : ""}`} aria-hidden="true" />
+        <span>{isConnected ? "Live" : "Connecting…"}</span>
+        <span className="reef-chat-count">{countLabel}</span>
       </div>
 
-      {/* Messages */}
       <div
         ref={messagesContainerRef}
         onScroll={handleScroll}
-        style={{
-          flex: 1,
-          overflow: "auto",
-          padding: "1rem",
-          display: "flex",
-          flexDirection: "column",
-          gap: "0.3rem",
-        }}
+        className="reef-chat-log"
+        role="log"
+        aria-live="polite"
+        aria-relevant="additions"
       >
         {isLoading ? (
-          <div style={{ textAlign: "center", color: "var(--text-muted)", fontSize: "0.8rem", padding: "2rem" }}>
-            Loading chat...
-          </div>
+          <p className="reef-chat-empty">Loading chat…</p>
         ) : messages.length === 0 ? (
-          <div style={{ textAlign: "center", color: "var(--text-muted)", fontSize: "0.8rem", padding: "2rem" }}>
-            <div style={{ fontSize: "1.5rem", marginBottom: "0.5rem" }}>💬</div>
-            <p>No messages yet. Start the conversation!</p>
+          <div className="reef-chat-empty">
+            <strong>No messages yet.</strong>
+            <span>Members can chat here. Say hello or ask the club a question.</span>
           </div>
         ) : (
           messages.map((msg) => {
@@ -137,83 +105,33 @@ export function SchoolChat({ schoolId, isAdmin }) {
             lastDate = msgDate;
             const isOwn = sameWallet(msg.author_wallet, currentWallet);
             const profile = msg.profile;
+            const name = profile?.display_name || `${String(msg.author_wallet || "").slice(0, 6)}…`;
 
             return (
               <React.Fragment key={msg.id}>
-                {showDateSeparator && (
-                  <div style={{
-                    textAlign: "center",
-                    fontSize: "0.6rem",
-                    color: "var(--text-muted)",
-                    padding: "0.5rem 0",
-                    margin: "0.5rem 0",
-                  }}>
-                    — {msgDate} —
-                  </div>
-                )}
-                <div style={{
-                  display: "flex",
-                  flexDirection: isOwn ? "row-reverse" : "row",
-                  alignItems: "flex-end",
-                  gap: "0.5rem",
-                }}>
-                  {/* Avatar */}
+                {showDateSeparator && <div className="reef-chat-date"><span>{msgDate}</span></div>}
+                <div className={`reef-chat-row ${isOwn ? "is-own" : ""}`}>
                   {!isOwn && (
-                    <div style={{
-                      width: "24px",
-                      height: "24px",
-                      borderRadius: "50%",
-                      background: profile?.avatar_url
-                        ? `url(${profile.avatar_url}) center/cover`
-                        : "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                      flexShrink: 0,
-                    }} />
+                    <span className="reef-chat-avatar" aria-hidden="true">
+                      {profile?.avatar_url ? <img src={profile.avatar_url} alt="" /> : name.charAt(0).toUpperCase()}
+                    </span>
                   )}
-
-                  {/* Bubble */}
-                  <div style={{
-                    maxWidth: "75%",
-                    padding: "0.5rem 0.8rem",
-                    borderRadius: isOwn ? "12px 12px 4px 12px" : "12px 12px 12px 4px",
-                    background: isOwn
-                      ? "rgba(56, 189, 248, 0.15)"
-                      : "rgba(var(--ink-rgb), 0.06)",
-                    border: `1px solid ${isOwn ? "rgba(56, 189, 248, 0.2)" : "rgba(var(--ink-rgb), 0.11)"}`,
-                    position: "relative",
-                  }}>
-                    {!isOwn && (
-                      <div style={{ fontSize: "0.6rem", color: "var(--accent-blue)", fontWeight: "600", marginBottom: "0.2rem" }}>
-                        {profile?.display_name || `${msg.author_wallet.slice(0, 6)}...`}
-                      </div>
-                    )}
-                    <div style={{ fontSize: "0.8rem", color: "var(--text-primary)", lineHeight: "1.4", wordBreak: "break-word" }}>
-                      {msg.body}
-                    </div>
-                    <div style={{ fontSize: "0.55rem", color: "var(--text-muted)", marginTop: "0.2rem", textAlign: isOwn ? "left" : "right" }}>
-                      {formatTime(msg.created_at)}
-                    </div>
-
-                    {/* Admin delete */}
-                    {isAdmin && !isOwn && (
-                      <button
-                        onClick={() => deleteMessage(msg.id)}
-                        style={{
-                          position: "absolute",
-                          top: "0.25rem",
-                          right: "0.25rem",
-                          background: "none",
-                          border: "none",
-                          color: "var(--accent-red)",
-                          fontSize: "0.6rem",
-                          cursor: "pointer",
-                          opacity: 0.5,
-                        }}
-                        title="Delete message"
-                      >
-                        🗑
-                      </button>
-                    )}
+                  <div className="reef-chat-bubble">
+                    {!isOwn && <span className="reef-chat-name">{name}</span>}
+                    <p className="reef-chat-text">{msg.body}</p>
+                    <span className="reef-chat-time">{formatTime(msg.created_at)}</span>
                   </div>
+                  {isAdmin && !isOwn && (
+                    <button
+                      type="button"
+                      className="reef-chat-delete"
+                      onClick={() => deleteMessage(msg.id)}
+                      aria-label={`Delete message from ${name}`}
+                      title="Delete message"
+                    >
+                      Delete
+                    </button>
+                  )}
                 </div>
               </React.Fragment>
             );
@@ -222,75 +140,38 @@ export function SchoolChat({ schoolId, isAdmin }) {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Scroll-to-bottom button */}
       {!isAtBottom && messages.length > 0 && (
         <button
+          type="button"
+          className="reef-btn reef-btn--sm reef-chat-jump"
           onClick={() => {
             messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
             setIsAtBottom(true);
           }}
-          style={{
-            position: "absolute",
-            bottom: "70px",
-            left: "50%",
-            transform: "translateX(-50%)",
-            padding: "0.3rem 0.8rem",
-            borderRadius: "50px",
-            background: "rgba(56, 189, 248, 0.2)",
-            border: "1px solid rgba(56, 189, 248, 0.3)",
-            color: "var(--text-primary)",
-            fontSize: "0.65rem",
-            cursor: "pointer",
-          }}
         >
-          ↓ New messages
+          Jump to newest
         </button>
       )}
 
-      {/* Input */}
-      <div style={{
-        display: "flex",
-        gap: "0.5rem",
-        padding: "0.75rem 1rem",
-        borderTop: "1px solid rgba(var(--ink-rgb), 0.11)",
-        background: "rgba(var(--ink-rgb), 0.03)",
-      }}>
+      <form
+        className="reef-chat-input"
+        onSubmit={(e) => { e.preventDefault(); handleSend(); }}
+      >
+        <label htmlFor={`club-chat-${schoolId}`} className="reef-sr-only">Message the club</label>
         <input
+          id={`club-chat-${schoolId}`}
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value.slice(0, 500))}
           onKeyDown={handleKeyDown}
-          placeholder="Type a message..."
+          placeholder="Write a message"
           maxLength={500}
-          style={{
-            flex: 1,
-            padding: "0.6rem 1rem",
-            background: "rgba(var(--ink-rgb), 0.04)",
-            border: "1px solid rgba(var(--ink-rgb), 0.15)",
-            borderRadius: "50px",
-            color: "var(--text-primary)",
-            fontSize: "0.8rem",
-            outline: "none",
-          }}
+          autoComplete="off"
         />
-        <button
-          onClick={handleSend}
-          disabled={!input.trim() || isSending}
-          style={{
-            padding: "0.6rem 1rem",
-            borderRadius: "50px",
-            border: "none",
-            background: input.trim() ? "var(--accent-blue)" : "rgba(var(--ink-rgb), 0.08)",
-            color: input.trim() ? "#fff" : "var(--text-muted)",
-            fontSize: "0.8rem",
-            cursor: input.trim() ? "pointer" : "default",
-            transition: "all 0.2s ease",
-          }}
-          aria-label="Send message"
-        >
-          {isSending ? "..." : "→"}
+        <button type="submit" className="reef-btn reef-btn--primary" disabled={!input.trim() || isSending} aria-busy={isSending}>
+          {isSending ? "Sending…" : "Send"}
         </button>
-      </div>
-    </div>
+      </form>
+    </section>
   );
 }

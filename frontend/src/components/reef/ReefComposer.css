@@ -1,0 +1,126 @@
+/* ReefComposer.css: "Share a tank update" dialog, Daylight (matches ReefDaylight.css). */
+
+.rcomp-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(11, 37, 48, 0.45);
+  backdrop-filter: blur(4px);
+}
+.rcomp {
+  --rc-teal: #0f766e;
+  --rc-tint: #e8f5f3;
+  width: 100%;
+  max-width: 540px;
+  max-height: calc(100dvh - 2rem);
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.4rem 1.5rem 1.25rem;
+  background: #fff;
+  border: 1px solid var(--line, #d7e5e9);
+  border-radius: 20px;
+  box-shadow: 0 20px 50px rgba(11, 37, 48, 0.18);
+  font-family: var(--font-body);
+  color: var(--text-primary);
+}
+.rcomp *:focus-visible { outline: 2px solid var(--rc-teal); outline-offset: 2px; }
+
+.rcomp-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+.rcomp-kicker { margin: 0 0 0.15rem; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--rc-teal); }
+.rcomp-title { margin: 0; font-family: var(--font-display); font-size: 1.35rem; font-weight: 800; line-height: 1.2; }
+.rcomp-close {
+  width: 44px; height: 44px; flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid var(--line, #d7e5e9); border-radius: 50%;
+  background: #fff; color: var(--text-secondary); font-size: 1.5rem; line-height: 1; cursor: pointer;
+}
+.rcomp-close:hover:not(:disabled) { background: #f5f9fa; color: var(--text-primary); }
+
+.rcomp-tip {
+  margin: 0; padding: 0.7rem 0.9rem; border-radius: 12px;
+  background: var(--rc-tint); color: var(--text-secondary); font-size: 0.84rem; line-height: 1.5;
+}
+
+.rcomp-field { position: relative; display: flex; flex-direction: column; gap: 0.45rem; margin: 0; padding: 0; border: 0; min-width: 0; }
+.rcomp-label { font-size: 0.86rem; font-weight: 600; color: var(--text-primary); padding: 0; }
+.rcomp-optional { font-weight: 400; color: var(--text-muted); }
+
+.rcomp-select,
+.rcomp-text {
+  width: 100%;
+  border: 1px solid var(--line, #d7e5e9);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.92rem;
+}
+.rcomp-select { min-height: 44px; padding: 0 0.8rem; }
+.rcomp-text { min-height: 120px; padding: 0.75rem 0.85rem; line-height: 1.55; resize: vertical; }
+.rcomp-select:focus,
+.rcomp-text:focus { border-color: var(--rc-teal); box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12); outline: none; }
+.rcomp-count { align-self: flex-end; font-size: 0.72rem; color: var(--text-muted); }
+
+.rcomp-reading,
+.rcomp-note { margin: 0; font-size: 0.8rem; line-height: 1.5; color: var(--text-secondary); }
+.rcomp-reading { padding: 0.55rem 0.75rem; border-radius: 10px; background: #effaf5; }
+.rcomp-reading strong { color: #047857; }
+
+.rcomp-media-actions { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+
+.rcomp-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem;
+  min-height: 44px; padding: 0 1rem;
+  border: 1px solid var(--line, #d7e5e9); border-radius: 999px;
+  background: #fff; color: var(--text-primary);
+  font: inherit; font-size: 0.86rem; font-weight: 600; cursor: pointer;
+}
+.rcomp-btn:hover:not(:disabled) { border-color: rgba(var(--ink-rgb), 0.28); background: #fbfdfd; }
+.rcomp-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.rcomp-btn--primary { background: var(--rc-teal); border-color: var(--rc-teal); color: #fff; min-width: 120px; }
+.rcomp-btn--primary:hover:not(:disabled) { background: #0d5f58; border-color: #0d5f58; }
+
+.rcomp-thumbs { display: flex; gap: 0.6rem; flex-wrap: wrap; list-style: none; margin: 0; padding: 0; }
+.rcomp-thumbs li { position: relative; width: 84px; height: 84px; }
+.rcomp-thumbs img { width: 100%; height: 100%; object-fit: cover; border-radius: 12px; border: 1px solid var(--line, #d7e5e9); }
+.rcomp-remove {
+  position: absolute; top: -8px; right: -8px;
+  width: 28px; height: 28px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 2px solid #fff; background: #b91c1c; color: #fff; font-size: 1rem; line-height: 1; cursor: pointer;
+}
+.rcomp-video { position: relative; }
+.rcomp-video video { width: 100%; max-height: 220px; object-fit: cover; border-radius: 14px; border: 1px solid var(--line, #d7e5e9); }
+.rcomp-video .rcomp-remove { top: 8px; right: 8px; }
+.rcomp-duration { position: absolute; bottom: 8px; right: 8px; padding: 2px 8px; border-radius: 999px; background: rgba(0, 0, 0, 0.65); color: #fff; font-size: 0.72rem; }
+
+.rcomp-chips { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+.rcomp-chip {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  min-height: 40px; padding: 0 0.9rem;
+  border: 1px solid var(--line, #d7e5e9); border-radius: 999px;
+  background: #fff; color: var(--text-secondary);
+  font: inherit; font-size: 0.82rem; font-weight: 600; cursor: pointer;
+}
+.rcomp-chip[aria-pressed="true"],
+.rcomp-chip--radio:has(input:checked) { background: var(--rc-tint); border-color: rgba(15, 118, 110, 0.35); color: var(--rc-teal); }
+.rcomp-chip--radio input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.rcomp-chip--radio:has(input:focus-visible) { outline: 2px solid var(--rc-teal); outline-offset: 2px; }
+
+.rcomp-error { margin: 0; padding: 0.6rem 0.8rem; border-radius: 10px; background: #fef2f2; color: #b91c1c; font-size: 0.84rem; }
+.rcomp-progress { height: 6px; border-radius: 999px; background: #e6eef0; overflow: hidden; }
+.rcomp-progress span { display: block; height: 100%; background: var(--rc-teal); transition: width 0.2s ease; }
+
+.rcomp-actions { display: flex; justify-content: flex-end; gap: 0.5rem; padding-top: 0.25rem; }
+
+@media (max-width: 560px) {
+  .rcomp-backdrop { padding: 0; align-items: flex-end; }
+  .rcomp { max-width: none; max-height: 92dvh; border-radius: 20px 20px 0 0; padding-bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px)); }
+  .rcomp-actions .rcomp-btn { flex: 1; }
+}

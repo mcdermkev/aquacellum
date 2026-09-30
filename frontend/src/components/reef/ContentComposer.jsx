@@ -1,7 +1,7 @@
 /**
  * ContentComposer.jsx
  * 
- * Modal/drawer for creating a new Tank Current.
+ * The "Share a tank update" dialog (a post is a "current" in the data).
  * Features: tank selector, caption, photo upload (max 4), parameter snapshot,
  * species tags, visibility control.
  */
@@ -17,6 +17,7 @@ import { VideoRecorder } from "../video/VideoRecorder";
 import { SPECIES_SECTIONS } from "../../constants/speciesSections";
 import { useUnitPrefs } from "../../hooks/useUnitPrefs";
 import { formatTemperature } from "../../utils/units";
+import "./ReefComposer.css";
 
 const MAX_PHOTOS = 4;
 const MAX_BODY_LENGTH = 2000;
@@ -58,13 +59,10 @@ export function ContentComposer({ isOpen, onClose, onSuccess, casualModeActive =
           if (matched) {
             setSelectedTank(matched);
 
-            // Pre-populate tone-adapted copy
-            const volumeGal = (matched.volumeLiters * 0.264172).toFixed(0);
-            if (casualModeActive) {
-              setBody(`Just launched my new ${volumeGal} gallon aquarium! Target parameters are looking stable, ready to watch it grow. Happy to join the community! 🐠🌊`);
-            } else {
-              setBody(`Primary Containment Unit (${volumeGal}G) setup complete. Target water chemistry parameters logged. Node operational. 🧬`);
-            }
+            // A starting line from what we actually know (the tank's size).
+            // No claims about water quality: the keeper adds those.
+            const volumeGal = Math.round(Number(matched.volumeLiters) * 0.264172);
+            setBody(volumeGal > 0 ? `Just set up a new ${volumeGal} gallon tank.` : "Just set up a new tank.");
           }
         }
       })
@@ -150,7 +148,7 @@ export function ContentComposer({ isOpen, onClose, onSuccess, casualModeActive =
     try {
       const meta = await getVideoMetadata(file);
       if (meta.duration > getMaxVideoDuration()) {
-        setError(`Video is ${Math.round(meta.duration)}s — max is ${getMaxVideoDuration()}s. Please trim it.`);
+        setError(`Video is ${Math.round(meta.duration)}s. The limit is ${getMaxVideoDuration()}s, so please trim it.`);
         return;
       }
 
@@ -298,481 +296,219 @@ export function ContentComposer({ isOpen, onClose, onSuccess, casualModeActive =
     onClose();
   };
 
+  // Escape closes; focus lands in the text box when the composer opens.
+  const textRef = useRef(null);
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    const onKey = (e) => { if (e.key === "Escape") handleClose(); };
+    document.addEventListener("keydown", onKey);
+    const t = setTimeout(() => textRef.current?.focus(), 50);
+    return () => { document.removeEventListener("keydown", onKey); clearTimeout(t); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, submitting]);
+
   if (!isOpen) return null;
 
   const canSubmit = (body.trim() || photos.length > 0 || video) && !submitting;
+  const firstPost = (() => {
+    try { return localStorage.getItem("aquadex_posted_first_current") !== "true"; } catch { return false; }
+  })();
+  const hasReading = !!params && (params.temp != null || params.ph != null || params.nitrate != null);
+  const VISIBILITY = [
+    { value: "public", label: "Everyone", hint: "Anyone can see it on Explore" },
+    { value: "tankmates", label: "Tankmates", hint: "Only people you are connected with" },
+    { value: "private", label: "Only me", hint: "A private note in your feed" },
+  ];
 
   return createPortal(
     <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 99999,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        background: "rgba(11, 37, 48, 0.45)",
-        backdropFilter: "blur(4px)",
-      }}
+      className="rcomp-backdrop"
       onClick={(e) => { if (e.target === e.currentTarget) handleClose(); }}
-      role="dialog"
-      aria-modal="true"
-      aria-label="Create a new post"
     >
-      <div
-        className="reef-composer-modal"
-        style={{
-          width: "100%",
-          maxWidth: "520px",
-          maxHeight: "85vh",
-          overflow: "auto",
-          background: "var(--bg-secondary)",
-          border: "1px solid rgba(var(--ink-rgb), 0.13)",
-          borderRadius: "16px",
-          padding: "1.5rem",
-          display: "flex",
-          flexDirection: "column",
-          gap: "1rem",
-          boxShadow: "var(--shadow-lg)",
-        }}
-      >
-        {/* Header */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <h3 style={{ margin: 0, fontSize: "1rem", fontWeight: 700, color: "var(--text-primary)" }}>
-            {casualModeActive ? "🪸 Share a Tank Update" : "New Current"}
-          </h3>
-          <button
-            onClick={handleClose}
-            style={{
-              background: "none",
-              border: "none",
-              color: "var(--text-muted)",
-              fontSize: "1.2rem",
-              cursor: "pointer",
-              padding: "0.25rem",
-            }}
-            aria-label="Close"
-          >
-            ✕
+      <div className="rcomp" role="dialog" aria-modal="true" aria-labelledby="rcomp-title">
+        <div className="rcomp-head">
+          <div>
+            <p className="rcomp-kicker">The Reef</p>
+            <h3 className="rcomp-title" id="rcomp-title">Share a tank update</h3>
+          </div>
+          <button type="button" className="rcomp-close" onClick={handleClose} disabled={submitting} aria-label="Close">
+            <span aria-hidden="true">×</span>
           </button>
         </div>
 
-        {/* First-post pro-tip banner */}
-        {localStorage.getItem("aquadex_posted_first_current") !== "true" && (
-          <div style={{
-            padding: "0.6rem 0.85rem",
-            borderRadius: "8px",
-            border: casualModeActive 
-              ? "1px solid rgba(56, 189, 248, 0.2)" 
-              : "1px solid rgba(168, 85, 247, 0.25)",
-            background: casualModeActive 
-              ? "rgba(56, 189, 248, 0.04)" 
-              : "rgba(168, 85, 247, 0.04)",
-            fontSize: "0.75rem",
-            color: "var(--text-secondary)",
-            lineHeight: "1.4",
-          }}>
-            {casualModeActive
-              ? "✨ Pro-tip: Linking your aquarium automatically attaches your water stats to show other keepers!"
-              : "✨ Pro-tip: Linking a containment unit attaches your water chemistry snapshot to the feed log!"}
-          </div>
+        {firstPost && tanks.length > 0 && (
+          <p className="rcomp-tip">
+            Pick one of your tanks and its latest logged water test is added to the post, so other keepers can see your numbers.
+          </p>
         )}
 
-        {/* Tank selector */}
         {tanks.length > 0 && (
-          <div>
-            <label style={{ fontSize: "0.7rem", color: "var(--text-muted)", marginBottom: "0.25rem", display: "block" }}>
-              {casualModeActive ? "Which tank?" : "Linked Tank"}
-            </label>
+          <div className="rcomp-field">
+            <label className="rcomp-label" htmlFor="rcomp-tank">Tank <span className="rcomp-optional">(optional)</span></label>
             <select
+              id="rcomp-tank"
+              className="rcomp-select"
               value={selectedTank?.id || ""}
               onChange={(e) => {
-                const tank = tanks.find((t) => t.id === e.target.value);
+                const tank = tanks.find((t) => String(t.id) === e.target.value);
                 setSelectedTank(tank || null);
               }}
-              style={{
-                width: "100%",
-                padding: "0.5rem",
-                borderRadius: "8px",
-                border: "1px solid rgba(var(--ink-rgb), 0.15)",
-                background: "rgba(var(--ink-rgb), 0.04)",
-                color: "var(--text-primary)",
-                fontSize: "0.8rem",
-              }}
             >
-              <option value="">None (general post)</option>
+              <option value="">No tank, a general post</option>
               {tanks.map((tank) => (
                 <option key={tank.id} value={tank.id}>
-                  {tank.name || `Tank ${tank.id.slice(0, 8)}`}
+                  {tank.name || `Tank ${String(tank.id).slice(0, 8)}`}
                 </option>
               ))}
             </select>
+            {selectedTank && (
+              hasReading ? (
+                <p className="rcomp-reading">
+                  <strong>Latest water test attached:</strong>{" "}
+                  {[
+                    params.temp != null && formatTemperature(params.temp, tempUnit, { parenthesizeSecond: true }),
+                    params.ph != null && `pH ${params.ph}`,
+                    params.nitrate != null && `nitrate ${params.nitrate} ppm`,
+                  ].filter(Boolean).join(", ")}
+                </p>
+              ) : (
+                <p className="rcomp-note">No water test logged for this tank yet, so no readings are attached.</p>
+              )
+            )}
           </div>
         )}
 
-        {/* Body textarea */}
-        <div>
+        <div className="rcomp-field">
+          <label className="rcomp-label" htmlFor="rcomp-body">What&apos;s happening?</label>
           <textarea
+            id="rcomp-body"
+            ref={textRef}
+            className="rcomp-text"
             value={body}
             onChange={(e) => setBody(e.target.value.slice(0, MAX_BODY_LENGTH))}
-            placeholder={casualModeActive
-              ? "What's happening in your tank today?"
-              : "Describe your observation, update, or question..."
-            }
+            placeholder="A new fish, a spawn, a question, or how the tank looks today"
             rows={4}
-            style={{
-              width: "100%",
-              resize: "vertical",
-              padding: "0.75rem",
-              borderRadius: "10px",
-              border: "1px solid rgba(var(--ink-rgb), 0.13)",
-              background: "rgba(var(--ink-rgb), 0.03)",
-              color: "var(--text-primary)",
-              fontSize: "0.85rem",
-              lineHeight: "1.6",
-              fontFamily: "inherit",
-              outline: "none",
-              minHeight: "100px",
-            }}
-            onFocus={(e) => { e.target.style.borderColor = "rgba(56, 189, 248, 0.3)"; }}
-            onBlur={(e) => { e.target.style.borderColor = "rgba(var(--ink-rgb), 0.13)"; }}
           />
-          <span style={{ fontSize: "0.6rem", color: "var(--text-muted)", float: "right" }}>
-            {body.length}/{MAX_BODY_LENGTH}
-          </span>
+          <span className="rcomp-count" aria-live="polite">{body.length}/{MAX_BODY_LENGTH}</span>
         </div>
 
-        {/* Photo upload */}
-        <div>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.5rem" }}>
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              disabled={photos.length >= MAX_PHOTOS || !!video}
-              style={{
-                padding: "0.4rem 0.75rem",
-                borderRadius: "8px",
-                border: "1px solid rgba(var(--ink-rgb), 0.15)",
-                background: "rgba(var(--ink-rgb), 0.04)",
-                color: photos.length >= MAX_PHOTOS || video ? "var(--text-muted)" : "var(--text-primary)",
-                fontSize: "0.75rem",
-                cursor: photos.length >= MAX_PHOTOS || video ? "default" : "pointer",
-              }}
-            >
-              📷 Add Photos ({photos.length}/{MAX_PHOTOS})
-            </button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/jpeg,image/png,image/webp,image/gif"
-              multiple
-              onChange={handlePhotoSelect}
-              style={{ display: "none" }}
-              aria-label="Select photos"
-            />
-          </div>
-
-          {/* Photo previews */}
-          {photos.length > 0 && (
-            <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-              {photos.map((photo, i) => (
-                <div key={i} style={{ position: "relative", width: "72px", height: "72px" }}>
-                  <img
-                    src={photo.previewUrl}
-                    alt={`Upload ${i + 1}`}
-                    style={{
-                      width: "100%",
-                      height: "100%",
-                      objectFit: "cover",
-                      borderRadius: "8px",
-                      border: "1px solid rgba(var(--ink-rgb), 0.15)",
-                    }}
-                  />
-                  <button
-                    onClick={() => handleRemovePhoto(i)}
-                    style={{
-                      position: "absolute",
-                      top: "-4px",
-                      right: "-4px",
-                      width: "18px",
-                      height: "18px",
-                      borderRadius: "50%",
-                      background: "rgba(239, 68, 68, 0.9)",
-                      border: "none",
-                      color: "#fff",
-                      fontSize: "0.6rem",
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                    aria-label={`Remove photo ${i + 1}`}
-                  >
-                    ✕
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Video upload */}
-        <div>
-          {!video && photos.length === 0 && !showRecorder && (
-            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+        <div className="rcomp-field">
+          <span className="rcomp-label">Photos or a video <span className="rcomp-optional">(optional)</span></span>
+          {!showRecorder && !video && (
+            <div className="rcomp-media-actions">
               <button
-                onClick={() => videoInputRef.current?.click()}
-                style={{
-                  padding: "0.4rem 0.75rem",
-                  borderRadius: "8px",
-                  border: "1px solid rgba(var(--ink-rgb), 0.15)",
-                  background: "rgba(var(--ink-rgb), 0.04)",
-                  color: "var(--text-primary)",
-                  fontSize: "0.75rem",
-                  cursor: "pointer",
-                }}
+                type="button"
+                className="rcomp-btn"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={photos.length >= MAX_PHOTOS}
               >
-                🎬 Add Video
+                Add photos ({photos.length}/{MAX_PHOTOS})
               </button>
-              <button
-                onClick={() => setShowRecorder(true)}
-                style={{
-                  padding: "0.4rem 0.75rem",
-                  borderRadius: "8px",
-                  border: "1px solid rgba(var(--ink-rgb), 0.15)",
-                  background: "rgba(var(--ink-rgb), 0.04)",
-                  color: "var(--text-primary)",
-                  fontSize: "0.75rem",
-                  cursor: "pointer",
-                }}
-              >
-                ⏺️ Record
-              </button>
-              <input
-                ref={videoInputRef}
-                type="file"
-                accept="video/mp4,video/webm,video/quicktime,video/x-m4v"
-                onChange={handleVideoSelect}
-                style={{ display: "none" }}
-                aria-label="Select video"
-              />
-              <span style={{ fontSize: "0.6rem", color: "var(--text-muted)" }}>
-                Max {getMaxVideoDuration()}s
-              </span>
-            </div>
-          )}
-
-          {/* Video recorder */}
-          {showRecorder && (
-            <VideoRecorder
-              onRecorded={handleVideoRecorded}
-              onCancel={() => setShowRecorder(false)}
-            />
-          )}
-
-          {/* Video preview */}
-          {video && (
-            <div style={{ position: "relative", borderRadius: "10px", overflow: "hidden" }}>
-              <video
-                src={video.previewUrl}
-                style={{
-                  width: "100%",
-                  maxHeight: "200px",
-                  objectFit: "cover",
-                  borderRadius: "10px",
-                  border: "1px solid rgba(var(--ink-rgb), 0.15)",
-                }}
-                muted
-                playsInline
-                preload="metadata"
-              />
-              {/* Duration badge */}
-              {video.duration > 0 && (
-                <span style={{
-                  position: "absolute",
-                  bottom: "8px",
-                  right: "8px",
-                  padding: "2px 6px",
-                  borderRadius: "4px",
-                  background: "rgba(0, 0, 0, 0.7)",
-                  fontSize: "0.65rem",
-                  color: "#fff",
-                }}>
-                  🎬 {video.duration}s
-                </span>
+              {photos.length === 0 && (
+                <>
+                  <button type="button" className="rcomp-btn" onClick={() => videoInputRef.current?.click()}>Add a video</button>
+                  <button type="button" className="rcomp-btn" onClick={() => setShowRecorder(true)}>Record</button>
+                  <span className="rcomp-note">Videos up to {getMaxVideoDuration()} seconds</span>
+                </>
               )}
-              {/* Remove button */}
-              <button
-                onClick={handleRemoveVideo}
-                style={{
-                  position: "absolute",
-                  top: "6px",
-                  right: "6px",
-                  width: "22px",
-                  height: "22px",
-                  borderRadius: "50%",
-                  background: "rgba(239, 68, 68, 0.9)",
-                  border: "none",
-                  color: "#fff",
-                  fontSize: "0.7rem",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-                aria-label="Remove video"
-              >
-                ✕
+            </div>
+          )}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            multiple
+            onChange={handlePhotoSelect}
+            hidden
+            aria-label="Select photos"
+          />
+          <input
+            ref={videoInputRef}
+            type="file"
+            accept="video/mp4,video/webm,video/quicktime,video/x-m4v"
+            onChange={handleVideoSelect}
+            hidden
+            aria-label="Select video"
+          />
+
+          {photos.length > 0 && (
+            <ul className="rcomp-thumbs">
+              {photos.map((photo, i) => (
+                <li key={photo.previewUrl}>
+                  <img src={photo.previewUrl} alt={`Photo ${i + 1} to upload`} />
+                  <button type="button" className="rcomp-remove" onClick={() => handleRemovePhoto(i)} aria-label={`Remove photo ${i + 1}`}>
+                    <span aria-hidden="true">×</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {showRecorder && (
+            <VideoRecorder onRecorded={handleVideoRecorded} onCancel={() => setShowRecorder(false)} />
+          )}
+
+          {video && (
+            <div className="rcomp-video">
+              <video src={video.previewUrl} muted playsInline preload="metadata" />
+              {video.duration > 0 && <span className="rcomp-duration">{video.duration}s</span>}
+              <button type="button" className="rcomp-remove" onClick={handleRemoveVideo} aria-label="Remove video">
+                <span aria-hidden="true">×</span>
               </button>
             </div>
           )}
         </div>
 
-        {/* Parameters snapshot (auto-detected) */}
-        {params && (
-          <div style={{
-            padding: "0.5rem 0.75rem",
-            borderRadius: "8px",
-            background: "rgba(52, 211, 153, 0.05)",
-            border: "1px solid rgba(52, 211, 153, 0.1)",
-            fontSize: "0.7rem",
-            color: "var(--text-secondary)",
-          }}>
-            <span style={{ fontWeight: 600, color: "var(--accent-green, #34d399)" }}>📊 Latest params attached:</span>{" "}
-            {params.temp && formatTemperature(params.temp, tempUnit, { parenthesizeSecond: true })}
-            {params.ph && ` • pH ${params.ph}`}
-            {params.nitrate && ` • NO₃ ${params.nitrate}ppm`}
-          </div>
-        )}
-
-        {/* Visibility */}
-        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-          <label style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>Visible to:</label>
-          <div style={{ display: "flex", gap: "0.35rem" }}>
-            {[
-              { value: "public", label: "🌍 Everyone" },
-              { value: "tankmates", label: "🤝 Tankmates" },
-              { value: "private", label: "🔒 Only me" },
-            ].map((opt) => (
-              <button
-                key={opt.value}
-                onClick={() => setVisibility(opt.value)}
-                style={{
-                  padding: "0.25rem 0.5rem",
-                  borderRadius: "50px",
-                  border: visibility === opt.value
-                    ? "1px solid rgba(56, 189, 248, 0.4)"
-                    : "1px solid rgba(var(--ink-rgb), 0.13)",
-                  background: visibility === opt.value
-                    ? "rgba(56, 189, 248, 0.1)"
-                    : "transparent",
-                  color: visibility === opt.value ? "var(--text-primary)" : "var(--text-muted)",
-                  fontSize: "0.65rem",
-                  cursor: "pointer",
-                }}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Section picker — "What's this about?" */}
         {speciesTags.length > 0 && (
-          <div>
-            <label style={{ fontSize: "0.7rem", color: "var(--text-muted)", marginBottom: "0.3rem", display: "block" }}>
-              {casualModeActive ? "What's this about?" : "Section (routes to species page)"}
-            </label>
-            <div style={{ display: "flex", gap: "0.3rem", flexWrap: "wrap" }}>
-              <button
-                onClick={() => setSection(null)}
-                style={{
-                  padding: "0.25rem 0.55rem",
-                  borderRadius: "50px",
-                  border: section === null
-                    ? "1px solid rgba(var(--ink-rgb), 0.25)"
-                    : "1px solid rgba(var(--ink-rgb), 0.13)",
-                  background: section === null ? "rgba(var(--ink-rgb), 0.08)" : "transparent",
-                  color: section === null ? "var(--text-primary)" : "var(--text-muted)",
-                  fontSize: "0.62rem",
-                  cursor: "pointer",
-                  transition: "all 0.15s ease",
-                }}
-              >
-                General
-              </button>
+          <div className="rcomp-field">
+            <span className="rcomp-label">What is it about?</span>
+            <div className="rcomp-chips">
+              <button type="button" className="rcomp-chip" aria-pressed={section === null} onClick={() => setSection(null)}>General</button>
               {SPECIES_SECTIONS.map((sec) => (
-                <button
-                  key={sec.id}
-                  onClick={() => setSection(sec.id)}
-                  style={{
-                    padding: "0.25rem 0.55rem",
-                    borderRadius: "50px",
-                    border: section === sec.id
-                      ? `1px solid ${sec.color}`
-                      : "1px solid rgba(var(--ink-rgb), 0.13)",
-                    background: section === sec.id ? `${sec.color}18` : "transparent",
-                    color: section === sec.id ? sec.color : "var(--text-muted)",
-                    fontSize: "0.62rem",
-                    cursor: "pointer",
-                    transition: "all 0.15s ease",
-                  }}
-                  title={sec.description}
-                >
-                  {sec.icon} {sec.label}
+                <button key={sec.id} type="button" className="rcomp-chip" aria-pressed={section === sec.id} onClick={() => setSection(sec.id)} title={sec.description}>
+                  {sec.label}
                 </button>
               ))}
             </div>
           </div>
         )}
 
-        {/* Error message */}
-        {error && (
-          <p style={{ margin: 0, fontSize: "0.75rem", color: "var(--accent-red, #f87171)" }}>
-            ⚠️ {error}
-          </p>
-        )}
+        <fieldset className="rcomp-field rcomp-visibility">
+          <legend className="rcomp-label">Who can see it</legend>
+          <div className="rcomp-chips">
+            {VISIBILITY.map((opt) => (
+              <label key={opt.value} className="rcomp-chip rcomp-chip--radio" title={opt.hint}>
+                <input
+                  type="radio"
+                  name="rcomp-visibility"
+                  value={opt.value}
+                  checked={visibility === opt.value}
+                  onChange={() => setVisibility(opt.value)}
+                />
+                {opt.label}
+              </label>
+            ))}
+          </div>
+          <p className="rcomp-note">{VISIBILITY.find((o) => o.value === visibility)?.hint}</p>
+        </fieldset>
 
-        {/* Upload progress */}
+        {error && <p className="rcomp-error" role="alert">{error}</p>}
+
         {uploadProgress !== null && uploadProgress < 100 && (
-          <div style={{ width: "100%", height: "3px", background: "rgba(var(--ink-rgb), 0.05)", borderRadius: "2px" }}>
-            <div style={{
-              width: `${uploadProgress}%`,
-              height: "100%",
-              background: "var(--accent-blue, #38bdf8)",
-              borderRadius: "2px",
-              transition: "width 0.2s ease",
-            }} />
+          <div className="rcomp-progress" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={uploadProgress} aria-label="Upload progress">
+            <span style={{ width: `${uploadProgress}%` }} />
           </div>
         )}
 
-        {/* Submit button */}
-        <button
-          onClick={handleSubmit}
-          disabled={!canSubmit}
-          style={{
-            width: "100%",
-            padding: "0.7rem",
-            borderRadius: "10px",
-            border: "none",
-            background: canSubmit
-              ? "linear-gradient(135deg, #0ea5e9, #0369a1)"
-              : "rgba(var(--ink-rgb), 0.05)",
-            color: canSubmit ? "#fff" : "var(--text-muted)",
-            fontSize: "0.85rem",
-            fontWeight: 600,
-            cursor: canSubmit ? "pointer" : "default",
-            transition: "all 0.2s ease",
-            opacity: submitting ? 0.7 : 1,
-          }}
-        >
-          {submitting ? "Posting..." : casualModeActive ? "🪸 Share Update" : "Post Current"}
-        </button>
+        <div className="rcomp-actions">
+          <button type="button" className="rcomp-btn" onClick={handleClose} disabled={submitting}>Cancel</button>
+          <button type="button" className="rcomp-btn rcomp-btn--primary" onClick={handleSubmit} disabled={!canSubmit} aria-busy={submitting}>
+            {submitting ? "Posting…" : "Post"}
+          </button>
+        </div>
 
-        {/* Not configured warning */}
         {!isSupabaseConfigured() && (
-          <p style={{ margin: 0, fontSize: "0.65rem", color: "var(--text-muted)", textAlign: "center" }}>
-            ⚠️ Social features are in preview mode — Supabase not yet configured.
-          </p>
+          <p className="rcomp-note">Posting isn&apos;t connected in this build, so nothing will be saved.</p>
         )}
       </div>
     </div>,
