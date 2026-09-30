@@ -22,6 +22,7 @@ import { vertexGenerateContent, isVertexConfigured } from './_lib/vertexClient.j
 import { modelFor, configuredModels, expiringModels, AI_TASKS } from './_lib/aiModels.js';
 import { handleCorsPreFlight, setCorsHeaders } from './_lib/cors.js';
 import { buildSpeciesContext } from './_lib/speciesIndex.js';
+import { realCareText } from '../src/services/speciesCare.js';
 import { enforcePoseidonLimit, POSEIDON_RATE } from './_lib/aiRateLimit.js';
 import {
   POSEIDON_LIMITS,
@@ -648,8 +649,10 @@ function sanitizeGroundingFacts(raw = {}) {
       if (Number.isFinite(Number(value))) out[key] = Number(value);
       continue;
     }
-    // Remaining fields are short descriptive strings.
-    const str = String(value).slice(0, 300).trim();
+    // Remaining fields are short descriptive strings. Placeholders such as
+    // "Information arriving soon", "Generic Biotope Details" or an "unknown"
+    // temperament are not facts, so the line is omitted.
+    const str = realCareText(String(value).slice(0, 300).trim());
     if (str) out[key] = str;
   }
   return out;

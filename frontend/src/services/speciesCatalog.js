@@ -41,10 +41,12 @@
  *      exposed separately on `entry.profile` (via `normalizeSpeciesProfile`) so
  *      the compatibility engine never scores against fabricated data.
  *
- * Pure and dependency-light (only composes the Tier-A `normalizeSpeciesProfile`).
+ * Pure and dependency-light (composes the Tier-A `normalizeSpeciesProfile` and
+ * the duplicate filter in `catalogAliases.js`).
  */
 
 import { normalizeSpeciesProfile } from "./shippingSafety.js";
+import { visibleCatalog } from "./catalogAliases.js";
 
 // ─── Canonical difficulty model ──────────────────────────────────────────────
 //
@@ -211,6 +213,9 @@ export function toCatalogEntry(record = {}) {
  * Build the de-duplicated in-app global catalog from curated records. Matches
  * `globalRefList`'s dedup: first occurrence wins, keyed on lowercased
  * scientificName and on specCode. Records without a scientificName are skipped.
+ * Records marked `duplicateOf` another record are dropped first
+ * (catalogAliases.js visibleCatalog), so a species listed under an old name
+ * appears once, under its current name.
  * @param {Array} records
  * @returns {Array} catalog entries
  */
@@ -221,7 +226,7 @@ export function buildGlobalCatalog(records = []) {
   const seenCodes = new Set();
   const catalog = [];
 
-  for (const item of records) {
+  for (const item of visibleCatalog(records)) {
     if (!item || !item.scientificName) continue;
     const nameLower = item.scientificName.toLowerCase();
     if (seenNames.has(nameLower) || seenCodes.has(item.specCode)) continue;

@@ -21,6 +21,7 @@
  * Ties broken by deterministic hash to ensure even distribution.
  */
 import { useMemo } from "react";
+import { realRange } from "../../services/speciesCare";
 
 // --- Biome scoring rules ---
 
@@ -132,11 +133,15 @@ function classifySpecies(species) {
   const biotope = (species.ecology?.biotope || "").toLowerCase();
   const comments = (species.ecology?.comments || "").toLowerCase();
   const combined = biotope + " " + comments;
-  const phMin = species.ecology?.phMin ?? species.tankMetrics?.phRange?.[0] ?? 7;
-  const phMax = species.ecology?.phMax ?? species.tankMetrics?.phRange?.[1] ?? 7.5;
-  const phMid = (phMin + phMax) / 2;
-  const tempRange = species.tankMetrics?.tempRangeCelsius || [24, 28];
-  const tempMid = (tempRange[0] + tempRange[1]) / 2;
+  // Unknown pH / temperature add no points (NaN fails every comparison
+  // below) rather than scoring an invented neutral default.
+  const phRange = realRange(
+    species.ecology?.phMin ?? species.tankMetrics?.phRange?.[0],
+    species.ecology?.phMax ?? species.tankMetrics?.phRange?.[1]
+  );
+  const phMid = phRange ? (phRange[0] + phRange[1]) / 2 : NaN;
+  const tempRange = realRange(species.tankMetrics?.tempRangeCelsius?.[0], species.tankMetrics?.tempRangeCelsius?.[1]);
+  const tempMid = tempRange ? (tempRange[0] + tempRange[1]) / 2 : NaN;
   const maxLen = species.maxLengthCm || 8;
   const social = (species.ecology?.socialBehavior || "").toLowerCase();
 

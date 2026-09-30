@@ -11,6 +11,8 @@
  * and remain fully editable by the seller.
  */
 
+import { resolveRecord } from "../services/catalogAliases.js";
+
 let _lookup = null;
 let _loadingPromise = null;
 
@@ -46,7 +48,8 @@ export async function loadSpeciesCareLookup() {
       const map = new Map();
       for (const entry of data) {
         if (entry?.scientificName) {
-          map.set(entry.scientificName.toLowerCase(), entry.tankMetrics || {});
+          // An older-name duplicate (duplicateOf) uses the canonical record's care data.
+          map.set(entry.scientificName.toLowerCase(), resolveRecord(entry, data).tankMetrics || {});
         }
       }
       _lookup = map;

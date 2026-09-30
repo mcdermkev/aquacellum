@@ -17,6 +17,7 @@
 
 import { evaluateTankFit, tankWaterType } from "./addOnRecommender.js";
 import { normalizeSpeciesProfile } from "./shippingSafety.js";
+import { resolveSpecies } from "./catalogAliases.js";
 
 const LITERS_TO_GALLONS = 0.264172;
 
@@ -61,7 +62,10 @@ export function deriveSpeciesProfile(ref, fishbaseData = [], contractSpecies = [
   const idMatch = (x) => Number(x?.speciesId ?? x?.specCode) === Number(ref.speciesId);
   const nameMatch = (x) => x?.commonName && ref.commonName && x.commonName === ref.commonName;
   const contract = contractSpecies.find((c) => idMatch(c) || nameMatch(c));
-  const fb = fishbaseData.find((f) => idMatch(f) || nameMatch(f));
+  // Catalog lookups resolve duplicate IDs (e.g. 70002 -> 12370), so fish saved
+  // under an old record still get the current record's care data.
+  const fb = (ref.speciesId != null ? resolveSpecies(ref.speciesId, fishbaseData) : null)
+    || fishbaseData.find((f) => idMatch(f) || nameMatch(f));
   // Merge so the normalizer sees both fishbase tankMetrics and the contract's
   // min/max temp/pH fields; contract wins on key collisions.
   const merged = { commonName: ref.commonName, speciesId: ref.speciesId, ...(fb || {}), ...(contract || {}) };

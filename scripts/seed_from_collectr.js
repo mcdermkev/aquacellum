@@ -318,30 +318,34 @@ async function main() {
           specCode: 10000 + finalSpeciesId,
           scientificName: prep.record.scientific_name,
           commonName: prep.record.common_name,
-          family: prep.record.family || prep.record.family_name || "Information arriving soon",
+          // Real data only: a field the source does not carry is written as
+          // null, never a default. The old defaults ("5 - 15 dGH", "Omnivore",
+          // "Information arriving soon", ...) were read back as facts; see
+          // scripts/strip-seed-defaults.mjs.
+          family: prep.record.family || prep.record.family_name || null,
           tankMetrics: {
             tempRangeCelsius: [prep.record.min_temp, prep.record.max_temp],
             phRange: [prep.record.min_ph, prep.record.max_ph],
             difficulty: prep.record.difficulty
           },
           ecology: {
-            comments: prep.record.comments || prep.record.ecology_comments || "Information arriving soon",
-            biotope: prep.record.biotope || "Generic Biotope Details",
+            comments: prep.record.comments || prep.record.ecology_comments || null,
+            biotope: prep.record.biotope || null,
             phMin: prep.record.min_ph,
             phMax: prep.record.max_ph,
-            hardnessRange: prep.record.hardness_range || "5 - 15 dGH",
+            hardnessRange: prep.record.hardness_range || null,
             tempCeiling: prep.record.max_temp,
-            socialBehavior: prep.record.social_behavior || prep.record.socialBehavior || "Information arriving soon"
+            socialBehavior: prep.record.social_behavior || prep.record.socialBehavior || null
           },
           diet: {
-            trophicLevel: prep.record.trophic_level || prep.record.trophicLevel || "Omnivore",
-            fooditems: prep.record.food_items || prep.record.fooditems || "Information arriving soon",
-            feedingPlaybook: prep.record.feeding_playbook || prep.record.feedingPlaybook || "Information arriving soon"
+            trophicLevel: prep.record.trophic_level || prep.record.trophicLevel || null,
+            fooditems: prep.record.food_items || prep.record.fooditems || null,
+            feedingPlaybook: prep.record.feeding_playbook || prep.record.feedingPlaybook || null
           },
           reproduction: {
-            spawningTrait: prep.record.spawning_trait || prep.record.spawningTrait || "Information arriving soon",
-            layoutRequirement: prep.record.layout_requirement || prep.record.layoutRequirement || "Information arriving soon",
-            comments: prep.record.reproduction_comments || prep.record.reproductionComments || "Information arriving soon"
+            spawningTrait: prep.record.spawning_trait || prep.record.spawningTrait || null,
+            layoutRequirement: prep.record.layout_requirement || prep.record.layoutRequirement || null,
+            comments: prep.record.reproduction_comments || prep.record.reproductionComments || null
           }
         };
 

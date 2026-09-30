@@ -30,6 +30,7 @@ import { resolveSpecimenPhoto } from "../services/tankMedia";
 import { useUnitPrefs } from "../hooks/useUnitPrefs";
 import { formatTemperature, formatTemperatureRange, resolveTempScale } from "../utils/units";
 import { SexingGuide } from "./SexingGuide";
+import { CARE_NOT_RECORDED, checkRange, entryCareRanges, realCareNumber, realCareText, realRange } from "../services/speciesCare";
 
 // Compatibility ring/label hue per honest fit verdict (Fish Finder T2). Driven
 // by verdict rather than raw score so an unknown-data "caution" never shows a
@@ -757,6 +758,24 @@ export function BreedGallery({
     ) || {};
     const mode = casualModeActive ? "casual" : "pro";
     const personalityFlavorText = getPersonality(fullProfile, mode).flavorText;
+    // Recorded ranges only. A global entry's flat minPh / maxPh / minTemp /
+    // maxTemp fall back to display defaults, so they are never used as data
+    // here (services/speciesCare.js entryCareRanges).
+    const { tempRange: breedTempRange, phRange: breedPhRange } = entryCareRanges(selectedBreed);
+    const breedTempText = breedTempRange
+      ? formatTemperatureRange(breedTempRange[0], breedTempRange[1], tempScale.scale, { dash: " - " })
+      : CARE_NOT_RECORDED;
+    const breedPhText = breedPhRange ? `${breedPhRange[0]} - ${breedPhRange[1]}` : CARE_NOT_RECORDED;
+    const phCheck = checkRange(simPh, breedPhRange);
+    const tempCheck = checkRange(simTemp, breedTempRange);
+    const checkIcon = (state) => (state === "pass" ? "🟢" : state === "fail" ? "🔴" : "⚪");
+    const biotopeText = realCareText(fullProfile.ecology?.biotope);
+    const hardnessText = realCareText(fullProfile.ecology?.hardnessRange);
+    const tempCeiling = realCareNumber(fullProfile.ecology?.tempCeiling) ?? breedTempRange?.[1] ?? null;
+    const socialText = realCareText(fullProfile.ecology?.socialBehavior);
+    const spawningText = realCareText(fullProfile.reproduction?.spawningTrait);
+    const layoutText = realCareText(fullProfile.reproduction?.layoutRequirement);
+    const reproNotesText = realCareText(fullProfile.reproduction?.comments);
     const radius = 40;
     const strokeWidth = 8;
     const circumference = 2 * Math.PI * radius;
@@ -799,11 +818,13 @@ export function BreedGallery({
             </div>
             <div>
               <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", display: "block", textTransform: "uppercase" }}>Temperature</span>
-              <strong style={{ fontSize: "0.9rem", color: "var(--text-primary)" }}>{formatTemperatureRange(selectedBreed.minTemp, selectedBreed.maxTemp, tempUnit, { dash: " - " })}</strong>
+              <strong style={{ fontSize: "0.9rem", color: breedTempRange ? "var(--text-primary)" : "var(--text-muted)" }}>
+                {breedTempRange ? formatTemperatureRange(breedTempRange[0], breedTempRange[1], tempUnit, { dash: " - " }) : CARE_NOT_RECORDED}
+              </strong>
             </div>
             <div>
               <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", display: "block", textTransform: "uppercase" }}>pH Range</span>
-              <strong style={{ fontSize: "0.9rem", color: "var(--text-primary)" }}>{selectedBreed.minPh} - {selectedBreed.maxPh}</strong>
+              <strong style={{ fontSize: "0.9rem", color: breedPhRange ? "var(--text-primary)" : "var(--text-muted)" }}>{breedPhText}</strong>
             </div>
             <div>
               <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", display: "block", textTransform: "uppercase" }}>Min Tank</span>
@@ -1411,7 +1432,7 @@ export function BreedGallery({
                   />
                   <div style={{ fontSize: "0.65rem", color: "var(--text-muted)", marginTop: "0.25rem", display: "flex", justifyContent: "space-between" }}>
                     <span>4.0 pH</span>
-                    <span>Ideal: {selectedBreed.minPh} - {selectedBreed.maxPh}</span>
+                    <span>Ideal: {breedPhText}</span>
                     <span>10.0 pH</span>
                   </div>
                 </div>
@@ -1435,7 +1456,7 @@ export function BreedGallery({
                     {/* The slider's domain stays 15–35 °C; only these end labels
                         are converted, so the input value never changes meaning. */}
                     <span>{tempScale.convert(15).toFixed(1)} {tempScale.suffix}</span>
-                    <span>Ideal: {formatTemperatureRange(selectedBreed.minTemp, selectedBreed.maxTemp, tempScale.scale, { dash: " - " })}</span>
+                    <span>Ideal: {breedTempText}</span>
                     <span>{tempScale.convert(35).toFixed(1)} {tempScale.suffix}</span>
                   </div>
                 </div>
@@ -1469,20 +1490,26 @@ export function BreedGallery({
                       : (simVolume >= minVol ? `Volume is sufficient (>= ${minVol} gal)` : `Volume too low (need >= ${minVol} gal)`)}
                   </span>
                 </li>
+                {/* pH and temperature: a species with no recorded range is
+                    "not recorded", never a pass against a default. */}
                 <li style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                  <span>{(simPh >= selectedBreed.minPh && simPh <= selectedBreed.maxPh) ? "🟢" : "🔴"}</span>
-                  <span style={{ color: (simPh >= selectedBreed.minPh && simPh <= selectedBreed.maxPh) ? "var(--text-primary)" : "var(--text-muted)" }}>
-                    {(simPh >= selectedBreed.minPh && simPh <= selectedBreed.maxPh) 
-                      ? `pH is within safe limits (${selectedBreed.minPh} - ${selectedBreed.maxPh})` 
-                      : `pH is out of range (${selectedBreed.minPh} - ${selectedBreed.maxPh})`}
+                  <span>{checkIcon(phCheck)}</span>
+                  <span style={{ color: phCheck === "pass" ? "var(--text-primary)" : "var(--text-muted)" }}>
+                    {phCheck === "unknown"
+                      ? "pH range not recorded for this species"
+                      : phCheck === "pass"
+                        ? `pH is within safe limits (${breedPhText})`
+                        : `pH is out of range (${breedPhText})`}
                   </span>
                 </li>
                 <li style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                  <span>{(simTemp >= selectedBreed.minTemp && simTemp <= selectedBreed.maxTemp) ? "🟢" : "🔴"}</span>
-                  <span style={{ color: (simTemp >= selectedBreed.minTemp && simTemp <= selectedBreed.maxTemp) ? "var(--text-primary)" : "var(--text-muted)" }}>
-                    {(simTemp >= selectedBreed.minTemp && simTemp <= selectedBreed.maxTemp) 
-                      ? `Temp is within safe limits (${formatTemperatureRange(selectedBreed.minTemp, selectedBreed.maxTemp, tempScale.scale, { dash: " - " })})` 
-                      : `Temp is out of range (${formatTemperatureRange(selectedBreed.minTemp, selectedBreed.maxTemp, tempScale.scale, { dash: " - " })})`}
+                  <span>{checkIcon(tempCheck)}</span>
+                  <span style={{ color: tempCheck === "pass" ? "var(--text-primary)" : "var(--text-muted)" }}>
+                    {tempCheck === "unknown"
+                      ? "Temperature range not recorded for this species"
+                      : tempCheck === "pass"
+                        ? `Temp is within safe limits (${breedTempText})`
+                        : `Temp is out of range (${breedTempText})`}
                   </span>
                 </li>
               </ul>
@@ -1508,15 +1535,12 @@ export function BreedGallery({
                   if (item.scientificName.toLowerCase() === selectedBreed.scientificName.toLowerCase()) {
                     return false;
                   }
-                  const minPh = item.tankMetrics?.phRange?.[0] ?? 6.5;
-                  const maxPh = item.tankMetrics?.phRange?.[1] ?? 7.5;
-                  const minTemp = item.tankMetrics?.tempRangeCelsius?.[0] ?? 22.0;
-                  const maxTemp = item.tankMetrics?.tempRangeCelsius?.[1] ?? 28.0;
-
-                  const phMatch = simPh >= (minPh - 0.3) && simPh <= (maxPh + 0.3);
-                  const tempMatch = simTemp >= (minTemp - 2.0) && simTemp <= (maxTemp + 2.0);
-
-                  return phMatch && tempMatch;
+                  // "Verified" means both ranges are on record and match. A
+                  // companion with no recorded pH or temperature is left out,
+                  // never matched against a default range.
+                  const phRange = realRange(item.tankMetrics?.phRange?.[0], item.tankMetrics?.phRange?.[1]);
+                  const tempRange = realRange(item.tankMetrics?.tempRangeCelsius?.[0], item.tankMetrics?.tempRangeCelsius?.[1]);
+                  return checkRange(simPh, phRange, 0.3) === "pass" && checkRange(simTemp, tempRange, 2.0) === "pass";
                 });
 
                 if (companions.length === 0) {
@@ -1651,36 +1675,50 @@ export function BreedGallery({
             {/* Tab Contents */}
             {activeInfoTab === "care" && (
               <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
-                <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                  <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", textTransform: "uppercase", fontWeight: "600" }}>Biotope Origin</span>
-                  <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)", lineHeight: "1.4" }}>
-                    {fullProfile.ecology?.biotope || "General freshwater aquatic biotope."}
-                  </p>
-                </div>
+                {biotopeText && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                    <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", textTransform: "uppercase", fontWeight: "600" }}>Biotope Origin</span>
+                    <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)", lineHeight: "1.4" }}>
+                      {biotopeText}
+                    </p>
+                  </div>
+                )}
 
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
                   <div>
                     <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", textTransform: "uppercase", fontWeight: "600", display: "block", marginBottom: "0.25rem" }}>Water Hardness</span>
-                    <span className="badge badge-blue" style={{ fontSize: "0.8rem", padding: "0.35rem 0.75rem" }}>
-                      {fullProfile.ecology?.hardnessRange || "5 - 15 dGH"}
-                    </span>
+                    {hardnessText ? (
+                      <span className="badge badge-blue" style={{ fontSize: "0.8rem", padding: "0.35rem 0.75rem" }}>
+                        {hardnessText}
+                      </span>
+                    ) : (
+                      <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>{CARE_NOT_RECORDED}</span>
+                    )}
                   </div>
                   <div>
                     <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", textTransform: "uppercase", fontWeight: "600", display: "block", marginBottom: "0.25rem" }}>Temp Ceiling</span>
-                    <span className="badge badge-red" style={{ fontSize: "0.8rem", padding: "0.35rem 0.75rem" }}>
-                      Up to {formatTemperature(fullProfile.ecology?.tempCeiling || selectedBreed.maxTemp, tempScale.scale, { precision: 0 })}
-                    </span>
+                    {tempCeiling != null ? (
+                      <span className="badge badge-red" style={{ fontSize: "0.8rem", padding: "0.35rem 0.75rem" }}>
+                        Up to {formatTemperature(tempCeiling, tempScale.scale, { precision: 0 })}
+                      </span>
+                    ) : (
+                      <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>{CARE_NOT_RECORDED}</span>
+                    )}
                   </div>
                 </div>
 
                 <div>
                   <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", textTransform: "uppercase", fontWeight: "600", display: "block", marginBottom: "0.25rem" }}>pH Envelope</span>
-                  <span className="badge badge-green" style={{ fontSize: "0.8rem", padding: "0.35rem 0.75rem" }}>
-                    {selectedBreed.minPh} - {selectedBreed.maxPh} pH
-                  </span>
+                  {breedPhRange ? (
+                    <span className="badge badge-green" style={{ fontSize: "0.8rem", padding: "0.35rem 0.75rem" }}>
+                      {breedPhText} pH
+                    </span>
+                  ) : (
+                    <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>{CARE_NOT_RECORDED}</span>
+                  )}
                 </div>
 
-                <div style={{ 
+                {socialText && <div style={{ 
                   padding: "1rem", 
                   background: "var(--accent-amber-glow)", 
                   border: "1px solid rgba(251, 191, 36, 0.2)", 
@@ -1693,9 +1731,9 @@ export function BreedGallery({
                     ⚠️ Social & Aggression Rules
                   </strong>
                   <p style={{ fontSize: "0.8rem", color: "var(--text-primary)", lineHeight: "1.4" }}>
-                    {fullProfile.ecology?.socialBehavior || "Compatible with similar temperament species."}
+                    {socialText}
                   </p>
-                </div>
+                </div>}
               </div>
             )}
 
@@ -1747,12 +1785,16 @@ export function BreedGallery({
               <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", textTransform: "uppercase", fontWeight: "600" }}>Spawning Trait</span>
-                  <span className="badge badge-amber" style={{ fontSize: "0.8rem" }}>
-                    {fullProfile.reproduction?.spawningTrait || "Egg-scatterer"}
-                  </span>
+                  {spawningText ? (
+                    <span className="badge badge-amber" style={{ fontSize: "0.8rem" }}>
+                      {spawningText}
+                    </span>
+                  ) : (
+                    <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>{CARE_NOT_RECORDED}</span>
+                  )}
                 </div>
 
-                <div style={{ 
+                {layoutText && <div style={{ 
                   padding: "1rem", 
                   background: "var(--accent-green-glow)", 
                   border: "1px solid rgba(52, 211, 153, 0.2)", 
@@ -1765,16 +1807,18 @@ export function BreedGallery({
                     🌿 Tank Decoration Requirements
                   </strong>
                   <p style={{ fontSize: "0.8rem", color: "var(--text-primary)", lineHeight: "1.4" }}>
-                    {fullProfile.reproduction?.layoutRequirement || "Java moss beds or spawning mops."}
+                    {layoutText}
                   </p>
-                </div>
+                </div>}
 
-                <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                  <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", textTransform: "uppercase", fontWeight: "600" }}>Biological Reproduction Notes</span>
-                  <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)", lineHeight: "1.4" }}>
-                    {fullProfile.reproduction?.comments || "Egg scattering species. Separate hatchery tank recommended."}
-                  </p>
-                </div>
+                {reproNotesText && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                    <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", textTransform: "uppercase", fontWeight: "600" }}>Biological Reproduction Notes</span>
+                    <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)", lineHeight: "1.4" }}>
+                      {reproNotesText}
+                    </p>
+                  </div>
+                )}
 
                 {/* Sexing sits in the reproduction tab because that is the decision
                     it serves: you cannot pair what you cannot sex. Shown even when

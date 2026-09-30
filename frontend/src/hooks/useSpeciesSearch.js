@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import Fuse from "fuse.js";
 import { useSpeciesData } from "./useSpeciesData";
+import { recordedCareRanges } from "../services/speciesCare";
 
 // --- DATA NORMALIZATION HELPERS ---
 
@@ -32,30 +33,18 @@ export const getDifficultyNormalized = (item) => {
   return null;
 };
 
+// Range facets read recorded ranges only (services/speciesCare.js
+// recordedCareRanges), so a species with no data never matches a temperature
+// or pH bucket. The old code read global entries' display defaults and
+// invented a floor 6 C below a lone tempCeiling.
 export const getTempRangeNormalized = (item) => {
-  let min = item.minTemp;
-  let max = item.maxTemp;
-  if (min === undefined || max === undefined) {
-    min = item.tankMetrics?.tempRangeCelsius?.[0];
-    max = item.tankMetrics?.tempRangeCelsius?.[1];
-  }
-  if (min === undefined && item.ecology?.tempCeiling !== undefined) {
-    max = item.ecology.tempCeiling;
-    min = max - 6; // default fallback range
-  }
-  if (min === undefined) return null;
-  return { min: Number(min), max: Number(max) };
+  const r = recordedCareRanges(item).tempRange;
+  return r ? { min: r[0], max: r[1] } : null;
 };
 
 export const getPhRangeNormalized = (item) => {
-  let min = item.minPh;
-  let max = item.maxPh;
-  if (min === undefined || max === undefined) {
-    min = item.tankMetrics?.phRange?.[0];
-    max = item.tankMetrics?.phRange?.[1];
-  }
-  if (min === undefined) return null;
-  return { min: Number(min), max: Number(max) };
+  const r = recordedCareRanges(item).phRange;
+  return r ? { min: r[0], max: r[1] } : null;
 };
 
 // Hand-assigned plant IDs live in 90001–90999. (This used to test ">= 9000",

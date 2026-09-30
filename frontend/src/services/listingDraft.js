@@ -28,6 +28,7 @@ import { deriveDefaultPackingProfile } from "./packingEngine.js";
 import { buildCompatibilityExplanation } from "./compatibilityExplanation.js";
 import { normalizePriceCents, isListingActive } from "./catalogQuery.js";
 import { realDietText } from "./speciesDiet.js";
+import { realCareText } from "./speciesCare.js";
 
 // ─── Care level (informational only — not a safety input) ──────────────────
 
@@ -65,7 +66,9 @@ function resolveDietText(record = {}) {
 
 /** Resolve a general origin/biotope description, or null. Descriptive only. */
 function resolveOrigin(record = {}) {
-  return record.ecology?.biotope || null;
+  // "Generic Biotope Details" and other placeholders are not an origin, so
+  // the draft (and Poseidon's listing prompt) gets no origin line.
+  return realCareText(record.ecology?.biotope);
 }
 
 // ─── Draft builder ───────────────────────────────────────────────────────────

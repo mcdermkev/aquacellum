@@ -15,6 +15,7 @@ import { useUnitPrefs } from "../../hooks/useUnitPrefs";
 import { formatTemperatureRange } from "../../utils/units";
 import { SexingGuide } from "../SexingGuide";
 import { SpeciesPhotoCredit } from "../SpeciesPhotoCredit";
+import { realCareText } from "../../services/speciesCare";
 import "./CasualSpeciesDetail.css";
 
 const isPlantEntry = (item) => !!item && item.type === "plant";
@@ -63,6 +64,8 @@ export function CasualSpeciesDetail({
   const subjectWord = isPlant ? "this species" : "this fish";
 
   const flavorText = getPersonality(fullProfile, "casual").flavorText;
+  const biotopeText = realCareText(fullProfile.ecology?.biotope);
+  const socialText = realCareText(fullProfile.ecology?.socialBehavior);
 
   // ── Tank selector (mirrors the FishFinder tank-bar pattern) ──────────────
   const [selectedTankId, setSelectedTankId] = useState(null);
@@ -257,13 +260,14 @@ export function CasualSpeciesDetail({
           </div>
           {care.tip && <p className="cg-tip">{care.tip}</p>}
 
-          {(fullProfile.ecology?.biotope || fullProfile.ecology?.socialBehavior) && (
+          {/* Only recorded text; placeholders and blanks hide the row. */}
+          {(biotopeText || socialText) && (
             <div className="csd-care-extra">
-              {fullProfile.ecology?.biotope && (
-                <p><strong>Biotope:</strong> {fullProfile.ecology.biotope}</p>
+              {biotopeText && (
+                <p><strong>Biotope:</strong> {biotopeText}</p>
               )}
-              {fullProfile.ecology?.socialBehavior && (
-                <p><strong>Social behavior:</strong> {fullProfile.ecology.socialBehavior}</p>
+              {socialText && (
+                <p><strong>Social behavior:</strong> {socialText}</p>
               )}
             </div>
           )}

@@ -11,6 +11,7 @@ import {
   serializeIndex,
   toSlug,
 } from "../../../scripts/build-species-index.mjs";
+import { visibleCatalog } from "../services/catalogAliases.js";
 
 const master = JSON.parse(readFileSync(MASTER_PATH, "utf8"));
 const committed = readFileSync(INDEX_PATH, "utf8");
@@ -21,9 +22,10 @@ describe("species-index.json", () => {
     expect(committed.replace(/\r\n/g, "\n")).toBe(serializeIndex(buildSpeciesIndex(master)));
   });
 
-  it("has one row per catalog species", () => {
-    expect(rows.length).toBe(master.filter((r) => r?.scientificName).length);
+  it("has one row per catalog species (duplicates kept under an older name are left out)", () => {
+    expect(rows.length).toBe(visibleCatalog(master).filter((r) => r?.scientificName).length);
     expect(rows.length).toBeGreaterThan(500);
+    expect(rows.some((r) => r.s === "Hemigrammus rhodostomus" || r.s === "Brochis agassizii")).toBe(false);
   });
 
   it("uses the species page slug rule", () => {

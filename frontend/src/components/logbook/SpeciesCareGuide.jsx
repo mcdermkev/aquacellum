@@ -4,6 +4,7 @@ import { useUnitPrefs } from "../../hooks/useUnitPrefs";
 import { formatTemperatureRange } from "../../utils/units";
 import { coralCare, speciesCarePath, speciesRecordFor } from "./inhabitants";
 import { realDietText } from "../../services/speciesDiet";
+import { realCareText } from "../../services/speciesCare";
 import "./SpeciesCareGuide.css";
 
 /**
@@ -149,7 +150,7 @@ export function getSpeciesCare(ref, fishbaseData = [], contractSpecies = []) {
     temperament: FAMILY_TEMPERAMENT[family] || null,
     // Null when no diet is recorded; the chip is then hidden.
     diet: realDietText(fb?.diet?.trophicLevel),
-    tip: truncate(fb?.ecology?.comments || fb?.marine?.notes),
+    tip: truncate(realCareText(fb?.ecology?.comments) || fb?.marine?.notes),
     kind: kind || "fish",
     coral,
     carePath: speciesCarePath(ref, fishbaseData),
@@ -169,7 +170,9 @@ function fmt(n) {
   return Number.isInteger(n) ? String(n) : Number(n).toFixed(1);
 }
 
-function truncate(text) {
-  if (!text || text === "Information arriving soon") return null;
+function truncate(value) {
+  // Placeholders ("Information arriving soon") and blanks are not a tip.
+  const text = realCareText(value);
+  if (!text) return null;
   return text.length > 160 ? `${text.slice(0, 157)}…` : text;
 }

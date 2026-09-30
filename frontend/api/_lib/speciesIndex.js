@@ -8,7 +8,10 @@
 
 import { readFileSync } from 'fs';
 import { join } from 'path';
+import { resolveSpecies, visibleCatalog } from '../../src/services/catalogAliases.js';
+import { realCareText, realCareNumber, realRange } from '../../src/services/speciesCare.js';
 
+let fullCatalog = null;
 let speciesCatalog = null;
 let commonNameIndex = null;
 let scientificNameIndex = null;
@@ -44,7 +47,11 @@ function loadCatalog() {
       throw new Error('fishbase_master.json not found in any expected path');
     }
 
-    speciesCatalog = JSON.parse(raw);
+    fullCatalog = JSON.parse(raw);
+    // Search runs over each species once: records kept under an older name
+    // (duplicateOf, see src/services/catalogAliases.js) are dropped here, and
+    // lookups by their old specCode resolve to the canonical record below.
+    speciesCatalog = visibleCatalog(fullCatalog);
 
     // Build lookup indices for fast name matching
     commonNameIndex = new Map();
@@ -63,6 +70,7 @@ function loadCatalog() {
     return speciesCatalog;
   } catch (err) {
     console.error('[Species Index] Failed to load fishbase_master.json:', err.message);
+    fullCatalog = [];
     speciesCatalog = [];
     commonNameIndex = new Map();
     scientificNameIndex = new Map();
@@ -138,7 +146,8 @@ export function findSpeciesInQuery(query, maxResults = 5) {
  */
 export function getSpeciesByCode(specCode) {
   loadCatalog();
-  return speciesCatalog?.find(s => s.specCode === specCode) || null;
+  // An old specCode (a duplicate record) resolves to the canonical record.
+  return resolveSpecies(specCode, fullCatalog) || null;
 }
 
 /**
@@ -146,9 +155,9 @@ export function getSpeciesByCode(specCode) {
  */
 export function getSpeciesByCodes(specCodes) {
   loadCatalog();
-  if (!speciesCatalog) return [];
+  if (!fullCatalog) return [];
   return specCodes
-    .map(code => speciesCatalog.find(s => s.specCode === code))
+    .map(code => resolveSpecies(code, fullCatalog))
     .filter(Boolean);
 }
 
@@ -159,24 +168,39 @@ export function getSpeciesByCodes(specCodes) {
 export function formatSpeciesForContext(species, mode = 'casual') {
   if (!species) return '';
 
+  // Only recorded facts reach the prompt. A missing value leaves its segment
+  // (or the whole line) out instead of a "?" / "N/A" placeholder the model
+  // could read as data.
+  const tm = species.tankMetrics || {};
+  const idParts = [`specCode: ${species.specCode}`];
+  const family = realCareText(species.family);
+  if (family) idParts.push(`Family: ${family}`);
+  const maxLength = realCareNumber(species.maxLengthCm);
+  if (maxLength != null && maxLength > 0) idParts.push(`Max size: ${maxLength}cm`);
+
+  const careParts = [];
+  const temp = realRange(tm.tempRangeCelsius?.[0], tm.tempRangeCelsius?.[1]);
+  if (temp) careParts.push(`Temperature: ${temp[0]}–${temp[1]}°C`);
+  const ph = realRange(tm.phRange?.[0], tm.phRange?.[1]);
+  if (ph) careParts.push(`pH: ${ph[0]}–${ph[1]}`);
+  const difficulty = realCareText(tm.difficulty);
+  if (difficulty) careParts.push(`Difficulty: ${difficulty}`);
+
   const lines = [
     `### ${species.commonName} (${species.scientificName})`,
-    `- specCode: ${species.specCode} | Family: ${species.family || 'N/A'} | Max size: ${species.maxLengthCm || '?'}cm`,
-    `- Temperature: ${species.tankMetrics?.tempRangeCelsius?.join('–') || '?'}°C | pH: ${species.tankMetrics?.phRange?.join('–') || '?'} | Difficulty: ${species.tankMetrics?.difficulty || '?'}`,
+    `- ${idParts.join(' | ')}`,
   ];
+  if (careParts.length) lines.push(`- ${careParts.join(' | ')}`);
 
-  if (species.tankMetrics?.minVolumeGallons) {
-    lines.push(`- Minimum tank: ${species.tankMetrics.minVolumeGallons} gallons`);
+  const minVolume = realCareNumber(tm.minVolumeGallons);
+  if (minVolume != null && minVolume > 0) {
+    lines.push(`- Minimum tank: ${minVolume} gallons`);
   }
 
-  if (species.ecology) {
-    if (species.ecology.socialBehavior && species.ecology.socialBehavior !== 'Information arriving soon') {
-      lines.push(`- Social: ${species.ecology.socialBehavior}`);
-    }
-    if (species.ecology.biotope && species.ecology.biotope !== 'Generic Biotope Details') {
-      lines.push(`- Biotope: ${species.ecology.biotope}`);
-    }
-  }
+  const social = realCareText(species.ecology?.socialBehavior);
+  if (social) lines.push(`- Social: ${social}`);
+  const biotope = realCareText(species.ecology?.biotope);
+  if (biotope) lines.push(`- Biotope: ${biotope}`);
 
   // Only a recorded diet reaches the prompt. A record with no trophic level
   // gets no Diet line (never an assumed "Omnivore"), and a missing or
@@ -187,9 +211,8 @@ export function formatSpeciesForContext(species, mode = 'casual') {
     lines.push(`- Diet: ${species.diet.trophicLevel.trim()}${food}`);
   }
 
-  if (species.reproduction && species.reproduction.spawningTrait && species.reproduction.spawningTrait !== 'Information arriving soon') {
-    lines.push(`- Breeding: ${species.reproduction.spawningTrait}`);
-  }
+  const spawning = realCareText(species.reproduction?.spawningTrait);
+  if (spawning) lines.push(`- Breeding: ${spawning}`);
 
   // Include personality text matching the mode
   if (species.personality) {
@@ -231,7 +254,7 @@ export function buildSpeciesContext(query, sessionData = {}, mode = 'casual', ma
       if (sp.specCode && contextSpecies.size < maxSpecies) {
         // Try to get the full catalog entry for richer data
         const full = getSpeciesByCode(sp.specCode) || sp;
-        contextSpecies.set(sp.specCode, full);
+        contextSpecies.set(full.specCode ?? sp.specCode, full);
       }
     }
   }

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { getPersonality } from "../utils/personality";
 import { useNarration } from "./hooks/useNarration";
+import { realCareText } from "../services/speciesCare";
 
 /**
  * NarrationLayer — Species info panel with integrated voice/text ask.
@@ -32,9 +33,10 @@ export function NarrationLayer({ species, mode, onDismiss }) {
   const sciName = species.scientificName || "";
   const vibeLine = personality.vibeLine || "";
   const flavorText = personality.flavorText || "";
-  const fallbackText = species.ecology?.comments || species.ecology?.biotope || "";
+  // Recorded text only: a placeholder is neither shown nor spoken.
+  const fallbackText = realCareText(species.ecology?.comments) || realCareText(species.ecology?.biotope) || "";
   const mainText = flavorText || fallbackText;
-  const tagline = vibeLine || (species.ecology?.socialBehavior || "");
+  const tagline = vibeLine || realCareText(species.ecology?.socialBehavior) || "";
 
   // TTS: speak the tagline in Echo's voice when species changes
   useEffect(() => {

@@ -12,7 +12,9 @@
  *
  * Routing:
  *   GET  /api/species                       → paginated list (search + filters)
- *   GET  /api/species?id={specCode|slug}    → single species detail
+ *   GET  /api/species?id={specCode|slug}    → single species detail (an old ID of a
+ *                                             duplicate record returns the canonical
+ *                                             record plus `resolvedFrom`)
  *   GET  /api/species?random=true&count=1-10 → random species (demos, bots)
  *   GET  /api/species?stats=true            → catalog-wide stats
  *   POST /api/species?action=request-key    → { email, appName?, appUrl? } → issues a free API key
@@ -52,6 +54,7 @@ import {
   buildSpeciesAvailability,
   serializePublicAvailability,
 } from "../src/services/speciesAvailability.js";
+import { aliasSpecCodesFor, resolveRecord, visibleCatalog } from "../src/services/catalogAliases.js";
 
 // Breeders Council curation, mounted here rather than as its own serverless
 // function: the project is at exactly 12 functions (the Vercel Hobby ceiling)
@@ -82,7 +85,12 @@ if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY) {
 // Catalog loading (cached per cold start, same pattern as _lib/speciesIndex.js)
 // ─────────────────────────────────────────────────────────────────────────
 
+// `catalog` is every record, including duplicates kept under an old name
+// (`duplicateOf`, see src/services/catalogAliases.js), so ?id= lookups of an
+// old ID still work. `visible` drops them and backs every list, search, random
+// pick and count, so each species appears once.
 let catalog = null;
+let visible = null;
 let bySpecCode = null;
 let bySlug = null;
 
@@ -115,12 +123,14 @@ function loadCatalog() {
   if (!raw) {
     console.error("[species api] fishbase_master.json not found in any expected path");
     catalog = [];
+    visible = [];
     bySpecCode = new Map();
     bySlug = new Map();
     return catalog;
   }
 
   catalog = JSON.parse(raw);
+  visible = visibleCatalog(catalog);
   bySpecCode = new Map();
   bySlug = new Map();
 
@@ -143,6 +153,7 @@ function loadCatalog() {
 const ALL_FIELDS = [
   "specCode",
   "fishbaseSpecCode",
+  "aliasSpecCodes",
   "scientificName",
   "genus",
   "species",
@@ -166,6 +177,9 @@ function toPublicSpecies(sp, fields) {
     specCode: sp.specCode ?? null,
     // The species' FishBase SpecCode, when it is a FishBase species.
     fishbaseSpecCode: sp.fishbaseSpecCode ?? null,
+    // Older catalog IDs that now resolve to this record (duplicates kept under
+    // an old name). Usually empty. ?id= with any of them returns this record.
+    aliasSpecCodes: aliasSpecCodesFor(sp.specCode, catalog || []),
     scientificName: sp.scientificName ?? null,
     genus: sp.genus ?? (sp.scientificName ? sp.scientificName.split(" ")[0] : null),
     species: sp.species ?? null,
@@ -590,7 +604,7 @@ function handleList(req, res) {
     ? req.query.fields.split(",").map((f) => f.trim()).filter((f) => ALL_FIELDS.includes(f))
     : null;
 
-  const filtered = applyFilters(catalog, req.query);
+  const filtered = applyFilters(visible, req.query);
   const sorted = applySort(filtered, req.query.sort, req.query.dir);
 
   const limit = Math.min(Math.max(parseInt(req.query.limit) || 25, 1), 100);
@@ -624,7 +638,10 @@ function handleList(req, res) {
 
 function handleDetail(req, res, caller) {
   const idRaw = String(req.query.id);
-  const sp = bySpecCode.get(idRaw) || bySlug.get(toSlug(idRaw)) || bySlug.get(idRaw.toLowerCase());
+  const found = bySpecCode.get(idRaw) || bySlug.get(toSlug(idRaw)) || bySlug.get(idRaw.toLowerCase());
+  // An old ID or old-name slug (a record marked duplicateOf another) returns
+  // the canonical record, plus `resolvedFrom` naming what was asked for.
+  const sp = found ? resolveRecord(found, catalog) : null;
 
   if (!sp) {
     return res.status(404).json({
@@ -640,9 +657,18 @@ function handleDetail(req, res, caller) {
     ? req.query.fields.split(",").map((f) => f.trim()).filter((f) => ALL_FIELDS.includes(f))
     : null;
 
+  const resolvedFrom = sp !== found
+    ? {
+        specCode: found.specCode ?? null,
+        scientificName: found.scientificName ?? null,
+        note: `${found.scientificName} is listed under its current name, ${sp.scientificName}.`,
+      }
+    : undefined;
+
   res.setHeader("Cache-Control", "public, s-maxage=600, stale-while-revalidate=1200");
   return res.status(200).json({
     data: toPublicSpecies(sp, fields),
+    ...(resolvedFrom ? { resolvedFrom } : {}),
     attribution: {
       required: true,
       text: "Species data provided by Aquacellum (https://aquadex.fish), validated against FishBase.",
@@ -659,7 +685,7 @@ function handleDetail(req, res, caller) {
 
 function handleRandom(req, res) {
   const count = Math.min(Math.max(parseInt(req.query.count) || 1, 1), 10);
-  const pool = [...catalog];
+  const pool = [...visible];
   const picks = [];
   for (let i = 0; i < count && pool.length > 0; i++) {
     const idx = Math.floor(Math.random() * pool.length);
@@ -683,7 +709,7 @@ function handleStats(req, res) {
   const byFamily = {};
   const byDifficulty = {};
 
-  for (const sp of catalog) {
+  for (const sp of visible) {
     const fam = sp.family || "Unclassified";
     byFamily[fam] = (byFamily[fam] || 0) + 1;
 
@@ -694,7 +720,7 @@ function handleStats(req, res) {
   res.setHeader("Cache-Control", "public, s-maxage=3600, stale-while-revalidate=7200");
   return res.status(200).json({
     data: {
-      totalSpecies: catalog.length,
+      totalSpecies: visible.length,
       familyCount: Object.keys(byFamily).length,
       byFamily,
       byDifficulty,

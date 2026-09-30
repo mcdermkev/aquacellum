@@ -51,8 +51,11 @@
  * compared trait-by-trait. Wiring the reader now means the authoring work later
  * needs no second pass through every consumer.
  *
- * Pure, dependency-free, and safe to call on any record including null.
+ * Pure and safe to call on any record including null. Its only import is the
+ * pure duplicate resolver (catalogAliases.js) used by findCatalogRecord.
  */
+
+import { resolveRecord, resolveSpecies } from "./catalogAliases.js";
 
 /** Sexing states. `key` is what surfaces switch on. */
 export const SEXING_STATUS = Object.freeze({
@@ -298,22 +301,22 @@ export function findCatalogRecord(records, ref) {
   const common = String(ref.commonName || "").trim().toLowerCase();
   const specCode = ref.specCode;
 
+  // A duplicate record (duplicateOf, an older name) resolves to its canonical
+  // record, and an old specCode resolves too (catalogAliases.js).
   if (sci) {
     const bySci = records.find((r) => String(r?.scientificName || "").trim().toLowerCase() === sci);
-    if (bySci) return bySci;
+    if (bySci) return resolveRecord(bySci, records);
   }
 
   // Only ever specCode-to-specCode. See the warning above.
   if (specCode !== null && specCode !== undefined && specCode !== "") {
-    const byCode = records.find(
-      (r) => r?.specCode !== undefined && Number(r.specCode) === Number(specCode)
-    );
+    const byCode = resolveSpecies(specCode, records);
     if (byCode) return byCode;
   }
 
   if (common) {
     const byCommon = records.find((r) => String(r?.commonName || "").trim().toLowerCase() === common);
-    if (byCommon) return byCommon;
+    if (byCommon) return resolveRecord(byCommon, records);
   }
 
   return null;

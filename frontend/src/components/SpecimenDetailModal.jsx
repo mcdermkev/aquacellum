@@ -11,6 +11,7 @@ import { generatePedigreeCertificate } from "../utils/pdfExport";
 import { getProfile } from "../services/reefApi";
 import { METADATA_SOURCE, resolveSpecimenMetadata } from "../services/specimenMetadata";
 import { resolveSpecimenPhoto } from "../services/tankMedia";
+import { checkRange, realCareNumber, realRange } from "../services/speciesCare";
 
 
 // Helper: detect if a fishbase record or specCode is a plant entry
@@ -378,20 +379,22 @@ export function SpecimenDetailModal({
             commonName: matched.commonName,
             scientificName: matched.scientificName,
             careLevel: matched.careLevel !== undefined ? Number(matched.careLevel) : 0,
-            minTemp: matched.minTemp !== undefined ? Number(matched.minTemp) : (matched.tankMetrics?.tempRangeCelsius?.[0] ?? 22),
-            maxTemp: matched.maxTemp !== undefined ? Number(matched.maxTemp) : (matched.tankMetrics?.tempRangeCelsius?.[1] ?? 28),
-            minPh: matched.minPh !== undefined ? Number(matched.minPh) : (matched.tankMetrics?.phRange?.[0] ?? 6.5),
-            maxPh: matched.maxPh !== undefined ? Number(matched.maxPh) : (matched.tankMetrics?.phRange?.[1] ?? 7.5)
+            // Recorded ranges only; null when unknown, so the fit badge below
+            // can never pass on a default range.
+            minTemp: realCareNumber(matched.minTemp) ?? realCareNumber(matched.tankMetrics?.tempRangeCelsius?.[0]),
+            maxTemp: realCareNumber(matched.maxTemp) ?? realCareNumber(matched.tankMetrics?.tempRangeCelsius?.[1]),
+            minPh: realCareNumber(matched.minPh) ?? realCareNumber(matched.tankMetrics?.phRange?.[0]),
+            maxPh: realCareNumber(matched.maxPh) ?? realCareNumber(matched.tankMetrics?.phRange?.[1])
           });
         } else {
           setSpeciesInfo({
             commonName: resolvedSpec.commonName || "Unknown Species",
             scientificName: resolvedSpec.scientificName || "Unknown",
             careLevel: 0,
-            minTemp: 22,
-            maxTemp: 28,
-            minPh: 6.5,
-            maxPh: 7.5
+            minTemp: null,
+            maxTemp: null,
+            minPh: null,
+            maxPh: null
           });
         }
       }
@@ -541,21 +544,16 @@ export function SpecimenDetailModal({
   const evaluateCompatibility = (species, tank) => {
     if (!species || !tank) return false;
 
-    let minTemp = species.minTemp;
-    let maxTemp = species.maxTemp;
-    let minPh = species.minPh;
-    let maxPh = species.maxPh;
+    // Both ranges must be on record (null / undefined never count, and are
+    // checked before Number() since Number(null) is 0). An unknown range is
+    // not a fit, so the badge stays hidden.
+    const tempRange = realRange(species.minTemp, species.maxTemp)
+      ?? realRange(species.tankMetrics?.tempRangeCelsius?.[0], species.tankMetrics?.tempRangeCelsius?.[1]);
+    const phRange = realRange(species.minPh, species.maxPh)
+      ?? realRange(species.phRange?.[0], species.phRange?.[1])
+      ?? realRange(species.tankMetrics?.phRange?.[0], species.tankMetrics?.phRange?.[1]);
 
-    if (minTemp === undefined && species.tankMetrics?.tempRangeCelsius) {
-      minTemp = species.tankMetrics.tempRangeCelsius[0];
-      maxTemp = species.tankMetrics.tempRangeCelsius[1];
-    }
-    if (minPh === undefined && species.tankMetrics?.phRange) {
-      minPh = species.phRange?.[0] || species.tankMetrics.phRange[0];
-      maxPh = species.phRange?.[1] || species.tankMetrics.phRange[1];
-    }
-
-    if (minTemp === undefined || maxTemp === undefined || minPh === undefined || maxPh === undefined) {
+    if (!tempRange || !phRange) {
       return false;
     }
 
@@ -581,7 +579,7 @@ export function SpecimenDetailModal({
     const tankTemp = Number(tankTempX10) / 10;
     const tankPh = Number(tankPhX10) / 10;
 
-    return tankTemp >= minTemp && tankTemp <= maxTemp && tankPh >= minPh && tankPh <= maxPh;
+    return checkRange(tankTemp, tempRange) === "pass" && checkRange(tankPh, phRange) === "pass";
   };
 
   if (!activeId) return null;

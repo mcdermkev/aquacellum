@@ -477,6 +477,9 @@
   <!-- Loaded before the inline script below so AquadexPublicListings is defined
        when the listing/breeder sections fetch (Fish Finder T14). -->
   <script src="/js/public-listings.js"></script>
+  <!-- Duplicate records (duplicateOf), shared with the app via
+       src/services/catalogAliases.js and pinned by catalogAliases.test.js. -->
+  <script src="/js/catalog-aliases.js"></script>
   <script>
     // Utility: generate slug from scientific name
     function toSlug(name) {
@@ -556,10 +559,11 @@
     async function init() {
       // Extract slug from URL path
       const pathParts = window.location.pathname.split('/').filter(Boolean);
-      // Expected: /species/{slug}
+      // Expected: /species/{slug}, or species.html?id={catalog specCode}
       const slug = pathParts.length >= 2 ? pathParts[pathParts.length - 1] : null;
+      const idParam = (new URLSearchParams(window.location.search).get('id') || '').trim();
 
-      if (!slug) {
+      if (!slug && !idParam) {
         showError('No species specified. <a href="/database.html">Browse the database</a>.');
         return;
       }
@@ -567,16 +571,30 @@
       try {
         const res = await fetch('/fishbase_master.json?v=2');
         if (!res.ok) throw new Error('Failed to load species data');
+        // The full catalog, duplicates included, so an old ID or old-name slug
+        // still finds its record and resolves below.
         allSpecies = await res.json();
 
-        // Find species by slug match on scientific name or common name
-        const species = allSpecies.find(sp => {
-          return toSlug(sp.scientificName) === slug || toSlug(sp.commonName || '') === slug;
-        });
+        // Find species by catalog ID, else by slug match on scientific or common name
+        const found = (idParam && allSpecies.find(sp => String(sp.specCode) === idParam))
+          || (slug && allSpecies.find(sp => toSlug(sp.scientificName) === slug || toSlug(sp.commonName || '') === slug))
+          || null;
 
-        if (!species) {
-          showError(`Species "${slug}" not found. <a href="/database.html">Browse the database</a>.`);
+        if (!found) {
+          const asked = String(slug || idParam).replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
+          showError(`Species "${asked}" not found. <a href="/database.html">Browse the database</a>.`);
           return;
+        }
+
+        // A record kept under an older name (duplicateOf) shows the current
+        // record, and the address bar is pointed at it (/js/catalog-aliases.js).
+        const species = window.CatalogAliases.resolveRecord(found, allSpecies);
+        const olderName = species !== found ? found : null;
+        if (olderName) {
+          const url = new URL(window.location.href);
+          if (idParam) url.searchParams.set('id', String(species.specCode));
+          else url.pathname = url.pathname.replace(/[^/]+\/?$/, toSlug(species.scientificName));
+          history.replaceState(history.state, '', url.pathname + url.search + url.hash);
         }
 
         // Update page title
@@ -586,10 +604,19 @@
           metaDesc.content = `Complete care profile for ${species.commonName || species.scientificName} (${species.scientificName}). Tank parameters, diet, breeding, and ecology data.`;
         }
 
-        renderSpecies(species);
+        renderSpecies(species, olderName);
       } catch (err) {
         showError('Failed to load species data. Please try refreshing.');
       }
+    }
+
+    // species_insights rows saved under an older catalog ID of this species
+    // (a duplicate record) belong here too. PostgREST filter value.
+    function specCodeFilter(sp) {
+      const codes = [Number(sp.specCode)]
+        .concat(window.CatalogAliases.aliasSpecCodesFor(sp.specCode, allSpecies))
+        .filter(Number.isInteger);
+      return codes.length > 1 ? `in.(${codes.join(',')})` : `eq.${codes[0]}`;
     }
 
     function showError(message) {
@@ -599,7 +626,7 @@
         </div>`;
     }
 
-    function renderSpecies(sp) {
+    function renderSpecies(sp, olderName) {
       // Helper: render inline video for a section if one exists
       function inlineVideo(sectionKey) {
         if (!sp.educationalVideos?.length) return '';
@@ -665,6 +692,7 @@
               <span><strong>Genus:</strong> ${sp.genus || '—'}</span>
               <span><strong>${source.idLabel}:</strong> ${source.id || '—'}</span>
             </div>
+            ${olderName ? `<p class="hero-alias-note" role="note" style="margin:8px 0 0;font-size:0.85rem;color:var(--text-secondary);">You followed a link to ${olderName.scientificName}. It is listed here under its current name, ${sp.scientificName}.</p>` : ''}
             ${vibe ? `<blockquote class="hero-vibe">${vibe}</blockquote>` : ''}
             <div class="hero-quick-stats">
               ${quickStats.map(s => `
@@ -1377,7 +1405,7 @@
       if (sp.specCode) {
         try {
           const res = await fetch(
-            `${SB_URL}/rest/v1/species_insights?spec_code=eq.${sp.specCode}&order=upvotes.desc&select=*,profiles:author_wallet(display_name,avatar_url,companion_tier)`,
+            `${SB_URL}/rest/v1/species_insights?spec_code=${specCodeFilter(sp)}&order=upvotes.desc&select=*,profiles:author_wallet(display_name,avatar_url,companion_tier)`,
             { headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` } }
           );
           if (res.ok) insights = await res.json();
@@ -1419,7 +1447,7 @@
       try {
         // Keeper tips count (exact, cheap via count header)
         if (sp.specCode) {
-          const r = await fetch(`${SB_URL}/rest/v1/species_insights?spec_code=eq.${sp.specCode}&select=id`, {
+          const r = await fetch(`${SB_URL}/rest/v1/species_insights?spec_code=${specCodeFilter(sp)}&select=id`, {
             headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, Prefer: 'count=exact' }
           });
           const cr = r.headers.get('content-range');

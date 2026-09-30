@@ -302,6 +302,10 @@
   <!-- Shared Footer -->
   <footer id="site-footer"></footer>
 
+  <!-- Duplicate records (duplicateOf), shared with the app via
+       src/services/catalogAliases.js and pinned by catalogAliases.test.js. -->
+  <script src="/js/catalog-aliases.js"></script>
+
   <script>
     let allSpecies = [];
     let selectedSpecies = [null, null, null]; // 3 slots
@@ -316,14 +320,19 @@
       try {
         const res = await fetch('/fishbase_master.json?v=2');
         if (!res.ok) throw new Error('Failed to load');
-        allSpecies = await res.json();
+        const fullCatalog = await res.json();
+        // Search lists each species once: records kept under an older name
+        // (duplicateOf) are dropped. An old-name slug in the URL still resolves
+        // to the current record (window.CatalogAliases, /js/catalog-aliases.js).
+        allSpecies = window.CatalogAliases.visibleCatalog(fullCatalog);
 
         // Check URL params for pre-selected species
         const params = new URLSearchParams(window.location.search);
         const preSelected = [params.get('s1'), params.get('s2'), params.get('s3')];
         preSelected.forEach((slug, idx) => {
           if (slug) {
-            const sp = allSpecies.find(s => toSlug(s.scientificName) === slug || toSlug(s.commonName || '') === slug);
+            const hit = fullCatalog.find(s => toSlug(s.scientificName) === slug || toSlug(s.commonName || '') === slug);
+            const sp = hit ? window.CatalogAliases.resolveRecord(hit, fullCatalog) : null;
             if (sp) selectSpecies(idx, sp);
           }
         });

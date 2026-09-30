@@ -10,6 +10,7 @@
  */
 import { useState, useEffect } from "react";
 import { supabase, isSupabaseConfigured } from "../../services/supabaseClient";
+import { resolveSpecies, visibleCatalog } from "../../services/catalogAliases";
 
 /**
  * @param {string|null} tankId - UUID of the tank to load, or null for master reef
@@ -39,7 +40,8 @@ export function useTankData(tankId) {
       const res = await fetch("/fishbase_master.json?v=2");
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      setSpeciesData(data);
+      // Each species once: older-name duplicates (duplicateOf) are dropped.
+      setSpeciesData(visibleCatalog(data));
       setTankMeta(null);
       setLoading(false);
     } catch (err) {
@@ -117,11 +119,6 @@ export function useTankData(tankId) {
  * Each specimen gets matched to its full species record from the catalog.
  */
 function mapSpecimensToSpecies(specimens, masterCatalog) {
-  const catalogMap = new Map();
-  for (const sp of masterCatalog) {
-    catalogMap.set(sp.specCode, sp);
-  }
-
   const speciesMap = new Map();
 
   for (const row of specimens) {
@@ -131,7 +128,8 @@ function mapSpecimensToSpecies(specimens, masterCatalog) {
     const specCode = row.species_id ?? d.speciesId ?? d.specCode ?? d.spec_code;
     if (specCode === undefined || specCode === null) continue;
 
-    const catalogEntry = catalogMap.get(specCode) || catalogMap.get(Number(specCode));
+    // An old ID (duplicateOf another record) resolves to the canonical record.
+    const catalogEntry = resolveSpecies(specCode, masterCatalog);
     if (!catalogEntry) continue;
 
     const key = catalogEntry.specCode;

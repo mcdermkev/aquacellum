@@ -15,6 +15,7 @@
 
 import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
+import { visibleCatalog } from "../frontend/src/services/catalogAliases.js";
 
 const ROOT = fileURLToPath(new URL("../", import.meta.url));
 export const MASTER_PATH = `${ROOT}frontend/public/fishbase_master.json`;
@@ -42,10 +43,13 @@ const KNOWN_DIFFICULTY = new Set(["Beginner", "Intermediate", "Advanced", "Exper
  *   n common name, s scientific name, u slug, f family, t type
  *   (fish|plant|coral|invertebrate), w water (fresh|marine|brackish),
  *   d difficulty (omitted when unknown), p photo URL, g min gallons
+ *
+ * Duplicate records (`duplicateOf`, see frontend/src/services/catalogAliases.js)
+ * are left out, so each species appears once and the homepage count is real.
  */
 export function buildSpeciesIndex(master) {
   const rows = [];
-  for (const rec of Array.isArray(master) ? master : []) {
+  for (const rec of visibleCatalog(Array.isArray(master) ? master : [])) {
     if (!rec?.scientificName) continue;
     const row = {
       n: rec.commonName || rec.scientificName,

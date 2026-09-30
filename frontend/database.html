@@ -1147,6 +1147,10 @@
   <!-- Canonical difficulty contract (shared with the in-app catalog) -->
   <script src="/js/species-catalog.js"></script>
 
+  <!-- Duplicate records (duplicateOf), shared with the app via
+       src/services/catalogAliases.js and pinned by catalogAliases.test.js. -->
+  <script src="/js/catalog-aliases.js"></script>
+
   <!-- Canonical sexing contract (shared with the in-app SexingGuide). Kept in
        lockstep by the parity test in src/services/sexingGuide.test.js, so this
        page and the app can never disagree about whether a fish can be sexed by
@@ -1274,9 +1278,11 @@
       try {
         const res = await fetch('/fishbase_master.json?v=2');
         if (!res.ok) throw new Error(`Server returned ${res.status}`);
-        allSpecies = await res.json();
+        // Each species once: records kept under an older name (duplicateOf)
+        // are dropped (window.CatalogAliases, /js/catalog-aliases.js).
+        allSpecies = window.CatalogAliases.visibleCatalog(await res.json());
 
-        document.getElementById('statTotal').textContent = allSpecies.length + '+';
+        document.getElementById('statTotal').textContent = String(allSpecies.length);
         const families = [...new Set(allSpecies.map(s => s.family).filter(f => f && f !== 'Information arriving soon' && f !== ''))];
         document.getElementById('statFamilies').textContent = families.length;
         document.getElementById('statPhotos').textContent = allSpecies.filter(s => s.masterPhotoUrl && s.masterPhotoUrl !== '').length;

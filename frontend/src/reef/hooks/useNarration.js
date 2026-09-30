@@ -9,6 +9,29 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useVoiceProfiles } from "./useVoiceProfiles";
 import { realDietText } from "../../services/speciesDiet";
+import { realCareText, realCareNumber } from "../../services/speciesCare";
+
+/**
+ * The "Species data for context" lines sent to Poseidon from the reef. Only
+ * recorded facts are listed; a missing field leaves its line out instead of
+ * "unknown" / "no data", so the model never treats a gap as a value.
+ * @param {object} species
+ * @returns {string} newline-joined "- Label: value" lines ("" when none)
+ */
+export function reefSpeciesFactLines(species) {
+  if (!species) return "";
+  const maxLength = realCareNumber(species.maxLengthCm);
+  const facts = [
+    ["Family", realCareText(species.family)],
+    ["Max length", maxLength != null && maxLength > 0 ? `${maxLength} cm` : null],
+    ["Ecology", realCareText(species.ecology?.biotope) || realCareText(species.ecology?.comments)],
+    ["Diet", realDietText(species.diet?.feedingPlaybook) || realDietText(species.diet?.fooditems)],
+    ["Social", realCareText(species.ecology?.socialBehavior)],
+    ["Breeding", realCareText(species.reproduction?.comments) || realCareText(species.reproduction?.spawningTrait)],
+    ["Difficulty", realCareText(species.tankMetrics?.difficulty)],
+  ];
+  return facts.filter(([, value]) => value).map(([label, value]) => `- ${label}: ${value}`).join("\n");
+}
 
 /**
  * @param {object} species - Currently inspected species (full record from fishbase_master)
@@ -125,13 +148,7 @@ export function useNarration(species, mode) {
       const contextMessage = `[IMMERSIVE REEF CONTEXT] The user is standing in a virtual underwater reef, looking at a ${species.commonName} (${species.scientificName}). They asked: "${question}"
 
 Species data for context:
-- Family: ${species.family || "unknown"}
-- Max length: ${species.maxLengthCm || "?"} cm
-- Ecology: ${species.ecology?.biotope || species.ecology?.comments || "no data"}
-- Diet: ${realDietText(species.diet?.feedingPlaybook) || realDietText(species.diet?.fooditems) || "no data"}
-- Social: ${species.ecology?.socialBehavior || "no data"}
-- Breeding: ${species.reproduction?.comments || species.reproduction?.spawningTrait || "no data"}
-- Difficulty: ${species.tankMetrics?.difficulty || "unknown"}
+${reefSpeciesFactLines(species) || "- No care data is recorded for this species."}
 
 Answer naturally as if you're a knowledgeable guide narrating their experience in the reef. Keep it conversational and vivid.`;
 

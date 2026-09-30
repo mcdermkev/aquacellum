@@ -11,6 +11,7 @@
  */
 
 import { reefFit } from "../../services/addOnRecommender.js";
+import { resolveRecord, resolveSpecies } from "../../services/catalogAliases.js";
 
 const lower = (v) => String(v || "").trim().toLowerCase();
 
@@ -22,18 +23,21 @@ const lower = (v) => String(v || "").trim().toLowerCase();
  */
 export function speciesRecordFor(spec, fishbaseData = []) {
   if (!spec || !Array.isArray(fishbaseData) || fishbaseData.length === 0) return null;
+  // A record marked duplicateOf another (an older name) resolves to the
+  // canonical record, so an inhabitant saved under the old ID or name still
+  // gets the current care data (services/catalogAliases.js).
   const sci = lower(spec.scientificName);
   if (sci && sci !== "unknown") {
     const bySci = fishbaseData.find((r) => lower(r?.scientificName) === sci);
-    if (bySci) return bySci;
+    if (bySci) return resolveRecord(bySci, fishbaseData);
   }
   if (spec.commonName) {
     const byName = fishbaseData.find((r) => r?.commonName && r.commonName === spec.commonName);
-    if (byName) return byName;
+    if (byName) return resolveRecord(byName, fishbaseData);
   }
   const id = Number(spec.speciesId);
   if (Number.isFinite(id) && id > 0) {
-    return fishbaseData.find((r) => Number(r?.specCode) === id) || null;
+    return resolveSpecies(id, fishbaseData);
   }
   return null;
 }

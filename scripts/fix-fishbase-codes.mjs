@@ -22,9 +22,10 @@
  * FishBase name at that code is asserted, so a changed dump fails loudly.
  * Anything else stays unresolved, is listed with same-epithet FishBase
  * candidates for a human to check, and gets no fishbaseSpecCode.
- * Still unresolved on purpose: 70002 Hemigrammus rhodostomus and 70004 Brochis
- * agassizii duplicate 12370 Petitella rhodostoma and 10143 Corydoras agassizii;
- * the catalog has no alias/duplicate mechanism yet, so they are left as is.
+ * Duplicates are skipped: records with `duplicateOf` (scripts/mark-duplicates.mjs,
+ * e.g. 70002 Hemigrammus rhodostomus -> 12370 Petitella rhodostoma, 70004
+ * Brochis agassizii -> 10143 Corydoras agassizii) get no fishbaseSpecCode;
+ * their canonical record carries it.
  *
  * Not FishBase records (no fishbaseSpecCode): plants (90001-90999, type plant),
  * freshwater inverts (80001-80999, type invertebrate), corals and marine inverts
@@ -178,6 +179,7 @@ async function main() {
   const ambiguous = [];
   const renamed = [];
   const dataFixes = [];
+  const duplicates = [];
 
   const next = catalog.map((rec) => {
     let r = rec;
@@ -196,6 +198,10 @@ async function main() {
     }
 
     if (!isFishBaseCandidate(r)) return withFishBaseCode(r, null);
+    if (r.duplicateOf != null) {
+      duplicates.push(`${r.specCode} ${r.scientificName} -> ${r.duplicateOf}`);
+      return withFishBaseCode(r, null);
+    }
 
     const key = binomialKey(r);
     const codes = key ? fb.byName.get(key) || [] : [];
@@ -266,15 +272,17 @@ async function main() {
 
   const matched = rows.filter((x) => x.mismatch === false).length;
   const mismatched = rows.filter((x) => x.mismatch === true).length;
-  const skipped = catalog.length - rows.length;
+  const skipped = catalog.length - rows.length - duplicates.length;
   console.log(`\nSummary:
   FishBase candidates:            ${rows.length}
     specCode already = FishBase:  ${matched}
     specCode != FishBase (fixed): ${mismatched}
     (of these, under a different FishBase name: ${renamed.length})
     not found in FishBase:        ${unresolved.length}
+  duplicates (skipped):           ${duplicates.length}
   not FishBase records (skipped): ${skipped}
   with fishbaseSpecCode:          ${matched + mismatched}`);
+  if (duplicates.length) console.log(`\nDuplicates (duplicateOf, see scripts/mark-duplicates.mjs):\n  ${duplicates.join("\n  ")}`);
   if (renamed.length) console.log(`\nMatched under a different FishBase name (genus move or spelling):\n  ${renamed.join("\n  ")}`);
   if (ambiguous.length) console.log(`\nAmbiguous names:\n  ${ambiguous.join("\n  ")}`);
   if (unresolved.length) console.log(`\nUnresolved (no fishbaseSpecCode):\n  ${unresolved.join("\n  ")}`);

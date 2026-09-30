@@ -12,6 +12,8 @@
  * a separate module rather than widening that one's narrower contract.
  */
 
+import { resolveRecord } from "../services/catalogAliases.js";
+
 let _lookup = null;
 let _loadingPromise = null;
 
@@ -33,7 +35,8 @@ export async function loadSpeciesRecordLookup() {
       const map = new Map();
       for (const entry of data) {
         if (entry?.scientificName) {
-          map.set(entry.scientificName.toLowerCase(), entry);
+          // An older-name duplicate (duplicateOf) maps to the canonical record.
+          map.set(entry.scientificName.toLowerCase(), resolveRecord(entry, data));
         }
       }
       _lookup = map;

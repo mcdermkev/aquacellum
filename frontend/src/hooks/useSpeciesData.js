@@ -6,6 +6,7 @@ import { getProvider } from "../utils/smartAccount";
 import { listPublishedSpeciesProfiles } from "../services/speciesCurationApi";
 import { readCatalogViaMulticall } from "../services/contractCatalogReader";
 import { normalizeSpeciesRecord } from "../services/normalizeSpeciesRecord";
+import { visibleCatalog } from "../services/catalogAliases";
 
 /**
  * Merge curator-authored profiles over the static reference catalog.
@@ -83,6 +84,10 @@ export function useSpeciesData() {
     },
     staleTime: Infinity, // Reference library is fully static and never changes
     gcTime: Infinity,
+    // Duplicate records (duplicateOf) stay in Dexie so db.species.get(oldId)
+    // still works, but every list, count and search gets each species once.
+    // Old IDs still resolve on this array via services/catalogAliases.js.
+    select: visibleCatalog,
   });
 }
 

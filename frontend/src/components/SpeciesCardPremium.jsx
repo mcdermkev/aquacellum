@@ -6,6 +6,7 @@ import { getEasterEggConfig } from "./BreedGallery";
 import { CARE_LABELS, CARE_BADGE_CLASS } from "../services/speciesCatalog";
 import { fitPresentationKind, VERDICT_CHIP } from "../services/speciesFit";
 import { casualCardTags } from "../services/speciesCardTags";
+import { entryCareRanges, realCareText, realCareNumber } from "../services/speciesCare";
 
 const isPlantEntry = (item) => {
   if (typeof item === "object" && item !== null) {
@@ -94,8 +95,14 @@ export function SpeciesCardPremium({
   const profile = matched;
   const tagline = casualModeActive
     ? (getPersonality(profile, "casual").vibeLine ||
-       profile?.ecology?.socialBehavior || "")
+       realCareText(profile?.ecology?.socialBehavior) || "")
     : "";
+
+  // Only recorded ranges get a pill. Global entries' flat minPh / maxPh fall
+  // back to display defaults, so read the honest profile (services/speciesCare.js).
+  const { tempRange, phRange } = entryCareRanges(breed);
+  const minVolume = realCareNumber(matched?.tankMetrics?.minVolumeGallons);
+  const spawningTrait = realCareText(matched?.reproduction?.spawningTrait);
 
   // Tags only when backed by recorded data (services/speciesCardTags.js).
   // "Easy Feeder" needs a real trophic level and never applies to plants.
@@ -247,8 +254,7 @@ export function SpeciesCardPremium({
         )}
 
         {/* Pro: Spawning trait badge */}
-        {proMode && matched?.reproduction?.spawningTrait &&
-          matched.reproduction.spawningTrait !== "Information arriving soon" && (
+        {proMode && spawningTrait && (
           <span style={{
             position: "absolute",
             bottom: "0.6rem",
@@ -263,7 +269,7 @@ export function SpeciesCardPremium({
             backdropFilter: "blur(8px)",
             zIndex: 3,
           }}>
-            🥚 {matched.reproduction.spawningTrait}
+            🥚 {spawningTrait}
           </span>
         )}
       </div>
@@ -275,18 +281,22 @@ export function SpeciesCardPremium({
 
         {/* Parameter Pills */}
         <div className="species-card-premium__params">
-          <span className="species-card-premium__pill">
-            <span className="species-card-premium__pill-icon">🌡️</span>
-            {breed.minTemp}–{breed.maxTemp}°C
-          </span>
-          <span className="species-card-premium__pill">
-            <span className="species-card-premium__pill-icon">💧</span>
-            pH {breed.minPh}–{breed.maxPh}
-          </span>
-          {proMode && (
+          {tempRange && (
+            <span className="species-card-premium__pill">
+              <span className="species-card-premium__pill-icon">🌡️</span>
+              {tempRange[0]}–{tempRange[1]}°C
+            </span>
+          )}
+          {phRange && (
+            <span className="species-card-premium__pill">
+              <span className="species-card-premium__pill-icon">💧</span>
+              pH {phRange[0]}–{phRange[1]}
+            </span>
+          )}
+          {proMode && minVolume != null && (
             <span className="species-card-premium__pill">
               <span className="species-card-premium__pill-icon">📐</span>
-              {matched?.tankMetrics?.minVolumeGallons || 30} gal
+              {minVolume} gal
             </span>
           )}
           {proMode && viewMode === "contract" && breed.specimenCount > 0 && (
