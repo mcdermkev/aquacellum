@@ -17,7 +17,10 @@ import { DISCOVERY_INTENTS, filterByIntent } from "./discoveryIntents";
 import { MyDexPanel } from "./MyDexPanel";
 import { useSpeciesMastery, getMasteryForSpecies } from "../../hooks/useSpeciesMastery";
 import { FINDER_COPY } from "./finderCopy";
-import "./FishFinder.css";
+import { WATER_ICON, INTENT_ICON } from "./finderIcons";
+import { ScrollFade } from "../ScrollFade";
+import { Plus, MagnifyingGlass, X } from "@phosphor-icons/react";
+import "./FishFinderDaylight.css";
 
 /**
  * FishFinder — the Casual `gallery` tab surface (Fish Finder Rework, Task 5;
@@ -300,7 +303,7 @@ export function FishFinder({
   // discovery Results grid — same fit/availability/onViewListings/onSelect
   // wiring, no second card variant (T7 §4.2 step 4).
   const renderMatchCard = ({ entry, fit }) => (
-    <div key={entry.speciesId} className="fish-finder__match-card">
+    <div key={entry.speciesId} className="ff-match">
       <SpeciesCardPremium
         breed={entry}
         fishbaseData={fishbaseData}
@@ -334,135 +337,171 @@ export function FishFinder({
   }, [detailOpen]);
 
   return (
-    <div className="fish-finder">
-      {toastMessage && <div className="inline-toast">{toastMessage}</div>}
+    <div className="ff">
+      {toastMessage && <div className="inline-toast" role="status" aria-live="polite">{toastMessage}</div>}
 
       {!detailOpen && (
         <>
-      {/* ── Tank context bar ────────────────────────────────────────────── */}
-      <div className="fish-finder__tank-bar glass-card">
-        <div className="fish-finder__tank-bar-label">
-          <span className="fish-finder__tank-bar-icon" aria-hidden="true">🐠</span>
-          <span>{FINDER_COPY.contextBar.label}</span>
+      <header className="ff-head">
+        <div className="ff-head-text">
+          <p className="ff-kicker">{FINDER_COPY.header.kicker}</p>
+          <h2 className="ff-title">{FINDER_COPY.header.title}</h2>
+          <p className="ff-subtitle">{FINDER_COPY.header.subtitle}</p>
+        </div>
+      </header>
+
+      <div className="ff-summary">
+        {/* ── Tank context ──────────────────────────────────────────────── */}
+        <div className="ff-card ff-context">
+          {tanksLoading ? (
+            <>
+              <span className="ff-field-label">{FINDER_COPY.contextBar.label}</span>
+              <div
+                className="ff-context-loading shimmer-placeholder"
+                role="status"
+                aria-label={FINDER_COPY.contextBar.loadingAria}
+              />
+            </>
+          ) : tanks.length === 0 ? (
+            <>
+              <span className="ff-field-label">{FINDER_COPY.contextBar.label}</span>
+              <div className="ff-context-empty">
+                <p className="ff-context-text">{FINDER_COPY.contextBar.emptyText}</p>
+                <button
+                  type="button"
+                  className="ff-btn ff-btn--primary"
+                  onClick={() => window.dispatchEvent(new CustomEvent("aquadex:navigate-tab", { detail: { tab: "tanks" } }))}
+                >
+                  <Plus size={16} weight="bold" aria-hidden="true" />
+                  {FINDER_COPY.contextBar.emptyCta}
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <label htmlFor="ff-tank-picker" className="ff-field-label">{FINDER_COPY.contextBar.label}</label>
+              <select
+                id="ff-tank-picker"
+                className="ff-select"
+                value={selectedTankId ?? ""}
+                onChange={(e) => handleSelectTank(e.target.value)}
+              >
+                {tanks.map((tank) => (
+                  <option key={tank.id} value={tank.id}>
+                    {tank.name || FINDER_COPY.contextBar.unnamed}
+                  </option>
+                ))}
+              </select>
+            </>
+          )}
         </div>
 
-        {tanksLoading ? (
-          <div
-            className="fish-finder__tank-bar-loading shimmer-placeholder"
-            role="status"
-            aria-label={FINDER_COPY.contextBar.loadingAria}
-          />
-        ) : tanks.length === 0 ? (
-          <div className="fish-finder__tank-bar-empty">
-            <span>{FINDER_COPY.contextBar.emptyText}</span>
-            <button
-              type="button"
-              className="fish-finder__tank-bar-cta"
-              onClick={() => window.dispatchEvent(new CustomEvent("aquadex:navigate-tab", { detail: { tab: "tanks" } }))}
-            >
-              {FINDER_COPY.contextBar.emptyCta}
-            </button>
-          </div>
-        ) : (
-          <div className="fish-finder__tank-bar-select">
-            <select
-              value={selectedTankId ?? ""}
-              onChange={(e) => handleSelectTank(e.target.value)}
-              aria-label={FINDER_COPY.contextBar.pickerAria}
-            >
-              {tanks.map((tank) => (
-                <option key={tank.id} value={tank.id}>
-                  {tank.name || FINDER_COPY.contextBar.unnamed}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
+        {/* ── "My Dex" (T9) ─────────────────────────────────────────────── */}
+        <MyDexPanel dexEntries={dexEntries} candidates={candidates} wishlistCount={wishlist.length} />
       </div>
 
-      {/* ── "My Dex" (T9) ───────────────────────────────────────────────── */}
-      <MyDexPanel dexEntries={dexEntries} candidates={candidates} wishlistCount={wishlist.length} />
-
       {/* ── "Find my next fish" — guided discovery (T7) ─────────────────── */}
-      <div className="fish-finder__discovery">
-        <h2 className="fish-finder__home-title">{FINDER_COPY.discovery.title}</h2>
-        <div className="fish-finder__intent-chips" role="group" aria-label="Water type">
-          {WATER_FILTERS.map((w) => {
-            const active = waterFilter === w.id;
-            return (
-              <button
-                key={w.id}
-                type="button"
-                className={`fish-finder__intent-chip${active ? " fish-finder__intent-chip--active" : ""}`}
-                aria-pressed={active}
-                onClick={() => setWaterFilter(w.id)}
-              >
-                <span aria-hidden="true">{w.icon}</span> {w.label}
-              </button>
-            );
-          })}
+      <section className="ff-section ff-discovery" aria-labelledby="ff-discovery-title">
+        <h3 id="ff-discovery-title" className="ff-section-title">{FINDER_COPY.discovery.title}</h3>
+        <div className="ff-filter-group">
+          <span id="ff-water-label" className="ff-field-label">{FINDER_COPY.discovery.waterLabel}</span>
+          <ScrollFade className="ff-chips" role="group" aria-labelledby="ff-water-label">
+            {WATER_FILTERS.map((w) => {
+              const active = waterFilter === w.id;
+              const Icon = WATER_ICON[w.id];
+              return (
+                <button
+                  key={w.id}
+                  type="button"
+                  className="ff-chip"
+                  aria-pressed={active}
+                  onClick={() => setWaterFilter(w.id)}
+                >
+                  {Icon && <Icon size={17} weight={active ? "fill" : "regular"} aria-hidden="true" />}
+                  {w.label}
+                </button>
+              );
+            })}
+          </ScrollFade>
         </div>
-        <div className="fish-finder__intent-chips" role="group" aria-label={FINDER_COPY.discovery.chipsAria}>
-          {DISCOVERY_INTENTS.map((intent) => (
-            <button
-              key={intent.id}
-              type="button"
-              className={`fish-finder__intent-chip${activeIntent === intent.id ? " fish-finder__intent-chip--active" : ""}`}
-              aria-pressed={activeIntent === intent.id}
-              onClick={() => handleToggleIntent(intent.id)}
-            >
-              <span aria-hidden="true">{intent.icon}</span> {intent.label}
-            </button>
-          ))}
+        <div className="ff-filter-group">
+          <span id="ff-intent-label" className="ff-field-label">{FINDER_COPY.discovery.intentLabel}</span>
+          <ScrollFade className="ff-chips" role="group" aria-labelledby="ff-intent-label">
+            {DISCOVERY_INTENTS.map((intent) => {
+              const active = activeIntent === intent.id;
+              const Icon = INTENT_ICON[intent.id];
+              return (
+                <button
+                  key={intent.id}
+                  type="button"
+                  className="ff-chip"
+                  aria-pressed={active}
+                  onClick={() => handleToggleIntent(intent.id)}
+                >
+                  {Icon && <Icon size={17} weight={active ? "fill" : "regular"} aria-hidden="true" />}
+                  {intent.label}
+                </button>
+              );
+            })}
+          </ScrollFade>
         </div>
-        <div className="fish-finder__search-row">
-          <input
-            type="text"
-            className="fish-finder__search-input"
-            placeholder={FINDER_COPY.discovery.searchPlaceholder}
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            aria-label={FINDER_COPY.discovery.searchAria}
-          />
+        <div className="ff-search-row">
+          <div className="ff-search">
+            <MagnifyingGlass className="ff-search-icon" size={18} aria-hidden="true" />
+            <input
+              type="text"
+              className="ff-search-input"
+              placeholder={FINDER_COPY.discovery.searchPlaceholder}
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              aria-label={FINDER_COPY.discovery.searchAria}
+            />
+          </div>
           {discoveryActive && (
-            <button type="button" className="fish-finder__clear-discovery" onClick={handleClearDiscovery}>
+            <button type="button" className="ff-btn ff-btn--ghost" onClick={handleClearDiscovery}>
+              <X size={16} aria-hidden="true" />
               {FINDER_COPY.discovery.clear}
             </button>
           )}
         </div>
-      </div>
+      </section>
 
       {/* ── Results (discovery active) or "Good matches" home ───────────── */}
       {discoveryActive ? (
-        <div className="fish-finder__home">
-          <h2 className="fish-finder__home-title">{FINDER_COPY.results.title}</h2>
+        <section className="ff-section" aria-labelledby="ff-results-title">
+          <h3 id="ff-results-title" className="ff-section-title">{FINDER_COPY.results.title}</h3>
+          {/* Always mounted while discovery is on, so the count is announced
+              when it changes rather than when the region appears. */}
+          <p className="ff-sr-only" aria-live="polite">
+            {isLoadingCandidates ? "" : FINDER_COPY.results.countAria(discoveryResults.length)}
+          </p>
           {isLoadingCandidates ? (
             <div role="status" aria-label={FINDER_COPY.results.loadingAria}>
               <LoadingSkeleton variant="gallery" count={4} />
             </div>
           ) : discoveryResults.length === 0 ? (
-            <p className="fish-finder__home-hint">
+            <p className="ff-hint">
               {FINDER_COPY.results.empty}{" "}
-              <button type="button" className="fish-finder__inline-clear" onClick={handleClearDiscovery}>
+              <button type="button" className="ff-link" onClick={handleClearDiscovery}>
                 {FINDER_COPY.discovery.clearFilters}
               </button>
             </p>
           ) : (
-            <div className="fish-finder__matches-grid">
+            <div className="ff-grid">
               {discoveryResults.map(renderMatchCard)}
             </div>
           )}
-        </div>
+        </section>
       ) : (
-        <div className="fish-finder__home">
-          <h2 className="fish-finder__home-title">
+        <section className="ff-section" aria-labelledby="ff-home-title">
+          <h3 id="ff-home-title" className="ff-section-title">
             {selectedTank
               ? FINDER_COPY.home.title(selectedTank.name || FINDER_COPY.home.fallbackName)
               : FINDER_COPY.home.titleFallback}
-          </h2>
+          </h3>
 
           {!tankContext ? (
-            <p className="fish-finder__home-hint">
+            <p className="ff-hint">
               {tanks.length === 0 ? FINDER_COPY.home.needTank : FINDER_COPY.home.chooseTank}
             </p>
           ) : isLoadingCandidates ? (
@@ -470,13 +509,13 @@ export function FishFinder({
               <LoadingSkeleton variant="gallery" count={4} />
             </div>
           ) : matches.length === 0 ? (
-            <p className="fish-finder__home-hint">{FINDER_COPY.home.empty}</p>
+            <p className="ff-hint">{FINDER_COPY.home.empty}</p>
           ) : (
-            <div className="fish-finder__matches-grid">
+            <div className="ff-grid">
               {matches.map(renderMatchCard)}
             </div>
           )}
-        </div>
+        </section>
       )}
         </>
       )}
@@ -484,8 +523,8 @@ export function FishFinder({
       {/* ── Browse all species — the existing gallery. Also hosts the species
           detail; when a detail is open, the sections above are hidden so it
           takes over full-page (detailOpen). ────────────────────────────── */}
-      <div className="fish-finder__browse" ref={browseSectionRef}>
-        {!detailOpen && <h2 className="fish-finder__browse-title">{FINDER_COPY.browse.title}</h2>}
+      <section className={"ff-browse" + (detailOpen ? " ff-browse--detail" : "")} ref={browseSectionRef}>
+        {!detailOpen && <h3 className="ff-section-title">{FINDER_COPY.browse.title}</h3>}
         <BreedGallery
           contractAddress={contractAddress}
           marketplaceAddress={marketplaceAddress}
@@ -503,7 +542,7 @@ export function FishFinder({
           onSelectedBreedChange={onSelectedBreedChange}
           deepLinkSpecies={deepLinkSpecies}
         />
-      </div>
+      </section>
     </div>
   );
 }
