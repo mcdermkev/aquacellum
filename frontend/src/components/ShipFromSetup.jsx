@@ -79,7 +79,7 @@ export function ShipFromSetup({ walletAccount }) {
         setResult({
           ok: true,
           message: status === "verified"
-            ? "Saved and verified — you're ready to ship."
+            ? "Saved and verified. You're ready to ship."
             : "Saved. We couldn't fully verify this address; double-check it so rates and labels work.",
         });
         setExpanded(false);
@@ -98,7 +98,7 @@ export function ShipFromSetup({ walletAccount }) {
       <label className="sf-setup__label">📦 Ship-from address</label>
       <p style={{ fontSize: "0.8rem", color: "var(--text-secondary)", margin: "0 0 0.75rem 0", lineHeight: 1.5 }}>
         Where you ship from. Used to quote real, distance-based rates to each buyer and to buy labels in-app.
-        This stays private — buyers never see it.
+        This stays private. Buyers never see it.
       </p>
 
       {loading ? (
@@ -106,7 +106,7 @@ export function ShipFromSetup({ walletAccount }) {
       ) : configured && !showForm ? (
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.5rem", flexWrap: "wrap" }}>
           <span style={{ fontSize: "0.85rem", color: validated ? "var(--accent-green, #34d399)" : "var(--accent-amber, #fbbf24)" }}>
-            {validated ? "✓ Ship-from set & verified" : "⚠ Ship-from set (unverified)"} — {form.city}, {form.state} {form.postalCode}
+            {validated ? "✓ Ship-from set & verified" : "⚠ Ship-from set (unverified)"}: {form.city}, {form.state} {form.postalCode}
           </span>
           <button type="button" onClick={() => setExpanded(true)} style={linkBtn}>Edit</button>
         </div>

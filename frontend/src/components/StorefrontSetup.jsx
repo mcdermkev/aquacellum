@@ -258,7 +258,7 @@ export function StorefrontSetup({ walletAccount, casualModeActive, existingProfi
 
       if (data.success) {
         setSaveResult({ success: true, message: casualModeActive
-          ? "Your store is live! Share it with buyers."
+          ? "Your store is live. Share it with buyers."
           : "Storefront published successfully." });
       } else {
         setSaveResult({ success: false, message: data.error || "Failed to save. Try again." });
@@ -312,7 +312,7 @@ export function StorefrontSetup({ walletAccount, casualModeActive, existingProfi
                 <div className="sf-setup__banner-empty">
                   <ImageSquare weight="duotone" size={26} />
                   <span>Add a banner or background</span>
-                  <small>Wide image works best — 1500×500</small>
+                  <small>Wide image works best, 1500×500</small>
                 </div>
               )}
 
@@ -402,7 +402,7 @@ export function StorefrontSetup({ walletAccount, casualModeActive, existingProfi
           <span id="sf-slug-hint" className="sf-setup__hint">
             {slugStatus === "taken" && "This slug is already taken. Try another."}
             {slugStatus === "invalid" && "3-32 characters, lowercase letters, numbers, and hyphens only."}
-            {slugStatus === "available" && "Available!"}
+            {slugStatus === "available" && "Available"}
             {!slugStatus && "Lowercase letters, numbers, and hyphens. 3-32 characters."}
           </span>
         </div>
@@ -558,7 +558,7 @@ export function StorefrontSetup({ walletAccount, casualModeActive, existingProfi
               id="sf-doa"
               value={doaPolicy}
               onChange={(e) => setDoaPolicy(e.target.value.slice(0, MAX_POLICY))}
-              placeholder="Your DOA guarantee — claim window (e.g. photos within 2 hours of delivery), what's covered, and how refunds or replacements work."
+              placeholder="Your DOA guarantee: claim window (e.g. photos within 2 hours of delivery), what's covered, and how refunds or replacements work."
               rows={3}
               maxLength={MAX_POLICY}
               className="sf-setup__textarea"
@@ -575,7 +575,7 @@ export function StorefrontSetup({ walletAccount, casualModeActive, existingProfi
               id="sf-handshake"
               value={handshakePolicy}
               onChange={(e) => setHandshakePolicy(e.target.value.slice(0, MAX_POLICY))}
-              placeholder="Local pickup / meetup rules — accepted payment, where you meet, bag/acclimation guidance, and any local-only terms."
+              placeholder="Local pickup or meetup rules: accepted payment, where you meet, bag/acclimation guidance, and any local-only terms."
               rows={3}
               maxLength={MAX_POLICY}
               className="sf-setup__textarea"
@@ -590,7 +590,7 @@ export function StorefrontSetup({ walletAccount, casualModeActive, existingProfi
             Payouts
           </label>
           <p style={{ fontSize: "0.8rem", color: "var(--text-secondary)", margin: "0 0 0.75rem 0", lineHeight: 1.5 }}>
-            Buyers pay in USD at checkout. Connect a Stripe account to receive your payouts — you keep 96% of each sale (the platform fee is 4%), and the buyer covers card processing. Funds for shipped and local-pickup orders are held in escrow until the buyer confirms handoff.
+            Buyers pay in USD at checkout. Connect a Stripe account to receive your payouts. You keep 96% of each sale (the platform fee is 4%), and the buyer covers card processing. Funds for shipped and local-pickup orders are held in escrow until the buyer confirms handoff.
           </p>
           {payoutLoading ? (
             <div style={{ fontSize: "0.8rem", color: "var(--text-muted)", display: "flex", gap: "0.4rem", alignItems: "center" }}>
@@ -598,7 +598,7 @@ export function StorefrontSetup({ walletAccount, casualModeActive, existingProfi
             </div>
           ) : payoutStatus?.onboardingComplete ? (
             <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.85rem", color: "var(--accent-green)" }}>
-              <Check size={16} weight="bold" /> Payouts active — you're ready to sell.
+              <Check size={16} weight="bold" /> Payouts active. You're ready to sell.
             </div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", alignItems: "flex-start" }}>

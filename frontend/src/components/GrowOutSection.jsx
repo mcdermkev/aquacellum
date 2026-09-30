@@ -141,10 +141,10 @@ export function GrowOutSection({ walletAccount, casualModeActive }) {
           <img src="/poseidon-avatar.jpg" alt="" style={{ width: "24px", height: "24px", borderRadius: "50%", objectFit: "cover", flexShrink: 0, marginTop: "1px" }} />
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: "0.75rem", fontWeight: "600", color: "var(--accent-amber)", marginBottom: "3px" }}>
-              Poseidon nudge — {overdueSpawns.length} spawn{overdueSpawns.length > 1 ? "s" : ""} overdue
+              Poseidon nudge: {overdueSpawns.length} spawn{overdueSpawns.length > 1 ? "s" : ""} overdue
             </div>
             <div style={{ fontSize: "0.7rem", color: "var(--text-muted)", lineHeight: "1.4" }}>
-              {overdueSpawns.slice(0, 3).map(s => `${s.speciesName} (#${formatLocalRecordRef(s.spawnId)}) — ${s.daysSince}d`).join(" · ")}
+              {overdueSpawns.slice(0, 3).map(s => `${s.speciesName} (#${formatLocalRecordRef(s.spawnId)}), ${s.daysSince}d`).join(" · ")}
               {overdueSpawns.length > 3 && ` +${overdueSpawns.length - 3} more`}
             </div>
           </div>
@@ -153,11 +153,11 @@ export function GrowOutSection({ walletAccount, casualModeActive }) {
 
       <div style={{ marginBottom: "1.25rem" }}>
         <h2 style={{ fontSize: "1.1rem", fontWeight: "700", color: "var(--text-primary)", margin: "0 0 0.25rem" }}>
-          📊 Grow-Out Tracker
+          Grow-Out Tracker
         </h2>
         <p style={{ fontSize: "0.8rem", color: "var(--text-muted)", margin: 0, lineHeight: "1.5" }}>
           {casualModeActive
-            ? "Keep tabs on each batch of babies — log how many are growing, how many you've rehomed, and how many made it."
+            ? "Keep tabs on each batch of babies. Log how many are growing, how many you've rehomed, and how many made it."
             : "Track fry survival across each spawn: log checkpoints for counts, culls, sales, and losses to monitor your yield funnel and survival rate over time."}
         </p>
       </div>

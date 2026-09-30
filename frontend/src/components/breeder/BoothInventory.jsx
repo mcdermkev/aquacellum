@@ -1343,7 +1343,7 @@ function PublishTankModal({ lines, onClose, onPublish, busy, result }) {
               fontSize: "0.9rem",
             }}
           >
-            <strong>Tank published!</strong>
+            <strong>Tank published.</strong>
             <p style={{ margin: "0.5rem 0 0 0", color: "var(--text-secondary)" }}>
               Your label has been downloaded. The public page is at:<br />
               <a href={result.publicUrl} target="_blank" rel="noopener noreferrer" style={{ color: "var(--accent-blue)", wordBreak: "break-all" }}>

@@ -460,7 +460,7 @@ export function SpawningWizard({ contractAddress, walletAccount, onComplete, cas
       // Add Breeder XP points
       awardXp("SPAWN_BREED");
 
-      setTxState({ status: "success", message: `Successfully registered Spawn Record Serial No. ${spawnId.toString().slice(-3)} with ${offspringCount} birth certificates!`, txHash: "" });
+      setTxState({ status: "success", message: `Successfully registered Spawn Record Serial No. ${spawnId.toString().slice(-3)} with ${offspringCount} birth certificates.`, txHash: "" });
     } catch (err) {
       console.error(err);
       setTxState({ status: "error", message: err.reason || err.message || "Breeding registration failed.", txHash: "" });
@@ -483,7 +483,7 @@ export function SpawningWizard({ contractAddress, walletAccount, onComplete, cas
   return (
     <div className="glass-card spawning-wizard-card" style={{ maxWidth: "680px", margin: "0 auto", padding: "2.5rem" }}>
       <h2 style={{ fontSize: "1.75rem", color: "var(--text-primary)", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-        🥚 Breeding Pair Setup
+        Breeding Pair Setup
       </h2>
       <p style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>
         Pick a pair, pick a tank, and record the spawn in a few steps.
@@ -518,7 +518,7 @@ export function SpawningWizard({ contractAddress, walletAccount, onComplete, cas
       {txState.status === "success" && (
         <div className="glass-card" style={{ padding: "2rem", border: "1px solid var(--accent-green)", textAlign: "center", position: "relative", overflow: "hidden" }}>
           <span style={{ fontSize: "2rem" }}>🎉</span>
-          <h3 style={{ color: "var(--accent-green)", marginTop: "0.5rem" }}>Spawn Logged!</h3>
+          <h3 style={{ color: "var(--accent-green)", marginTop: "0.5rem" }}>Spawn logged</h3>
           <p style={{ color: "var(--text-secondary)", fontSize: "0.9rem", margin: "0.75rem 0" }}>{txState.message}</p>
 
           {/* Morph Registration Prompt — shown when non-standard traits were selected */}
@@ -530,7 +530,7 @@ export function SpawningWizard({ contractAddress, walletAccount, onComplete, cas
             }}>
               <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.4rem" }}>
                 <span style={{ fontSize: "1rem" }}>🎨</span>
-                <span style={{ fontSize: "0.82rem", fontWeight: "700", color: "#e879f9" }}>Novel Traits Detected!</span>
+                <span style={{ fontSize: "0.82rem", fontWeight: "700", color: "#a21caf" }}>New traits noted</span>
               </div>
               <p style={{ fontSize: "0.75rem", color: "var(--text-secondary)", margin: "0 0 0.6rem", lineHeight: "1.5" }}>
                 You selected non-standard phenotypes for this spawn ({selectedTraitLabels(geneticMarkers).join(", ")}). If this is a new morph or strain, consider registering it for verification.
@@ -670,7 +670,7 @@ export function SpawningWizard({ contractAddress, walletAccount, onComplete, cas
                           boxShadow: "var(--shadow-md)",
                         }}
                       >
-                        {coiRisk.icon} {coiSignal.coi}% — {coiRisk.label}
+                        {coiRisk.icon} {coiSignal.coi}%: {coiRisk.label}
                       </span>
                     ) : coiSignal ? (
                       <span style={{ fontSize: "0.72rem", padding: "0.5rem 1rem", whiteSpace: "nowrap", borderRadius: "12px", border: "1px solid var(--glass-border)", background: "rgba(var(--ink-rgb), 0.04)", color: "var(--text-muted)" }}>
@@ -1110,7 +1110,7 @@ export function SpawningWizard({ contractAddress, walletAccount, onComplete, cas
                       unresolvable pedigree reads as unknown, never as 0%. */}
                   <span style={{ textAlign: "right", color: coiSignal?.available ? (coiRisk?.color || "var(--text-secondary)") : "var(--text-muted)" }}>
                     {coiSignal?.available
-                      ? `${coiSignal.coi}% — ${coiRisk?.label || ""}`
+                      ? `${coiSignal.coi}%${coiRisk?.label ? `: ${coiRisk.label}` : ""}`
                       : (casualModeActive ? PAIRING_COPY.coiUnavailable.casual : PAIRING_COPY.coiUnavailable.pro)}
                   </span>
                 </div>

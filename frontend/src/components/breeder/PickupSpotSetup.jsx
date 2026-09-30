@@ -141,7 +141,7 @@ export function PickupSpotSetup({ walletAccount }) {
       <label className="sf-setup__label">📍 Pickup spots</label>
       <p style={{ fontSize: "0.8rem", color: "var(--text-secondary)", margin: "0 0 0.75rem 0", lineHeight: 1.5 }}>
         Public meet spots for local pickup orders. The exact address and pin are shown to a buyer only after
-        they've paid for a pickup order — this is separate from your private ship-from address above.
+        they've paid for a pickup order. This is separate from your private ship-from address above.
       </p>
 
       {loading ? (
@@ -150,7 +150,7 @@ export function PickupSpotSetup({ walletAccount }) {
         <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
           {locations.length === 0 && editingId !== "new" && (
             <div style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>
-              No pickup spots yet — add one so buyers can schedule a meet.
+              No pickup spots yet. Add one so buyers can schedule a meet.
             </div>
           )}
 
@@ -250,7 +250,7 @@ function LocationForm({ form, setForm, onSave, onCancel, saving }) {
       <MapPinPicker lat={form.lat} lng={form.lng} onPick={(lat, lng) => setForm((f) => ({ ...f, lat, lng }))} />
 
       <input style={input} placeholder="Address (shown to the buyer post-purchase)" value={form.addressText} onChange={set("addressText")} maxLength={500} />
-      <textarea style={{ ...input, minHeight: "60px", resize: "vertical" }} placeholder="Notes for the buyer (optional — e.g. 'meet by the fountain')" value={form.notes} onChange={set("notes")} maxLength={500} />
+      <textarea style={{ ...input, minHeight: "60px", resize: "vertical" }} placeholder="Notes for the buyer (optional, for example 'meet by the fountain')" value={form.notes} onChange={set("notes")} maxLength={500} />
 
       <label style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.75rem", color: "var(--text-secondary)" }}>
         <input type="checkbox" checked={!!form.active} onChange={(e) => setForm((f) => ({ ...f, active: e.target.checked }))} style={{ width: "14px", height: "14px" }} />
@@ -284,7 +284,7 @@ function AvailabilityEditor({ windows, onAdd, onUpdate, onRemove }) {
       </div>
       {windows.length === 0 && (
         <p style={{ fontSize: "0.7rem", color: "var(--text-muted)", margin: "0 0 0.5rem" }}>
-          No windows yet — buyers can't schedule a pickup until you add at least one.
+          No windows yet. Buyers can't schedule a pickup until you add at least one.
         </p>
       )}
       <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
@@ -430,7 +430,7 @@ function MapPinPicker({ lat, lng, onPick }) {
         <NumberField label="Latitude" value={lat} onChange={(v) => onPick(v, lng ?? null)} />
         <NumberField label="Longitude" value={lng} onChange={(v) => onPick(lat ?? null, v)} />
         <p style={{ gridColumn: "1 / -1", fontSize: "0.68rem", color: "var(--text-muted)", margin: 0 }}>
-          Map unavailable — enter coordinates manually, or leave blank and rely on the address text.
+          Map unavailable. Enter coordinates manually, or leave blank and rely on the address text.
         </p>
       </div>
     );

@@ -196,7 +196,7 @@ export function MorphRegistration({ walletAccount, casualModeActive, contractAdd
 
       setSuccessMsg(
         casualModeActive
-          ? `"${morphName}" submitted! A curator will review it soon. You can check back here anytime — look for the 🎨 Morphs tab under Breeder Tools to track your status.`
+          ? `"${morphName}" is submitted. A curator will review it. Check its status any time in the Morphs tab under Breeder Tools.`
           : `"${morphName}" queued for curator verification. Track its status below, or bookmark this page: /app/breeder?section=morphs`
       );
       setForm({ baseSpecies: "", morphName: "", traitType: "color", description: "", proofUrl: "" });
@@ -376,11 +376,11 @@ export function MorphRegistration({ walletAccount, casualModeActive, contractAdd
     <div style={{ maxWidth: "640px" }}>
       <div style={{ marginBottom: "1.25rem" }}>
         <h2 style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--text-primary)", margin: "0 0 0.25rem" }}>
-          🎨 {casualModeActive ? "Register a New Look" : "Morph Registration"}
+          {casualModeActive ? "Register a New Look" : "Morph Registration"}
         </h2>
         <p style={{ fontSize: "0.8rem", color: "var(--text-muted, #94a3b8)", margin: 0, lineHeight: 1.5 }}>
           {casualModeActive
-            ? "Bred something that looks different — a new color or fin shape? Submit it here and a curator will review it."
+            ? "Bred something that looks different, like a new color or fin shape? Submit it here and a curator will review it."
             : "Submit a new color morph, fin type, or pattern for curator verification. Verified morphs can be referenced in lineage and listings."}
         </p>
       </div>
@@ -641,7 +641,7 @@ export function MorphRegistration({ walletAccount, casualModeActive, contractAdd
           }}
         >
           <h3 style={{ fontSize: "0.9rem", fontWeight: 700, color: "var(--text-primary)", margin: "0 0 0.75rem" }}>
-            🛡️ Curator Review
+            Curator Review
             <span style={{ fontSize: "0.7rem", color: "var(--text-muted, #94a3b8)", fontWeight: 400, marginLeft: "0.4rem" }}>
               {pendingCount} pending
             </span>

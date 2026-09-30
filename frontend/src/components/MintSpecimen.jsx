@@ -353,7 +353,7 @@ export function MintSpecimen({ contractAddress, walletAccount, casualModeActive 
         }
       }
 
-      setSuccessId(mintedTokenId || "Success!");
+      setSuccessId(mintedTokenId || "Registered");
       // Notify onboarding tour / listeners that a specimen was added (no behavioral change)
       window.dispatchEvent(new CustomEvent("aquadex:specimen_added", { detail: { tokenId: mintedTokenId } }));
       // Reset form variables
@@ -465,7 +465,7 @@ export function MintSpecimen({ contractAddress, walletAccount, casualModeActive 
           marginBottom: "1.5rem", 
           fontSize: "0.85rem" 
         }}>
-          <strong>Birth Registered Successfully!</strong> Birth Certificate Serial No. registered: <strong style={{ textDecoration: "underline" }}>{typeof successId === "number" ? successId.toString().padStart(3, "0") : successId}</strong>
+          <strong>Birth registered.</strong> Birth Certificate Serial No. registered: <strong style={{ textDecoration: "underline" }}>{typeof successId === "number" ? successId.toString().padStart(3, "0") : successId}</strong>
         </div>
       )}
 

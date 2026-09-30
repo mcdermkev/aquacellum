@@ -38,7 +38,7 @@ export const PROGRAM_COPY = Object.freeze({
     casual: "List the groups of fish you breed. We'll make a tank for each one and add its fish for you.",
   }),
   foundationNote: Object.freeze({
-    pro: "Declared fish are recorded as foundation stock with no parents, so relatedness reads as unknown until you log a spawn from them. That is deliberate — a made-up ancestor would make every pairing report a false 0%.",
+    pro: "Declared fish are recorded as foundation stock with no parents, so relatedness reads as unknown until you log a spawn from them. That is deliberate: a made-up ancestor would make every pairing report a false 0%.",
     casual: "We won't guess these fish's parents. Once you breed them, their babies get a real family tree.",
   }),
   breederNote: Object.freeze({
@@ -109,7 +109,7 @@ export function BreedingProgramModal({ walletAccount, catalog = [], casualModeAc
     setError(null);
     if (plan.readyLines.length === 0) return;
     if (plan.overCap) {
-      setError(`That's ${plan.totalFish} fish across ${plan.readyLines.length} lines — the limit is ${MAX_PROGRAM_FISH} fish and ${MAX_LINES} lines per run.`);
+      setError(`That's ${plan.totalFish} fish across ${plan.readyLines.length} lines. The limit is ${MAX_PROGRAM_FISH} fish and ${MAX_LINES} lines per run.`);
       return;
     }
     if (plan.totalFish > CONFIRM_THRESHOLD && !pendingConfirm) {
@@ -223,7 +223,7 @@ export function BreedingProgramModal({ walletAccount, catalog = [], casualModeAc
             table
             focusable
             role="group"
-            aria-label="Breeding lines — scroll sideways for more columns"
+            aria-label="Breeding lines. Scroll sideways for more columns"
             style={{ overflowX: "auto" }}
           >
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
@@ -278,7 +278,7 @@ export function BreedingProgramModal({ walletAccount, catalog = [], casualModeAc
                           onChange={(e) => setRow(i, { speciesId: e.target.value ? Number(e.target.value) : null })}
                           style={{ ...selectStyle, marginTop: "0.25rem" }}
                         >
-                          <option value="">— Pick the species —</option>
+                          <option value="">Pick the species</option>
                           {ordered.map((s) => (
                             <option key={s.speciesId} value={String(s.speciesId)}>
                               {s.commonName} ({s.scientificName})
@@ -393,7 +393,7 @@ export function BreedingProgramModal({ walletAccount, catalog = [], casualModeAc
             {submitting
               ? progress || "Working…"
               : pendingConfirm
-              ? `Confirm — create ${plan.totalFish} fish`
+              ? `Confirm and create ${plan.totalFish} fish`
               : plan.readyLines.length > 0
               ? `Create ${plan.readyLines.length} tanks & ${plan.totalFish} fish`
               : "Create"}

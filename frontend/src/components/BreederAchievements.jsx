@@ -120,7 +120,7 @@ export function BreederAchievements({ walletAccount }) {
           // them into one "Sold" number is what let a typed figure read as
           // commercial history.
           { label: "Sales", value: stats.verifiedSales, icon: "💰", title: "Completed marketplace sales" },
-          { label: "Rehomed", value: stats.frySoldSelfReported, icon: "🏠", title: "From your own grow-out logs — includes fish rehomed off the marketplace" },
+          { label: "Rehomed", value: stats.frySoldSelfReported, icon: "🏠", title: "From your own grow-out logs. Includes fish rehomed off the marketplace." },
         ].map(({ label, value, icon, title }) => (
           <div key={label} title={title} style={{
             padding: "0.65rem", borderRadius: "8px", textAlign: "center",
@@ -156,7 +156,7 @@ export function BreederAchievements({ walletAccount }) {
         {earned.length === 0 ? (
           <div style={{ textAlign: "center", padding: "1.5rem", color: "var(--text-muted)", fontSize: "0.8rem" }}>
             <span style={{ fontSize: "1.5rem", display: "block", marginBottom: "0.5rem" }}>🌱</span>
-            Start breeding to unlock achievements!
+            Log a spawn to start earning achievements.
           </div>
         ) : (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: "0.5rem" }}>
@@ -243,13 +243,13 @@ export function BreederAchievements({ walletAccount }) {
               {levelInfo.label || levelInfo.key}
             </div>
             <div style={{ fontSize: "0.68rem", color: "var(--text-muted)", marginTop: "2px" }}>
-              {getXp()} XP — {levelInfo.nextLabel ? `${levelInfo.xpToNext} XP to ${levelInfo.nextLabel}` : "Max tier reached"}
+              {getXp()} XP · {levelInfo.nextLabel ? `${levelInfo.xpToNext} XP to ${levelInfo.nextLabel}` : "Max tier reached"}
             </div>
           </div>
           <ShareButton
             generateCard={() => generateSpawnMilestoneCard({ spawnCount: stats.totalSpawns, totalOffspring: stats.totalFrySurvived, survivalRate: stats.bestSurvivalRate, speciesCount: stats.uniqueSpeciesBred })}
             title="Breeder Stats"
-            text={`My Aquacellum stats: ${stats.totalSpawns} spawns, ${stats.totalFrySurvived} fry survived, ${stats.bestSurvivalRate}% best survival!`}
+            text={`My Aquacellum stats: ${stats.totalSpawns} spawns, ${stats.totalFrySurvived} fry survived, ${stats.bestSurvivalRate}% best survival.`}
             label="Share Stats"
             size="sm"
           />

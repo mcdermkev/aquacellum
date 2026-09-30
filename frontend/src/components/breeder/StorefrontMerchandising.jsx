@@ -51,7 +51,7 @@ import { ScrollFade } from "../ScrollFade";
 function listingLabel(item) {
   const key = getListingKey(item);
   const qty = item.isBatch ? ` (${item.quantity ?? "?"} available)` : "";
-  return `${item.commonName || "Unknown species"}${qty} — ${formatPriceCents(normalizePriceCents(item))} · ${key}`;
+  return `${item.commonName || "Unknown species"}${qty} · ${formatPriceCents(normalizePriceCents(item))} · ${key}`;
 }
 
 function draftId(section) {

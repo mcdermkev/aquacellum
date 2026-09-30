@@ -379,7 +379,7 @@ function DihybridGrid({ result, trait1, trait2 }) {
       table
       focusable
       role="group"
-      aria-label="Punnett square — scroll sideways for more columns"
+      aria-label="Punnett square. Scroll sideways for more columns"
       style={{ marginTop: "1rem", overflowX: "auto" }}
     >
       {/* Header row: Dam gametes */}
@@ -792,7 +792,7 @@ export function GeneticsPrediction({ casualModeActive = false }) {
                   fontSize: "0.6rem", fontWeight: "700", color: "#fff",
                 }}>♂</div>
                 <span style={{ fontSize: "0.8rem", fontWeight: "700", color: "var(--accent-blue)" }}>
-                  {casualModeActive ? "Dad" : "Sire"} — {trait2.symbol}
+                  {casualModeActive ? "Dad" : "Sire"}: {trait2.symbol}
                 </span>
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
@@ -829,7 +829,7 @@ export function GeneticsPrediction({ casualModeActive = false }) {
                   fontSize: "0.6rem", fontWeight: "700", color: "#fff",
                 }}>♀</div>
                 <span style={{ fontSize: "0.8rem", fontWeight: "700", color: "#be185d" }}>
-                  {casualModeActive ? "Mom" : "Dam"} — {trait2.symbol}
+                  {casualModeActive ? "Mom" : "Dam"}: {trait2.symbol}
                 </span>
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
@@ -941,7 +941,7 @@ function getBreedingTip(trait, sireGenotype, damGenotype) {
       return `Neither parent carries ${trait.label}. No offspring will express this trait.`;
     }
     if (sireGenotype === "homozygous_trait" || damGenotype === "homozygous_trait") {
-      return `At least one parent is homozygous for ${trait.label}. All offspring will express the trait. Note: homozygous dominant can be lethal in some species — monitor fry viability.`;
+      return `At least one parent is homozygous for ${trait.label}. All offspring will express the trait. Note: homozygous dominant can be lethal in some species, so watch fry survival.`;
     }
     return `Heterozygous cross may produce some wild-type offspring. Selectively breed expressing offspring to increase frequency in subsequent generations.`;
   }
@@ -958,16 +958,16 @@ function getDihybridTip(trait1, trait2, sireGeno1, damGeno1, sireGeno2, damGeno2
   const bothHetero = sireGeno1 === "heterozygous" && damGeno1 === "heterozygous" &&
                      sireGeno2 === "heterozygous" && damGeno2 === "heterozygous";
   if (bothHetero) {
-    return `Classic dihybrid cross (both parents heterozygous for both traits). Expect the 9:3:3:1 phenotypic ratio — 9/16 expressing both, 3/16 expressing only ${trait1.label}, 3/16 expressing only ${trait2.label}, 1/16 wild for both. Track offspring carefully to identify double-homozygous specimens.`;
+    return `Classic dihybrid cross (both parents heterozygous for both traits). Expect the 9:3:3:1 phenotypic ratio: 9/16 expressing both, 3/16 expressing only ${trait1.label}, 3/16 expressing only ${trait2.label}, 1/16 wild for both. Track offspring carefully to identify double-homozygous specimens.`;
   }
 
   const trait1Match = sireGeno1 === damGeno1;
   const trait2Match = sireGeno2 === damGeno2;
   if (trait1Match && trait2Match) {
-    return `Both parents share the same genotype for both traits. Offspring genotype distribution will be narrower — fewer phenotypic classes than a full dihybrid cross.`;
+    return `Both parents share the same genotype for both traits. Offspring genotype distribution will be narrower, with fewer phenotypic classes than a full dihybrid cross.`;
   }
 
-  return `Independent assortment applies — ${trait1.label} and ${trait2.label} segregate independently. Each trait follows its own Mendelian ratio, and the combined probabilities multiply across traits.`;
+  return `Independent assortment applies: ${trait1.label} and ${trait2.label} segregate independently. Each trait follows its own Mendelian ratio, and the combined probabilities multiply across traits.`;
 }
 
 export default GeneticsPrediction;

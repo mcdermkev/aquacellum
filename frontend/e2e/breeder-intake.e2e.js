@@ -80,7 +80,7 @@ test.describe("Rack stamping (bulk tank create)", () => {
     await expect(page.getByText(/Click again to confirm/i)).toBeVisible();
     expect((await readOwnedTanks(page)).length).toBe(before.length);
 
-    await page.getByRole("button", { name: /Confirm — create 20/ }).click();
+    await page.getByRole("button", { name: /Confirm and create 20/ }).click();
     await expect(page.getByText(/Created 20 units/i)).toBeVisible({ timeout: 15_000 });
     expect((await readOwnedTanks(page)).length - before.length).toBe(20);
   });

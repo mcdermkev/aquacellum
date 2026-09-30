@@ -209,7 +209,7 @@ export function SpawningDashboard({ walletAccount }) {
       {activeSection === "certificates" && (
         <div className="glass-card" style={{ padding: "1.5rem" }}>
           <h3 style={{ fontSize: "1.2rem", color: "var(--text-primary)", marginBottom: "0.5rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            📜 Registered Birth Certificates
+            Registered Birth Certificates
           </h3>
           <p style={{ color: "var(--text-muted)", fontSize: "0.8rem", marginBottom: "1.25rem" }}>
             All specimens registered under your wallet with lineage information.
@@ -291,7 +291,7 @@ export function SpawningDashboard({ walletAccount }) {
       {activeSection === "insights" && (
         <div className="glass-card" style={{ padding: "1.5rem" }}>
           <h3 style={{ fontSize: "1.2rem", color: "var(--text-primary)", marginBottom: "0.5rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            📊 Hatchery Insights
+            Hatchery Insights
           </h3>
           <p style={{ color: "var(--text-muted)", fontSize: "0.8rem", marginBottom: "1.25rem" }}>
             Overview of your breeding performance and hatchery statistics.
@@ -339,7 +339,7 @@ export function SpawningDashboard({ walletAccount }) {
             <div style={{ marginTop: "1.25rem", padding: "0.75rem 1rem", background: "rgba(168, 85, 247, 0.05)", border: "1px solid rgba(168, 85, 247, 0.12)", borderRadius: "8px" }}>
               <div style={{ color: "var(--text-muted)", fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: "0.3rem" }}>Last Spawn Event</div>
               <div style={{ color: "var(--text-primary)", fontSize: "0.85rem" }}>
-                {getSpeciesName(lastSpawn.speciesId)} — Sire #{formatCertSerial(lastSpawn.sireId)} × Dam #{formatCertSerial(lastSpawn.damId)}
+                {getSpeciesName(lastSpawn.speciesId)}: Sire #{formatCertSerial(lastSpawn.sireId)} × Dam #{formatCertSerial(lastSpawn.damId)}
               </div>
               <div style={{ color: "var(--text-muted)", fontSize: "0.72rem", marginTop: "0.2rem" }}>
                 {formatDate(lastSpawn.timestamp)} at {formatTime(lastSpawn.timestamp)} · {lastSpawn.offspringIds?.length || 0} offspring
@@ -351,7 +351,7 @@ export function SpawningDashboard({ walletAccount }) {
             <div style={{ textAlign: "center", padding: "2rem 1rem", color: "var(--text-muted)" }}>
               <span style={{ fontSize: "2rem", display: "block", marginBottom: "0.75rem" }}>📊</span>
               <p style={{ fontSize: "0.85rem" }}>No breeding data yet.</p>
-              <p style={{ fontSize: "0.75rem", marginTop: "0.25rem" }}>Complete your first spawn to see hatchery insights!</p>
+              <p style={{ fontSize: "0.75rem", marginTop: "0.25rem" }}>Log your first spawn to see hatchery insights here.</p>
             </div>
           )}
         </div>
@@ -361,7 +361,7 @@ export function SpawningDashboard({ walletAccount }) {
       {activeSection === "logs" && (
         <div className="glass-card" style={{ padding: "1.5rem" }}>
           <h3 style={{ fontSize: "1.2rem", color: "var(--text-primary)", marginBottom: "0.5rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            📋 Spawning Logs
+            Spawning Logs
           </h3>
           <p style={{ color: "var(--text-muted)", fontSize: "0.8rem", marginBottom: "1.25rem" }}>
             Chronological record of all breeding events in your facility.

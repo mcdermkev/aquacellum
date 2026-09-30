@@ -155,7 +155,7 @@ export function ParcelPresetEditor({ walletAccount }) {
         <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
           {presets.length === 0 && editingId !== "new" && (
             <div style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>
-              No presets yet — new listings use a sensible default box until you add one.
+              No presets yet. New listings use a sensible default box until you add one.
             </div>
           )}
 
