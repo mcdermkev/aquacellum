@@ -68,6 +68,7 @@ import { isInsideEnvelope, getTrackBackground, CONTAINMENT_TYPES, getWaterEnvelo
 import { MarineReadingTile, MarineTestFields } from "./MarineTestFields";
 import { TankConnections } from "./logbook/TankConnections";
 import { countInhabitants, inhabitantSummary, reefPlacement, speciesRecordFor } from "./logbook/inhabitants";
+import { latestReading, readingSummary } from "./logbook/latestReading";
 import { withMarineGlobals } from "./finder/waterFilter";
 import { buildGlobalCatalog } from "../services/speciesCatalog";
 import { tankFitInputs } from "../services/compatibleTanks";
@@ -1098,16 +1099,8 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
       awardXp("POST_COMMENT");
     }
 
-    const safeLogs = Array.isArray(activeTank.logs) ? activeTank.logs : [];
-    let tempVal = "24.5°C";
-    let phVal = "7.2 pH";
-    if (safeLogs.length > 0) {
-      const lastLog = [...safeLogs].sort((a,b) => Number(b.timestamp || 0) - Number(a.timestamp || 0))[0];
-      const tempRaw = lastLog.tempCelsiusX10 !== undefined ? Number(lastLog.tempCelsiusX10) : (lastLog.temp !== undefined ? Number(lastLog.temp) : 245);
-      const phRaw = lastLog.phX10 !== undefined ? Number(lastLog.phX10) : (lastLog.ph !== undefined ? Number(lastLog.ph) : 72);
-      tempVal = `${(tempRaw / 10).toFixed(1)}°C`;
-      phVal = `${(phRaw / 10).toFixed(1)} pH`;
-    }
+    // Only real logged readings; no reading means nothing is attached.
+    const reading = latestReading(activeTank.logs);
     const specCount = getSpecimenCount(activeTank);
 
     const newComment = {
@@ -1118,8 +1111,8 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
       isExpertAudit,
       category: composerCategory,
       telemetry: composerCategory === "telemetry" ? {
-        temp: tempVal,
-        ph: phVal,
+        temp: reading.tempText,
+        ph: reading.phText,
         specimens: specCount
       } : null,
       spawning: composerCategory === "spawning" ? {
@@ -1136,16 +1129,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
     // Broadcast to the Reef if toggled
     if (broadcastToReef) {
       if (isSupabaseConfigured()) {
-        let snap = null;
-        if (safeLogs.length > 0) {
-          const lastLog = [...safeLogs].sort((a,b) => Number(b.timestamp || 0) - Number(a.timestamp || 0))[0];
-          const tempRaw = lastLog.tempCelsiusX10 !== undefined ? Number(lastLog.tempCelsiusX10) : (lastLog.temp !== undefined ? Number(lastLog.temp) : 245);
-          const phRaw = lastLog.phX10 !== undefined ? Number(lastLog.phX10) : (lastLog.ph !== undefined ? Number(lastLog.ph) : 72);
-          snap = {
-            temp: tempRaw / 10,
-            ph: phRaw / 10
-          };
-        }
+        const snap = reading.hasReading ? { temp: reading.temp, ph: reading.ph } : null;
         createCurrent({
           authorWallet: author,
           title: activeTank.name || `Tank ${activeTank.id.slice(0, 8)}`,
@@ -3427,17 +3411,16 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
               {/* 2.5 SOCIAL SUB-TAB: Tank Progress Social Feed */}
               {detailSubTab === "social" && (() => {
                 const isHatched = companionData && companionData.eggState >= 2;
-                const safeLogs = Array.isArray(activeTank.logs) ? activeTank.logs : [];
-                let tempVal = "24.5°C";
-                let phVal = "7.2 pH";
-                if (safeLogs.length > 0) {
-                  const lastLog = [...safeLogs].sort((a,b) => Number(b.timestamp || 0) - Number(a.timestamp || 0))[0];
-                  const tempRaw = lastLog.tempCelsiusX10 !== undefined ? Number(lastLog.tempCelsiusX10) : (lastLog.temp !== undefined ? Number(lastLog.temp) : 245);
-                  const phRaw = lastLog.phX10 !== undefined ? Number(lastLog.phX10) : (lastLog.ph !== undefined ? Number(lastLog.ph) : 72);
-                  tempVal = `${(tempRaw / 10).toFixed(1)}°C`;
-                  phVal = `${(phRaw / 10).toFixed(1)} pH`;
-                }
+                // Only real logged readings. With no water test the post
+                // carries no numbers rather than invented ones.
+                const reading = latestReading(activeTank.logs);
+                const readingText = readingSummary(reading);
                 const specCount = getSpecimenCount(activeTank);
+                const updateText = () => {
+                  const stock = inhabitantSummary(countInhabitants(activeTank, fishbaseData));
+                  if (casualModeActive) return readingText ? `Tank update: ${readingText}. ${stock}.` : `Tank update: ${stock}.`;
+                  return readingText ? `Water test: ${readingText}. Stock: ${specCount}.` : `Stock: ${specCount}. No water test logged yet.`;
+                };
 
                 return (
                   <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
@@ -3473,14 +3456,12 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                           // In both modes, clicking "Post Current" sets category to Telemetry
                           setComposerCategory("telemetry");
                           
-                          // Pre-fill telemetry report
-                          const reportText = casualModeActive
-                            ? `Tank update: ${tempVal}, pH ${phVal.replace(" pH", "")}. ${inhabitantSummary(countInhabitants(activeTank, fishbaseData))}.`
-                            : `📊 Parameter snapshot: Temp ${tempVal}, pH ${phVal.replace(" pH", "")}. Stock: ${specCount}.`;
-                          setCommentText(reportText);
+                          setCommentText(updateText());
                           setCommenterRole(casualModeActive || !isHatched ? "hobbyist" : "breeder");
-                          
-                          showToast(casualModeActive ? "Added your latest readings to the post." : "Parameter snapshot added to the post.");
+
+                          showToast(readingText
+                            ? "Added your latest water test to the post."
+                            : "No water test logged for this tank yet, so no readings were added.");
                           setTimeout(() => commentInputRef.current?.focus(), 100);
                         }}
                         style={{
@@ -3651,10 +3632,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                           className={`composer-tab-btn ${composerCategory === "telemetry" ? "active" : ""}`}
                           onClick={() => {
                             setComposerCategory("telemetry");
-                            const reportText = casualModeActive
-                            ? `Tank update: ${tempVal}, pH ${phVal.replace(" pH", "")}. ${inhabitantSummary(countInhabitants(activeTank, fishbaseData))}.`
-                            : `📊 Parameter snapshot: Temp ${tempVal}, pH ${phVal.replace(" pH", "")}. Stock: ${specCount}.`;
-                            setCommentText(reportText);
+                            setCommentText(updateText());
                           }}
                         >
                           🌡️ Telemetry
@@ -3664,8 +3642,8 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                           className={`composer-tab-btn ${composerCategory === "spawning" ? "active" : ""}`}
                           onClick={() => {
                             setComposerCategory("spawning");
-                            const spText = `🥚 SPAWNING EVENT: Spawn log recorded.`;
-                            setCommentText(spText);
+                            // Leave the words to the keeper; the spawn details below are attached.
+                            setCommentText("");
                           }}
                         >
                           🍼 Spawning
@@ -3676,8 +3654,8 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                           onClick={() => {
                             if (!casualModeActive && (companionData?.currentTier === "Master" || companionData?.currentTier === "God-Tier")) {
                               setComposerCategory("lab-audit");
-                              const auditText = `🔬 EXPERT LAB AUDIT: Verified water parameter chemistry. Parameters are stable. Spawning conditions optimized.`;
-                              setCommentText(auditText);
+                              // No canned verdict: an audit says only what the auditor writes.
+                              setCommentText("");
                             } else {
                               // Named for the tag that actually gates it (§9.28).
                               // "Master Breeder Rank" is a different thing, gated by
@@ -3694,12 +3672,13 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                       {composerCategory === "telemetry" && (
                         <div className="telemetry-preview-card">
                           <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", fontWeight: 500 }}>
-                            📊 Parameter Attachment Preview
+                            Attached to the post
                           </span>
                           <div className="telemetry-preview-pills">
-                            <span className="telemetry-preview-pill">🌡️ Temp: {tempVal}</span>
-                            <span className="telemetry-preview-pill">🧪 pH: {phVal}</span>
-                            <span className="telemetry-preview-pill">🐟 Pop: {specCount} Specimens</span>
+                            {reading.tempText && <span className="telemetry-preview-pill">🌡️ Temp: {reading.tempText}</span>}
+                            {reading.phText && <span className="telemetry-preview-pill">🧪 pH: {reading.phText}</span>}
+                            {!reading.hasReading && <span className="telemetry-preview-pill">No water test logged yet</span>}
+                            <span className="telemetry-preview-pill">🐟 {specCount} fish</span>
                           </div>
                         </div>
                       )}
