@@ -6,7 +6,10 @@
  * case-insensitive and scoped to the one wallet, accounting records are left
  * alone, the profile is kept as an anonymized marker, the run is idempotent,
  * a cancel during the run wins, a failed step leaves the request for the next
- * run, and Fish Room owners are held for manual review.
+ * run, and Fish Room owners are held for manual review. Open offers are
+ * withdrawn/declined (never deleted), unbid auction lots are cancelled through
+ * cancel_auction_lot, and anything with money or a binding bid in flight
+ * defers the account without writing anything.
  */
 
 import { readFileSync } from "node:fs";
@@ -14,6 +17,7 @@ import { fileURLToPath } from "node:url";
 import { describe, it, expect } from "vitest";
 import {
   PURGE_PLAN,
+  PURGE_HOLDS,
   PURGE_GRACE_DAYS,
   purgeDueAccounts,
   likeExact,
@@ -42,10 +46,30 @@ function likeToRegex(pattern) {
   return new RegExp(`^${out}$`, "i");
 }
 
-function fakeSupabase(seed, { failTable = null, storage = {} } = {}) {
+function fakeSupabase(seed, { failTable = null, storage = {}, onWrite = null, onRpc = null } = {}) {
   const tables = structuredClone(seed);
   const files = structuredClone(storage); // { bucket: ["path/a.jpg", ...] }
   const calls = [];
+
+  // Mirrors cancel_auction_lot (20260929_auctions_v2.sql): re-checks under the
+  // row lock, cancels, and returns batch stock (which switches the listing on).
+  const rpcs = {
+    cancel_auction_lot({ p_lot, p_seller }) {
+      const lot = (tables.auction_lots || []).find((l) => l.id === p_lot);
+      if (!lot) return { data: null, error: { message: "lot not found", code: "P0002" } };
+      if (lot.seller_wallet !== String(p_seller).toLowerCase()) return { data: null, error: { message: "not yours", code: "42501" } };
+      if (!["live", "pending_approval"].includes(lot.status)) return { data: null, error: { message: "cancel refused: this lot has already closed", code: "23514" } };
+      if (lot.bid_count > 0) return { data: null, error: { message: "cancel refused: this lot has bids", code: "23514" } };
+      lot.status = "cancelled";
+      lot.closed_at = "db-now";
+      if (lot.source === "batch_listing" && lot.stock_moved) {
+        const listing = (tables.aquadex_listings || []).find((x) => x.id === lot.listing_id);
+        if (listing) listing.is_active = true;
+        lot.stock_moved = false;
+      }
+      return { data: { lotId: lot.id, status: "cancelled" }, error: null };
+    },
+  };
 
   function builder(table) {
     const state = { table, op: "select", filters: [], values: null, limit: null, order: null, single: false };
@@ -66,6 +90,7 @@ function fakeSupabase(seed, { failTable = null, storage = {} } = {}) {
         return { data: state.single ? out[0] || null : out, error: null };
       }
       calls.push({ table, op: state.op, values: state.values });
+      onWrite?.({ table, op: state.op, tables });
       if (state.op === "delete") {
         const keep = rows.filter((r) => !match(r));
         const count = rows.length - keep.length;
@@ -81,6 +106,8 @@ function fakeSupabase(seed, { failTable = null, storage = {} } = {}) {
       delete() { state.op = "delete"; return api; },
       update(values) { state.op = "update"; state.values = values; return api; },
       eq(col, v) { state.filters.push((r) => r[col] === v); return api; },
+      in(col, vs) { state.filters.push((r) => vs.includes(r[col])); return api; },
+      gt(col, v) { state.filters.push((r) => r[col] != null && r[col] > v); return api; },
       ilike(col, pattern) { const re = likeToRegex(pattern); state.filters.push((r) => r[col] != null && re.test(String(r[col]))); return api; },
       not(col, op, v) { if (op === "is" && v === null) state.filters.push((r) => r[col] != null); return api; },
       lte(col, v) { state.filters.push((r) => r[col] != null && r[col] <= v); return api; },
@@ -97,6 +124,12 @@ function fakeSupabase(seed, { failTable = null, storage = {} } = {}) {
     files,
     calls,
     from: (t) => builder(t),
+    async rpc(name, args) {
+      calls.push({ op: "rpc", rpc: name, args });
+      onRpc?.({ name, args, tables });
+      if (!rpcs[name]) return { data: null, error: { message: `no function ${name}`, code: "PGRST202" } };
+      return rpcs[name](args);
+    },
     storage: {
       from(bucket) {
         return {
@@ -165,16 +198,55 @@ describe("PURGE_PLAN is a conservative, reviewed list", () => {
   const touched = new Set(PURGE_PLAN.map((s) => s.table));
   const deleted = new Set(PURGE_PLAN.filter((s) => s.op === "delete").map((s) => s.table));
 
-  it("never deletes accounting, payment, auction or moderation records", () => {
+  it("never touches accounting, payment, auction-result or moderation records", () => {
     for (const t of [
       "orders", "canonical_orders", "canonical_order_line_items", "canonical_order_ledger", "canonical_order_transitions",
       "fiat_settlements", "auction_settlements", "auction_desk_payments", "auction_bids", "auction_lot_bids",
-      "auction_lots", "auctions", "auction_bidders", "shipping_label_purchases", "inventory_sale_events",
+      "auctions", "auction_bidders", "shipping_label_purchases", "inventory_sale_events",
       "promotion_redemptions", "pickup_arrangements", "canonical_doa_claims", "credit_transactions",
-      "reward_distributions", "reward_pool_ledger", "moderation_flags", "review_reports", "marketplace_offers",
+      "reward_distributions", "reward_pool_ledger", "moderation_flags", "review_reports",
     ]) {
       expect(touched.has(t), `${t} must not be in the purge plan`).toBe(false);
     }
+  });
+
+  it("only moves offers and auction lots out of an open status, never deletes them", () => {
+    const steps = PURGE_PLAN.filter((s) => s.table === "marketplace_offers" || s.table === "auction_lots");
+    expect(steps).toHaveLength(3);
+    for (const s of steps) {
+      expect(s.op).not.toBe("delete");
+      // Every step is narrowed to open statuses, so closed/accepted/sold rows are never rewritten.
+      expect(Array.isArray(s.where?.status) && s.where.status.length > 0).toBe(true);
+    }
+    const byColumn = Object.fromEntries(steps.map((s) => [`${s.table}.${s.column}`, s]));
+    expect(byColumn["marketplace_offers.buyer_wallet"]).toMatchObject({
+      op: "update", where: { status: ["pending", "countered"] }, set: { status: "withdrawn" },
+    });
+    expect(byColumn["marketplace_offers.seller_wallet"]).toMatchObject({
+      op: "update", where: { status: ["pending", "countered"] }, set: { status: "declined" }, stampNow: ["responded_at"],
+    });
+    // Lots go through the owner's own cancel function, and only lots nobody bid on.
+    expect(byColumn["auction_lots.seller_wallet"]).toMatchObject({
+      op: "rpc", rpc: "cancel_auction_lot", where: { status: ["live", "pending_approval"], bid_count: 0 },
+    });
+  });
+
+  it("cancels lots before switching listings off (returned stock would switch them back on)", () => {
+    const cancel = PURGE_PLAN.findIndex((s) => s.rpc === "cancel_auction_lot");
+    const listings = PURGE_PLAN.findIndex((s) => s.table === "aquadex_listings");
+    expect(cancel).toBeGreaterThan(-1);
+    expect(cancel).toBeLessThan(listings);
+  });
+
+  it("defers, rather than acts on, every case with money or a binding bid in flight", () => {
+    const holds = PURGE_HOLDS.map((h) => `${h.table}.${h.column}`);
+    for (const key of [
+      "auctions.host_wallet", "auction_lots.seller_wallet", "auction_lots.high_bidder_wallet", "auction_lots.winner_wallet",
+      "auction_settlements.winner_wallet", "auction_settlements.seller_wallet", "auction_bids.bidder_wallet", "tides.host_wallet",
+    ]) {
+      expect(holds, key).toContain(key);
+    }
+    for (const h of PURGE_HOLDS) expect(h.reason.length).toBeGreaterThan(10);
   });
 
   it("never deletes rows whose delete would cascade into records we keep", () => {
@@ -197,6 +269,22 @@ describe("PURGE_PLAN is a conservative, reviewed list", () => {
     expect(DELETION_KEPT.join(" ")).toMatch(/Orders, payments/);
     expect(DELETION_KEPT.join(" ")).toMatch(/listings, switched off/);
     expect(DELETION_REMOVED.join(" ")).toMatch(/email/);
+  });
+
+  it("tells the user what happens to offers and auctions", () => {
+    const kept = DELETION_KEPT.join(" ");
+    // Offers: kept, open ones withdrawn (made) or declined (received).
+    expect(kept).toMatch(/Offers you made or received/);
+    expect(kept).toMatch(/withdrawn or declined/);
+    // Auctions: unbid lots cancelled; anything in flight waits.
+    expect(kept).toMatch(/Lots with no bids are cancelled/);
+    expect(kept).toMatch(/we wait for it to finish/);
+    // Offers and auction data are never promised as deleted.
+    expect(DELETION_REMOVED.join(" ")).not.toMatch(/offer|auction|bid/i);
+    // House copy style.
+    for (const line of [...DELETION_KEPT, ...DELETION_REMOVED]) {
+      expect(line).not.toMatch(/[\u2014!]/);
+    }
   });
 
   it("escapes LIKE metacharacters so ilike is an exact match", () => {
@@ -326,6 +414,262 @@ describe("purgeDueAccounts", () => {
     expect(sb.files["specimen-photos"]).toHaveLength(1);
     // The full-wallet metadata folder is not shared and is still removed.
     expect(sb.files["specimen-metadata"]).toEqual([`${BOB}/8.json`]);
+  });
+});
+
+// ── Offers and auctions ─────────────────────────────────────────────────────
+
+const alice = ALICE.toLowerCase(); // offers/auction tables store lowercase (enforce_lower_wallets / check constraints)
+const bob = BOB.toLowerCase();
+
+function lot(overrides) {
+  return {
+    id: "lot", auction_id: "auc", seller_wallet: bob, status: "live", source: "freeform", listing_id: null,
+    stock_moved: false, bid_count: 0, high_bidder_wallet: null, winner_wallet: null, hammer_cents: null, closed_at: null,
+    ...overrides,
+  };
+}
+
+const writes = (sb) => sb.calls.filter((c) => c.op !== "remove");
+
+describe("purgeDueAccounts: offers", () => {
+  it("withdraws open offers the account made and declines open offers it received, keeping every row", async () => {
+    const data = seed();
+    data.marketplace_offers = [
+      { id: "made-pending", buyer_wallet: alice, seller_wallet: bob, status: "pending", responded_at: null },
+      { id: "made-countered", buyer_wallet: alice, seller_wallet: bob, status: "countered", responded_at: "earlier" },
+      { id: "made-accepted", buyer_wallet: alice, seller_wallet: bob, status: "accepted", responded_at: "earlier" },
+      { id: "got-pending", buyer_wallet: bob, seller_wallet: alice, status: "pending", responded_at: null },
+      { id: "got-declined", buyer_wallet: bob, seller_wallet: alice, status: "declined", responded_at: "earlier" },
+      { id: "bob-only", buyer_wallet: bob, seller_wallet: "0x1234567890123456789012345678901234567890", status: "pending", responded_at: null },
+    ];
+    const sb = fakeSupabase(data, { storage: storageSeed() });
+    const result = await purgeDueAccounts(sb, { now: NOW, log: quietLog });
+
+    expect(result).toMatchObject({ purged: 1, deferred: 0 });
+    const byId = Object.fromEntries(sb.tables.marketplace_offers.map((o) => [o.id, o]));
+    expect(sb.tables.marketplace_offers).toHaveLength(6);
+    expect(byId["made-pending"]).toMatchObject({ status: "withdrawn", responded_at: null });
+    expect(byId["made-countered"]).toMatchObject({ status: "withdrawn", responded_at: "earlier" });
+    expect(byId["got-pending"]).toMatchObject({ status: "declined", responded_at: NOW.toISOString() });
+    // Settled offers and other people's offers are untouched.
+    expect(byId["made-accepted"]).toEqual(data.marketplace_offers[2]);
+    expect(byId["got-declined"]).toEqual(data.marketplace_offers[4]);
+    expect(byId["bob-only"]).toEqual(data.marketplace_offers[5]);
+    expect(result.accounts[0].byTable).toEqual(expect.arrayContaining([
+      "update marketplace_offers.buyer_wallet: 2",
+      "update marketplace_offers.seller_wallet: 1",
+    ]));
+  });
+});
+
+describe("purgeDueAccounts: auction lots the account sells", () => {
+  it("cancels unbid lots through cancel_auction_lot, then switches the restocked listing off", async () => {
+    const data = seed();
+    data.aquadex_listings.push({ id: "batch1", seller_address: alice, is_active: false });
+    data.auction_lots = [
+      lot({ id: "live-nobids", seller_wallet: alice, source: "batch_listing", listing_id: "batch1", stock_moved: true }),
+      lot({ id: "pending", seller_wallet: alice, status: "pending_approval" }),
+      lot({ id: "done-unsold", seller_wallet: alice, status: "unsold", closed_at: "earlier" }),
+      lot({ id: "done-handed", seller_wallet: alice, status: "handed_off", winner_wallet: bob, hammer_cents: 500 }),
+      lot({ id: "bobs", seller_wallet: bob }),
+    ];
+    const sb = fakeSupabase(data, { storage: storageSeed() });
+    const result = await purgeDueAccounts(sb, { now: NOW, log: quietLog });
+
+    expect(result).toMatchObject({ purged: 1, deferred: 0 });
+    const byId = Object.fromEntries(sb.tables.auction_lots.map((l) => [l.id, l]));
+    expect(sb.tables.auction_lots).toHaveLength(5);
+    expect(byId["live-nobids"]).toMatchObject({ status: "cancelled", stock_moved: false });
+    expect(byId.pending.status).toBe("cancelled");
+    expect(byId["done-unsold"]).toEqual(data.auction_lots[2]);
+    expect(byId["done-handed"]).toEqual(data.auction_lots[3]);
+    expect(byId.bobs).toEqual(data.auction_lots[4]);
+
+    // Only through the function, with the lowercase seller it checks against.
+    const rpcCalls = sb.calls.filter((c) => c.op === "rpc");
+    expect(rpcCalls.map((c) => c.args)).toEqual([
+      { p_lot: "live-nobids", p_seller: alice },
+      { p_lot: "pending", p_seller: alice },
+    ]);
+    expect(sb.calls.some((c) => c.table === "auction_lots" && c.op !== "select")).toBe(false);
+
+    // Stock came back to the listing (switching it on); the listings step ran after and switched it off.
+    expect(sb.tables.aquadex_listings.find((l) => l.id === "batch1").is_active).toBe(false);
+    expect(result.accounts[0].byTable).toContain("rpc auction_lots.seller_wallet: 2");
+  });
+
+  it("fails the run and keeps the request when cancel_auction_lot refuses (a bid landed)", async () => {
+    const data = seed();
+    data.auction_lots = [lot({ id: "l1", seller_wallet: alice })];
+    // A bid arrives between the step's select and the cancel call.
+    const sb = fakeSupabase(data, {
+      storage: storageSeed(),
+      onRpc: ({ tables }) => {
+        Object.assign(tables.auction_lots[0], { bid_count: 1, high_bidder_wallet: bob, high_bid_cents: 500 });
+      },
+    });
+    const result = await purgeDueAccounts(sb, { now: NOW, log: quietLog });
+    expect(result).toMatchObject({ purged: 0, failed: 1 });
+    expect(result.accounts[0].errors.join(" ")).toMatch(/cancel_auction_lot\(l1\): cancel refused: this lot has bids/);
+    expect(sb.tables.auction_lots[0].status).toBe("live");
+    const profile = sb.tables.profiles.find((p) => p.wallet_address === ALICE);
+    expect(profile.deletion_requested_at).not.toBeNull();
+    expect(profile.account_deleted_at).toBeNull();
+
+    // Next day the hold sees the bid and defers without writing anything.
+    const callsBefore = sb.calls.length;
+    const next = await purgeDueAccounts(sb, { now: new Date(NOW.getTime() + DAY), log: quietLog });
+    expect(next).toMatchObject({ deferred: 1, purged: 0, failed: 0 });
+    expect(next.accounts[0].deferred.join(" ")).toMatch(/live auction lot that has bids/);
+    expect(sb.calls.length).toBe(callsBefore);
+  });
+});
+
+describe("purgeDueAccounts: defers accounts with money or a binding bid in flight", () => {
+  const cases = [
+    ["hosts an open club auction", { auctions: [{ id: "a1", host_type: "club", host_wallet: alice, status: "live" }] }, /open club auction/],
+    ["hosts a draft club auction", { auctions: [{ id: "a1", host_type: "club", host_wallet: alice, status: "draft" }] }, /open club auction/],
+    ["sells a live lot with bids", { auction_lots: [lot({ seller_wallet: alice, bid_count: 2, high_bidder_wallet: bob })] }, /has bids/],
+    ...["awaiting_live", "sold_live", "ended", "charging", "payment_failed", "paid"].map((status) => [
+      `sells a lot in status ${status}`,
+      { auction_lots: [lot({ seller_wallet: alice, status, winner_wallet: status === "awaiting_live" ? null : bob })] },
+      /payment or handoff not finished/,
+    ]),
+    ["holds the high bid on a live lot", { auction_lots: [lot({ high_bidder_wallet: alice, bid_count: 1 })] }, /standing high bid/],
+    ["holds the online high bid on a lot waiting for the room", { auction_lots: [lot({ status: "awaiting_live", high_bidder_wallet: alice, bid_count: 1 })] }, /standing high bid/],
+    ...["ended", "charging", "payment_failed", "sold_live", "paid"].map((status) => [
+      `won a lot in status ${status}`,
+      { auction_lots: [lot({ status, winner_wallet: alice, high_bidder_wallet: alice, hammer_cents: 900 })] },
+      /won an auction lot/,
+    ]),
+    ["won an event auction lot awaiting payment", { auction_settlements: [{ id: "s", seller_wallet: bob, winner_wallet: alice, status: "awaiting_payment" }] }, /awaiting payment/],
+    ["sold an event auction lot not yet paid out", { auction_settlements: [{ id: "s", seller_wallet: alice, winner_wallet: bob, status: "paid" }] }, /payout is not finished/],
+    ["holds an active event auction bid", { auction_bids: [{ id: "b", bidder_wallet: alice, status: "active" }] }, /active bid in an event auction/],
+    ["hosts an upcoming event with auction lots", { tides: [{ id: "t", host_wallet: ALICE, status: "upcoming", settings: { auction_items: [{ token_id: 1 }] } }] }, /open event with auction lots/],
+  ];
+
+  for (const [name, extra, reason] of cases) {
+    it(`${name}: nothing is written, the request stays, the reason is logged`, async () => {
+      const data = { ...seed(), marketplace_offers: [{ id: "o", buyer_wallet: alice, seller_wallet: bob, status: "pending" }], ...extra };
+      const sb = fakeSupabase(data, { storage: storageSeed() });
+      const lines = [];
+      const result = await purgeDueAccounts(sb, { now: NOW, log: { info: (...a) => lines.push(a.join(" ")), error() {} } });
+
+      expect(result).toMatchObject({ due: 1, purged: 0, deferred: 1, failed: 0 });
+      expect(result.accounts[0].status).toBe("deferred");
+      expect(result.accounts[0].deferred.join(" ")).toMatch(reason);
+      expect(writes(sb)).toEqual([]);
+      for (const [table, rows] of Object.entries(data)) expect(sb.tables[table], table).toEqual(rows);
+      expect(sb.files).toEqual(storageSeed());
+      expect(lines.join(" ")).toMatch(reason);
+      expect(lines.join(" ")).not.toContain(ALICE);
+    });
+  }
+
+  it("does not defer for finished auctions or for bids that were outbid", async () => {
+    const data = seed();
+    data.auctions = [{ id: "a1", host_type: "club", host_wallet: alice, status: "ended" }];
+    data.auction_lots = [
+      lot({ id: "outbid", bid_count: 2, high_bidder_wallet: bob }), // Alice bid earlier and was outbid
+      lot({ id: "won-done", status: "handed_off", winner_wallet: alice, hammer_cents: 900 }),
+      lot({ id: "sold-refunded", seller_wallet: alice, status: "refunded", winner_wallet: bob, hammer_cents: 900 }),
+    ];
+    data.auction_lot_bids = [{ id: "lb", lot_id: "outbid", bidder_wallet: alice, amount_cents: 500 }];
+    data.auction_settlements.push({ id: "s2", seller_wallet: alice, winner_wallet: bob, status: "transferred" });
+    data.auction_bids = [{ id: "b", bidder_wallet: alice, status: "outbid" }, { id: "b2", bidder_wallet: alice, status: "won" }];
+    data.tides[0] = { ...data.tides[0], status: "ended", settings: { auction_items: [{ token_id: 1 }] } };
+    const sb = fakeSupabase(data, { storage: storageSeed() });
+    const result = await purgeDueAccounts(sb, { now: NOW, log: quietLog });
+
+    expect(result).toMatchObject({ purged: 1, deferred: 0 });
+    // Auction records are kept exactly as they were.
+    expect(sb.tables.auction_lots).toEqual(data.auction_lots);
+    expect(sb.tables.auction_lot_bids).toEqual(data.auction_lot_bids);
+    expect(sb.tables.auction_bids).toEqual(data.auction_bids);
+    expect(sb.tables.auction_settlements).toEqual(data.auction_settlements);
+    expect(sb.tables.auctions).toEqual(data.auctions);
+  });
+
+  it("re-checks before closing: a bid on the account's lot during the run keeps the lot live and the account open", async () => {
+    const data = seed();
+    data.auction_lots = [lot({ id: "l1", seller_wallet: alice })];
+    const sb = fakeSupabase(data, {
+      storage: storageSeed(),
+      onWrite: ({ table, tables }) => {
+        if (table === "reactions") Object.assign(tables.auction_lots[0], { bid_count: 1, high_bidder_wallet: bob });
+      },
+    });
+    const result = await purgeDueAccounts(sb, { now: NOW, log: quietLog });
+    expect(result).toMatchObject({ purged: 0, deferred: 1, failed: 0 });
+    expect(sb.tables.auction_lots[0].status).toBe("live");
+    expect(sb.calls.some((c) => c.op === "rpc")).toBe(false);
+    expect(sb.tables.profiles.find((p) => p.wallet_address === ALICE).account_deleted_at).toBeNull();
+  });
+
+  it("re-checks before closing: a win recorded during the run keeps the account open", async () => {
+    const data = seed();
+    const sb = fakeSupabase(data, {
+      storage: storageSeed(),
+      onWrite: ({ table, tables }) => {
+        if (table === "api_keys") {
+          tables.auction_lots = [lot({ id: "late", status: "ended", winner_wallet: alice, high_bidder_wallet: alice, hammer_cents: 700 })];
+        }
+      },
+    });
+    const result = await purgeDueAccounts(sb, { now: NOW, log: quietLog });
+    expect(result).toMatchObject({ purged: 0, deferred: 1 });
+    expect(result.accounts[0].deferred.join(" ")).toMatch(/won an auction lot/);
+    const profile = sb.tables.profiles.find((p) => p.wallet_address === ALICE);
+    expect(profile.deletion_requested_at).not.toBeNull();
+    expect(profile.account_deleted_at).toBeNull();
+  });
+
+  it("closes the account on the first run after the hold clears", async () => {
+    const data = seed();
+    data.auction_lots = [lot({ id: "w", status: "ended", winner_wallet: alice, high_bidder_wallet: alice, hammer_cents: 700 })];
+    const sb = fakeSupabase(data, { storage: storageSeed() });
+    expect(await purgeDueAccounts(sb, { now: NOW, log: quietLog })).toMatchObject({ deferred: 1, purged: 0 });
+
+    sb.tables.auction_lots[0].status = "handed_off";
+    const next = await purgeDueAccounts(sb, { now: new Date(NOW.getTime() + DAY), log: quietLog });
+    expect(next).toMatchObject({ deferred: 0, purged: 1 });
+    expect(sb.tables.auction_lots[0]).toMatchObject({ status: "handed_off", winner_wallet: alice });
+  });
+
+  it("a deferred account does not use up the per-run cap", async () => {
+    const CAROL = "0x7777777777777777777777777777777777777777";
+    const data = seed();
+    data.profiles.push({ wallet_address: CAROL, email: "carol@example.com", display_name: "Carol",
+      deletion_requested_at: daysAgo(31 - 0.5), account_deleted_at: null }); // newer than Alice's
+    data.auction_lots = [lot({ high_bidder_wallet: alice, bid_count: 1 })];
+    const sb = fakeSupabase(data, { storage: storageSeed() });
+    const result = await purgeDueAccounts(sb, { now: NOW, maxAccounts: 1, log: quietLog });
+    expect(result).toMatchObject({ due: 2, deferred: 1, purged: 1 });
+    expect(sb.tables.profiles.find((p) => p.wallet_address === CAROL).account_deleted_at).toBe(NOW.toISOString());
+  });
+
+  it("treats a failed hold check as a failure, not a pass", async () => {
+    const data = seed();
+    const sb = fakeSupabase(data, { storage: storageSeed() });
+    const realFrom = sb.from;
+    sb.from = (table) => {
+      const b = realFrom(table);
+      if (table !== "auction_lots") return b;
+      const fail = { data: null, error: { message: "timeout", code: "57014" } };
+      const chain = new Proxy(b, {
+        get(target, prop) {
+          if (prop === "then") return (res, rej) => Promise.resolve(fail).then(res, rej);
+          const v = target[prop];
+          return typeof v === "function" ? (...args) => { v.apply(target, args); return chain; } : v;
+        },
+      });
+      return chain;
+    };
+    const result = await purgeDueAccounts(sb, { now: NOW, log: quietLog });
+    expect(result).toMatchObject({ purged: 0, failed: 1, deferred: 0 });
+    expect(result.accounts[0].errors.join(" ")).toMatch(/hold check auction_lots\.\w+: timeout/);
+    expect(writes(sb)).toEqual([]);
   });
 });
 

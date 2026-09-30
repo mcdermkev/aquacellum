@@ -29,11 +29,19 @@
  * - Accounts with a Fish Room (showcase_*) are not closed automatically; the
  *   showcase data model (media, Mux, aliases) needs a person. They are reported
  *   as needs_manual_review on every run until handled.
+ * - Accounts with money or a binding commitment in flight (PURGE_HOLDS: an open
+ *   club auction they host, a lot with bids or awaiting payment/handoff, a
+ *   standing high bid, an unpaid win, an open event-auction settlement) are
+ *   DEFERRED: nothing is written, the request stays, the next daily run checks
+ *   again. Holds are checked before any step and again before closing.
  * - Logs use a shortened wallet only, never an email.
  */
 
 export const PURGE_GRACE_DAYS = 30;
+/** Accounts that do work (purge, fail, manual review) per run. Deferred ones don't count. */
 export const MAX_ACCOUNTS_PER_RUN = 10;
+/** Due requests scanned per run, so deferred accounts can't starve newer ones. */
+export const DUE_SCAN_LIMIT = 100;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -43,6 +51,12 @@ const DAY_MS = 24 * 60 * 60 * 1000;
  *
  *   op "delete"  remove rows where `column` matches the account
  *   op "update"  set `set` on rows where `column` matches (unlink/deactivate)
+ *   op "rpc"     call the table's own server-only function `rpc` once per
+ *                matching row, so its checks and side effects (stock return)
+ *                run exactly as they do for the owner. `args(row, ctx)` builds
+ *                the call.
+ *   where        extra filters: { col: value } (eq) or { col: [a, b] } (in)
+ *   stampNow     columns set to the run's timestamp alongside `set`
  *   matchBy      "wallet" (default, case-insensitive) or "email"
  */
 export const PURGE_PLAN = Object.freeze([
@@ -119,6 +133,33 @@ export const PURGE_PLAN = Object.freeze([
   { table: "species_profiles", column: "created_by", op: "update", set: { created_by: null }, why: "catalog entries stay, unlinked" },
   { table: "species_strains", column: "created_by", op: "update", set: { created_by: null }, why: "strains stay, unlinked" },
 
+  // ── Open offers and unbid auction lots ───────────────────────────────────
+  // Rows are kept (the counterparty's record); only open ones change status so
+  // the other person sees an honest state. marketplace_offers.status has no
+  // check constraint; the values are the ones in 20260701_marketplace_offers.sql.
+  // Accepted/declined/expired/withdrawn offers are left as they are.
+  {
+    table: "marketplace_offers", column: "buyer_wallet", op: "update",
+    where: { status: ["pending", "countered"] }, set: { status: "withdrawn" },
+    why: "open offers the account made, withdrawn",
+  },
+  {
+    table: "marketplace_offers", column: "seller_wallet", op: "update",
+    where: { status: ["pending", "countered"] }, set: { status: "declined" }, stampNow: ["responded_at"],
+    why: "open offers the account received, declined",
+  },
+  // Only lots nobody has bid on (PURGE_HOLDS defers the rest). cancel_auction_lot
+  // (20260929_auctions_v2.sql) re-checks status and bid_count under a row lock,
+  // sets status 'cancelled' + closed_at, and returns batch stock to the listing.
+  // Must run BEFORE aquadex_listings below: returning stock switches the listing
+  // back on, and the listings step then switches it off again.
+  {
+    table: "auction_lots", column: "seller_wallet", op: "rpc", rpc: "cancel_auction_lot",
+    where: { status: ["live", "pending_approval"], bid_count: 0 },
+    args: (row, ctx) => ({ p_lot: row.id, p_seller: ctx.wallet.toLowerCase() }),
+    why: "auction lots with no bids, cancelled (stock returns to the listing)",
+  },
+
   // ── Selling ──────────────────────────────────────────────────────────────
   { table: "aquadex_listings", column: "seller_address", op: "update", set: { is_active: false }, why: "listings switched off (orders reference them)" },
   // Deleting promotions would cascade into promotion_redemptions (order discounts).
@@ -141,6 +182,79 @@ export const PURGE_PLAN = Object.freeze([
 ]);
 
 /**
+ * Money or a binding commitment in flight. Any matching row DEFERS the account:
+ * nothing is written and the next daily run checks again. Checked before the
+ * plan runs and again right before the profile is closed.
+ *
+ *   where   { col: value } (eq) or { col: [a, b] } (in)
+ *   gt      { col: n } rows where col > n
+ *   when    optional row predicate for what PostgREST can't filter simply
+ *
+ * Why defer instead of acting:
+ * - auction_lot_bids is append-only and has no withdraw function; the standing
+ *   high bid (auction_lots.high_bidder_wallet) is charged automatically on win,
+ *   and cancel_auction_lot refuses a lot with bids. Outbid bids carry no
+ *   obligation (a forfeit never promotes the runner-up, AUCTIONS_SPEC §3), so
+ *   they need nothing.
+ * - Winning and selling need the account: the charge sweep uses the winner's
+ *   saved card (buyer_payment_methods, removed by the plan) and pays the seller
+ *   (seller_wallet / club host_wallet via seller_stripe_accounts).
+ * - Event ("Tide") auctions are retired (api/stripe.js auction-charge is 410)
+ *   but their tables remain. 'withdrawn' is allowed on auction_bids yet nothing
+ *   sets it, and settle_tide_auction only reads 'active' bids, so pulling the
+ *   top bid would not reinstate the runner-up. Defer instead.
+ */
+export const PURGE_HOLDS = Object.freeze([
+  {
+    table: "auctions", column: "host_wallet", select: "id",
+    where: { host_type: "club", status: ["draft", "live"] },
+    reason: "hosts an open club auction (desk card payouts go to the host's payout account)",
+  },
+  {
+    table: "auction_lots", column: "seller_wallet", select: "id",
+    where: { status: ["awaiting_live", "sold_live", "ended", "charging", "payment_failed", "paid"] },
+    reason: "sells an auction lot that is sold or in the room, with payment or handoff not finished",
+  },
+  {
+    table: "auction_lots", column: "seller_wallet", select: "id",
+    where: { status: "live" }, gt: { bid_count: 0 },
+    reason: "sells a live auction lot that has bids (the high bid is binding)",
+  },
+  {
+    table: "auction_lots", column: "high_bidder_wallet", select: "id",
+    where: { status: ["live", "awaiting_live"] },
+    reason: "holds the standing high bid on an open auction lot (bids cannot be withdrawn)",
+  },
+  {
+    table: "auction_lots", column: "winner_wallet", select: "id",
+    where: { status: ["ended", "charging", "payment_failed", "sold_live", "paid"] },
+    reason: "won an auction lot whose payment or handoff is not finished",
+  },
+  {
+    table: "auction_settlements", column: "winner_wallet", select: "id",
+    where: { status: ["awaiting_payment", "payment_failed"] },
+    reason: "won an event auction lot that is awaiting payment",
+  },
+  {
+    table: "auction_settlements", column: "seller_wallet", select: "id",
+    where: { status: ["awaiting_payment", "payment_failed", "paid"] },
+    reason: "sold an event auction lot whose payment or payout is not finished",
+  },
+  {
+    table: "auction_bids", column: "bidder_wallet", select: "id",
+    where: { status: "active" },
+    reason: "holds an active bid in an event auction (bids cannot be withdrawn)",
+  },
+  {
+    // The plan unlinks tides.host_wallet, and settle_tide_auction needs the host.
+    table: "tides", column: "host_wallet", select: "id, settings",
+    where: { status: ["upcoming", "live"] },
+    when: (row) => Array.isArray(row?.settings?.auction_items) && row.settings.auction_items.length > 0,
+    reason: "hosts an open event with auction lots",
+  },
+]);
+
+/**
  * Records deliberately left in place. Reported in every run summary so the
  * retention decision is visible, and mirrored in the Settings copy.
  */
@@ -149,8 +263,8 @@ export const PURGE_KEPT = Object.freeze([
   "canonical_orders, canonical_order_line_items, canonical_order_ledger, canonical_order_transitions",
   "fiat_settlements (incl. buyer_email)",
   "canonical_doa_claims, pickup_arrangements, shipping_label_purchases, inventory_sale_events, promotion_redemptions",
-  "auctions, auction_lots, auction_bids, auction_lot_bids, auction_bidders, auction_settlements, auction_desk_payments",
-  "marketplace_offers",
+  "auctions, auction_lots, auction_bids, auction_lot_bids, auction_bidders, auction_settlements, auction_desk_payments (unbid lots cancelled, never deleted)",
+  "marketplace_offers (open ones withdrawn or declined, never deleted)",
   "seller_stripe_accounts (row kept, email cleared)",
   "credit_transactions, reward_distributions, reward_pool_ledger",
   "moderation_flags, review_reports, and the profile's ban/mute fields",
@@ -214,26 +328,81 @@ export function likeExact(value) {
 const WALLET_RE = /^0x[0-9a-fA-F]{40}$/;
 const MISSING_TABLE_CODES = new Set(["42P01", "PGRST205", "PGRST200"]);
 
-async function runStep(supabase, step, ctx) {
-  const value = step.matchBy === "email" ? ctx.email : ctx.wallet;
-  if (!value) return { table: step.table, column: step.column, op: step.op, count: 0, skipped: "no value" };
-  if (step.matchBy === "email" && String(value).includes("*")) {
-    return { table: step.table, column: step.column, op: step.op, count: 0, skipped: "unmatchable email" };
+/** Apply `where` ({ col: value } eq, { col: [..] } in) and `gt` filters. */
+function applyFilters(query, where, gt) {
+  let q = query;
+  for (const [col, v] of Object.entries(where || {})) q = Array.isArray(v) ? q.in(col, v) : q.eq(col, v);
+  for (const [col, v] of Object.entries(gt || {})) q = q.gt(col, v);
+  return q;
+}
+
+async function runRpcStep(supabase, step, ctx, base) {
+  const { data: rows, error } = await applyFilters(
+    supabase.from(step.table).select("id").ilike(step.column, likeExact(ctx.wallet)),
+    step.where
+  );
+  if (error) {
+    if (MISSING_TABLE_CODES.has(error.code)) return { ...base, count: 0, skipped: "table missing" };
+    return { ...base, error: error.message || String(error) };
   }
+  let count = 0;
+  for (const row of rows || []) {
+    const { error: rpcError } = await supabase.rpc(step.rpc, step.args(row, ctx));
+    // The function re-checks under a row lock; a refusal (e.g. a bid landed)
+    // fails the step, and the next run defers the account through PURGE_HOLDS.
+    if (rpcError) return { ...base, count, error: `${step.rpc}(${row.id}): ${rpcError.message || String(rpcError)}` };
+    count++;
+  }
+  return { ...base, count };
+}
+
+async function runStep(supabase, step, ctx) {
+  const base = { table: step.table, column: step.column, op: step.op };
+  const value = step.matchBy === "email" ? ctx.email : ctx.wallet;
+  if (!value) return { ...base, count: 0, skipped: "no value" };
+  if (step.matchBy === "email" && String(value).includes("*")) {
+    return { ...base, count: 0, skipped: "unmatchable email" };
+  }
+  if (step.op === "rpc") return runRpcStep(supabase, step, ctx, base);
 
   let query = supabase.from(step.table);
-  query = step.op === "delete"
-    ? query.delete({ count: "exact" })
-    : query.update(step.set, { count: "exact" });
-  const { error, count } = await query.ilike(step.column, likeExact(value));
+  if (step.op === "delete") {
+    query = query.delete({ count: "exact" });
+  } else {
+    const values = { ...step.set };
+    for (const col of step.stampNow || []) values[col] = ctx.nowIso;
+    query = query.update(values, { count: "exact" });
+  }
+  const { error, count } = await applyFilters(query.ilike(step.column, likeExact(value)), step.where);
 
   if (error) {
-    if (MISSING_TABLE_CODES.has(error.code)) {
-      return { table: step.table, column: step.column, op: step.op, count: 0, skipped: "table missing" };
-    }
-    return { table: step.table, column: step.column, op: step.op, error: error.message || String(error) };
+    if (MISSING_TABLE_CODES.has(error.code)) return { ...base, count: 0, skipped: "table missing" };
+    return { ...base, error: error.message || String(error) };
   }
-  return { table: step.table, column: step.column, op: step.op, count: count ?? 0 };
+  return { ...base, count: count ?? 0 };
+}
+
+/**
+ * Evaluate PURGE_HOLDS for one wallet. Returns { holds: [reason], errors: [msg] }.
+ * A missing table is not a hold (the feature isn't deployed there).
+ */
+export async function findHolds(supabase, wallet) {
+  const holds = [];
+  const errors = [];
+  for (const hold of PURGE_HOLDS) {
+    const { data, error } = await applyFilters(
+      supabase.from(hold.table).select(hold.select || "id").ilike(hold.column, likeExact(wallet)),
+      hold.where,
+      hold.gt
+    ).limit(hold.when ? 50 : 1);
+    if (error) {
+      if (!MISSING_TABLE_CODES.has(error.code)) errors.push(`hold check ${hold.table}.${hold.column}: ${error.message || String(error)}`);
+      continue;
+    }
+    const rows = hold.when ? (data || []).filter(hold.when) : data || [];
+    if (rows.length > 0) holds.push(`${hold.table}.${hold.column}: ${hold.reason}`);
+  }
+  return { holds, errors };
 }
 
 async function purgeStorage(supabase, target, storedWallet) {
@@ -308,7 +477,20 @@ export async function purgeAccount(supabase, profile, { now = new Date() } = {})
     summary.manual.push("showcase (Fish Room) data: remove by hand, then this account closes on the next run");
   }
 
-  const ctx = { wallet: storedWallet, email: fresh.email || null };
+  // Money or a binding commitment in flight: touch nothing, retry tomorrow.
+  const before = await findHolds(supabase, storedWallet);
+  if (before.errors.length > 0) {
+    summary.errors.push(...before.errors);
+    return summary;
+  }
+  if (before.holds.length > 0) {
+    summary.status = "deferred";
+    summary.deferred = before.holds;
+    return summary;
+  }
+
+  const nowIso = now.toISOString();
+  const ctx = { wallet: storedWallet, email: fresh.email || null, nowIso };
   for (const step of PURGE_PLAN) {
     const result = await runStep(supabase, step, ctx);
     summary.steps.push(result);
@@ -322,12 +504,25 @@ export async function purgeAccount(supabase, profile, { now = new Date() } = {})
   }
 
   if (summary.errors.length > 0) return summary;
+
+  // The account works until it is closed; a bid or win during the run means the
+  // account stays open. Steps above are idempotent, so tomorrow simply resumes.
+  const after = await findHolds(supabase, storedWallet);
+  if (after.errors.length > 0) {
+    summary.errors.push(...after.errors);
+    return summary;
+  }
+  if (after.holds.length > 0) {
+    summary.status = "deferred";
+    summary.deferred = after.holds;
+    return summary;
+  }
+
   if (summary.manual.length > 0) {
     summary.status = "needs_manual_review";
     return summary;
   }
 
-  const nowIso = now.toISOString();
   const { error: closeError } = await supabase
     .from("profiles")
     .update(tombstoneFields(nowIso))
@@ -349,15 +544,20 @@ export async function purgeAccount(supabase, profile, { now = new Date() } = {})
  */
 export async function purgeDueAccounts(supabase, { now = new Date(), maxAccounts = MAX_ACCOUNTS_PER_RUN, log = console } = {}) {
   const cutoffIso = new Date(now.getTime() - PURGE_GRACE_DAYS * DAY_MS).toISOString();
-  const result = { action: "purge-deletions", cutoff: cutoffIso, due: 0, purged: 0, needsManualReview: 0, failed: 0, skipped: 0, accounts: [], kept: PURGE_KEPT };
+  const result = {
+    action: "purge-deletions", cutoff: cutoffIso, due: 0, purged: 0, needsManualReview: 0, deferred: 0,
+    failed: 0, skipped: 0, accounts: [], kept: PURGE_KEPT,
+  };
 
+  // Scan past the per-run cap: deferred accounts are cheap (reads only) and
+  // must not block newer requests behind them.
   const { data: due, error } = await supabase
     .from("profiles")
     .select("wallet_address, deletion_requested_at")
     .not("deletion_requested_at", "is", null)
     .lte("deletion_requested_at", cutoffIso)
     .order("deletion_requested_at", { ascending: true })
-    .limit(maxAccounts);
+    .limit(Math.max(maxAccounts, DUE_SCAN_LIMIT));
 
   if (error) {
     result.error = `due query failed: ${error.message}`;
@@ -366,27 +566,32 @@ export async function purgeDueAccounts(supabase, { now = new Date(), maxAccounts
   }
 
   result.due = (due || []).length;
+  let worked = 0;
   for (const profile of due || []) {
+    if (worked >= maxAccounts) break;
     const summary = await purgeAccount(supabase, profile, { now });
     result.accounts.push({
       wallet: summary.wallet,
       status: summary.status,
       rowsDeleted: summary.steps.filter((s) => s.op === "delete").reduce((n, s) => n + (s.count || 0), 0),
-      rowsUpdated: summary.steps.filter((s) => s.op === "update").reduce((n, s) => n + (s.count || 0), 0),
+      rowsUpdated: summary.steps.filter((s) => s.op !== "delete").reduce((n, s) => n + (s.count || 0), 0),
       filesRemoved: summary.storage.reduce((n, s) => n + (s.removed || 0), 0),
       byTable: summary.steps.filter((s) => s.count > 0).map((s) => `${s.op} ${s.table}.${s.column}: ${s.count}`),
+      deferred: summary.deferred || [],
       manual: summary.manual,
       errors: summary.errors,
     });
     if (summary.status === "purged") result.purged++;
     else if (summary.status === "needs_manual_review") result.needsManualReview++;
+    else if (summary.status === "deferred") result.deferred++;
     else if (summary.status === "skipped_not_due") result.skipped++;
     else result.failed++;
+    if (summary.status !== "deferred" && summary.status !== "skipped_not_due") worked++;
   }
 
   log.info?.(
     `[purge-deletions] cutoff=${cutoffIso} due=${result.due} purged=${result.purged} ` +
-      `manual=${result.needsManualReview} failed=${result.failed} skipped=${result.skipped}`,
+      `manual=${result.needsManualReview} deferred=${result.deferred} failed=${result.failed} skipped=${result.skipped}`,
     JSON.stringify(result.accounts)
   );
   return result;

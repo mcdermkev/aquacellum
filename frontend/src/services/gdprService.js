@@ -47,6 +47,8 @@ export const DELETION_REMOVED = Object.freeze([
 export const DELETION_KEPT = Object.freeze([
   "Orders, payments, refunds, payouts, shipping labels and auction results, including the email on an order, because we need them for accounting, tax and disputes",
   "Your marketplace listings, switched off so nobody can buy them",
+  "Offers you made or received. Any that are still open are withdrawn or declined, so the other person sees they are closed",
+  "Your auction lots and bids. Lots with no bids are cancelled. If a lot you sell has bids, you hold the high bid on an open lot, a lot you won or sold is not yet paid and handed over, or you host a club or event auction that is still open, we wait for it to finish and close the account at the next daily check after that",
   "Moderation reports and any account restrictions",
   "Reward credit records",
   "Species catalog suggestions and morph submissions you contributed",
