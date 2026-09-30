@@ -47,7 +47,7 @@ export function MintSpecimen({ contractAddress, walletAccount, casualModeActive 
     width: "100%",
     padding: "0.75rem",
     background: "rgba(var(--ink-rgb), 0.03)",
-    border: casualModeActive ? "1px solid var(--glass-border)" : "1px solid rgba(168, 85, 247, 0.3)",
+    border: casualModeActive ? "1px solid var(--glass-border)" : "1px solid rgba(15, 118, 110, 0.3)",
     color: "var(--text-primary)",
     borderRadius: "4px",
     outline: "none",
@@ -56,14 +56,14 @@ export function MintSpecimen({ contractAddress, walletAccount, casualModeActive 
 
   const handleInputFocus = (e) => {
     if (!casualModeActive) {
-      e.target.style.borderColor = "rgba(168, 85, 247, 0.8)";
-      e.target.style.boxShadow = "0 0 8px rgba(168, 85, 247, 0.4)";
+      e.target.style.borderColor = "rgba(15, 118, 110, 0.8)";
+      e.target.style.boxShadow = "0 0 8px rgba(15, 118, 110, 0.4)";
     }
   };
 
   const handleInputBlur = (e) => {
     if (!casualModeActive) {
-      e.target.style.borderColor = "rgba(168, 85, 247, 0.3)";
+      e.target.style.borderColor = "rgba(15, 118, 110, 0.3)";
       e.target.style.boxShadow = "none";
     }
   };
@@ -375,9 +375,9 @@ export function MintSpecimen({ contractAddress, walletAccount, casualModeActive 
 
   if (!walletAccount) {
     return (
-      <div className="glass-card" style={{ padding: "3rem", textAlign: "center" }}>
-        <h2 style={{ marginBottom: "1rem", color: "var(--text-secondary)" }}>Not Connected</h2>
-        <p style={{ color: "var(--text-muted)" }}>Connect your account to register new specimens.</p>
+      <div className="glass-card" style={{ padding: "2.5rem 1.5rem", textAlign: "center", maxWidth: "640px", margin: "0 auto" }}>
+        <h3 style={{ marginBottom: "0.5rem", color: "var(--text-primary)" }}>Sign in to register fish</h3>
+        <p style={{ color: "var(--text-secondary)" }}>Birth certificates are saved to your account, so you need to be signed in.</p>
       </div>
     );
   }
@@ -392,21 +392,17 @@ export function MintSpecimen({ contractAddress, walletAccount, casualModeActive 
     <div 
       className="glass-card" 
       style={{ 
-        maxWidth: "600px", 
+        maxWidth: "640px", 
         margin: "0 auto", 
-        padding: "2.5rem",
-        border: !casualModeActive 
-          ? "1px solid rgba(168, 85, 247, 0.22)" 
-          : "1px solid var(--glass-border)",
-        boxShadow: !casualModeActive
-          ? "0 8px 32px rgba(11, 37, 48, 0.12), 0 0 15px rgba(168, 85, 247, 0.1)"
-          : "var(--glass-shadow)",
-        transition: "border-color 0.35s ease, box-shadow 0.35s ease"
+        padding: "clamp(1.1rem, 4vw, 2rem)",
+        borderRadius: "20px",
+        border: "1px solid var(--line)",
+        boxShadow: "0 1px 2px rgba(11, 37, 48, 0.05), 0 6px 18px rgba(11, 37, 48, 0.06)",
       }}
     >
-      <h2 style={{ fontSize: "1.75rem", marginBottom: "0.25rem", color: "var(--text-primary)" }}>Register Birth Certificate</h2>
-      <p style={{ color: "var(--text-muted)", fontSize: "0.875rem", marginBottom: "2rem" }}>
-        Record a successful birth and register a premium birth certificate linked to the Master Catalog.
+      <h3 style={{ fontSize: "1.35rem", fontWeight: 800, marginBottom: "0.3rem", color: "var(--text-primary)" }}>Register Birth Certificate</h3>
+      <p style={{ color: "var(--text-secondary)", fontSize: "0.9rem", lineHeight: 1.55, marginBottom: "1.5rem" }}>
+        Give one of your fish a birth certificate, linked to its species in the catalog.
       </p>
 
       {error && (
@@ -497,7 +493,7 @@ export function MintSpecimen({ contractAddress, walletAccount, casualModeActive 
         <div className="form-grid-2col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.25rem" }}>
           <div>
             <label style={{ display: "block", fontSize: "0.8rem", color: "var(--text-secondary)", marginBottom: "0.35rem" }}>
-              Containment Tank
+              Tank
             </label>
             <select 
               value={formData.currentTankId}
@@ -559,10 +555,10 @@ export function MintSpecimen({ contractAddress, walletAccount, casualModeActive 
                     fontWeight: selected ? 600 : 400,
                     color: selected ? "var(--text-primary)" : "var(--text-muted)",
                     background: selected
-                      ? (casualModeActive ? "rgba(56, 189, 248, 0.18)" : "rgba(168, 85, 247, 0.22)")
+                      ? (casualModeActive ? "rgba(56, 189, 248, 0.18)" : "rgba(15, 118, 110, 0.22)")
                       : "var(--bg-band)",
                     border: selected
-                      ? (casualModeActive ? "1px solid var(--accent-blue)" : "1px solid rgba(168, 85, 247, 0.5)")
+                      ? (casualModeActive ? "1px solid var(--accent-blue)" : "1px solid rgba(15, 118, 110, 0.5)")
                       : "1px solid var(--glass-border)",
                     transition: "all 0.2s ease",
                   }}
@@ -586,7 +582,7 @@ export function MintSpecimen({ contractAddress, walletAccount, casualModeActive 
           <label style={{ display: "block", fontSize: "0.8rem", color: "var(--text-secondary)", marginBottom: "0.35rem" }}>
             Sex
           </label>
-          <div style={{ display: "flex", background: "var(--bg-band)", border: casualModeActive ? "1px solid var(--glass-border)" : "1px solid rgba(168, 85, 247, 0.3)", borderRadius: "6px", padding: "2px" }}>
+          <div style={{ display: "flex", background: "var(--bg-band)", border: casualModeActive ? "1px solid var(--glass-border)" : "1px solid rgba(15, 118, 110, 0.3)", borderRadius: "6px", padding: "2px" }}>
             {SEX_OPTIONS.map((option) => {
               const selected = formData.gender === option.value;
               return (
@@ -605,7 +601,7 @@ export function MintSpecimen({ contractAddress, walletAccount, casualModeActive 
                     fontWeight: selected ? 600 : 400,
                     color: selected ? "var(--text-primary)" : "var(--text-muted)",
                     background: selected
-                      ? (casualModeActive ? "rgba(56, 189, 248, 0.18)" : "rgba(168, 85, 247, 0.22)")
+                      ? (casualModeActive ? "rgba(56, 189, 248, 0.18)" : "rgba(15, 118, 110, 0.22)")
                       : "transparent",
                     transition: "all 0.2s ease",
                   }}
@@ -675,13 +671,13 @@ export function MintSpecimen({ contractAddress, walletAccount, casualModeActive 
         </div>
         {specimenOptions.length === 0 && (
           <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", marginTop: "-0.5rem", display: "block" }}>
-            No registered specimens yet — register parents first to link a family tree.
+            No fish registered yet. Register the parents first to link a family tree.
           </span>
         )}
 
         <div>
           <label style={{ display: "block", fontSize: "0.8rem", color: "var(--text-secondary)", marginBottom: "0.35rem" }}>
-            Breeder Stock Tag <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", fontWeight: "400" }}>(optional — e.g. "esgIV")</span>
+            Breeder Stock Tag <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", fontWeight: "400" }}>(optional, for example "esgIV")</span>
           </label>
           <input 
             type="text"
@@ -747,7 +743,7 @@ export function MintSpecimen({ contractAddress, walletAccount, casualModeActive 
               flex: 1, 
               padding: "0.75rem", 
               background: "rgba(var(--ink-rgb), 0.03)", 
-              border: !casualModeActive ? "1px dashed rgba(168, 85, 247, 0.4)" : "1px dashed var(--glass-border)", 
+              border: !casualModeActive ? "1px dashed rgba(15, 118, 110, 0.4)" : "1px dashed var(--glass-border)", 
               borderRadius: "4px", 
               fontSize: "0.8rem", 
               color: "var(--text-secondary)", 
@@ -824,7 +820,7 @@ export function MintSpecimen({ contractAddress, walletAccount, casualModeActive 
                     const check = validateMetadataUri(e.target.value);
                     setMetadataUriError(check.ok ? null : check.error);
                   }}
-                  placeholder="ipfs://… or https://… — leave blank if none"
+                  placeholder="ipfs://… or https://… (leave blank if none)"
                   style={{
                     width: "100%", padding: "0.75rem", background: "rgba(var(--ink-rgb), 0.03)",
                     border: metadataUriError ? "1px solid var(--accent-red)" : "1px solid var(--glass-border)",
@@ -837,7 +833,7 @@ export function MintSpecimen({ contractAddress, walletAccount, casualModeActive 
                   </span>
                 ) : (
                   <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", marginTop: "0.25rem", display: "block" }}>
-                    Only set this if you have already published a metadata file for this specimen. Left blank, the certificate simply publishes no external document — which is accurate.
+                    Only set this if you have already published a metadata file for this specimen. Left blank, the certificate has no external document, which is accurate.
                   </span>
                 )}
               </div>

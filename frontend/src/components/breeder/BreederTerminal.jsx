@@ -58,7 +58,10 @@ import {
   Tag,
   Images,
   Tote,
+  House,
+  CaretRight,
 } from "@phosphor-icons/react";
+import "./BreederDaylight.css";
 import { fetchSellerOrders } from "../../services/ordersSync";
 import { checkSellerStatus, startSellerOnboarding, getSellerDashboardLink } from "../../services/stripePayments";
 import { useMarketplaceListings } from "../../hooks/useMarketplaceListings";
@@ -113,7 +116,7 @@ const SECTIONS = Object.freeze({
 });
 
 const NAV_ITEMS = [
-  { id: SECTIONS.HOME, label: "Home", icon: Package },
+  { id: SECTIONS.HOME, label: "Home", icon: House },
   { id: SECTIONS.BOOTH, label: "Booth", icon: Tote },
   { id: SECTIONS.AUCTIONS, label: "Auctions", icon: Gavel },
   { id: SECTIONS.ORDERS, label: "Orders", icon: ClipboardText },
@@ -154,7 +157,7 @@ function writeLastVisit(ms) {
  *   it is not a known section id, so a bad link degrades to Home rather than
  *   rendering nothing.
  */
-export function BreederTerminal({ walletAccount, casualModeActive = false, initialSection = null }) {
+export function BreederTerminal({ walletAccount, casualModeActive = false, initialSection = null, onRequireSignIn }) {
   const isKnownSection = (id) => Object.values(SECTIONS).includes(id);
 
   const [activeSection, setActiveSection] = useState(
@@ -507,39 +510,61 @@ export function BreederTerminal({ walletAccount, casualModeActive = false, initi
 
   if (!walletAccount) {
     return (
-      <div className="glass-card" style={{ padding: "3rem", textAlign: "center" }}>
-        <h2 style={{ marginBottom: "1rem", color: "var(--text-secondary)" }}>Not Connected</h2>
-        <p style={{ color: "var(--text-muted)" }}>Connect your account to open the Breeder Terminal.</p>
+      <div className="bd">
+        <section className="bd-panel bd-empty" aria-labelledby="bd-terminal-signin">
+          <StorefrontIcon size={36} weight="duotone" color="var(--bd-teal)" aria-hidden="true" />
+          <h2 id="bd-terminal-signin" className="bd-panel-title">Sign in to open the Breeder Terminal</h2>
+          <p className="bd-panel-lead">
+            This is where you handle orders, listings, your store and payouts.
+          </p>
+          {onRequireSignIn && (
+            <button type="button" className="bd-btn bd-btn--primary" onClick={onRequireSignIn}>
+              Sign in
+            </button>
+          )}
+        </section>
       </div>
     );
   }
 
-  return (
-    <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
-      <div className="glass-card" style={{ padding: "1.5rem 1.75rem", marginBottom: "1.5rem" }}>
-        <h2 style={{ fontSize: "1.5rem", color: "var(--text-primary)", margin: "0 0 0.25rem 0" }}>
-          🐟 Breeder Terminal
-        </h2>
-        <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", margin: 0 }}>
-          {casualModeActive
-            ? "Your seller workspace — orders, listings, store, and payouts in one place."
-            : "Unified seller workspace: fulfillment, inventory, storefront, and payout status."}
-        </p>
-      </div>
+  // Arrow keys, Home and End move between section tabs (WAI-ARIA tabs
+  // pattern with automatic activation).
+  const handleSectionKeyDown = (event) => {
+    const index = NAV_ITEMS.findIndex((item) => item.id === activeSection);
+    let next = null;
+    if (event.key === "ArrowRight") next = (index + 1) % NAV_ITEMS.length;
+    else if (event.key === "ArrowLeft") next = (index - 1 + NAV_ITEMS.length) % NAV_ITEMS.length;
+    else if (event.key === "Home") next = 0;
+    else if (event.key === "End") next = NAV_ITEMS.length - 1;
+    if (next === null) return;
+    event.preventDefault();
+    const id = NAV_ITEMS[next].id;
+    setActiveSection(id);
+    document.getElementById(`bd-term-tab-${id}`)?.focus();
+  };
 
-      {/* Section nav — mobile-first horizontal scroll of large touch targets */}
-      <nav
+  return (
+    <div className="bd">
+      <header className="bd-head">
+        <div className="bd-head-text">
+          <p className="bd-kicker">Selling</p>
+          <h2 className="bd-title">Breeder Terminal</h2>
+          <p className="bd-subtitle">
+            {casualModeActive
+              ? "Your orders, listings, store and payouts in one place."
+              : "Orders, stock, booth sales, your store and payouts in one place."}
+          </p>
+        </div>
+      </header>
+
+      {/* Section tabs: one underlined row that scrolls sideways on phones.
+          Every tab is a 44px-tall touch target (.bd-tab min-height). */}
+      <div
+        role="tablist"
         aria-label="Breeder Terminal sections"
-        className="scroll-fade"
+        className="bd-tabs scroll-fade"
         ref={sectionNavScrollRef}
-        style={{
-          display: "flex",
-          gap: "0.5rem",
-          overflowX: "auto",
-          paddingBottom: "0.5rem",
-          marginBottom: "1.5rem",
-          WebkitOverflowScrolling: "touch",
-        }}
+        onKeyDown={handleSectionKeyDown}
       >
         {NAV_ITEMS.map((item) => {
           const Icon = item.icon;
@@ -547,32 +572,20 @@ export function BreederTerminal({ walletAccount, casualModeActive = false, initi
           return (
             <button
               key={item.id}
+              id={`bd-term-tab-${item.id}`}
               type="button"
+              role="tab"
+              aria-selected={isActive}
+              tabIndex={isActive ? 0 : -1}
+              className="bd-tab"
               onClick={() => setActiveSection(item.id)}
-              aria-current={isActive ? "page" : undefined}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "0.4rem",
-                padding: "0.65rem 1rem",
-                minHeight: "44px",
-                flexShrink: 0,
-                borderRadius: "10px",
-                border: isActive ? "1px solid var(--accent-blue)" : "1px solid var(--glass-border)",
-                background: isActive ? "rgba(56, 189, 248, 0.12)" : "rgba(var(--ink-rgb), 0.02)",
-                color: isActive ? "var(--accent-blue)" : "var(--text-secondary)",
-                fontSize: "0.82rem",
-                fontWeight: 600,
-                cursor: "pointer",
-                whiteSpace: "nowrap",
-              }}
             >
-              <Icon size={16} weight="duotone" />
+              <Icon size={18} weight={isActive ? "fill" : "regular"} aria-hidden="true" />
               {item.label}
             </button>
           );
         })}
-      </nav>
+      </div>
 
       {activeSection === SECTIONS.HOME && (
         <DashboardHome
@@ -724,7 +737,7 @@ export function BreederTerminal({ walletAccount, casualModeActive = false, initi
               only the advanced-export affordance mentioned in the spec. */}
           {canExportAdvancedAnalytics && (
             <div className="glass-card" style={{ padding: "1rem", marginTop: "1rem", fontSize: "0.8rem", color: "var(--text-secondary)" }}>
-              ⭐ Advanced export unlocked (Pelagic+): full order-history CSV with per-line-item breakdowns is available from the Analytics export button above.
+              Advanced export is on for your level (Pelagic and up). The export button above gives the full order history as a CSV, with a row for each item.
             </div>
           )}
         </>
@@ -805,25 +818,19 @@ function DashboardHome({ dashboard, ordersLoading, sellerStatus, casualModeActiv
   const onboardingComplete = !!sellerStatus?.onboardingComplete;
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "1rem" }}>
+    <div className="bd-dash">
       {!onboardingComplete && (
-        <div
-          className="glass-card"
-          style={{ padding: "1.25rem", gridColumn: "1 / -1", border: "1px solid rgba(251, 191, 36, 0.35)", background: "rgba(251, 191, 36, 0.06)" }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "0.5rem" }}>
-            <Warning size={20} weight="duotone" color="var(--accent-amber)" />
-            <strong style={{ color: "var(--text-primary)", fontSize: "0.95rem" }}>Connect payouts to get paid</strong>
+        <div className="bd-callout" role="region" aria-labelledby="bd-payout-callout">
+          <Warning size={22} weight="duotone" color="#b45309" aria-hidden="true" className="bd-callout-icon" />
+          <div className="bd-callout-body">
+            <strong id="bd-payout-callout">Connect payouts to get paid</strong>
+            <p>Buyers can't check out on your listings until Stripe payouts are set up.</p>
           </div>
-          <p style={{ color: "var(--text-secondary)", fontSize: "0.8rem", margin: "0 0 0.85rem 0" }}>
-            Buyers can't complete checkout for your listings until Stripe payouts are set up.
-          </p>
           <button
             type="button"
-            className="btn-primary"
+            className="bd-btn bd-btn--primary"
             onClick={onStartOnboarding}
             disabled={onboardingBusy}
-            style={{ minHeight: "44px" }}
           >
             {onboardingBusy ? "Opening…" : "Set up payouts"}
           </button>
@@ -862,7 +869,7 @@ function DashboardHome({ dashboard, ordersLoading, sellerStatus, casualModeActiv
         icon={<Package size={20} weight="duotone" color="var(--accent-amber)" />}
         title="Low Stock"
         value={String(lowStock.items.length)}
-        subtitle={casualModeActive ? "Listings running low or sold" : "Listings at/near zero inventory"}
+        subtitle={casualModeActive ? "Listings running low or sold" : "Listings at or near zero stock"}
         onClick={() => onNavigate(SECTIONS.LISTINGS)}
       />
 
@@ -892,27 +899,15 @@ function DashboardCard({ icon, title, value, subtitle, onClick, alert = false })
     <button
       type="button"
       onClick={onClick}
-      className="glass-card"
-      style={{
-        padding: "1.1rem 1.25rem",
-        textAlign: "left",
-        border: alert ? "1px solid rgba(248, 113, 113, 0.35)" : "1px solid var(--glass-border)",
-        background: alert ? "rgba(248, 113, 113, 0.05)" : "rgba(var(--ink-rgb), 0.01)",
-        cursor: "pointer",
-        minHeight: "44px",
-        display: "flex",
-        flexDirection: "column",
-        gap: "0.4rem",
-      }}
+      className={`bd-card${alert ? " bd-card--alert" : ""}`}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-        {icon}
-        <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", textTransform: "uppercase", fontWeight: 600 }}>
-          {title}
-        </span>
-      </div>
-      <strong style={{ fontSize: "1.5rem", color: "var(--text-primary)" }}>{value}</strong>
-      <span style={{ fontSize: "0.72rem", color: "var(--text-secondary)" }}>{subtitle}</span>
+      <span className="bd-card-top">
+        <span className="bd-card-icon" aria-hidden="true">{icon}</span>
+        <span className="bd-card-title">{title}</span>
+        <CaretRight size={16} weight="bold" className="bd-card-caret" aria-hidden="true" />
+      </span>
+      <strong className="bd-card-value">{value}</strong>
+      <span className="bd-card-sub">{subtitle}</span>
     </button>
   );
 }
@@ -1394,7 +1389,7 @@ function PickupArrangementPanel({ open, onToggle, state, onConfirm, confirmBusy 
         onClick={(e) => { e.preventDefault(); onToggle(); }}
         style={{ fontSize: "0.7rem", color: "var(--text-muted)", cursor: "pointer" }}
       >
-        📍 Pickup time — {open && arrangement ? statusView.label : "view / confirm"}
+        📍 Pickup time: {open && arrangement ? statusView.label : "view or confirm"}
       </summary>
       {open && (
         <div style={{ marginTop: "0.5rem", padding: "0.6rem 0.7rem", borderRadius: "6px", background: "rgba(var(--ink-rgb), 0.02)", border: "1px solid rgba(var(--ink-rgb), 0.06)" }}>
@@ -1615,12 +1610,12 @@ function PayoutsSection({ sellerStatus, casualModeActive, onStartOnboarding, onb
 
   return (
     <div className="glass-card" style={{ padding: "1.5rem" }}>
-      <h3 style={{ color: "var(--text-primary)", fontSize: "1rem", margin: "0 0 0.75rem 0" }}>💳 Payouts</h3>
+      <h3 style={{ color: "var(--text-primary)", fontSize: "1.1rem", margin: "0 0 0.75rem 0" }}>Payouts</h3>
       {onboardingComplete ? (
         <>
           <p style={{ color: "var(--text-secondary)", fontSize: "0.85rem", marginBottom: "1rem" }}>
-            Payouts connected. View your balance and transfer history in the Stripe Express dashboard —
-            it's the authoritative source for what's actually been paid out.
+            Payouts are connected. Your balance and transfer history are in the Stripe Express
+            dashboard, which is the record of what has been paid out.
           </p>
           <button
             type="button"

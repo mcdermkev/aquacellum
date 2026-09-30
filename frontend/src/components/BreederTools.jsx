@@ -1,4 +1,15 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
+import {
+  Certificate,
+  ClipboardText,
+  TreeStructure,
+  Egg,
+  Dna,
+  ChartLineUp,
+  Palette,
+  Trophy,
+} from "@phosphor-icons/react";
+import "./breeder/BreederDaylight.css";
 import { MintSpecimen } from "./MintSpecimen";
 import { SpecimenLineage } from "./SpecimenLineage";
 import { SpawningWizard } from "./SpawningWizard";
@@ -10,15 +21,16 @@ import { COICalculator } from "./COICalculator";
 import { BreederAchievements } from "./BreederAchievements";
 import { BreedingProgramModal } from "./BreedingProgramModal";
 import { useContractSpecies } from "../hooks/useSpeciesData";
-import { useScrollAffordance } from "../hooks/useScrollAffordance";
 import {
   getUnseenMorphUpdates,
   markMorphsViewed,
 } from "../services/morphSubmissionsApi";
 
 /**
- * BreederTools — Combined pro-mode panel that unifies Register, Lineage, and
- * Spawning into a single tab with internal sub-navigation.
+ * BreederTools: the pro-mode breeding workspace. One page with a row of
+ * section tabs (Register, Program, Lineage, Spawning, Genetics, Grow-Out,
+ * Morphs, Achievements). Styled with the shared Daylight breeder sheet
+ * (./breeder/BreederDaylight.css, `bd-*` classes).
  */
 export function BreederTools({
   contractAddress,
@@ -31,7 +43,7 @@ export function BreederTools({
   onSwitchToPro,
 }) {
   const [activeSection, setActiveSection] = useState(initialSection || "register");
-  const subNavScrollRef = useScrollAffordance();
+  const tabRefs = useRef({});
   // Lineage-first intake (docs/LINEAGE_FIRST_INTAKE_SPEC.md)
   const [isProgramOpen, setIsProgramOpen] = useState(false);
   const [programResult, setProgramResult] = useState(null);
@@ -75,21 +87,47 @@ export function BreederTools({
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const sections = [
-    { id: "register", icon: "✦", label: "Register" },
-    { id: "program", icon: "📋", label: "Program" },
-    { id: "lineage", icon: "🌿", label: "Lineage" },
-    { id: "spawning", icon: "🥚", label: "Spawning" },
-    { id: "genetics", icon: "🧬", label: "Genetics" },
-    { id: "growout", icon: "📊", label: "Grow-Out" },
-    { id: "morphs", icon: "🎨", label: "Morphs" },
-    { id: "achievements", icon: "🏆", label: "Achievements" },
+    { id: "register", Icon: Certificate, label: "Register" },
+    { id: "program", Icon: ClipboardText, label: "Program" },
+    { id: "lineage", Icon: TreeStructure, label: "Lineage" },
+    { id: "spawning", Icon: Egg, label: "Spawning" },
+    { id: "genetics", Icon: Dna, label: "Genetics" },
+    { id: "growout", Icon: ChartLineUp, label: "Grow-Out" },
+    { id: "morphs", Icon: Palette, label: "Morphs" },
+    { id: "achievements", Icon: Trophy, label: "Achievements" },
   ];
 
+  // Arrow keys, Home and End move between tabs (WAI-ARIA tabs pattern with
+  // automatic activation: focusing a tab opens its section).
+  const handleTabKeyDown = (event) => {
+    const index = sections.findIndex((s) => s.id === activeSection);
+    let next = null;
+    if (event.key === "ArrowRight") next = (index + 1) % sections.length;
+    else if (event.key === "ArrowLeft") next = (index - 1 + sections.length) % sections.length;
+    else if (event.key === "Home") next = 0;
+    else if (event.key === "End") next = sections.length - 1;
+    if (next === null) return;
+    event.preventDefault();
+    const id = sections[next].id;
+    handleSectionChange(id);
+    tabRefs.current[id]?.focus();
+  };
+
   return (
-    <div>
+    <div className="bd">
+      <header className="bd-head">
+        <div className="bd-head-text">
+          <p className="bd-kicker">Breeding</p>
+          <h2 className="bd-title">Breeder Tools</h2>
+          <p className="bd-subtitle">
+            Register your fish, record spawns and lineage, and plan your next pairing.
+          </p>
+        </div>
+      </header>
+
       {/* Mode-mismatch notice.
           Breeder Tools has no nav pill in Casual mode, but the route is still
-          reachable — deliberately, because deep links to it are documented (the
+          reachable, deliberately, because deep links to it are documented (the
           morph flow tells breeders to bookmark /app/breeder?section=morphs) and
           silently redirecting would break them. Mode is a self-service display
           preference, NOT an entitlement: nothing here is being withheld, so the
@@ -97,146 +135,145 @@ export function BreederTools({
           hide a working surface or pretend it's locked.
           See docs/BREEDER_STATE_MODEL.md §10. */}
       {casualModeActive && (
-        <div
-          className="glass-card"
-          style={{
-            display: "flex", alignItems: "center", justifyContent: "space-between",
-            gap: "1rem", flexWrap: "wrap", padding: "0.75rem 1.1rem", marginBottom: "1rem",
-            border: "1px solid rgba(168, 85, 247, 0.22)", background: "rgba(168, 85, 247, 0.04)",
-          }}
-        >
-          <span style={{ fontSize: "0.8rem", color: "var(--text-secondary)", lineHeight: 1.5 }}>
-            These are the <strong style={{ color: "var(--text-primary)" }}>Pro</strong> breeding tools. They work
-            just fine here, but you won't see a tab for them while you're in the simpler view.
+        <div className="bd-notice">
+          <span>
+            These are the <strong>Pro</strong> breeding tools. They work fine here,
+            but there is no tab for them in the simpler view.
           </span>
           {onSwitchToPro && (
-            <button
-              className="btn-secondary"
-              onClick={onSwitchToPro}
-              style={{ fontSize: "0.75rem", padding: "0.4rem 0.9rem", whiteSpace: "nowrap" }}
-            >
+            <button type="button" className="bd-btn" onClick={onSwitchToPro}>
               Switch to Pro
             </button>
           )}
         </div>
       )}
 
-      {/* Internal sub-navigation pills.
-          `.scroll-fade` only engages on mobile, where the media query switches
-          this to width:100% + overflow-x:auto and hides the scrollbar. Its own
-          border is faint (0.12 alpha) so the mask softening it at the edges reads
-          as intentional rather than as a rendering fault. */}
+      {/* Section tabs. Scrolls sideways on narrow screens. */}
       <div
-        className="breeder-sub-nav scroll-fade"
-        ref={subNavScrollRef}
-        style={{
-          display: "flex",
-          gap: "0.5rem",
-          marginBottom: "1.5rem",
-          padding: "0.35rem",
-          background: "rgba(var(--ink-rgb), 0.02)",
-          border: "1px solid rgba(168, 85, 247, 0.12)",
-          borderRadius: "12px",
-          width: "fit-content",
-        }}
+        className="bd-tabs"
+        role="tablist"
+        aria-label="Breeder Tools sections"
+        onKeyDown={handleTabKeyDown}
       >
-        {sections.map((section) => {
-          const isActive = activeSection === section.id;
+        {sections.map(({ id, Icon, label }) => {
+          const isActive = activeSection === id;
+          const showDot = id === "morphs" && morphBadgeCount > 0;
           return (
             <button
-              key={section.id}
-              onClick={() => handleSectionChange(section.id)}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "0.4rem",
-                padding: "0.5rem 1rem",
-                border: "none",
-                borderRadius: "8px",
-                cursor: "pointer",
-                fontSize: "0.85rem",
-                fontWeight: isActive ? "600" : "400",
-                color: isActive ? "var(--accent-violet)" : "var(--text-muted)",
-                background: isActive
-                  ? "linear-gradient(135deg, rgba(168, 85, 247, 0.25) 0%, rgba(124, 58, 237, 0.2) 100%)"
-                  : "transparent",
-                boxShadow: isActive
-                  ? "var(--glass-shadow)"
-                  : "none",
-                transition: "all 0.2s ease",
-              }}
-              aria-current={isActive ? "true" : undefined}
+              key={id}
+              ref={(el) => { tabRefs.current[id] = el; }}
+              type="button"
+              role="tab"
+              id={`bd-tab-${id}`}
+              aria-selected={isActive}
+              aria-controls="bd-panel"
+              tabIndex={isActive ? 0 : -1}
+              className="bd-tab"
+              onClick={() => handleSectionChange(id)}
             >
-              <span>{section.icon}</span>
-              <span style={{ position: "relative" }}>
-                {section.label}
-                {section.id === "morphs" && morphBadgeCount > 0 && (
-                  <span
-                    style={{
-                      position: "absolute",
-                      top: "-4px",
-                      right: "-10px",
-                      width: "8px",
-                      height: "8px",
-                      borderRadius: "50%",
-                      background: "var(--accent-green, #34d399)",
-                      boxShadow: "none",
-                    }}
-                    aria-label={`${morphBadgeCount} new update${morphBadgeCount > 1 ? "s" : ""}`}
-                  />
-                )}
-              </span>
+              <Icon size={18} weight={isActive ? "fill" : "regular"} aria-hidden="true" />
+              <span>{label}</span>
+              {showDot && (
+                <span
+                  className="bd-tab-dot"
+                  role="status"
+                  aria-label={`${morphBadgeCount} new update${morphBadgeCount > 1 ? "s" : ""}`}
+                />
+              )}
             </button>
           );
         })}
       </div>
 
-      {/* Section content */}
-      {activeSection === "register" && (
-        <MintSpecimen
-          contractAddress={contractAddress}
-          walletAccount={walletAccount}
-          casualModeActive={casualModeActive}
-        />
-      )}
+      <div role="tabpanel" id="bd-panel" aria-labelledby={`bd-tab-${activeSection}`}>
+        {activeSection === "register" && (
+          <MintSpecimen
+            contractAddress={contractAddress}
+            walletAccount={walletAccount}
+            casualModeActive={casualModeActive}
+          />
+        )}
 
-      {activeSection === "program" && (
-        <div className="glass-card" style={{ padding: "2rem", maxWidth: "680px", margin: "0 auto" }}>
-          <h2 style={{ fontSize: "1.5rem", color: "var(--text-primary)", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            📋 Breeding program
-          </h2>
-          <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", lineHeight: 1.6, marginTop: "0.5rem" }}>
-            {casualModeActive
-              ? "Setting up? List the groups of fish you breed and we'll make a tank for each one and add its fish."
-              : "New here, or moving a fishroom across? Declare the lines you keep and we'll build the tanks and register the stock in one pass — grouped by line, ready to spawn from."}
-          </p>
+        {activeSection === "program" && (
+          <section className="bd-panel" aria-labelledby="bd-program-title">
+            <h3 id="bd-program-title" className="bd-panel-title">Breeding program</h3>
+            <p className="bd-panel-lead">
+              {casualModeActive
+                ? "Setting up? List the groups of fish you breed and we'll make a tank for each one and add its fish."
+                : "New here, or moving a fishroom across? List the lines you keep and we'll build a tank for each line and register its fish in one pass, ready to spawn from."}
+            </p>
 
-          {programResult && (
-            <div
-              style={{
-                marginTop: "1rem",
-                padding: "0.75rem 0.9rem",
-                borderRadius: "var(--radius-sm)",
-                background: "rgba(52, 211, 153, 0.08)",
-                border: "1px solid rgba(52, 211, 153, 0.25)",
-                fontSize: "0.8rem",
-                color: "var(--text-secondary)",
-              }}
+            {programResult && (
+              <p className="bd-success" role="status">
+                Created {programResult.tankIds.length} tanks and {programResult.specimenIds.length} birth
+                certificates. They're in My Aquariums, and you can pair them from the Spawning tab.
+              </p>
+            )}
+
+            <button
+              type="button"
+              className="bd-btn bd-btn--primary"
+              onClick={() => setIsProgramOpen(true)}
+              style={{ marginTop: "1.25rem" }}
             >
-              ✓ Created {programResult.tankIds.length} tanks and {programResult.specimenIds.length} birth certificates.
-              They're in My Aquariums, and you can pair them from the Spawning tab.
-            </div>
-          )}
+              Declare your breeding program
+            </button>
+          </section>
+        )}
 
-          <button
-            className="btn-primary"
-            onClick={() => setIsProgramOpen(true)}
-            style={{ marginTop: "1.25rem" }}
-          >
-            Declare your breeding program
-          </button>
-        </div>
-      )}
+        {activeSection === "lineage" && (
+          <SpecimenLineage
+            contractAddress={contractAddress}
+            walletAccount={walletAccount}
+            preselectedTokenId={preselectedTokenId}
+            onSelectBreed={onSelectBreed}
+          />
+        )}
+
+        {activeSection === "spawning" && (
+          <>
+            <SpawningDashboard walletAccount={walletAccount} />
+            <SpawningWizard
+              contractAddress={contractAddress}
+              walletAccount={walletAccount}
+              onComplete={(targetSection) => {
+                if (targetSection === "morphs") {
+                  handleSectionChange("morphs");
+                } else if (onSpawningComplete) {
+                  onSpawningComplete();
+                }
+              }}
+              casualModeActive={casualModeActive}
+            />
+          </>
+        )}
+
+        {activeSection === "genetics" && (
+          <>
+            <GeneticsPrediction casualModeActive={casualModeActive} />
+            <COICalculator contractAddress={contractAddress} walletAccount={walletAccount} />
+          </>
+        )}
+
+        {activeSection === "growout" && (
+          <GrowOutSection
+            walletAccount={walletAccount}
+            casualModeActive={casualModeActive}
+          />
+        )}
+
+        {activeSection === "morphs" && (
+          <MorphRegistration
+            walletAccount={walletAccount}
+            casualModeActive={casualModeActive}
+            contractAddress={contractAddress}
+          />
+        )}
+
+        {activeSection === "achievements" && (
+          <BreederAchievements walletAccount={walletAccount} />
+        )}
+      </div>
 
       {isProgramOpen && (
         <BreedingProgramModal
@@ -246,59 +283,6 @@ export function BreederTools({
           onClose={() => setIsProgramOpen(false)}
           onCreated={(result) => setProgramResult(result)}
         />
-      )}
-
-      {activeSection === "lineage" && (
-        <SpecimenLineage
-          contractAddress={contractAddress}
-          walletAccount={walletAccount}
-          preselectedTokenId={preselectedTokenId}
-          onSelectBreed={onSelectBreed}
-        />
-      )}
-
-      {activeSection === "spawning" && (
-        <>
-          <SpawningDashboard walletAccount={walletAccount} />
-          <SpawningWizard
-            contractAddress={contractAddress}
-            walletAccount={walletAccount}
-            onComplete={(targetSection) => {
-              if (targetSection === "morphs") {
-                handleSectionChange("morphs");
-              } else if (onSpawningComplete) {
-                onSpawningComplete();
-              }
-            }}
-            casualModeActive={casualModeActive}
-          />
-        </>
-      )}
-
-      {activeSection === "genetics" && (
-        <>
-          <GeneticsPrediction casualModeActive={casualModeActive} />
-          <COICalculator contractAddress={contractAddress} walletAccount={walletAccount} />
-        </>
-      )}
-
-      {activeSection === "growout" && (
-        <GrowOutSection
-          walletAccount={walletAccount}
-          casualModeActive={casualModeActive}
-        />
-      )}
-
-      {activeSection === "morphs" && (
-        <MorphRegistration
-          walletAccount={walletAccount}
-          casualModeActive={casualModeActive}
-          contractAddress={contractAddress}
-        />
-      )}
-
-      {activeSection === "achievements" && (
-        <BreederAchievements walletAccount={walletAccount} />
       )}
     </div>
   );

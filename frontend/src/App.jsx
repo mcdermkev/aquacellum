@@ -1338,6 +1338,7 @@ export default function App() {
               walletAccount={smartWalletForFounderCheck || account}
               casualModeActive={casualModeActive}
               initialSection={breederTerminalSection}
+              onRequireSignIn={() => requireCommerceAuth()}
             />
           </Suspense>
         );

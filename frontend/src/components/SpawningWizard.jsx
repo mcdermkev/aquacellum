@@ -486,7 +486,7 @@ export function SpawningWizard({ contractAddress, walletAccount, onComplete, cas
         🥚 Breeding Pair Setup
       </h2>
       <p style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>
-        Follow the simple steps below to pair your fish, pick a tank, and register new fry — no technical knowledge needed!
+        Pick a pair, pick a tank, and record the spawn in a few steps.
       </p>
 
       {/* Stepper Node header */}

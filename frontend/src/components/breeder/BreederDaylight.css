@@ -1,0 +1,200 @@
+/*
+ * BreederDaylight.css: the shared header and section tabs for Breeder Tools
+ * and the Breeder Terminal, on the Daylight system (same look as My Aquariums
+ * and The Reef: white cards on the page tint, teal accents, Outfit headings).
+ */
+
+.bd {
+  --bd-teal: #0f766e;
+  --bd-teal-dark: #0d5f58;
+  --bd-tint: #e8f5f3;
+  --bd-tint-line: rgba(15, 118, 110, 0.25);
+  max-width: 1100px;
+  margin: 0 auto;
+  font-family: var(--font-body);
+  color: var(--text-primary);
+}
+.bd *:focus-visible { outline: 2px solid var(--bd-teal); outline-offset: 2px; }
+.bd h1, .bd h2, .bd h3 { font-family: var(--font-display); }
+
+/* Header */
+.bd-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin: 0 0 1.1rem;
+}
+.bd-head-text { flex: 1 1 320px; min-width: 0; }
+.bd-kicker { margin: 0 0 0.2rem; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--bd-teal); }
+.bd-title { margin: 0; font-size: clamp(1.6rem, 3.2vw, 2rem); font-weight: 800; line-height: 1.15; letter-spacing: -0.01em; }
+.bd-subtitle { margin: 0.35rem 0 0; max-width: 64ch; font-size: 0.93rem; line-height: 1.55; color: var(--text-secondary); }
+.bd-head-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+
+/* Section tabs: one underlined row, scrolls sideways on narrow screens */
+.bd-tabs {
+  display: flex;
+  gap: 0.15rem;
+  margin: 0 0 1.4rem;
+  border-bottom: 1px solid var(--line);
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.bd-tabs::-webkit-scrollbar { display: none; }
+.bd-tab {
+  position: relative;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 46px;
+  padding: 0 0.95rem;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  background: transparent;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.bd-tab:hover { color: var(--text-primary); }
+.bd-tab[aria-selected="true"] { color: var(--bd-teal); border-bottom-color: var(--bd-teal); }
+.bd-tab svg { flex-shrink: 0; }
+.bd-tab-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #059669; margin-left: -0.15rem; align-self: flex-start; margin-top: 0.85rem;
+}
+
+/* Notices */
+.bd-notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.9rem;
+  flex-wrap: wrap;
+  padding: 0.8rem 1rem;
+  margin: 0 0 1.1rem;
+  border: 1px solid var(--bd-tint-line);
+  border-radius: 14px;
+  background: var(--bd-tint);
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+.bd-notice strong { color: var(--text-primary); }
+
+.bd-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.45rem;
+  min-height: 44px; padding: 0 1.05rem;
+  border: 1px solid var(--line); border-radius: 999px;
+  background: #fff; color: var(--text-primary);
+  font: inherit; font-size: 0.86rem; font-weight: 600; white-space: nowrap; cursor: pointer; text-decoration: none;
+}
+.bd-btn:hover:not(:disabled) { border-color: rgba(var(--ink-rgb), 0.28); background: #fbfdfd; }
+.bd-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.bd-btn--primary { background: var(--bd-teal); border-color: var(--bd-teal); color: #fff; box-shadow: 0 2px 8px rgba(15, 118, 110, 0.22); }
+.bd-btn--primary:hover:not(:disabled) { background: var(--bd-teal-dark); border-color: var(--bd-teal-dark); }
+
+/* Plain panel (Program section) */
+.bd-panel {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 1.5rem 1.6rem;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  box-shadow: 0 1px 2px rgba(11, 37, 48, 0.05), 0 6px 18px rgba(11, 37, 48, 0.06);
+}
+.bd-panel-title { margin: 0; font-size: 1.35rem; font-weight: 800; }
+.bd-panel-lead { margin: 0.45rem 0 0; font-size: 0.92rem; line-height: 1.6; color: var(--text-secondary); }
+.bd-success { margin: 1rem 0 0; padding: 0.75rem 0.9rem; border-radius: 12px; background: #effaf5; color: #065f46; font-size: 0.88rem; line-height: 1.5; }
+
+/* Signed-out state */
+.bd-empty { display: flex; flex-direction: column; align-items: center; gap: 0.6rem; text-align: center; padding: 2.5rem 1.6rem; }
+.bd-empty .bd-panel-lead { max-width: 44ch; margin: 0 0 0.4rem; }
+
+/* Terminal home: payouts callout + six summary cards */
+.bd-dash {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 0.9rem;
+}
+.bd-callout {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  flex-wrap: wrap;
+  padding: 1rem 1.15rem;
+  border: 1px solid rgba(180, 83, 9, 0.28);
+  border-radius: 16px;
+  background: #fff8eb;
+}
+.bd-callout-icon { flex-shrink: 0; }
+.bd-callout-body { flex: 1 1 260px; min-width: 0; }
+.bd-callout-body strong { display: block; font-size: 0.98rem; color: var(--text-primary); }
+.bd-callout-body p { margin: 0.2rem 0 0; font-size: 0.88rem; line-height: 1.5; color: var(--text-secondary); }
+
+.bd-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-height: 44px;
+  padding: 1rem 1.15rem 1.05rem;
+  text-align: left;
+  font: inherit;
+  color: var(--text-primary);
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: 0 1px 2px rgba(11, 37, 48, 0.05);
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.bd-card:hover { border-color: var(--bd-tint-line); box-shadow: 0 4px 14px rgba(11, 37, 48, 0.08); }
+.bd-card:hover .bd-card-caret { color: var(--bd-teal); transform: translateX(2px); }
+.bd-card--alert { border-color: rgba(185, 28, 28, 0.3); background: #fff7f7; }
+.bd-card-top { display: flex; align-items: center; gap: 0.5rem; }
+.bd-card-icon { display: inline-flex; width: 32px; height: 32px; align-items: center; justify-content: center; border-radius: 10px; background: #f1f7f8; flex-shrink: 0; }
+.bd-card-title { flex: 1; font-size: 0.86rem; font-weight: 600; color: var(--text-secondary); }
+.bd-card-caret { color: var(--text-muted); transition: transform 0.15s ease, color 0.15s ease; }
+.bd-card-value { font-family: var(--font-display); font-size: 1.7rem; font-weight: 700; line-height: 1.1; margin-top: 0.2rem; }
+.bd-card-sub { font-size: 0.8rem; line-height: 1.45; color: var(--text-muted); }
+
+/* Sections inside the breeder pages reuse older components that still use
+   .glass-card / .btn-primary / .btn-secondary. Inside .bd those read as the
+   same Daylight cards and teal pill buttons, without editing each component. */
+.bd .glass-card:hover { transform: none; }
+.bd .btn-primary,
+.bd .btn-primary-pro {
+  min-height: 44px;
+  background: var(--bd-teal);
+  border-radius: 999px;
+  font-family: var(--font-body);
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(15, 118, 110, 0.22);
+}
+.bd .btn-primary:hover:not(:disabled),
+.bd .btn-primary-pro:hover:not(:disabled) { background: var(--bd-teal-dark); box-shadow: 0 2px 8px rgba(15, 118, 110, 0.22); transform: none; }
+.bd .btn-secondary { border-radius: 999px; font-family: var(--font-body); font-weight: 600; }
+
+@media (prefers-reduced-motion: reduce) {
+  .bd-card, .bd-card-caret { transition: none; }
+  .bd-card:hover .bd-card-caret { transform: none; }
+}
+
+@media (max-width: 640px) {
+  .bd-dash { grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+  .bd-card { padding: 0.85rem 0.9rem; border-radius: 14px; }
+  .bd-card-value { font-size: 1.4rem; }
+  .bd-card-caret { display: none; }
+  .bd-callout .bd-btn { width: 100%; }
+  .bd-tab { padding: 0 0.75rem; font-size: 0.86rem; }
+  .bd-tab svg { display: none; }
+  .bd-panel { padding: 1.2rem; border-radius: 16px; }
+}

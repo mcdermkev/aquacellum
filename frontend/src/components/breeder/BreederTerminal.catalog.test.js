@@ -125,11 +125,15 @@ describe("BreederTerminal — entitlement gating (only convenience surfaces, nev
 
 describe("BreederTerminal — mobile-first section nav", () => {
   it("uses large (>=44px) touch targets for nav buttons", () => {
-    expect(SOURCE).toMatch(/minHeight:\s*"44px"/);
+    const CSS = readFileSync(fileURLToPath(new URL("./BreederDaylight.css", import.meta.url)), "utf8");
+    expect(SOURCE).toContain('className="bd-tab"');
+    expect(CSS).toMatch(/\.bd-tab\s*\{[^}]*min-height:\s*(4[4-9]|[5-9]\d)px/);
   });
 
-  it("marks the active section via aria-current for accessibility", () => {
-    expect(SOURCE).toContain('aria-current={isActive ? "page" : undefined}');
+  it("exposes the section nav as an ARIA tablist with the active tab selected", () => {
+    expect(SOURCE).toContain('role="tablist"');
+    expect(SOURCE).toContain('role="tab"');
+    expect(SOURCE).toContain("aria-selected={isActive}");
   });
 });
 

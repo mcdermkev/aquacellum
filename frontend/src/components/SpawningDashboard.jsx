@@ -219,7 +219,7 @@ export function SpawningDashboard({ walletAccount }) {
             <div style={{ textAlign: "center", padding: "2rem 1rem", color: "var(--text-muted)" }}>
               <span style={{ fontSize: "2rem", display: "block", marginBottom: "0.75rem" }}>🥚</span>
               <p style={{ fontSize: "0.85rem" }}>No certificates registered yet.</p>
-              <p style={{ fontSize: "0.75rem", marginTop: "0.25rem" }}>Use the Spawning Wizard below to breed your first pair!</p>
+              <p style={{ fontSize: "0.75rem", marginTop: "0.25rem" }}>Set up your first pair in Breeding Pair Setup below.</p>
             </div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem", maxHeight: "400px", overflowY: "auto" }}>
