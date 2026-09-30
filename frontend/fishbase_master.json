@@ -1615,7 +1615,8 @@
       "socialBehavior": "Highly social and active schooling fish. They must be kept in groups of at least 6 individuals to thrive, reduce stress, and display natural behaviors. Keeping fewer can lead to shyness or nipping."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": "Carnivore",
+      "trophicSource": "FishBase SpecCode 4653: Herbivory2 mainly animals (troph. 2.8 and up); FeedingType hunting macrofauna (predator); DietTroph 3.11 (s.e. 0.06); FoodTroph 3.21 (s.e. 0.37)",
       "fooditems": "Small invertebrates, insect larvae, zooplankton, algae, and some plant matter.",
       "feedingPlaybook": "Accepts a wide variety of foods including high-quality flake food, micro-pellets, and small live or frozen foods such as daphnia, brine shrimp, and bloodworms. Feed small amounts multiple times a day to match their active metabolism."
     },
@@ -1859,7 +1860,8 @@
       "socialBehavior": "Highly social schooling fish. Must be kept in groups of 6 or more to thrive and exhibit natural behavior. Keeping them in smaller numbers can lead to stress and potential aggression towards other fish."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": "Carnivore",
+      "trophicSource": "FishBase SpecCode 4682: Herbivory2 mainly animals (troph. 2.8 and up); FeedingType hunting macrofauna (predator); FoodTroph 3.12 (s.e. 0.32)",
       "fooditems": "In the wild, their diet consists of small invertebrates, crustaceans, and some plant matter. In the aquarium, they readily accept high-quality flake food, micro-pellets, and a variety of frozen or live foods such as bloodworms, brine shrimp, and daphnia.",
       "feedingPlaybook": "Offer a varied diet to ensure optimal health and coloration. Feed small amounts 1-2 times daily, ensuring all food is consumed within a few minutes to prevent water pollution."
     },
@@ -2328,7 +2330,8 @@
       "socialBehavior": "Peaceful and social schooling fish. They should be kept in groups of at least six individuals to promote natural behavior and reduce stress. Males can be persistent in their pursuit of females, so a ratio of 2-3 females per male is recommended. Avoid housing with aggressive or fin-nipping species."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": "Carnivore",
+      "trophicSource": "FishBase SpecCode 3228: Herbivory2 mainly animals (troph. 2.8 and up); FoodTroph 3.20 (s.e. 0.40)",
       "fooditems": "High-quality flake food, micro-pellets, live or frozen brine shrimp, daphnia, bloodworms, and vegetable matter such as spirulina flakes.",
       "feedingPlaybook": "Feed small amounts 2-3 times daily, offering only what they can consume within a few minutes. A varied diet is crucial for optimal health, coloration, and to prevent digestive issues."
     },
@@ -3832,9 +3835,10 @@
       "socialBehavior": "Territorial, especially when breeding. Provide adequate space and line-of-sight breaks."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": null,
+      "trophicSource": "Removed seed default \"Omnivore\" (scripts/seed_from_collectr.js fallback; source row had no diet); FishBase SpecCode 11201 has no feeding data",
       "fooditems": "Likely to prey on insects and other small invertebrates in nature. Captive fish will accept dried products but should also be offered plenty of small live or frozen foods such as Daphnia , Artemia , or bloodworm regularly to ensure development of optimal colour and condition. Small insects such as m",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
     },
     "reproduction": {
       "spawningTrait": "Nest builder",
@@ -4160,9 +4164,10 @@
       "socialBehavior": "Generally peaceful in appropriately sized community tanks with compatible tankmates."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": "Carnivore",
+      "trophicSource": "FishBase SpecCode 10881: Herbivory2 mainly animals (troph. 2.8 and up); FeedingType hunting macrofauna (predator); FoodTroph 3.27 (s.e. 0.40)",
       "fooditems": "zoobenthos (unspecified insects, unspecified crustaceans, unspecified worms)",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
     },
     "reproduction": {
       "spawningTrait": "Open-water egg scatterer no parental care",
@@ -4470,9 +4475,10 @@
       "socialBehavior": "Females can be defensive around fry."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": "Carnivore",
+      "trophicSource": "FishBase SpecCode 3232: Herbivory2 mainly animals (troph. 2.8 and up); FoodTroph 3.20 (s.e. 0.40)",
       "fooditems": "zoobenthos (mayflies, unidentified, midges)",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions. Include some vegetable matter (spirulina flakes) as livebearers benefit from plant-based nutrition."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions. Include some vegetable matter (spirulina flakes) as livebearers benefit from plant-based nutrition."
     },
     "reproduction": {
       "spawningTrait": "Livebearer with maternal care",
@@ -4578,7 +4584,8 @@
       "socialBehavior": "Peaceful and can be kept singly or in groups. They are more outgoing and confident when kept in a small group of their own kind (3+ individuals). They pose no threat to other fish unless they are small enough to be considered food."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": null,
+      "trophicSource": "Removed seed default \"Omnivore\" (scripts/seed_from_collectr.js fallback; source row had no diet); FishBase SpecCode 12104 has no feeding data",
       "fooditems": "Sinking pellets, high-quality flakes, bloodworms, brine shrimp, tubifex worms, and small insect larvae. They appreciate a varied diet.",
       "feedingPlaybook": "Being nocturnal, they are best fed after the aquarium lights have been turned off. Ensure sinking foods reach the bottom where they can forage. They have a good sense of smell and will locate food readily."
     },
@@ -4633,9 +4640,10 @@
       "socialBehavior": "Forms territorial pairs when breeding."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": "Carnivore",
+      "trophicSource": "FishBase SpecCode 4786: Herbivory2 mainly animals (troph. 2.8 and up); FoodTroph 3.23 (s.e. 0.47)",
       "fooditems": "nekton (small fishes); plants (periphyton); zoobenthos (snails, unidentified worms, insects)",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed once or twice daily. Larger portions acceptable. High-quality cichlid pellets as staple. Avoid overfeeding to prevent bloat."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed once or twice daily. Larger portions acceptable. High-quality cichlid pellets as staple. Avoid overfeeding to prevent bloat."
     },
     "reproduction": {
       "spawningTrait": "Nest builder with biparental care",
@@ -4739,9 +4747,10 @@
       "socialBehavior": "Forms territorial pairs when breeding."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": "Carnivore",
+      "trophicSource": "FishBase SpecCode 4727: Herbivory2 mainly animals (troph. 2.8 and up); FeedingType hunting macrofauna (predator); FoodTroph 3.27 (s.e. 0.40)",
       "fooditems": "zoobenthos (unidentified)",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed once or twice daily. Larger portions acceptable. High-quality cichlid pellets as staple. Avoid overfeeding to prevent bloat."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed once or twice daily. Larger portions acceptable. High-quality cichlid pellets as staple. Avoid overfeeding to prevent bloat."
     },
     "reproduction": {
       "spawningTrait": "Substrate spawner with biparental care",
@@ -4792,9 +4801,10 @@
       "socialBehavior": "Forms territorial pairs when breeding."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": "Carnivore",
+      "trophicSource": "FishBase SpecCode 12209: Herbivory2 mainly animals (troph. 2.8 and up); FoodTroph 3.26 (s.e. 0.40)",
       "fooditems": "others (unspecified insects); zoobenthos (unspecified crustaceans, unspecified worms)",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed once or twice daily. Larger portions acceptable. High-quality cichlid pellets as staple. Avoid overfeeding to prevent bloat."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed once or twice daily. Larger portions acceptable. High-quality cichlid pellets as staple. Avoid overfeeding to prevent bloat."
     },
     "reproduction": {
       "spawningTrait": "Substrate spawner with biparental care",
@@ -5325,9 +5335,10 @@
       "socialBehavior": "Generally peaceful in appropriately sized community tanks with compatible tankmates."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": "Carnivore",
+      "trophicSource": "FishBase SpecCode 4765: Herbivory2 mainly animals (troph. 2.8 and up); FeedingType hunting macrofauna (predator); DietTroph 2.98; FoodTroph 2.95 (s.e. 0.31)",
       "fooditems": "detritus (unidentified); nekton (unidentified); plants (filamentous algae, unidentified); zoobenthos (unidentified)",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed once or twice daily. Larger portions acceptable."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed once or twice daily. Larger portions acceptable."
     },
     "reproduction": {
       "spawningTrait": "Open-water egg scatterer no parental care",
@@ -5431,9 +5442,10 @@
       "socialBehavior": "Generally peaceful in appropriately sized community tanks with compatible tankmates."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": null,
+      "trophicSource": "Removed seed default \"Omnivore\" (scripts/seed_from_collectr.js fallback; source row had no diet); FishBase SpecCode 24687 has no feeding data",
       "fooditems": "While Botia spp. appear to be chiefly carnivorous they will also eat vegetative matter if available, often including soft-leaved aquatic plants. The natural diet comprises aquatic molluscs, insects, worms, and other invertebrates. They’re largely unfussy feeders but must be offered a varied diet com",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed once or twice daily. Larger portions acceptable. Sinking pellets and frozen foods offered near substrate level work best. They are active foragers, especially at dusk."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed once or twice daily. Larger portions acceptable. Sinking pellets and frozen foods offered near substrate level work best. They are active foragers, especially at dusk."
     },
     "reproduction": {
       "spawningTrait": "No reports of breeding in private aquaria but some species are mass-produced for the hobby via the use of hormones. Unfortunately this practice has be",
@@ -5484,9 +5496,10 @@
       "socialBehavior": "Generally peaceful in appropriately sized community tanks with compatible tankmates."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": null,
+      "trophicSource": "Removed seed default \"Omnivore\" (scripts/seed_from_collectr.js fallback; source row had no diet); FishBase SpecCode 12255 has no feeding data",
       "fooditems": "While Botia spp. appear to be chiefly carnivorous they will also eat vegetative matter if available, often including soft-leaved aquatic plants. The natural diet comprises aquatic molluscs, insects, worms, and other invertebrates. They’re largely unfussy feeders but must be offered a varied diet com",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions. Sinking pellets and frozen foods offered near substrate level work best. They are active foragers, especially at dusk."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions. Sinking pellets and frozen foods offered near substrate level work best. They are active foragers, especially at dusk."
     },
     "reproduction": {
       "spawningTrait": "Not known to have been bred in the hobby as with the majority of botiid loaches though some, including B. striata , are being produced on a commercial",
@@ -5820,9 +5833,10 @@
       "socialBehavior": "Territorial, especially when breeding. Provide adequate space and line-of-sight breaks."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": "Carnivore",
+      "trophicSource": "FishBase SpecCode 11136: Herbivory2 mainly animals (troph. 2.8 and up); FeedingType hunting macrofauna (predator); FoodTroph 3.25 (s.e. 0.39)",
       "fooditems": "zoobenthos (unidentified small crustaceans, unidentified, unidentified insect larvae)",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions. Crushed cichlid pellets or high-quality micro-pellets as staple."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions. Crushed cichlid pellets or high-quality micro-pellets as staple."
     },
     "reproduction": {
       "spawningTrait": "Substrate spawner",
@@ -6193,9 +6207,10 @@
       "socialBehavior": "Generally peaceful in appropriately sized community tanks with compatible tankmates."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": "Carnivore",
+      "trophicSource": "FishBase SpecCode 10824: Herbivory2 mainly animals (troph. 2.8 and up); FeedingType hunting macrofauna (predator); FoodTroph 3.03 (s.e. 0.35)",
       "fooditems": "detritus (detritus); others (ants); zoobenthos (unidentified exogenous insects, unidentified water mites, nematodes); zooplankton (unidentified)",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
     },
     "reproduction": {
       "spawningTrait": "Open-water egg scatterer no parental care",
@@ -6246,9 +6261,10 @@
       "socialBehavior": "Generally peaceful in appropriately sized community tanks with compatible tankmates."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": "Carnivore",
+      "trophicSource": "FishBase SpecCode 10829: Herbivory2 mainly animals (troph. 2.8 and up); FeedingType hunting macrofauna (predator); FoodTroph 2.90 (s.e. 0.33)",
       "fooditems": "plants (plant materials); zoobenthos (unidentified)",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
     },
     "reproduction": {
       "spawningTrait": "Open-water egg scatterer no parental care",
@@ -6459,9 +6475,10 @@
       "socialBehavior": "Generally peaceful in appropriately sized community tanks with compatible tankmates."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": null,
+      "trophicSource": "Removed seed default \"Omnivore\" (scripts/seed_from_collectr.js fallback; source row had no diet); FishBase SpecCode 9739 has no feeding data",
       "fooditems": "Carnivorous surface feeder taking small insects and invertebrates in nature. In aquaria: live/frozen mosquito larvae, daphnia, brine shrimp, small floating pellets.",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
     },
     "reproduction": {
       "spawningTrait": "Open-water egg scatterer no parental care",
@@ -6512,9 +6529,10 @@
       "socialBehavior": "Generally peaceful in appropriately sized community tanks with compatible tankmates."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": null,
+      "trophicSource": "Removed seed default \"Omnivore\" (scripts/seed_from_collectr.js fallback; source row had no diet); FishBase SpecCode 4781 has no feeding data",
       "fooditems": "Eartheater — sifts sand through gills to extract invertebrates, organic detritus, and plant matter. In aquaria: sinking pellets, frozen bloodworm, brine shrimp. Fine sand substrate essential for feeding behavior.",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed once or twice daily. Larger portions acceptable. High-quality cichlid pellets as staple. Avoid overfeeding to prevent bloat."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed once or twice daily. Larger portions acceptable. High-quality cichlid pellets as staple. Avoid overfeeding to prevent bloat."
     },
     "reproduction": {
       "spawningTrait": "external brooders",
@@ -6566,9 +6584,10 @@
       "socialBehavior": "Generally peaceful in appropriately sized community tanks with compatible tankmates."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": null,
+      "trophicSource": "Removed seed default \"Omnivore\" (scripts/seed_from_collectr.js fallback; source row had no diet); FishBase SpecCode 12360 has no feeding data",
       "fooditems": "Easy to feed. It will readily accept just about anything offered. For the best condition and colours, offer regular meals of small live and frozen foods such as bloodworm , Daphnia and brine shrimp , along with dried flakes and granules.",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
     },
     "reproduction": {
       "spawningTrait": "Open-water egg scatterer no parental care",
@@ -7155,9 +7174,10 @@
       "socialBehavior": "Generally peaceful in appropriately sized community tanks with compatible tankmates."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": "Carnivore",
+      "trophicSource": "FishBase SpecCode 10659: Herbivory2 mainly animals (troph. 2.8 and up); FeedingType hunting macrofauna (predator); FoodTroph 3.21 (s.e. 0.37)",
       "fooditems": "Likely to be omnivorous feeding on small invertebrates, crustacea, filamentous algae, fallen fruit and suchlike in nature. In aquaria it may survive on a diet of dried foods but like most fishes does best when offered a varied menu which in this case should also contain live and frozen chironomid la",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
     },
     "reproduction": {
       "spawningTrait": "Egg scatterer no parental care",
@@ -7315,9 +7335,10 @@
       "socialBehavior": "Generally peaceful in appropriately sized community tanks with compatible tankmates."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": null,
+      "trophicSource": "Removed seed default \"Omnivore\" (scripts/seed_from_collectr.js fallback; source row had no diet); FishBase SpecCode 6300 has no feeding data",
       "fooditems": "An easily-fed species , it will accept most dried, frozen and live foods. Feed a varied diet for the fish to show the best colouration. To find high quality fish foods, click here .",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
     },
     "reproduction": {
       "spawningTrait": "Brood hider",
@@ -7368,9 +7389,10 @@
       "socialBehavior": "Generally peaceful in appropriately sized community tanks with compatible tankmates."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": null,
+      "trophicSource": "Removed seed default \"Omnivore\" (scripts/seed_from_collectr.js fallback; source row had no diet); FishBase SpecCode 47109 has no feeding data",
       "fooditems": "It will accept most foods offered, but vegetable matter in the form of spirulina flakes, blanched spinach etc. should form a good proportion of the diet. This can be supplemented with live and frozen varieties. To find high quality fish foods, click here .",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions. Crushed cichlid pellets or high-quality micro-pellets as staple."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions. Crushed cichlid pellets or high-quality micro-pellets as staple."
     },
     "reproduction": {
       "spawningTrait": "Mouthbrooder",
@@ -7530,9 +7552,10 @@
       "socialBehavior": "Generally peaceful in appropriately sized community tanks with compatible tankmates."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": null,
+      "trophicSource": "Removed seed default \"Omnivore\" (scripts/seed_from_collectr.js fallback; source row had no diet); FishBase SpecCode 10489 has no feeding data",
       "fooditems": "Unfussy and will accept most dried, frozen and live foods. Regular feedings of the latter will help to ensure the fish exhibit their best colours. To find high quality fish foods, click here .",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
     },
     "reproduction": {
       "spawningTrait": "Open-water egg scatterer no parental care",
@@ -7743,9 +7766,10 @@
       "socialBehavior": "Generally peaceful in appropriately sized community tanks with compatible tankmates."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": null,
+      "trophicSource": "Removed seed default \"Omnivore\" (scripts/seed_from_collectr.js fallback; source row had no diet); FishBase SpecCode 22717 has no feeding data",
       "fooditems": "Unfussy and will accept most dried, frozen and live foods. Regular feedings of the latter will ensure the best colouration. To find high quality fish foods, click here .",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed once or twice daily. Larger portions acceptable."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed once or twice daily. Larger portions acceptable."
     },
     "reproduction": {
       "spawningTrait": "Open-water egg scatterer no parental care",
@@ -7955,9 +7979,10 @@
       "socialBehavior": "Territorial, especially when breeding. Provide adequate space and line-of-sight breaks."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": null,
+      "trophicSource": "Removed seed default \"Omnivore\" (scripts/seed_from_collectr.js fallback; source row had no diet); FishBase SpecCode 12305 has no feeding data",
       "fooditems": "Mikrogeophagus spp. are benthophagous by nature, normally taking mouthfuls of substrate which are sifted for edible items with the remaining material expelled via the gill openings and mouth, although they will also browse solid surfaces and snatch items directly from the water column. In the aquari",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions. Crushed cichlid pellets or high-quality micro-pellets as staple."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions. Crushed cichlid pellets or high-quality micro-pellets as staple."
     },
     "reproduction": {
       "spawningTrait": "Substrate spawner",
@@ -8242,9 +8267,10 @@
       "socialBehavior": "Generally peaceful in appropriately sized community tanks with compatible tankmates."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": "Carnivore",
+      "trophicSource": "FishBase SpecCode 3016: Herbivory2 mainly animals (troph. 2.8 and up); DietTroph 3.10 (s.e. 0.40); FoodTroph 3.24 (s.e. 0.40)",
       "fooditems": "zoobenthos (unidentified insects, small crustaceans, unidentified worms)",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed once or twice daily. Larger portions acceptable. Sinking pellets and frozen foods offered near substrate level work best. They are active foragers, especially at dusk."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed once or twice daily. Larger portions acceptable. Sinking pellets and frozen foods offered near substrate level work best. They are active foragers, especially at dusk."
     },
     "reproduction": {
       "spawningTrait": "Open-water egg scatterer no parental care",
@@ -8295,9 +8321,10 @@
       "socialBehavior": "Generally peaceful in appropriately sized community tanks with compatible tankmates."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": "Carnivore",
+      "trophicSource": "FishBase SpecCode 10664: Herbivory2 mainly animals (troph. 2.8 and up); FeedingType hunting macrofauna (predator); FoodTroph 3.22 (s.e. 0.37)",
       "fooditems": "Easy to feed. It will readily accept just about anything offered. For the best condition and colours offer regular meals of small live and frozen foods such as bloodworm , Daphnia and brine shrimp , along with dried flakes and granules.",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
     },
     "reproduction": {
       "spawningTrait": "Egg scatterer no parental care",
@@ -8722,9 +8749,10 @@
       "socialBehavior": "Generally peaceful in appropriately sized community tanks with compatible tankmates."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": null,
+      "trophicSource": "Removed seed default \"Omnivore\" (scripts/seed_from_collectr.js fallback; source row had no diet); FishBase SpecCode 52350 has no feeding data",
       "fooditems": "Xylivore/detritivore — rasps driftwood for cellulose and grazes biofilm. In aquaria: driftwood (mandatory), sinking algae wafers, blanched courgette, occasional frozen foods.",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions. Provide driftwood for rasping. Sinking wafers should be offered after lights-out."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions. Provide driftwood for rasping. Sinking wafers should be offered after lights-out."
     },
     "reproduction": {
       "spawningTrait": "Cave spawner with paternal care — male guards eggs in narrow crevice or coconut shell",
@@ -9007,9 +9035,10 @@
       "socialBehavior": "Generally peaceful in appropriately sized community tanks with compatible tankmates."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": "Carnivore",
+      "trophicSource": "FishBase SpecCode 8195: Herbivory2 mainly animals (troph. 2.8 and up); FeedingType hunting macrofauna (predator); FoodTroph 3.28 (s.e. 0.39)",
       "fooditems": "zoobenthos (unspecified small crustaceans, unspecified worms)",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
     },
     "reproduction": {
       "spawningTrait": "Open-water egg scatterer no parental care",
@@ -9498,9 +9527,10 @@
       "socialBehavior": "Generally peaceful in appropriately sized community tanks with compatible tankmates."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": null,
+      "trophicSource": "Removed seed default \"Omnivore\" (scripts/seed_from_collectr.js fallback; source row had no diet); FishBase SpecCode 13115 has no feeding data",
       "fooditems": "Very easy to feed. It mainly preys on aquatic invertebrates in nature but in the aquarium will greedily accept just about anything offered. Meaty items such as live or frozen bloodworm , Tubifex or small earthworms are particularly relished, but dried sinking foods will also be taken. Take care not ",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
     },
     "reproduction": {
       "spawningTrait": "Not thought to have been achieved in the hobby.",
@@ -10212,9 +10242,10 @@
       "socialBehavior": "Territorial, especially when breeding. Provide adequate space and line-of-sight breaks."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": "Carnivore",
+      "trophicSource": "FishBase SpecCode 9599: Herbivory2 mainly animals (troph. 2.8 and up); FeedingType hunting macrofauna (predator); FoodTroph 2.93 (s.e. 0.36)",
       "fooditems": "detritus (unidentified vegetable degree); others (ants); plants (unidentified filamentous algae); zoobenthos (beetles, unidentified)",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
     },
     "reproduction": {
       "spawningTrait": "Substrate spawner",
@@ -10320,9 +10351,10 @@
       "socialBehavior": "Generally peaceful in appropriately sized community tanks with compatible tankmates."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": "Carnivore",
+      "trophicSource": "FishBase SpecCode 10716: Herbivory2 mainly animals (troph. 2.8 and up); FeedingType hunting macrofauna (predator); FoodTroph 3.30 (s.e. 0.41)",
       "fooditems": "zoobenthos (unspecified small insects, unspecified crustaceans, unspecified worms); zooplankton (unspecified crustaceans)",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
     },
     "reproduction": {
       "spawningTrait": "Open-water egg scatterer no parental care",
@@ -10428,9 +10460,10 @@
       "socialBehavior": "Territorial, especially when breeding. Provide adequate space and line-of-sight breaks."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": null,
+      "trophicSource": "Removed seed default \"Omnivore\" (scripts/seed_from_collectr.js fallback; source row had no diet); FishBase SpecCode 4674 has no feeding data",
       "fooditems": "Unfussy and will accept most foods offered. To find high quality fish foods, click here .",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
     },
     "reproduction": {
       "spawningTrait": "Nest builder",
@@ -10481,9 +10514,10 @@
       "socialBehavior": "Generally peaceful in appropriately sized community tanks with compatible tankmates."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": null,
+      "trophicSource": "Removed seed default \"Omnivore\" (scripts/seed_from_collectr.js fallback; source row had no diet); FishBase SpecCode 27073 has no feeding data",
       "fooditems": "Probably a micropredator feeding on small insects, worms, crustaceans, and other zooplankton in nature. In the aquarium it’s easily-fed but the best condition and colours offer regular meals of small live and frozen foods such as bloodworm , Daphnia , and Artemia , alongside good quality dried flake",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in very small portions; crush flakes if needed."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in very small portions; crush flakes if needed."
     },
     "reproduction": {
       "spawningTrait": "Open-water egg scatterer no parental care",
@@ -10534,9 +10568,10 @@
       "socialBehavior": "Generally peaceful in appropriately sized community tanks with compatible tankmates."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": null,
+      "trophicSource": "Removed seed default \"Omnivore\" (scripts/seed_from_collectr.js fallback; source row had no diet); FishBase SpecCode 12182 has no feeding data",
       "fooditems": "Probably a micropredator feeding on small insects, worms, crustaceans, and other zooplankton in nature. In the aquarium it’s easily-fed but the best condition and colours offer regular meals of small live and frozen foods such as bloodworm , Daphnia , and Artemia , alongside good quality dried flake",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
     },
     "reproduction": {
       "spawningTrait": "Egg scatterer",
@@ -10747,9 +10782,10 @@
       "socialBehavior": "Generally peaceful in appropriately sized community tanks with compatible tankmates."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": "Carnivore",
+      "trophicSource": "FishBase SpecCode 8770: Herbivory2 mainly animals (troph. 2.8 and up); FoodTroph 3.25 (s.e. 0.39)",
       "fooditems": "zoobenthos (unidentified)",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
     },
     "reproduction": {
       "spawningTrait": "Open-water egg scatterer no parental care",
@@ -10800,9 +10836,10 @@
       "socialBehavior": "Generally peaceful in appropriately sized community tanks with compatible tankmates."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": null,
+      "trophicSource": "Removed seed default \"Omnivore\" (scripts/seed_from_collectr.js fallback; source row had no diet); FishBase SpecCode 9714 has no feeding data",
       "fooditems": "Carnivorous surface feeder — small insects, mosquito larvae, micro crustaceans. In aquaria: live/frozen daphnia, brine shrimp, mosquito larvae, micro worms.",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
     },
     "reproduction": {
       "spawningTrait": "Open-water egg scatterer no parental care",
@@ -10853,9 +10890,10 @@
       "socialBehavior": "Generally peaceful in appropriately sized community tanks with compatible tankmates."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": null,
+      "trophicSource": "Removed seed default \"Omnivore\" (scripts/seed_from_collectr.js fallback; source row had no diet); FishBase SpecCode 9795 has no feeding data",
       "fooditems": "Aphyosemion species feed largely on aquatic and terrestrial invertebrates in the wild. In captivity small live or frozen foods such as Daphnia or bloodworm are preferred although the fish will also accept good quality flake in most cases.",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
     },
     "reproduction": {
       "spawningTrait": "Open-water egg scatterer no parental care",
@@ -10907,9 +10945,10 @@
       "socialBehavior": "Females can be defensive around fry."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": null,
+      "trophicSource": "Removed seed default \"Omnivore\" (scripts/seed_from_collectr.js fallback; source row had no diet); FishBase SpecCode 26703 has no feeding data",
       "fooditems": "Primarily carnivorous and apparently feeds mostly on benthic invertebrates in nature. In the aquarium live and frozen foods such as Artemia , Daphnia and chironomid larvae ( bloodworm ) should be offered regularly although most specimens will also learn to accept dried alternatives with pelleted pro",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions. Crushed cichlid pellets or high-quality micro-pellets as staple."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions. Crushed cichlid pellets or high-quality micro-pellets as staple."
     },
     "reproduction": {
       "spawningTrait": "Substrate spawner with maternal care",
@@ -11122,9 +11161,10 @@
       "socialBehavior": "Females can be defensive around fry."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": null,
+      "trophicSource": "Removed seed default \"Omnivore\" (scripts/seed_from_collectr.js fallback; source row had no diet); FishBase SpecCode 46608 has no feeding data",
       "fooditems": "Apistogramma spp. are chiefly carnivorous and feed mostly on benthic invertebrates in nature. In the aquarium live and frozen foods such as Artemia , Daphnia , Moina and chironomid larvae (bloodworm) should be offered regularly although most species will also learn to accept dried alternatives with ",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions. Crushed cichlid pellets or high-quality micro-pellets as staple."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions. Crushed cichlid pellets or high-quality micro-pellets as staple."
     },
     "reproduction": {
       "spawningTrait": "Substrate spawner with maternal care",
@@ -11175,9 +11215,10 @@
       "socialBehavior": "Females can be defensive around fry."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": null,
+      "trophicSource": "Removed seed default \"Omnivore\" (scripts/seed_from_collectr.js fallback; source row had no diet); FishBase SpecCode 46633 has no feeding data",
       "fooditems": "Primarily carnivorous and feeds mostly on benthic invertebrates in nature. In the aquarium live and frozen foods such as Artemia , Daphnia and chironomid larvae ( bloodworm ) should be offered regularly although most specimens will also learn to accept dried alternatives with pelleted products gener",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions. Crushed cichlid pellets or high-quality micro-pellets as staple."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions. Crushed cichlid pellets or high-quality micro-pellets as staple."
     },
     "reproduction": {
       "spawningTrait": "Nest builder with maternal care",
@@ -11229,9 +11270,10 @@
       "socialBehavior": "Females can be defensive around fry."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": null,
+      "trophicSource": "Removed seed default \"Omnivore\" (scripts/seed_from_collectr.js fallback; source row had no diet); FishBase SpecCode 46660 has no feeding data",
       "fooditems": "Primarily? carnivorous ? and apparently feeds mostly on? benthic ? invertebrates in nature. In the? aquarium ? live and frozen foods such as? Artemia ,? Daphnia ? and? chironomid ? larvae ? ( bloodworm ) should be offered regularly although most specimens will also learn to accept dried alternatives",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions. Crushed cichlid pellets or high-quality micro-pellets as staple."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions. Crushed cichlid pellets or high-quality micro-pellets as staple."
     },
     "reproduction": {
       "spawningTrait": "Substrate spawner with maternal care",
@@ -11282,9 +11324,10 @@
       "socialBehavior": "Forms territorial pairs when breeding."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": null,
+      "trophicSource": "Removed seed default \"Omnivore\" (scripts/seed_from_collectr.js fallback; source row had no diet); FishBase SpecCode 26702 has no feeding data",
       "fooditems": "Primarily carnivorous and apparently feeds mostly on benthic invertebrates in nature. In the aquarium live and frozen foods such as Artemia , Daphnia and chironomid larvae ( bloodworm ) should be offered regularly although most specimens will also learn to accept dried alternatives with pelleted pro",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions. Crushed cichlid pellets or high-quality micro-pellets as staple."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions. Crushed cichlid pellets or high-quality micro-pellets as staple."
     },
     "reproduction": {
       "spawningTrait": "Nest builder with biparental care",
@@ -11388,9 +11431,10 @@
       "socialBehavior": "Forms territorial pairs when breeding."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": null,
+      "trophicSource": "Removed seed default \"Omnivore\" (scripts/seed_from_collectr.js fallback; source row had no diet); FishBase SpecCode 46712 has no feeding data",
       "fooditems": "Apistogramma spp. are chiefly carnivorous and feed mostly on benthic invertebrates in nature. In the aquarium live and frozen foods such as Artemia , Daphnia , Moina and chironomid larvae (bloodworm) should be offered regularly although most species will also learn to accept dried alternatives with ",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions. Crushed cichlid pellets or high-quality micro-pellets as staple."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions. Crushed cichlid pellets or high-quality micro-pellets as staple."
     },
     "reproduction": {
       "spawningTrait": "Substrate spawner with biparental care",
@@ -11441,9 +11485,10 @@
       "socialBehavior": "Females can be defensive around fry."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": null,
+      "trophicSource": "Removed seed default \"Omnivore\" (scripts/seed_from_collectr.js fallback; source row had no diet); FishBase SpecCode 46716 has no feeding data",
       "fooditems": "Apistogramma spp. are chiefly carnivorous and feed mostly on benthic invertebrates in nature. In the aquarium live and frozen foods such as Artemia , Daphnia , Moina and chironomid larvae (bloodworm) should be offered regularly although most species will also learn to accept dried alternatives with ",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions. Crushed cichlid pellets or high-quality micro-pellets as staple."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions. Crushed cichlid pellets or high-quality micro-pellets as staple."
     },
     "reproduction": {
       "spawningTrait": "Substrate spawner with maternal care",
@@ -11547,9 +11592,10 @@
       "socialBehavior": "Generally peaceful in appropriately sized community tanks with compatible tankmates."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": "Carnivore",
+      "trophicSource": "FishBase SpecCode 10879: Herbivory2 mainly animals (troph. 2.8 and up); FeedingType hunting macrofauna (predator); FoodTroph 3.29 (s.e. 0.40)",
       "fooditems": "zoobenthos (unidentified)",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in very small portions; crush flakes if needed."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in very small portions; crush flakes if needed."
     },
     "reproduction": {
       "spawningTrait": "Open-water egg scatterer no parental care",
@@ -11600,9 +11646,10 @@
       "socialBehavior": "Generally peaceful in appropriately sized community tanks with compatible tankmates."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": null,
+      "trophicSource": "Removed seed default \"Omnivore\" (scripts/seed_from_collectr.js fallback; source row had no diet); FishBase SpecCode 22603 has no feeding data",
       "fooditems": "As with other Boraras species it’s likely to be a micropredator feeding on small insects, worms, crustaceans and other zooplankton in nature. In the aquarium it will accept dried foods of a suitable size but should not be fed these exclusively. Daily meals of small live and frozen fare such as Daphn",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in very small portions; crush flakes if needed."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in very small portions; crush flakes if needed."
     },
     "reproduction": {
       "spawningTrait": "Egg scatterer",
@@ -11706,9 +11753,10 @@
       "socialBehavior": "Generally peaceful in appropriately sized community tanks with compatible tankmates."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": "Carnivore",
+      "trophicSource": "FishBase SpecCode 10368: Herbivory2 mainly animals (troph. 2.8 and up); FeedingType hunting macrofauna (predator); FoodTroph 3.24 (s.e. 0.39)",
       "fooditems": "zoobenthos (unspecified insects, unspecified crustaceans, unspecified worms)",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in very small portions; crush flakes if needed."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in very small portions; crush flakes if needed."
     },
     "reproduction": {
       "spawningTrait": "Open-water egg scatterer no parental care",
@@ -11866,9 +11914,10 @@
       "socialBehavior": "Generally peaceful in appropriately sized community tanks with compatible tankmates."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": null,
+      "trophicSource": "Removed seed default \"Omnivore\" (scripts/seed_from_collectr.js fallback; source row had no diet); FishBase SpecCode 53380 has no feeding data",
       "fooditems": "Herbivorous mbuna — aufwuchs grazer feeding on algae and biofilm from rocks. In aquaria: spirulina flakes/pellets, algae wafers, blanched spinach. Strictly avoid high-protein foods.",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions. Crushed cichlid pellets or high-quality micro-pellets as staple."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions. Crushed cichlid pellets or high-quality micro-pellets as staple."
     },
     "reproduction": {
       "spawningTrait": "Maternal mouthbrooder — female incubates eggs in mouth for 3-4 weeks",
@@ -12394,9 +12443,10 @@
       "socialBehavior": "Generally peaceful in appropriately sized community tanks with compatible tankmates."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": null,
+      "trophicSource": "Removed seed default \"Omnivore\" (scripts/seed_from_collectr.js fallback; source row had no diet); FishBase SpecCode 46104 has no feeding data",
       "fooditems": "Will accept most sinking dried foods, as well as small live and frozen varieties such as bloodworm , brine shrimp and chopped earthworm. Feeding a varied diet will ensure the fish are in the best condition.",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions. Use sinking pellets or wafers to ensure food reaches the bottom. They forage actively along the substrate."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions. Use sinking pellets or wafers to ensure food reaches the bottom. They forage actively along the substrate."
     },
     "reproduction": {
       "spawningTrait": "Can be bred in a similar fashion to many other Corydoras species . Set up the breeding tank (18″ x 12″ x 12″ or similar is a good size), with either a",
@@ -12712,9 +12762,10 @@
       "socialBehavior": "Generally peaceful in appropriately sized community tanks with compatible tankmates."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": null,
+      "trophicSource": "Removed seed default \"Omnivore\" (scripts/seed_from_collectr.js fallback; source row had no diet); FishBase SpecCode 10029 has no feeding data",
       "fooditems": "An obligate predator which probably feeds on smaller fishes and invertebrates in nature, but in most cases adapts well to dead alternatives in captivity. Some specimens may accept dried foods though these should never form the staple diet. Young fish can be offered chironomid larvae (bloodworm), sma",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
     },
     "reproduction": {
       "spawningTrait": "Open-water egg scatterer no parental care",
@@ -12818,9 +12869,10 @@
       "socialBehavior": "Generally peaceful in appropriately sized community tanks with compatible tankmates."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": null,
+      "trophicSource": "Removed seed default \"Omnivore\" (scripts/seed_from_collectr.js fallback; source row had no diet); FishBase SpecCode 24366 has no feeding data",
       "fooditems": "Almost certain to prey chiefly on insects and their larvae in nature. In the aquarium it’s a largely unfussy feeder and will accept most foods. A good quality dried product can be used as the staple diet but this should be supplemented with regular meals of small live and frozen fare such as bloodwo",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
     },
     "reproduction": {
       "spawningTrait": "Egg scatterer",
@@ -12871,9 +12923,10 @@
       "socialBehavior": "Generally peaceful in appropriately sized community tanks with compatible tankmates."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": null,
+      "trophicSource": "Removed seed default \"Omnivore\" (scripts/seed_from_collectr.js fallback; source row had no diet); FishBase SpecCode 24410 has no feeding data",
       "fooditems": "Likely to feed on small invertebrates, algae and other zooplankton in nature. In the aquarium it will accept dried foods of a suitable size but should not be fed these exclusively, and as it rarely rises to the surface there’s little point in offering floating products. Daily meals of small live and",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
     },
     "reproduction": {
       "spawningTrait": "Open-water egg scatterer no parental care",
@@ -12924,9 +12977,10 @@
       "socialBehavior": "Generally peaceful in appropriately sized community tanks with compatible tankmates."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": null,
+      "trophicSource": "Removed seed default \"Omnivore\" (scripts/seed_from_collectr.js fallback; source row had no diet); FishBase SpecCode 54620 has no feeding data",
       "fooditems": "Almost certain to prey chiefly on insects and their larvae in nature. In the aquarium it’s a largely unfussy feeder and will accept most foods. A good quality dried product can be used as the staple diet but this should be supplemented with regular meals of small live and frozen fare such as bloodwo",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
     },
     "reproduction": {
       "spawningTrait": "Egg scatterer",
@@ -13030,9 +13084,10 @@
       "socialBehavior": "Territorial, especially when breeding. Provide adequate space and line-of-sight breaks."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": null,
+      "trophicSource": "Removed seed default \"Omnivore\" (scripts/seed_from_collectr.js fallback; source row had no diet); FishBase SpecCode 11280 has no feeding data",
       "fooditems": "Aufwuchs grazer and detritivore — rasps algae and biofilm from surfaces. In aquaria: algae wafers, blanched vegetables, sinking spirulina. Driftwood presence beneficial.",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed once or twice daily. Larger portions acceptable. Provide driftwood for rasping. Sinking wafers should be offered after lights-out."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed once or twice daily. Larger portions acceptable. Provide driftwood for rasping. Sinking wafers should be offered after lights-out."
     },
     "reproduction": {
       "spawningTrait": "Substrate spawner",
@@ -13083,9 +13138,10 @@
       "socialBehavior": "Generally peaceful in appropriately sized community tanks with compatible tankmates."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": "Carnivore",
+      "trophicSource": "FishBase SpecCode 10725: Herbivory2 mainly animals (troph. 2.8 and up); FeedingType hunting macrofauna (predator); FoodTroph 3.29 (s.e. 0.40)",
       "fooditems": "others (unidentified terrestrial insects); zoobenthos (unidentified)",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
     },
     "reproduction": {
       "spawningTrait": "Egg scatterer",
@@ -13298,9 +13354,10 @@
       "socialBehavior": "Generally peaceful in appropriately sized community tanks with compatible tankmates."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": null,
+      "trophicSource": "Removed seed default \"Omnivore\" (scripts/seed_from_collectr.js fallback; source row had no diet); FishBase SpecCode 12388 has no feeding data",
       "fooditems": "No special requirements. It will accept most prepared foods, but should also be offered regular meals of small live and frozen stuff such as brine shrimp , Daphnia and similar. A varied diet will help to ensure the best colour and devlopment.",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
     },
     "reproduction": {
       "spawningTrait": "Open-water egg scatterer no parental care",
@@ -13619,9 +13676,10 @@
       "socialBehavior": "Territorial, especially when breeding. Provide adequate space and line-of-sight breaks."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": null,
+      "trophicSource": "Removed seed default \"Omnivore\" (scripts/seed_from_collectr.js fallback; source row had no diet); FishBase SpecCode 12262 has no feeding data",
       "fooditems": "Wild fish are probably foragers feeding on algae , organic detritus , small insects, worms, crustaceans, and other zooplankton. In the aquarium it’s easily-fed but the best condition and colours offer regular meals of small live and frozen foods such as bloodworm , Daphnia , and Artemia , alongside ",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions. Crushed cichlid pellets or high-quality micro-pellets as staple."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions. Crushed cichlid pellets or high-quality micro-pellets as staple."
     },
     "reproduction": {
       "spawningTrait": "Substrate spawner",
@@ -13672,9 +13730,10 @@
       "socialBehavior": "Territorial, especially when breeding. Provide adequate space and line-of-sight breaks."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": null,
+      "trophicSource": "Removed seed default \"Omnivore\" (scripts/seed_from_collectr.js fallback; source row had no diet); FishBase SpecCode 12264 has no feeding data",
       "fooditems": "Wild fish are probably foragers feeding on algae, organic detritus, small insects, worms, crustaceans, and other zooplankton. In the aquarium it’s easily-fed but the best condition and colours offer regular meals of small live and frozen foods such as bloodworm, Daphnia , and Artemia , alongside goo",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions. Crushed cichlid pellets or high-quality micro-pellets as staple."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions. Crushed cichlid pellets or high-quality micro-pellets as staple."
     },
     "reproduction": {
       "spawningTrait": "Substrate spawner",
@@ -14045,9 +14104,10 @@
       "socialBehavior": "Territorial, especially when breeding. Provide adequate space and line-of-sight breaks."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": "Carnivore",
+      "trophicSource": "FishBase SpecCode 11180: Herbivory2 mainly animals (troph. 2.8 and up); FeedingType hunting macrofauna (predator); FoodTroph 3.27 (s.e. 0.40)",
       "fooditems": "zoobenthos (unidentified, unidentified insect larvae)",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions. Crushed cichlid pellets or high-quality micro-pellets as staple."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions. Crushed cichlid pellets or high-quality micro-pellets as staple."
     },
     "reproduction": {
       "spawningTrait": "Substrate spawner",
@@ -14099,9 +14159,10 @@
       "socialBehavior": "Generally peaceful in appropriately sized community tanks with compatible tankmates."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": "Carnivore",
+      "trophicSource": "FishBase SpecCode 10750: Herbivory2 mainly animals (troph. 2.8 and up); FeedingType hunting macrofauna (predator); FoodTroph 3.25 (s.e. 0.39)",
       "fooditems": "zoobenthos (unidentified)",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
     },
     "reproduction": {
       "spawningTrait": "Open-water egg scatterer no parental care",
@@ -14258,9 +14319,10 @@
       "socialBehavior": "Generally peaceful in appropriately sized community tanks with compatible tankmates."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": null,
+      "trophicSource": "Removed seed default \"Omnivore\" (scripts/seed_from_collectr.js fallback; source row had no diet); FishBase SpecCode 4715 has no feeding data",
       "fooditems": "Carnivore feeding on small invertebrates, insect larvae, and crustaceans. In aquaria: live/frozen foods essential — brine shrimp, daphnia, mosquito larvae, grindal worms.",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
     },
     "reproduction": {
       "spawningTrait": "Brood hider",
@@ -14578,9 +14640,10 @@
       "socialBehavior": "Territorial, especially when breeding. Provide adequate space and line-of-sight breaks."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": null,
+      "trophicSource": "Removed seed default \"Omnivore\" (scripts/seed_from_collectr.js fallback; source row had no diet); FishBase SpecCode 8799 has no feeding data",
       "fooditems": "It will accept most foods offered but live and frozen varieties should form the bulk of the diet. To find high quality fish foods, click here .",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions. Crushed cichlid pellets or high-quality micro-pellets as staple."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions. Crushed cichlid pellets or high-quality micro-pellets as staple."
     },
     "reproduction": {
       "spawningTrait": "Nest builder",
@@ -14631,9 +14694,10 @@
       "socialBehavior": "Generally peaceful in appropriately sized community tanks with compatible tankmates."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": "Carnivore",
+      "trophicSource": "FishBase SpecCode 4762: Herbivory2 mainly animals (troph. 2.8 and up); FeedingType hunting macrofauna (predator); FoodTroph 3.30 (s.e. 0.41)",
       "fooditems": "zoobenthos (unspecified crustaceans); zooplankton (unspecified crustaceans)",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
     },
     "reproduction": {
       "spawningTrait": "Open-water egg scatterer no parental care",
@@ -14684,9 +14748,10 @@
       "socialBehavior": "Generally peaceful in appropriately sized community tanks with compatible tankmates."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": "Carnivore",
+      "trophicSource": "FishBase SpecCode 10371: Herbivory2 mainly animals (troph. 2.8 and up); FeedingType hunting macrofauna (predator); FoodTroph 3.27 (s.e. 0.40)",
       "fooditems": "zoobenthos (unspecified insects, unspecified crustaceans, unspecified worms)",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
     },
     "reproduction": {
       "spawningTrait": "Brood hider",
@@ -14737,9 +14802,10 @@
       "socialBehavior": "Generally peaceful in appropriately sized community tanks with compatible tankmates."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": null,
+      "trophicSource": "Removed seed default \"Omnivore\" (scripts/seed_from_collectr.js fallback; source row had no diet); FishBase SpecCode 10372 has no feeding data",
       "fooditems": "Probably feeds mostly on invertebrates both aquatic and terrestrial in nature as with similar members of the genus . In the aquarium it’s easily-fed but for it to develop its best colours and condition offer daily meals of live and frozen foods such as bloodworm , Daphnia and Artemia along with good",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
     },
     "reproduction": {
       "spawningTrait": "Egg scatterer",
@@ -14790,9 +14856,10 @@
       "socialBehavior": "Generally peaceful in appropriately sized community tanks with compatible tankmates."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": null,
+      "trophicSource": "Removed seed default \"Omnivore\" (scripts/seed_from_collectr.js fallback; source row had no diet); FishBase SpecCode 60206 has no feeding data",
       "fooditems": "Like similar species such as R. borapetensis it is probably a micropredator feeding on small insects, worms, crustaceans and other zooplankton in nature. In the aquarium it will accept dried foods of a suitable size but should not be fed these exclusively. Daily meals of small live and frozen fare s",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
     },
     "reproduction": {
       "spawningTrait": "Egg scatterer",
@@ -14897,9 +14964,10 @@
       "socialBehavior": "Territorial, especially when breeding. Provide adequate space and line-of-sight breaks."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": null,
+      "trophicSource": "Removed seed default \"Omnivore\" (scripts/seed_from_collectr.js fallback; source row had no diet); FishBase SpecCode 8864 has no feeding data",
       "fooditems": "It will accept dried pellets or flakes, but these should be supplemented with regular feedings of live and frozen foods such as bloodworm and brineshrimp.",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions. Crushed cichlid pellets or high-quality micro-pellets as staple."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions. Crushed cichlid pellets or high-quality micro-pellets as staple."
     },
     "reproduction": {
       "spawningTrait": "Nest builder",
@@ -15003,9 +15071,10 @@
       "socialBehavior": "Generally peaceful in appropriately sized community tanks with compatible tankmates."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": "Carnivore",
+      "trophicSource": "FishBase SpecCode 10892: Herbivory2 mainly animals (troph. 2.8 and up); FeedingType hunting macrofauna (predator); FoodTroph 3.26 (s.e. 0.40)",
       "fooditems": "zoobenthos (unidentified)",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed once or twice daily. Larger portions acceptable. Sinking pellets and frozen foods offered near substrate level work best. They are active foragers, especially at dusk."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed once or twice daily. Larger portions acceptable. Sinking pellets and frozen foods offered near substrate level work best. They are active foragers, especially at dusk."
     },
     "reproduction": {
       "spawningTrait": "Egg scatterer",
@@ -15109,9 +15178,10 @@
       "socialBehavior": "Generally peaceful in appropriately sized community tanks with compatible tankmates."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": null,
+      "trophicSource": "Removed seed default \"Omnivore\" (scripts/seed_from_collectr.js fallback; source row had no diet); FishBase SpecCode 58712 has no feeding data",
       "fooditems": "Likely to be a micropredator feeding on small insects, worms, crustaceans, and other zooplankton in nature. In the aquarium it’s easily-fed but the best condition and colours offer regular meals of small live and frozen foods such as bloodworm , Daphnia , and Artemia alongside good quality dried fla",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in very small portions; crush flakes if needed."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in very small portions; crush flakes if needed."
     },
     "reproduction": {
       "spawningTrait": "Egg scatterer",
@@ -15162,9 +15232,10 @@
       "socialBehavior": "Territorial, especially when breeding. Provide adequate space and line-of-sight breaks."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": "Carnivore",
+      "trophicSource": "FishBase SpecCode 12082: Herbivory2 mainly animals (troph. 2.8 and up); FoodTroph 3.29 (s.e. 0.42)",
       "fooditems": "zoobenthos (unidentified); zooplankton (unidentified)",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
     },
     "reproduction": {
       "spawningTrait": "Nest builder",
@@ -15429,9 +15500,10 @@
       "socialBehavior": "Generally peaceful in appropriately sized community tanks with compatible tankmates."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": "Carnivore",
+      "trophicSource": "FishBase SpecCode 10910: Herbivory2 mainly animals (troph. 2.8 and up); FeedingType hunting macrofauna (predator); FoodTroph 2.94 (s.e. 0.33)",
       "fooditems": "plants (unidentified); zoobenthos (unidentified)",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions. Sinking pellets and frozen foods offered near substrate level work best. They are active foragers, especially at dusk."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions. Sinking pellets and frozen foods offered near substrate level work best. They are active foragers, especially at dusk."
     },
     "reproduction": {
       "spawningTrait": "Open-water egg scatterer no parental care",
@@ -15482,9 +15554,10 @@
       "socialBehavior": "Territorial, especially when breeding. Provide adequate space and line-of-sight breaks."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": "Carnivore",
+      "trophicSource": "FishBase SpecCode 11016: Herbivory2 mainly animals (troph. 2.8 and up); FeedingType hunting macrofauna (predator); FoodTroph 3.25 (s.e. 0.39)",
       "fooditems": "zoobenthos (unidentified)",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
     },
     "reproduction": {
       "spawningTrait": "Nest builder",
@@ -15642,9 +15715,10 @@
       "socialBehavior": "Generally peaceful in appropriately sized community tanks with compatible tankmates."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": null,
+      "trophicSource": "Removed seed default \"Omnivore\" (scripts/seed_from_collectr.js fallback; source row had no diet); FishBase SpecCode 25293 has no feeding data",
       "fooditems": "As is the case with with most puffers, this species relishes all kinds of shellfish, as well as worms and other live and frozen foods. It should be fed small snails (shell on) regularly, in order to maintain its sharp teeth. As with other puffers, these grow continuously and become a problem for the",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
     },
     "reproduction": {
       "spawningTrait": "Open-water egg scatterer no parental care",
@@ -15801,9 +15875,10 @@
       "socialBehavior": "Generally peaceful in appropriately sized community tanks with compatible tankmates."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": null,
+      "trophicSource": "Removed seed default \"Omnivore\" (scripts/seed_from_collectr.js fallback; source row had no diet); FishBase SpecCode 12194 has no feeding data",
       "fooditems": "Any food offered must be small enough for its tiny mouth. It will take dried foods, but these should be of a small grade or ground down before being added to the tank . For the fish to develop the best colour and condition a good proportion of the diet should also consist of small live and frozen fo",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in very small portions; crush flakes if needed. Use sinking pellets or wafers to ensure food reaches the bottom. They forage actively along the substrate."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in very small portions; crush flakes if needed. Use sinking pellets or wafers to ensure food reaches the bottom. They forage actively along the substrate."
     },
     "reproduction": {
       "spawningTrait": "Brood hider",
@@ -15907,9 +15982,10 @@
       "socialBehavior": "Generally peaceful in appropriately sized community tanks with compatible tankmates."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": null,
+      "trophicSource": "Removed seed default \"Omnivore\" (scripts/seed_from_collectr.js fallback; source row had no diet); FishBase SpecCode 63298 has no feeding data",
       "fooditems": "Likely to feed on small invertebrates, algae and other zooplankton in nature. In the aquarium it will accept dried foods of a suitable size but should not be fed these exclusively, and as it rarely rises to the surface there’s little point in offering floating products. Daily meals of small live and",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in very small portions; crush flakes if needed."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in very small portions; crush flakes if needed."
     },
     "reproduction": {
       "spawningTrait": "Egg scatterer",
@@ -15960,9 +16036,10 @@
       "socialBehavior": "Generally peaceful in appropriately sized community tanks with compatible tankmates."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": null,
+      "trophicSource": "Removed seed default \"Omnivore\" (scripts/seed_from_collectr.js fallback; source row had no diet); FishBase SpecCode 65187 has no feeding data",
       "fooditems": "Almost certain to prey chiefly on insects and their larvae in nature as with most danionins. In the aquarium it’s a largely unfussy feeder and will accept most foods. A good quality dried product can be used as the staple diet but this should be supplemented with regular meals of small live and froz",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
     },
     "reproduction": {
       "spawningTrait": "Egg scatterer",
@@ -16013,9 +16090,10 @@
       "socialBehavior": "Generally peaceful in appropriately sized community tanks with compatible tankmates."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": null,
+      "trophicSource": "Removed seed default \"Omnivore\" (scripts/seed_from_collectr.js fallback; source row had no diet); FishBase SpecCode 60260 has no feeding data",
       "fooditems": "Dario species are micropredators feeding on small aquatic crustaceans, worms, insect larvae and other zooplankton. In captivity they should be offered small live or frozen fare such as Artemia nauplii, Daphnia , grindal, micro-, and banana worm. Badids tend to develop issues with obesity and become ",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in very small portions; crush flakes if needed."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in very small portions; crush flakes if needed."
     },
     "reproduction": {
       "spawningTrait": "Substrate-spawner forming temporary pair bonds. Other fishes are best omitted if you want to raise good numbers of fry, although in a mature, well-fur",
@@ -16066,9 +16144,10 @@
       "socialBehavior": "Generally peaceful in appropriately sized community tanks with compatible tankmates."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": null,
+      "trophicSource": "Removed seed default \"Omnivore\" (scripts/seed_from_collectr.js fallback; source row had no diet); FishBase SpecCode 9821 has no feeding data",
       "fooditems": "Probably a micropredator feeding on terrestrial and aquatic invertebrates and other zooplankton in nature. In the aquarium it will accept dried foods of a suitable size but should also be offered daily meals of small live and frozen fare such as Artemia nauplii, Daphnia , Moina , grindal worm, etc.",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
     },
     "reproduction": {
       "spawningTrait": "Open-water egg scatterer no parental care",
@@ -16119,9 +16198,10 @@
       "socialBehavior": "Generally peaceful in appropriately sized community tanks with compatible tankmates."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": null,
+      "trophicSource": "Removed seed default \"Omnivore\" (scripts/seed_from_collectr.js fallback; source row had no diet); FishBase SpecCode 22841 has no feeding data",
       "fooditems": "Much of the natural diet is likely to be composed of benthic algae plus associated micro-organisms which are rasped from solid surfaces. In captivity it will accept good-quality dried foods and meatier items like live or frozen bloodworm but may suffer internal problems if the diet contains excessiv",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
     },
     "reproduction": {
       "spawningTrait": "Has not been bred in aquaria and the only observations we know of for any member of the genus were made by German aquarist Philipp Dickmann and publis",
@@ -16172,9 +16252,10 @@
       "socialBehavior": "Generally peaceful in appropriately sized community tanks with compatible tankmates."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": null,
+      "trophicSource": "Removed seed default \"Omnivore\" (scripts/seed_from_collectr.js fallback; source row had no diet); FishBase SpecCode 12376 has no feeding data",
       "fooditems": "Probably a micropredator feeding on tiny invertebrates and other zooplankton in nature. In the aquarium it will accept dried foods of a suitable size but should also be offered daily meals of small live and frozen fare such as Artemia nauplii, Moina , grindal worm, etc.",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in very small portions; crush flakes if needed."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in very small portions; crush flakes if needed."
     },
     "reproduction": {
       "spawningTrait": "Egg scatterer",
@@ -16225,9 +16306,10 @@
       "socialBehavior": "Generally peaceful in appropriately sized community tanks with compatible tankmates."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": null,
+      "trophicSource": "Removed seed default \"Omnivore\" (scripts/seed_from_collectr.js fallback; source row had no diet); FishBase SpecCode 52558 has no feeding data",
       "fooditems": "Micro predator feeding on tiny invertebrates and zooplankton. In aquaria: crushed flake, micro pellets, live/frozen baby brine shrimp, daphnia, vinegar eels.",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in very small portions; crush flakes if needed."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in very small portions; crush flakes if needed."
     },
     "reproduction": {
       "spawningTrait": "Egg scatterer among fine plants — very small eggs. No parental care",
@@ -16384,9 +16466,10 @@
       "socialBehavior": "Generally peaceful in appropriately sized community tanks with compatible tankmates."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": null,
+      "trophicSource": "Removed seed default \"Omnivore\" (scripts/seed_from_collectr.js fallback; source row had no diet); FishBase SpecCode 58581 has no feeding data",
       "fooditems": "Likely to feed on small invertebrates, algae and other zooplankton in nature. In the aquarium it will accept dried foods of a suitable size but should mostly be offered small live and frozen fare such as Daphnia , Artemia , etc.",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in very small portions; crush flakes if needed."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in very small portions; crush flakes if needed."
     },
     "reproduction": {
       "spawningTrait": "Egg scatterer",
@@ -16438,9 +16521,10 @@
       "socialBehavior": "Generally peaceful in appropriately sized community tanks with compatible tankmates."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": "Carnivore",
+      "trophicSource": "FishBase SpecCode 10754: Herbivory2 mainly animals (troph. 2.8 and up); FeedingType hunting macrofauna (predator); FoodTroph 3.27 (s.e. 0.40)",
       "fooditems": "zoobenthos (unspecified insects, unspecified crustaceans, unspecified worms)",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
     },
     "reproduction": {
       "spawningTrait": "Open-water egg scatterer no parental care",
@@ -16492,9 +16576,10 @@
       "socialBehavior": "Generally peaceful in appropriately sized community tanks with compatible tankmates."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": null,
+      "trophicSource": "Removed seed default \"Omnivore\" (scripts/seed_from_collectr.js fallback; source row had no diet); FishBase SpecCode 11919 has no feeding data",
       "fooditems": "A micropredator feeding on tiny invertebrates and other zooplankton in nature. In the aquarium it will accept dried foods of a suitable size but should also be offered daily meals of small live and frozen fare such as Artemia nauplii, Moina , grindal worm, etc.",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
     },
     "reproduction": {
       "spawningTrait": "Open-water egg scatterer no parental care",
@@ -16545,9 +16630,10 @@
       "socialBehavior": "Generally peaceful in appropriately sized community tanks with compatible tankmates."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": "Carnivore",
+      "trophicSource": "FishBase SpecCode 24752: Herbivory2 mainly animals (troph. 2.8 and up); FeedingType hunting macrofauna (predator); FoodTroph (tentative, 1 food item) 3.20 (s.e. 0.40)",
       "fooditems": "zoobenthos (unspecified flying insects)",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
     },
     "reproduction": {
       "spawningTrait": "Livebearer",
@@ -16598,9 +16684,10 @@
       "socialBehavior": "Generally peaceful in appropriately sized community tanks with compatible tankmates."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": null,
+      "trophicSource": "Removed seed default \"Omnivore\" (scripts/seed_from_collectr.js fallback; source row had no diet); FishBase SpecCode 9868 has no feeding data",
       "fooditems": "A natural micropredator meaning small live or frozen foods such as Daphnia , Artemia and chopped bloodworm should form the basis of the diet.",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
     },
     "reproduction": {
       "spawningTrait": "Open-water egg scatterer no parental care",
@@ -16810,9 +16897,10 @@
       "socialBehavior": "Generally peaceful in appropriately sized community tanks with compatible tankmates."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": null,
+      "trophicSource": "Removed seed default \"Omnivore\" (scripts/seed_from_collectr.js fallback; source row had no diet); FishBase SpecCode 22749 has no feeding data",
       "fooditems": "Feeds chiefly on floating or suspended zooplankton, phytoplankton, and invertebrates in nature, and in the aquarium must be offered items of a suitable size. Ideally much of the diet should comprise live foods such as Daphnia , Moina , Artemia nauplii, micro worm, etc., although small/crushed floati",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
     },
     "reproduction": {
       "spawningTrait": "Open-water egg scatterer no parental care",
@@ -16864,9 +16952,10 @@
       "socialBehavior": "Generally peaceful in appropriately sized community tanks with compatible tankmates."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": null,
+      "trophicSource": "Removed seed default \"Omnivore\" (scripts/seed_from_collectr.js fallback; source row had no diet); FishBase SpecCode 69397 has no feeding data",
       "fooditems": "Micro predator — feeds on tiny insects, zooplankton, and biofilm in nature. In aquaria: micro pellets, crushed flake, live baby brine shrimp, micro worms.",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in very small portions; crush flakes if needed."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in very small portions; crush flakes if needed."
     },
     "reproduction": {
       "spawningTrait": "Egg scatterer — deposits adhesive eggs on fine-leaved plants (java moss) over several days",
@@ -16917,9 +17006,10 @@
       "socialBehavior": "Generally peaceful in appropriately sized community tanks with compatible tankmates."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": "Carnivore",
+      "trophicSource": "FishBase SpecCode 22750: Herbivory2 mainly animals (troph. 2.8 and up); FoodTroph 2.86 (s.e. 0.38)",
       "fooditems": "detritus (unidentified); others (unidentified terrestrial insects, unidentified ants); plants (unidentified diatoms); zoobenthos (unidentified dipterans, unidentified chironomid larva, unidentified ephemeropteran larva)",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
     },
     "reproduction": {
       "spawningTrait": "Open-water egg scatterer no parental care",
@@ -16971,9 +17061,10 @@
       "socialBehavior": "Generally peaceful in appropriately sized community tanks with compatible tankmates."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": null,
+      "trophicSource": "Removed seed default \"Omnivore\" (scripts/seed_from_collectr.js fallback; source row had no diet); FishBase SpecCode 13204 has no feeding data",
       "fooditems": "Likely to feed chiefly on small invertebrates and other zooplankton in nature. In the aquarium it will accept dried foods of a suitable size but should be offered regular meals of small live and frozen fare such as Daphnia , Artemia and suchlike.",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
     },
     "reproduction": {
       "spawningTrait": "Open-water egg scatterer no parental care",
@@ -17077,9 +17168,10 @@
       "socialBehavior": "Generally peaceful in appropriately sized community tanks with compatible tankmates."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": null,
+      "trophicSource": "Removed seed default \"Omnivore\" (scripts/seed_from_collectr.js fallback; source row had no diet); FishBase SpecCode 10349 has no feeding data",
       "fooditems": "Presumably feeds on small aquatic crustaceans, worms, insect larvae and other zooplankton in nature. It can be a little picky in the aquarium and may not accept dried foods although in some cases they will learn to take them over time. At any rate they should always be offered regular meals of small",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in very small portions; crush flakes if needed."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in very small portions; crush flakes if needed."
     },
     "reproduction": {
       "spawningTrait": "This species has not been bred often in the hobby which is probably down to the fact it does not appreciate fluctuating water conditions, making it di",
@@ -17130,9 +17222,10 @@
       "socialBehavior": "Territorial, especially when breeding. Provide adequate space and line-of-sight breaks."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": null,
+      "trophicSource": "Removed seed default \"Omnivore\" (scripts/seed_from_collectr.js fallback; source row had no diet); FishBase SpecCode 15907 has no feeding data",
       "fooditems": "Will usually accept dried food but much prefers small live and frozen stuff, such as bloodworm , daphnia , brineshrimp etc. The fish will also show much better colouration and come into spawning condition far quicker on this kind of diet.",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
     },
     "reproduction": {
       "spawningTrait": "Nest builder",
@@ -17342,9 +17435,10 @@
       "socialBehavior": "Females can be defensive around fry."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": null,
+      "trophicSource": "Removed seed default \"Omnivore\" (scripts/seed_from_collectr.js fallback; source row had no diet); FishBase SpecCode 46851 has no feeding data",
       "fooditems": "Micro predator feeding on small invertebrates, insect larvae, and crustaceans in leaf litter zones. In aquaria: live/frozen daphnia, brine shrimp, bloodworm, micro pellets.",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions. Crushed cichlid pellets or high-quality micro-pellets as staple."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions. Crushed cichlid pellets or high-quality micro-pellets as staple."
     },
     "reproduction": {
       "spawningTrait": "Substrate spawner with maternal care",
@@ -17395,9 +17489,10 @@
       "socialBehavior": "Females can be defensive around fry."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": null,
+      "trophicSource": "Removed seed default \"Omnivore\" (scripts/seed_from_collectr.js fallback; source row had no diet); FishBase SpecCode 57505 has no feeding data",
       "fooditems": "Apistogramma spp. are chiefly carnivorous and feed mostly on benthic invertebrates in nature. In the aquarium live and frozen foods such as Artemia , Daphnia and chironomid larvae ( bloodworm ) should be offered regularly although most species will also learn to accept dried alternatives with pellet",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions. Crushed cichlid pellets or high-quality micro-pellets as staple."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions. Crushed cichlid pellets or high-quality micro-pellets as staple."
     },
     "reproduction": {
       "spawningTrait": "Substrate spawner with maternal care",
@@ -17448,9 +17543,10 @@
       "socialBehavior": "Generally peaceful in appropriately sized community tanks with compatible tankmates."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": null,
+      "trophicSource": "Removed seed default \"Omnivore\" (scripts/seed_from_collectr.js fallback; source row had no diet); FishBase SpecCode 15943 has no feeding data",
       "fooditems": "Nocturnal carnivore hunting small invertebrates, worms, and insect larvae. In aquaria: frozen bloodworm, brine shrimp, live blackworms, sinking carnivore pellets.",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed once or twice daily. Larger portions acceptable."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed once or twice daily. Larger portions acceptable."
     },
     "reproduction": {
       "spawningTrait": "Open-water egg scatterer no parental care",
@@ -17554,9 +17650,10 @@
       "socialBehavior": "Generally peaceful in appropriately sized community tanks with compatible tankmates."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": null,
+      "trophicSource": "Removed seed default \"Omnivore\" (scripts/seed_from_collectr.js fallback; source row had no diet); FishBase SpecCode 3214 has no feeding data",
       "fooditems": "Obligate piscivore — feeds almost exclusively on small fish and large invertebrates. In aquaria: live feeder fish (guppies/mollies), frozen silversides, shrimp. May accept pellets after training.",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed once or twice daily. Larger portions acceptable. Include some vegetable matter (spirulina flakes) as livebearers benefit from plant-based nutrition."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed once or twice daily. Larger portions acceptable. Include some vegetable matter (spirulina flakes) as livebearers benefit from plant-based nutrition."
     },
     "reproduction": {
       "spawningTrait": "Livebearer",
@@ -17608,9 +17705,10 @@
       "socialBehavior": "Generally peaceful in appropriately sized community tanks with compatible tankmates."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": null,
+      "trophicSource": "Removed seed default \"Omnivore\" (scripts/seed_from_collectr.js fallback; source row had no diet); FishBase SpecCode 27008 has no feeding data",
       "fooditems": "Likely to prey on insects, other small invertebrates and zooplankton in nature. Captive fish will normally accept dried products once they’re recognised as edible, but should be offered plenty of small live or frozen foods such as Daphnia , Artemia or bloodworm regularly to ensure development of opt",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
     },
     "reproduction": {
       "spawningTrait": "Mouthbrooder",
@@ -17661,9 +17759,10 @@
       "socialBehavior": "Generally peaceful in appropriately sized community tanks with compatible tankmates."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": null,
+      "trophicSource": "Removed seed default \"Omnivore\" (scripts/seed_from_collectr.js fallback; source row had no diet); FishBase SpecCode 27010 has no feeding data",
       "fooditems": "Likely to prey on insects, other small invertebrates and zooplankton in nature. Captive fish will normally accept dried products once they’re recognised as edible, but should be offered plenty of small live or frozen foods such as Daphnia , Artemia or bloodworm regularly to ensure development of opt",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in very small portions; crush flakes if needed."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in very small portions; crush flakes if needed."
     },
     "reproduction": {
       "spawningTrait": "Mouthbrooder",
@@ -17714,9 +17813,10 @@
       "socialBehavior": "Territorial, especially when breeding. Provide adequate space and line-of-sight breaks."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": null,
+      "trophicSource": "Removed seed default \"Omnivore\" (scripts/seed_from_collectr.js fallback; source row had no diet); FishBase SpecCode 12038 has no feeding data",
       "fooditems": "Likely to prey on aquatic and terrestrial invertebrates in nature. Captive fish will normally accept dried products once they are recognised as edible, but should be offered plenty of small live or frozen foods such as Daphnia , Artemia or chironomid larvae (bloodworm) regularly to ensure developmen",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
     },
     "reproduction": {
       "spawningTrait": "Nest builder",
@@ -17767,9 +17867,10 @@
       "socialBehavior": "Generally peaceful in appropriately sized community tanks with compatible tankmates."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": null,
+      "trophicSource": "Removed seed default \"Omnivore\" (scripts/seed_from_collectr.js fallback; source row had no diet); FishBase SpecCode 12039 has no feeding data",
       "fooditems": "Likely to prey on insects and other small invertebrates/ zooplankton in nature, plus perhaps the shrimp that share its habitat. Captive fish will normally accept dried products once they’re recognised as edible, but should be offered plenty of small live or frozen foods such as Daphnia , Artemia or ",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
     },
     "reproduction": {
       "spawningTrait": "external brooders",
@@ -17820,9 +17921,10 @@
       "socialBehavior": "Forms territorial pairs when breeding."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": null,
+      "trophicSource": "Removed seed default \"Omnivore\" (scripts/seed_from_collectr.js fallback; source row had no diet); FishBase SpecCode 66633 has no feeding data",
       "fooditems": "Likely to prey on insects and other small invertebrates/ zooplankton in nature. Captive fish will normally accept dried products once they’re recognised as edible, but should be offered plenty of small live or frozen foods such as Daphnia , Artemia or bloodworm regularly to ensure development of opt",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
     },
     "reproduction": {
       "spawningTrait": "Substrate spawner with biparental care",
@@ -17874,9 +17976,10 @@
       "socialBehavior": "Generally peaceful in appropriately sized community tanks with compatible tankmates."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": null,
+      "trophicSource": "Removed seed default \"Omnivore\" (scripts/seed_from_collectr.js fallback; source row had no diet); FishBase SpecCode 12040 has no feeding data",
       "fooditems": "Likely to prey on aquatic and terrestrial invertebrates in nature. Captive fish will normally accept dried products once they are recognised as edible, but should be offered plenty of small live or frozen foods such as Daphnia , Artemia or chironomid larvae (bloodworm) regularly to ensure developmen",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
     },
     "reproduction": {
       "spawningTrait": "Mouthbrooder",
@@ -17927,9 +18030,10 @@
       "socialBehavior": "Generally peaceful in appropriately sized community tanks with compatible tankmates."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": null,
+      "trophicSource": "Removed seed default \"Omnivore\" (scripts/seed_from_collectr.js fallback; source row had no diet); FishBase SpecCode 12042 has no feeding data",
       "fooditems": "Likely to prey on aquatic and terrestrial invertebrates in nature. Captive fish will normally accept dried products once they are recognised as edible, but should be offered plenty of small live or frozen foods such as Daphnia , Artemia or chironomid larvae (bloodworm) regularly to ensure developmen",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
     },
     "reproduction": {
       "spawningTrait": "external brooders",
@@ -17980,9 +18084,10 @@
       "socialBehavior": "Generally peaceful in appropriately sized community tanks with compatible tankmates."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": null,
+      "trophicSource": "Removed seed default \"Omnivore\" (scripts/seed_from_collectr.js fallback; source row had no diet); FishBase SpecCode 51579 has no feeding data",
       "fooditems": "Likely to prey on aquatic and terrestrial invertebrates in nature. Captive fish will normally accept dried products once they are recognised as edible, but should be offered plenty of small live or frozen foods such as Daphnia , Artemia or chironomid larvae (bloodworm) regularly to ensure developmen",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
     },
     "reproduction": {
       "spawningTrait": "Mouthbrooder",
@@ -18033,9 +18138,10 @@
       "socialBehavior": "Territorial, especially when breeding. Provide adequate space and line-of-sight breaks."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": null,
+      "trophicSource": "Removed seed default \"Omnivore\" (scripts/seed_from_collectr.js fallback; source row had no diet); FishBase SpecCode 12047 has no feeding data",
       "fooditems": "Likely to prey on aquatic and terrestrial invertebrates in nature. Captive fish will normally accept dried products once they are recognised as edible, but should be offered plenty of small live or frozen foods such as Daphnia , Artemia or chironomid larvae (bloodworm) regularly to ensure developmen",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
     },
     "reproduction": {
       "spawningTrait": "Nest builder",
@@ -18086,9 +18192,10 @@
       "socialBehavior": "Generally peaceful in appropriately sized community tanks with compatible tankmates."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": null,
+      "trophicSource": "Removed seed default \"Omnivore\" (scripts/seed_from_collectr.js fallback; source row had no diet); FishBase SpecCode 46719 has no feeding data",
       "fooditems": "Stomach contents of dissected wild specimens were found to be composed largely of small invertebrates including chironomid larvae and ostracods. The captive diet should thus contain a variety of small live and/or frozen chironomid larvae ( bloodworm ), Tubifex , Artemia , mosquito larvae , etc. Some",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions. Crushed cichlid pellets or high-quality micro-pellets as staple."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions. Crushed cichlid pellets or high-quality micro-pellets as staple."
     },
     "reproduction": {
       "spawningTrait": "Substrate spawner",
@@ -18192,9 +18299,10 @@
       "socialBehavior": "Generally peaceful in appropriately sized community tanks with compatible tankmates."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": null,
+      "trophicSource": "Removed seed default \"Omnivore\" (scripts/seed_from_collectr.js fallback; source row had no diet); FishBase SpecCode 27253 has no feeding data",
       "fooditems": "Tetraodontids lack true teeth, the jawbone itself being modified into four fused toothlike structures. These grow continuously at a surprising rate, so offer regular meals of shelled invertebrates such as snails, small crab legs, cockles, etc., in order to maintain them at a reasonable length. There",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
     },
     "reproduction": {
       "spawningTrait": "Egg scatterer",
@@ -18298,9 +18406,10 @@
       "socialBehavior": "Territorial, especially when breeding. Provide adequate space and line-of-sight breaks."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": "Carnivore",
+      "trophicSource": "FishBase SpecCode 10737: Herbivory2 mainly animals (troph. 2.8 and up); FeedingType hunting macrofauna (predator); FoodTroph 3.13 (s.e. 0.33)",
       "fooditems": "zoobenthos (unspecified insects, unspecified worms); zooplankton (unspecified crustaceans)",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
     },
     "reproduction": {
       "spawningTrait": "Nest builder",
@@ -18351,9 +18460,10 @@
       "socialBehavior": "Territorial, especially when breeding. Provide adequate space and line-of-sight breaks."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": "Carnivore",
+      "trophicSource": "FishBase SpecCode 10741: Herbivory2 mainly animals (troph. 2.8 and up); FeedingType hunting macrofauna (predator); FoodTroph 3.26 (s.e. 0.40)",
       "fooditems": "zoobenthos (unspecified insects, unspecified crustaceans, unspecified worms)",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions."
     },
     "reproduction": {
       "spawningTrait": "Substrate spawner",
@@ -18670,9 +18780,10 @@
       "socialBehavior": "Territorial, especially when breeding. Provide adequate space and line-of-sight breaks."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": null,
+      "trophicSource": "Removed seed default \"Omnivore\" (scripts/seed_from_collectr.js fallback; source row had no diet); FishBase SpecCode 12325 has no feeding data",
       "fooditems": "Checkerboards will probably accept dry foods, especially sinking cichlid pellets. If that is the case, feed a good quality sinking pellet as staple. Vary their diet with vegetarian or spirulina flakes and plenty of frozen foods. To bring Checkerboards into breeding condition, live foods are highly r",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions. Crushed cichlid pellets or high-quality micro-pellets as staple."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions. Crushed cichlid pellets or high-quality micro-pellets as staple."
     },
     "reproduction": {
       "spawningTrait": "Substrate spawner",
@@ -18723,9 +18834,10 @@
       "socialBehavior": "Territorial, especially when breeding. Provide adequate space and line-of-sight breaks."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": "Carnivore",
+      "trophicSource": "FishBase SpecCode 47713: Herbivory2 mainly animals (troph. 2.8 and up); FeedingType hunting macrofauna (predator); FoodTroph 3.20 (s.e. 0.40)",
       "fooditems": "others (ants); zoobenthos (beetles, mayflies)",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions. Crushed cichlid pellets or high-quality micro-pellets as staple."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions. Crushed cichlid pellets or high-quality micro-pellets as staple."
     },
     "reproduction": {
       "spawningTrait": "Substrate spawner",
@@ -18776,9 +18888,10 @@
       "socialBehavior": "Generally peaceful in appropriately sized community tanks with compatible tankmates."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": "Carnivore",
+      "trophicSource": "FishBase SpecCode 4830: Herbivory2 mainly animals (troph. 2.8 and up); FeedingType hunting macrofauna (predator); FoodTroph 3.26 (s.e. 0.40)",
       "fooditems": "zoobenthos (unspecified insects, unspecified, unspecified crustaceans)",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed once or twice daily. Larger portions acceptable."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed once or twice daily. Larger portions acceptable."
     },
     "reproduction": {
       "spawningTrait": "Open-water egg scatterer no parental care",
@@ -18883,9 +18996,10 @@
       "socialBehavior": "Generally peaceful in appropriately sized community tanks with compatible tankmates."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": "Carnivore",
+      "trophicSource": "FishBase SpecCode 2085: Herbivory2 mainly animals (troph. 2.8 and up); FeedingType hunting macrofauna (predator); FoodTroph 3.13 (s.e. 0.34)",
       "fooditems": "zoobenthos (unspecified insects, unspecified worms)",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed once or twice daily. Larger portions acceptable."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed once or twice daily. Larger portions acceptable."
     },
     "reproduction": {
       "spawningTrait": "Not thought to have been achieved in captivity. One scientific study suggests that being kept in the confines of an aquarium causes the sexually-defin",
@@ -19042,9 +19156,10 @@
       "socialBehavior": "Territorial, especially when breeding. Provide adequate space and line-of-sight breaks."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": null,
+      "trophicSource": "Removed seed default \"Omnivore\" (scripts/seed_from_collectr.js fallback; source row had no diet); FishBase SpecCode 13113 has no feeding data",
       "fooditems": "Unfussy, and will accept most live, frozen and dried foods. Try to make sure it receives some greenstuffs in its diet, as it is reported to feed quite heavily on plant matter in nature. To find high quality fish foods, click here .",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed once or twice daily. Larger portions acceptable."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed once or twice daily. Larger portions acceptable."
     },
     "reproduction": {
       "spawningTrait": "Nest builder",
@@ -19095,9 +19210,10 @@
       "socialBehavior": "Generally peaceful in appropriately sized community tanks with compatible tankmates."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": null,
+      "trophicSource": "Removed seed default \"Omnivore\" (scripts/seed_from_collectr.js fallback; source row had no diet); FishBase SpecCode 22877 has no feeding data",
       "fooditems": "Homaloptera spp. are specialised grazers feeding on biofilm , small crustaceans, insect larvae and other invertebrates. In captivity some sinking dried foods may be accepted but regular meals of live or frozen Daphnia , Artemia , bloodworm , etc., are essential for the maintenance of good health, an",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed once or twice daily. Larger portions acceptable."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed once or twice daily. Larger portions acceptable."
     },
     "reproduction": {
       "spawningTrait": "Presumably a seasonal spawner in nature but nothing has been recorded in aquaria.",
@@ -19148,9 +19264,10 @@
       "socialBehavior": "Territorial, especially when breeding. Provide adequate space and line-of-sight breaks."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": null,
+      "trophicSource": "Removed seed default \"Omnivore\" (scripts/seed_from_collectr.js fallback; source row had no diet); FishBase SpecCode 53570 has no feeding data",
       "fooditems": "Except when juvenile , these prefer a meaty diet. This can consist of live and frozen foods such as bloodworm , chopped mussel and prawn and sinking dried foods. Algae and other vegetable matter is not often taken, but the occasional slice of cucumber or courgette might be nibbled at.",
-      "feedingPlaybook": "Omnivorous and generally unfussy. Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions. Provide driftwood for rasping. Sinking wafers should be offered after lights-out."
+      "feedingPlaybook": "Offer a staple of quality flakes or micro-pellets, supplemented with frozen foods (bloodworms, brine shrimp, daphnia) 2–3 times per week. Feed 2–3 times daily in small portions. Provide driftwood for rasping. Sinking wafers should be offered after lights-out."
     },
     "reproduction": {
       "spawningTrait": "Substrate spawner",
@@ -20536,7 +20653,8 @@
       "socialBehavior": "Harem-forming dwarf cichlid. Keep one male with 2-3 females. Males claim small territories but aggression is low compared to other Apistogramma."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": "Carnivore",
+      "trophicSource": "FishBase SpecCode 11138: Herbivory2 mainly animals (troph. 2.8 and up); FeedingType hunting macrofauna (predator); FoodTroph 3.26 (s.e. 0.40)",
       "fooditems": "Small invertebrates, insect larvae, worms; in aquarium: frozen/live foods (daphnia, brine shrimp, bloodworm), sinking micro pellets",
       "feedingPlaybook": ""
     },
@@ -20766,7 +20884,8 @@
       }
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": "Carnivore",
+      "trophicSource": "FishBase SpecCode 6234: Herbivory2 mainly animals (troph. 2.8 and up); FeedingType hunting macrofauna (predator); FoodTroph 3.39 (s.e. 0.48)",
       "fooditems": "Surface predator — fish, large insects, spiders. In aquaria: market shrimp, smelt, earthworms, carnivore pellets.",
       "feedingPlaybook": ""
     },
@@ -20821,7 +20940,8 @@
       }
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": "Carnivore",
+      "trophicSource": "FishBase SpecCode 4771: Herbivory2 mainly animals (troph. 2.8 and up); FoodTroph 3.25 (s.e. 0.39)",
       "fooditems": "Omnivore — insects, zooplankton, small worms. In aquaria: flakes, micro pellets, frozen daphnia, brine shrimp.",
       "feedingPlaybook": ""
     },
@@ -21917,7 +22037,8 @@
       "comments": "Found in ditches, canals, ponds. Occurs at the surface in habitats with dense growth of aquatic plants. Feeds on small crustaceans, insects and protozoans (Ref. 12693). Non-annual breeder. Is very difficult to maintain in aquarium (Ref. 27139). Not seen in markets (Ref. 12693)."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": "Carnivore",
+      "trophicSource": "FishBase SpecCode 12254: Herbivory2 mainly animals (troph. 2.8 and up); FeedingType hunting macrofauna (predator); FoodTroph 3.36 (s.e. 0.45)",
       "fooditems": "unidentified",
       "feedingPlaybook": ""
     },
@@ -21968,7 +22089,8 @@
       "comments": "Inhabits shallow permanent standing water of ditches, canals and ponds. Most commonly found in water that has dense growth of submerged aquatic macrophytes with finely divided leaves. Feeds on plankton. Caught only with fine-meshed nets or when larger nets pull out large amounts of plants, trapping the fishes in them. Not seen in the markets (Ref. 12693). Non-annual breeder. Is very difficult to maintain in aquarium (Ref. 27139)."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": "Carnivore",
+      "trophicSource": "FishBase SpecCode 26794: Herbivory2 mainly animals (troph. 2.8 and up); FoodTroph (tentative, 1 food item) 3.40 (s.e. 0.45)",
       "fooditems": "unidentified",
       "feedingPlaybook": ""
     },
@@ -23776,7 +23898,8 @@
       "comments": "Occurs in swamps and swampy parts of shallow brooks in the coastal rainforest (Ref. 3788). Feeds on worms, crustaceans and insects (Ref. 7020). Bottom spawner, 1.5 month incubation. Is very difficult to maintain in aquarium (Ref. 27139)."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": "Carnivore",
+      "trophicSource": "FishBase SpecCode 9736: Herbivory2 mainly animals (troph. 2.8 and up); FoodTroph 3.38 (s.e. 0.43)",
       "fooditems": "Feeds on worms, crustaceans and insects (Ref.",
       "feedingPlaybook": ""
     },
@@ -24476,7 +24599,8 @@
       "comments": "Feeds on insect larvae."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": "Carnivore",
+      "trophicSource": "FishBase SpecCode 46059: Herbivory2 mainly animals (troph. 2.8 and up); FeedingType hunting macrofauna (predator); FoodTroph (tentative, 1 food item) 3.20 (s.e. 0.40)",
       "fooditems": "unspecified insect larvae",
       "feedingPlaybook": ""
     },
@@ -24776,7 +24900,8 @@
       "comments": "Inhabits sluggish waters with dense vegetation. Occurs in shallow muddy waters. Feeds on insect larvae, worms and small crustaceans (Ref. 6868)."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": "Carnivore",
+      "trophicSource": "FishBase SpecCode 12154: Herbivory2 mainly animals (troph. 2.8 and up); FeedingType hunting macrofauna (predator); FoodTroph 3.26 (s.e. 0.40)",
       "fooditems": "Feeds on insect larvae, worms and small crustaceans (Ref.",
       "feedingPlaybook": ""
     },
@@ -25376,7 +25501,8 @@
       "comments": "Usually occurs in peat swamps. Also found in swamp forest habitats (Ref. 56613). A bubble nest builder (Ref. 56613)."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": "Carnivore",
+      "trophicSource": "FishBase SpecCode 12035: Herbivory2 mainly animals (troph. 2.8 and up); FoodTroph 3.20 (s.e. 0.40)",
       "fooditems": "beetle, young midge larvae, unidentified larvae",
       "feedingPlaybook": ""
     },
@@ -25826,7 +25952,8 @@
       "comments": "Found in ponds and swamps (Ref. 43281). Occurs in shallow sluggish or standing water habitats with a lot of aquatic vegetation. Common in the floodplain of the lower Mekong. Feeds on zooplankton, crustaceans and aquatic insects (Ref. 12693). An air-breathing species (Ref. 118402). Marketed fresh (Ref. 12693)."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": "Carnivore",
+      "trophicSource": "FishBase SpecCode 4729: Herbivory2 mainly animals (troph. 2.8 and up); FoodTroph 3.36 (s.e. 0.40)",
       "fooditems": "Feeds on zooplankton, crustaceans and aquatic insects (Ref.",
       "feedingPlaybook": ""
     },
@@ -26476,7 +26603,8 @@
       "comments": "A gregarious species which prefers the counter current zones of small creeks. Omnivorous. It is very prolific and reproduction in the aquarium is very easy to carry out (Ref. 12225). Oviparous (Ref. 205)."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": "Carnivore",
+      "trophicSource": "FishBase SpecCode 12391: Herbivory2 mainly animals (troph. 2.8 and up); FeedingType hunting macrofauna (predator); FoodTroph 3.50 (s.e. 0.50)",
       "fooditems": "unidentified terrestrial insects, unidentified small crustacean, unidentified insect larvae",
       "feedingPlaybook": ""
     },
@@ -26626,7 +26754,8 @@
       "comments": "Usually found in ponds, ditches, slow flowing streams, both clear and turbid, in both open and shaded areas. A voracious species which feeds on small crustaceans, insects and mollusks (Ref. 12225). Gregarious and non-aggressive, it is reputedly easy to rear and to reproduce in the aquarium (Ref. 27188). Maximum length questionable (Ref. 38376)."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": "Carnivore",
+      "trophicSource": "FishBase SpecCode 12371: Herbivory2 mainly animals (troph. 2.8 and up); FeedingType hunting macrofauna (predator); FoodTroph 3.37 (s.e. 0.44)",
       "fooditems": "terrestrial insects, unidentified small crustaceans, unidentified insect larvae",
       "feedingPlaybook": ""
     },
@@ -26876,7 +27005,8 @@
       "comments": "Gregarious and non-aggressive. Occur in calm coastal waters (Ref. 27188); in densely vegetated swamps. Feed on worms, small crustaceans and insects (Ref. 7020). Are popular among aquarists because of their robustness, peaceful character, and delicate colors (Ref. 12225). Reproduction is easily carried out, 300 to 400 eggs are obtained per spawn (Ref. 27188). Aquarium keeping: in groups of 5 or more individuals; minimum aquarium size 60 cm (Ref. 51539)."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": "Carnivore",
+      "trophicSource": "FishBase SpecCode 10697: Herbivory2 mainly animals (troph. 2.8 and up); FeedingType hunting macrofauna (predator); FoodTroph 3.21 (s.e. 0.37)",
       "fooditems": "unidentified small crustaceans, unidentified insect larvae",
       "feedingPlaybook": ""
     },
@@ -27176,7 +27306,8 @@
       "comments": "Inhabits rocky and sandy bottoms of pools and backwaters of creeks and small to large rivers, and springs. Feeds on insects, crustaceans and worms (Ref. 7020). Migrates during winter to warmer areas (Ref. 47195)."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": "Carnivore",
+      "trophicSource": "FishBase SpecCode 2740: Herbivory2 mainly animals (troph. 2.8 and up); FoodTroph 3.23 (s.e. 0.38)",
       "fooditems": "Feeds on insects, crustaceans and worms (Ref.",
       "feedingPlaybook": ""
     },
@@ -27276,7 +27407,8 @@
       "comments": "Occurs in slow flowing areas of the main stream, over muddy bottoms (Ref. 12225). Considered gregarious and peaceful. Its reproduction in captivity would have been carried out for the first time in 1988 (Ref. 27188)."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": "Carnivore",
+      "trophicSource": "FishBase SpecCode 26473: Herbivory2 mainly animals (troph. 2.8 and up); FoodTroph 3.38 (s.e. 0.46)",
       "fooditems": "terrestrial invertebrates, unidentified small crustacean, unidentified insect larvae",
       "feedingPlaybook": ""
     },
@@ -27550,7 +27682,8 @@
       "comments": "Adults inhabit coral-rich areas of sheltered lagoon and inshore coral reefs (Ref. 9710). They occur in small groups on Acropora patches (Ref. 48636). Oviparous, distinct pairing during breeding (Ref. 205). Eggs are demersal and adhere to the substrate (Ref. 205). Males guard and aerate the eggs (Ref. 205). Diurnal species (Ref. 113699)."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": "Carnivore",
+      "trophicSource": "FishBase SpecCode 12448: Herbivory2 mainly animals (troph. 2.8 and up); FeedingType selective plankton feeding; FoodTroph (tentative, 1 food item) 3.40 (s.e. 0.45)",
       "fooditems": "unspecified zooplankton",
       "feedingPlaybook": ""
     },
@@ -27826,7 +27959,8 @@
       "comments": "Occur in clear, current-swept terraces of seaward reefs. Observed in loose aggregations 1 or 2 meters above the bottom; juveniles and subadults typical in groups near isolated Pocillopora eydouxi coral heads and when alarmed hide themselves tightly among the branches (Ref. 9710). Benthopelagic (Ref. 58302). Feed on zooplankton and occasionally on algae (Ref. 9710, 48637, 27115, 83665). Relatively uncommon and highly localized (Ref. 1602, 9710). Very popular and hardy aquarium fish. Anterolateral glandular groove with venom gland (Ref. 57406)."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": "Carnivore",
+      "trophicSource": "FishBase SpecCode 6017: Herbivory2 mainly animals (troph. 2.8 and up); FeedingType selective plankton feeding; FoodTroph (tentative, 1 food item) 3.40 (s.e. 0.45)",
       "fooditems": "Specific food items are not listed in the local FishBase extract.",
       "feedingPlaybook": ""
     },
@@ -28172,7 +28306,8 @@
       "comments": "Juveniles are encountered under ledges, or in holes of outer lagoon patch reefs or semi-protected areas of exposed channels and outer reef flats. Subadults move to reef front holes and surge channels. Large adults inhabit ledges and caves in areas of rich coral growth on clear lagoon, channel, or seaward reefs (Ref. 6113). Benthopelagic (Ref. 58302). Feed on sponges and other encrusting organisms (Ref. 6113); also on tunicates. Form pairs. Young and adults may clean much larger fishes such as sunfish (Ref. 48636). Frequently exported through the aquarium trade. Juveniles are distinguished by a white dorsal-fin margin (Ref. 48391)."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": "Carnivore",
+      "trophicSource": "FishBase SpecCode 6504: Herbivory2 mainly animals (troph. 2.8 and up); FeedingType hunting macrofauna (predator); FoodTroph 2.93 (s.e. 0.05)",
       "fooditems": "unspecified algae, unspecified coral polyps, unspecified tunicates, unspecified sponges",
       "feedingPlaybook": ""
     },
@@ -28310,7 +28445,8 @@
       "comments": "Usually on vertical rock faces or beneath overhangs, taking refuge in small holes. Generally common (Ref. 9710). Has been reared in captivity (Ref. 35411)."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": "Carnivore",
+      "trophicSource": "FishBase SpecCode 12741: Herbivory2 mainly animals (troph. 2.8 and up); FeedingType hunting macrofauna (predator); FoodTroph (tentative, 1 food item) 3.50 (s.e. 0.50)",
       "fooditems": "unspecified crustaceans",
       "feedingPlaybook": ""
     },
@@ -28448,7 +28584,8 @@
       "comments": "Inhabits coral heads. Removes ectoparasites on skin and fins, in the mouth and in the gill chambers of greater fish like groupers and others (Ref. 92840). Monogamous (Ref. 52884). Minimum depth reported from Ref. 27115. Has been reared in captivity (Ref. 35420)."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": "Carnivore",
+      "trophicSource": "FishBase SpecCode 3876: Herbivory2 mainly animals (troph. 2.8 and up); FeedingType picking parasites off a host (cleaner); FoodTroph (tentative, 1 food item) 3.50 (s.e. 0.37)",
       "fooditems": "Copepods, isopods, monogeneans",
       "feedingPlaybook": ""
     },
@@ -28517,7 +28654,8 @@
       "comments": "Inhabits upper portions of outer reef slopes (Ref. 1602). Benthopelagic (Ref. 58302). Hovers above the bottom, facing the current to feed on zooplankton, copepods, and crustacean larvae. Several individuals may share the same hole (especially juveniles). Has a habit of flicking its pennant-like first dorsal fin back and forth (Ref. 1602, 48637). Minimum depth reported taken from Ref. 128797. Monogamous (Ref. 52884)."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": "Carnivore",
+      "trophicSource": "FishBase SpecCode 6629: Herbivory2 mainly animals (troph. 2.8 and up); FeedingType selective plankton feeding; FoodTroph (tentative, 1 food item) 3.10 (s.e. 0.30)",
       "fooditems": "Specific food items are not listed in the local FishBase extract.",
       "feedingPlaybook": ""
     },
@@ -28863,7 +29001,8 @@
       "comments": "Forms aggregations among the branches of Porites nigrescens and P. cylindrica in sheltered bays and lagoons (Ref. 1602, 48635). Disperses at night to feed close to the bottom (Ref. 9710). Has been reared in captivity (Ref. 35407). Popular aquarium fish (Ref. 37816)."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": "Carnivore",
+      "trophicSource": "FishBase SpecCode 5778: Herbivory2 mainly animals (troph. 2.8 and up); FeedingType hunting macrofauna (predator); FoodTroph 3.22 (s.e. 0.36)",
       "fooditems": "unspecified crustaceans, tanaids, ostracods, oligochaetes, calanoid and poecilostomatoid copepods",
       "feedingPlaybook": ""
     },
@@ -29001,7 +29140,8 @@
       "comments": "Inhabits coral rich areas of inner lagoons and subtidal reef flats to seaward reefs (Ref. 1602). Feeds on crustacean ectoparasites and mucus of other fishes (Ref. 9823, 48636). Monogamous (Ref. 52884). A protogynous hermaphrodite (Ref. 55367). Stays in stations where other fish come to be cleaned. Cleaning intensity is not related to client size or commonness (Ref. 28019). Cleaning stations are occupied by a pair of adults, a group of juveniles or a group of females accompanied by a dominant male where a female becomes a functional male if the dominant male disappears (Ref. 5503). Some adults solitary and territorial. An unfamiliar visitor is usually greeted by dance-like movements with the tail maneuvering the back part of the body up and down. Juveniles behave this way when divers approach closely (Ref. 48636). Minimum depth range of 1 meter in Ref. 27115."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": "Carnivore",
+      "trophicSource": "FishBase SpecCode 5459: Herbivory2 mainly animals (troph. 2.8 and up); FeedingType picking parasites off a host (cleaner); DietTroph 3.46 (s.e. 0.44); FoodTroph 3.85 (s.e. 0.63)",
       "fooditems": "mucus on fishes, ectoparasites on fishes, unidentified crustacean ectoparasites",
       "feedingPlaybook": ""
     },
@@ -29139,7 +29279,8 @@
       "comments": "Adults are found above coral outcrops or patch reefs of clear lagoons, channels, or outer reef slopes. Form large aggregations. Feed on zooplankton (Ref. 6113). A protogynous hermaphrodite (Ref. 55367). Males are territorial and haremic (Ref. 9710). Color patterns and size of sexual transition very slightly from one locality to the next. Total length for females from Ref. 9137."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": "Carnivore",
+      "trophicSource": "FishBase SpecCode 6568: Herbivory2 mainly animals (troph. 2.8 and up); FeedingType selective plankton feeding; FoodTroph (tentative, 1 food item) 3.40 (s.e. 0.45)",
       "fooditems": "unspecified zooplankton",
       "feedingPlaybook": ""
     },
@@ -29209,7 +29350,8 @@
       "comments": "A common species found singly and in pairs along rocky shores and coral reefs; also in estuaries and silty inner reefs (Ref. 9710, 48636). Territorial species (Ref. 48636). Oviparous (Ref. 205), monogamous (Ref. 52884). Forms pairs during breeding (Ref. 205)."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": "Carnivore",
+      "trophicSource": "FishBase SpecCode 5483: Herbivory2 mainly animals (troph. 2.8 and up); FeedingType hunting macrofauna (predator); FoodTroph (tentative, 1 food item) 3.50 (s.e. 0.37)",
       "fooditems": "unspecified benthic invertebrates",
       "feedingPlaybook": ""
     },
@@ -29417,7 +29559,8 @@
       "comments": "Inhabits steep outer reef slopes exposed to strong currents where it lives in large gorgonians and black corals (Ref. 3921). Benthic (Ref. 58302). Common below 25 m (Ref. 90102). Feeds on small benthic or planktonic crustaceans. The suggestion that this species lays demersal eggs (Ref. 3921) is questionable. Pelagic spawning has been observed for this species from field observations (Ref. 26305). Monogamous (Ref. 52884), strongly territorial (Ref. 26305). Uncommon to rare in most areas (Ref. 9710)."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": "Carnivore",
+      "trophicSource": "FishBase SpecCode 5833: Herbivory2 mainly animals (troph. 2.8 and up); FeedingType hunting macrofauna (predator); FoodTroph 3.30 (s.e. 0.37)",
       "fooditems": "unspecified crustaceans",
       "feedingPlaybook": ""
     },
@@ -29555,7 +29698,8 @@
       "comments": "Inhabit burrows made of crushed coral or sand. Hovers vertically, above or near its hole. The male courts the female by swimming in an arched position with his fins spread towards her (Ref. 9710). Male broods the eggs orally (Ref. 5521). Has been reared in captivity (Ref. 35427)."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
+      "trophicLevel": "Carnivore",
+      "trophicSource": "FishBase SpecCode 3684: Herbivory2 mainly animals (troph. 2.8 and up); FeedingType selective plankton feeding; DietTroph 3.04 (s.e. 0.10); FoodTroph 3.73 (s.e. 0.36)",
       "fooditems": "unspecified siphonophores",
       "feedingPlaybook": ""
     },
