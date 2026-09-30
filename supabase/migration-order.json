@@ -162,6 +162,7 @@
     "frontend/supabase/migrations/20261003_profiles_private_columns.sql",
     "frontend/supabase/migrations/20261003_seller_ship_from_private.sql",
     "frontend/supabase/migrations/20261003_ai_rate_limit.sql",
-    "frontend/supabase/migrations/20261004_storage_owner_policies.sql"
+    "frontend/supabase/migrations/20261004_storage_owner_policies.sql",
+    "frontend/supabase/migrations/20261005_credit_functions_server_only.sql"
   ]
 }

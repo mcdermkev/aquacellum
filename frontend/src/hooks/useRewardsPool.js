@@ -5,13 +5,12 @@
  * Wraps rewardsPoolApi.js for reactive UI consumption.
  */
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import {
   getRewardCredits,
   getCreditHistory,
   getDistributionHistory,
   getPoolStatus,
-  applyCreditsAtCheckout,
 } from "../services/rewardsPoolApi";
 import { getCurrentWallet, isSupabaseConfigured } from "../services/supabaseClient";
 import { unwrap } from "../utils/unwrapEnvelope";
@@ -95,24 +94,7 @@ export function usePoolStatus() {
 // Apply Credits Mutation (Checkout)
 // ─────────────────────────────────────────────────────────────────────────────
 
-/**
- * Mutation hook for applying credits at checkout.
- * Invalidates credit balance cache on success.
- * 
- * Usage:
- *   const applyCredits = useApplyCredits();
- *   const result = await applyCredits.mutateAsync({ amount: 5.00, orderId: "order_123" });
- *   // result.applied = actual amount deducted
- */
-export function useApplyCredits() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ amount, orderId }) => applyCreditsAtCheckout(amount, orderId),
-    onSuccess: () => {
-      const wallet = getCurrentWallet();
-      queryClient.invalidateQueries({ queryKey: ["rewards", "credits", wallet] });
-      queryClient.invalidateQueries({ queryKey: ["rewards", "credit-history"] });
-    },
-  });
-}
+// Spending credits is server-only: apply_credits_at_checkout can be executed
+// by service_role alone (20261005_credit_functions_server_only.sql). If credits
+// are ever redeemable, the checkout endpoint applies them with the wallet from
+// the verified session. There is deliberately no browser hook for it.

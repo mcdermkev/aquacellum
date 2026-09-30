@@ -195,33 +195,9 @@ export function getNextDistributionInfo() {
 // Checkout Integration
 // ─────────────────────────────────────────────────────────────────────────────
 
-/**
- * Apply reward credits at checkout. Calls the Supabase RPC function.
- * Returns the actual amount deducted (may be less than requested if balance insufficient).
- * 
- * @param {number} amount - Amount of credits to apply (in platform currency units)
- * @param {string} orderId - Reference order/transaction ID
- * @returns {Promise<{applied: number, error: string|null}>}
- */
-export async function applyCreditsAtCheckout(amount, orderId) {
-  if (!isSupabaseConfigured()) return { applied: 0, error: "Not configured" };
-
-  const wallet = getCurrentWallet();
-  if (!wallet) return { applied: 0, error: "Not connected" };
-
-  if (!amount || amount <= 0) return { applied: 0, error: null };
-
-  const { data, error } = await supabase
-    .rpc("apply_credits_at_checkout", {
-      p_wallet: wallet,
-      p_amount: amount,
-      p_order_id: orderId || `order_${Date.now()}`,
-    });
-
-  if (error) return { applied: 0, error: error.message };
-
-  return { applied: Number(data) || 0, error: null };
-}
+// No browser function spends credits. apply_credits_at_checkout took the wallet
+// from its argument, so it is server-only now
+// (20261005_credit_functions_server_only.sql).
 
 /**
  * Calculate the full discount breakdown for a checkout.
