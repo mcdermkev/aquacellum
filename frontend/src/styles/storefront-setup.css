@@ -16,7 +16,7 @@
 }
 
 .sf-setup__title {
-  font-family: 'Outfit', sans-serif;
+  font-family: var(--font-display);
   font-size: 1.3rem;
   font-weight: 700;
   color: var(--text-primary);
@@ -43,7 +43,7 @@
 }
 
 .sf-setup__label {
-  font-family: 'Outfit', sans-serif;
+  font-family: var(--font-display);
   font-size: 0.82rem;
   font-weight: 600;
   color: var(--text-primary);
@@ -70,7 +70,7 @@
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-sm);
   padding: 0.7rem 1rem;
-  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-family: var(--font-body);
   font-size: 0.88rem;
   color: var(--text-primary);
   outline: none;
@@ -289,7 +289,7 @@
   border: 1px solid rgba(56, 189, 248, 0.4);
   background: linear-gradient(135deg, rgba(56, 189, 248, 0.2), rgba(14, 165, 233, 0.15));
   color: var(--accent-blue);
-  font-family: 'Outfit', sans-serif;
+  font-family: var(--font-display);
   font-size: 0.85rem;
   font-weight: 700;
   cursor: pointer;
@@ -321,7 +321,7 @@
   border: 1px solid var(--glass-border);
   background: rgba(var(--ink-rgb), 0.03);
   color: var(--text-secondary);
-  font-family: 'Outfit', sans-serif;
+  font-family: var(--font-display);
   font-size: 0.82rem;
   font-weight: 600;
   cursor: pointer;
@@ -451,7 +451,7 @@
 }
 
 .sf-setup__banner-empty span {
-  font-family: 'Outfit', sans-serif;
+  font-family: var(--font-display);
   font-size: 0.85rem;
   font-weight: 600;
   color: var(--text-secondary);
@@ -504,7 +504,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: 'Outfit', sans-serif;
+  font-family: var(--font-display);
   font-size: 1.5rem;
   font-weight: 700;
   color: #fff;
@@ -526,7 +526,7 @@
   border: 1px solid var(--glass-border);
   background: rgba(var(--ink-rgb), 0.03);
   color: var(--text-secondary);
-  font-family: 'Outfit', sans-serif;
+  font-family: var(--font-display);
   font-size: 0.76rem;
   font-weight: 600;
   cursor: pointer;
@@ -569,7 +569,7 @@
 }
 
 .sf-setup__policies-title {
-  font-family: 'Outfit', sans-serif;
+  font-family: var(--font-display);
   font-size: 1.05rem;
   font-weight: 700;
   color: var(--text-primary);
@@ -607,7 +607,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-family: 'Outfit', sans-serif;
+  font-family: var(--font-display);
   font-size: 1.15rem;
   font-weight: 700;
   color: var(--text-primary);
@@ -629,7 +629,7 @@
   border: 1px solid var(--glass-border);
   background: rgba(var(--ink-rgb), 0.03);
   color: var(--text-secondary);
-  font-family: 'Outfit', sans-serif;
+  font-family: var(--font-display);
   font-size: 0.74rem;
   font-weight: 600;
   cursor: pointer;
@@ -670,7 +670,7 @@
 }
 
 .sf-analytics__kpi-value {
-  font-family: 'Outfit', sans-serif;
+  font-family: var(--font-display);
   font-size: 1.05rem;
   font-weight: 700;
   color: var(--text-primary);
@@ -693,7 +693,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  font-family: 'Outfit', sans-serif;
+  font-family: var(--font-display);
   font-size: 0.82rem;
   font-weight: 700;
   color: var(--text-secondary);
@@ -738,7 +738,7 @@
 }
 
 .sf-analytics__fulfill-value {
-  font-family: 'Outfit', sans-serif;
+  font-family: var(--font-display);
   font-size: 0.95rem;
   font-weight: 700;
   color: var(--text-primary);
@@ -786,7 +786,7 @@
 }
 
 .sf-analytics__species-value {
-  font-family: 'Outfit', sans-serif;
+  font-family: var(--font-display);
   font-size: 0.76rem;
   font-weight: 700;
   color: var(--text-primary);
@@ -805,7 +805,7 @@
 }
 
 .sf-analytics__empty-title {
-  font-family: 'Outfit', sans-serif;
+  font-family: var(--font-display);
   font-size: 0.95rem;
   font-weight: 700;
   color: var(--text-primary);
@@ -830,7 +830,7 @@
 }
 
 .sf-analytics__tooltip-title {
-  font-family: 'Outfit', sans-serif;
+  font-family: var(--font-display);
   font-size: 0.72rem;
   font-weight: 700;
   color: var(--text-primary);
@@ -909,7 +909,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-family: 'Outfit', sans-serif;
+  font-family: var(--font-display);
   font-size: 1.05rem;
   font-weight: 700;
   color: var(--text-primary);

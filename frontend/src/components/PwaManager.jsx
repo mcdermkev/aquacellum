@@ -50,7 +50,7 @@ const cardStyle = {
   boxShadow: "var(--shadow-lg)",
   backdropFilter: "blur(12px)",
   color: "var(--text-primary)",
-  fontFamily: "'Plus Jakarta Sans', 'Outfit', sans-serif",
+  fontFamily: "var(--font-body)",
   fontSize: "0.85rem",
   maxWidth: "min(92vw, 460px)",
 };

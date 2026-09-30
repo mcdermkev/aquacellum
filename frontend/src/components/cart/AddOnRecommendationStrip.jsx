@@ -134,7 +134,7 @@ function AddOnCard({ row, onAdd, casualModeActive }) {
         )}
       </div>
 
-      <strong style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: "0.85rem", color: "var(--text-primary)" }}>
+      <strong style={{ fontFamily: "var(--font-body)", fontSize: "0.85rem", color: "var(--text-primary)" }}>
         {row.priceDisplay}{row.isBatch ? " / fish" : ""}
       </strong>
 

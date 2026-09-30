@@ -107,7 +107,7 @@ export function ReviewComposer({ orderId, orderRef, fulfillmentMethod, onSubmitt
           rows={3}
           maxLength={2000}
           placeholder={casualModeActive ? "Healthy on arrival, great communication..." : "Describe the fish, packaging, and experience."}
-          style={{ width: "100%", padding: "0.6rem", background: "rgba(var(--ink-rgb), 0.03)", border: "1px solid var(--glass-border)", color: "var(--text-primary)", borderRadius: "6px", fontSize: "0.8rem", fontFamily: "'Plus Jakarta Sans', sans-serif", resize: "vertical" }}
+          style={{ width: "100%", padding: "0.6rem", background: "rgba(var(--ink-rgb), 0.03)", border: "1px solid var(--glass-border)", color: "var(--text-primary)", borderRadius: "6px", fontSize: "0.8rem", fontFamily: "var(--font-body)", resize: "vertical" }}
         />
       </div>
 

@@ -390,7 +390,7 @@ export function BadgeShelf({
           pointer-events: none;
         }
         .badge-tooltip-title {
-          font-family: 'Outfit', sans-serif;
+          font-family: var(--font-display);
           font-weight: 700;
           font-size: 0.75rem;
           color: var(--accent-blue);
@@ -398,7 +398,7 @@ export function BadgeShelf({
           display: block;
         }
         .badge-tooltip-desc {
-          font-family: 'Plus Jakarta Sans', sans-serif;
+          font-family: var(--font-body);
           font-size: 0.65rem;
           color: var(--text-muted);
           display: block;

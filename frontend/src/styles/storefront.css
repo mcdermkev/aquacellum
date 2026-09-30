@@ -11,7 +11,7 @@
   min-height: 100vh;
   background-color: var(--bg-primary);
   color: var(--text-primary);
-  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-family: var(--font-body);
   position: relative;
   overflow-x: hidden;
 }
@@ -81,7 +81,7 @@
 }
 
 .sf-nav__brand-name {
-  font-family: 'Outfit', sans-serif;
+  font-family: var(--font-display);
   font-weight: 800;
   font-size: 0.85rem;
   letter-spacing: 0.1em;
@@ -213,7 +213,7 @@
   align-items: center;
   justify-content: center;
   background: linear-gradient(135deg, rgba(56, 189, 248, 0.2), rgba(167, 139, 250, 0.2));
-  font-family: 'Outfit', sans-serif;
+  font-family: var(--font-display);
   font-size: 2rem;
   font-weight: 700;
   color: var(--text-primary);
@@ -254,7 +254,7 @@
 }
 
 .sf-header__name {
-  font-family: 'Outfit', sans-serif;
+  font-family: var(--font-display);
   font-size: 1.6rem;
   font-weight: 700;
   letter-spacing: -0.02em;
@@ -395,7 +395,7 @@
 }
 
 .sf-stats__value {
-  font-family: 'Outfit', sans-serif;
+  font-family: var(--font-display);
   font-size: 1.2rem;
   font-weight: 700;
   color: var(--text-primary);
@@ -433,7 +433,7 @@
   padding: 6px 16px;
   border-radius: 50px;
   border: 1px solid transparent;
-  font-family: 'Outfit', sans-serif;
+  font-family: var(--font-display);
   font-size: 0.78rem;
   font-weight: 600;
   color: var(--text-muted);
@@ -483,7 +483,7 @@
   padding: 5px 10px;
   font-size: 0.75rem;
   color: var(--text-primary);
-  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-family: var(--font-body);
   cursor: pointer;
   outline: none;
 }
@@ -497,7 +497,7 @@
    LISTINGS GRID
    ========================================================================= */
 .sf-section-title {
-  font-family: 'Outfit', sans-serif;
+  font-family: var(--font-display);
   font-size: 1.2rem;
   font-weight: 600;
   color: var(--text-primary);
@@ -636,7 +636,7 @@
 }
 
 .sf-listing-card__name {
-  font-family: 'Outfit', sans-serif;
+  font-family: var(--font-display);
   font-size: 1rem;
   font-weight: 700;
   color: var(--text-primary);
@@ -704,7 +704,7 @@
   margin-top: 8px;
   border: none;
   border-radius: 50px;
-  font-family: 'Outfit', sans-serif;
+  font-family: var(--font-display);
   font-size: 0.82rem;
   font-weight: 700;
   color: #fff;
@@ -889,7 +889,7 @@
 }
 
 .sf-error__title {
-  font-family: 'Outfit', sans-serif;
+  font-family: var(--font-display);
   font-size: 1.3rem;
   font-weight: 700;
   color: var(--text-primary);
@@ -1576,7 +1576,7 @@
 }
 
 .sf-policies__label {
-  font-family: 'Outfit', sans-serif;
+  font-family: var(--font-display);
   font-size: 0.95rem;
   font-weight: 700;
   color: var(--text-primary);

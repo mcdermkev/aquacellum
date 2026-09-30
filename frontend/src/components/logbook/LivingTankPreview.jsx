@@ -152,7 +152,7 @@ export function LivingTankPreview() {
         background: "var(--bg-primary)",
         color: "var(--text-primary)",
         padding: "2rem max(1.5rem, (100vw - 1100px) / 2)",
-        fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif",
+        fontFamily: "var(--font-body)",
       }}
     >
       <header style={{ marginBottom: "1.5rem" }}>

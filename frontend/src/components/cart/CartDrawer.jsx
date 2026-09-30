@@ -159,10 +159,10 @@ export function CartDrawer({ isOpen, onClose, onProceedToCheckout, casualModeAct
               )}
 
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-                <span style={{ fontSize: "0.85rem", color: "var(--text-secondary)", fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+                <span style={{ fontSize: "0.85rem", color: "var(--text-secondary)", fontFamily: "var(--font-body)" }}>
                   Subtotal
                 </span>
-                <strong style={{ fontSize: "1.25rem", color: "var(--text-primary)", fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+                <strong style={{ fontSize: "1.25rem", color: "var(--text-primary)", fontFamily: "var(--font-body)" }}>
                   {totals.subtotalDisplay}
                 </strong>
               </div>
@@ -371,7 +371,7 @@ function CartItemRow({ item, changes, onSetQuantity, onRemove, casualModeActive 
 
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <strong style={{
-            fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: "0.9rem",
+            fontFamily: "var(--font-body)", fontSize: "0.9rem",
             color: isUnavailable ? "var(--text-muted)" : "var(--text-primary)",
             textDecoration: isUnavailable ? "line-through" : "none",
           }}>

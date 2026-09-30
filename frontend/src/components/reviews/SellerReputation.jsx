@@ -204,7 +204,7 @@ function ReviewCard({
       </div>
 
       {review.body && (
-        <p style={{ margin: 0, fontSize: "0.82rem", color: "var(--text-secondary)", lineHeight: 1.55, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+        <p style={{ margin: 0, fontSize: "0.82rem", color: "var(--text-secondary)", lineHeight: 1.55, fontFamily: "var(--font-body)" }}>
           {review.body}
         </p>
       )}

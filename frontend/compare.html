@@ -3,102 +3,32 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Compare Species — Aquacellum</title>
+  <title>Compare Species | Aquacellum</title>
   <meta name="description" content="Compare up to 3 species side-by-side. See overlapping temperature, pH, and hardness ranges to determine tank compatibility.">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 
+  <!-- Shared Design System: tokens, base, nav (nav.js) and footer (footer.js) -->
+  <link rel="stylesheet" href="/css/shared.css">
+
   <style>
-    /* Daylight tokens. This page is standalone (no shared.css), so it mirrors the
-       v2 "Daylight" values from /css/shared.css under the same names. */
+    /* Compare page: page-specific styles only (Daylight tokens come from shared.css) */
     :root {
-      color-scheme: light;
-      --bg-void:      #f5f9fa;
-      --bg-deep:      #eaf3f5;
-      --bg-surface:   #ffffff;
-      --ink-rgb:      11, 37, 48;
-      --line:         #d7e5e9;
-      --emerald-100:  #d1fae5;
-      --emerald-200:  #a7f3d0;
-      --emerald-300:  #047857;
-      --emerald-400:  #059669;
-      --emerald-500:  #10b981;
-      --emerald-600:  #059669;
-      --teal-300:     #0f766e;
-      --teal-400:     #0d9488;
-      --teal-500:     #14b8a6;
-      --cyan-300:     #0e7490;
-      --cyan-400:     #0891b2;
-      --violet-400:   #7c3aed;
-      --amber-300:    #b45309;
-      --amber-400:    #d97706;
-      --rose-400:     #e11d48;
-      --text-primary: #0b2530;
-      --text-secondary: #3b5563;
-      --text-muted:   #5b7482;
+      /* Panels on this page are solid white with a line border. */
       --glass-bg:     #ffffff;
       --glass-border: #d7e5e9;
-      --shadow-sm:    0 1px 2px rgba(11, 37, 48, 0.06), 0 1px 3px rgba(11, 37, 48, 0.05);
-      --shadow-md:    0 8px 24px rgba(11, 37, 48, 0.08);
-      --shadow-lg:    0 18px 48px rgba(11, 37, 48, 0.12);
-      --radius-sm: 12px;
-      --radius-md: 18px;
-      --radius-lg: 24px;
-      --radius-xl: 32px;
-      --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       /* Dark, text-safe species colours: used for slot labels (text) and bars (fills). */
       --species-1: #047857;
       --species-2: #0e7490;
       --species-3: #6d28d9;
     }
 
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html { font-size: 16px; scroll-behavior: smooth; }
-    body {
-      font-family: 'Inter', sans-serif;
-      background-color: var(--bg-void);
-      background-image:
-        radial-gradient(ellipse 90% 420px at 50% -120px, rgba(245, 158, 11, 0.14), transparent 70%),
-        linear-gradient(180deg, #ffffff 0%, var(--bg-void) 520px);
-      background-repeat: no-repeat;
-      color: var(--text-primary);
-      overflow-x: hidden;
-      -webkit-font-smoothing: antialiased;
-      min-height: 100vh;
-    }
-    a { color: inherit; text-decoration: none; }
-    button { cursor: pointer; font-family: inherit; border: none; background: none; }
-
-    /* Ambient */
-    .ambient-layer { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
-    .orb { position: absolute; border-radius: 50%; filter: blur(80px); animation: orb-drift 18s ease-in-out infinite; }
-    .orb-1 { width: 500px; height: 500px; background: radial-gradient(circle, rgba(16,185,129,0.06) 0%, transparent 70%); top: -150px; left: -80px; }
-    .orb-2 { width: 400px; height: 400px; background: radial-gradient(circle, rgba(167,139,250,0.05) 0%, transparent 70%); bottom: -100px; right: -100px; animation-delay: -6s; }
-    .orb-3 { width: 350px; height: 350px; background: radial-gradient(circle, rgba(251,191,36,0.04) 0%, transparent 70%); top: 40%; left: 50%; animation-delay: -12s; }
-    @keyframes orb-drift {
-      0%, 100% { transform: translate(0, 0) scale(1); }
-      33% { transform: translate(30px, -20px) scale(1.05); }
-      66% { transform: translate(-20px, 15px) scale(0.95); }
-    }
-
-    /* Navigation */
-    .nav { position: sticky; top: 0; z-index: 100; backdrop-filter: blur(20px) saturate(1.4); background: rgba(255,255,255,0.9); border-bottom: 1px solid var(--line); padding: 0 24px; }
-    .nav-inner { max-width: 1200px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; height: 64px; }
-    .nav-logo { display: flex; align-items: center; gap: 12px; }
-    .nav-logo-mark { width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; background: #fff; border: 1px solid var(--line); border-radius: 10px; box-shadow: var(--shadow-sm); transition: var(--transition); }
-    .nav-logo-mark:hover { box-shadow: var(--shadow-md); transform: scale(1.05); }
-    .nav-logo-text { font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 1rem; letter-spacing: 0.1em; color: var(--text-primary); }
-    .nav-logo-sub { display: block; font-size: 9px; letter-spacing: 0.15em; color: var(--emerald-300); font-weight: 600; text-transform: uppercase; margin-top: -2px; }
-    .nav-links { display: flex; align-items: center; gap: 20px; list-style: none; }
-    .nav-links a { font-size: 0.82rem; font-weight: 500; color: var(--text-secondary); transition: color 0.2s; }
-    .nav-links a:hover { color: var(--emerald-300); }
-    .nav-cta { display: flex; align-items: center; gap: 8px; padding: 9px 20px; font-size: 0.82rem; font-weight: 600; color: #fff; background: linear-gradient(135deg, var(--emerald-600), var(--teal-500)); border-radius: 10px; transition: var(--transition); }
-    .nav-cta:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); }
-
-    /* Layout */
-    .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+    /* shared.css gives .container its own stacking context (z-index: 1), which
+       would put the species search dropdown under the footer. The selector
+       section carries its own z-index, so the main column opts out. */
+    .compare-main { z-index: auto; }
 
     /* Page Header */
     .page-header { padding: 60px 0 40px; text-align: center; position: relative; z-index: 1; }
@@ -290,12 +220,8 @@
     .legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.78rem; color: var(--text-secondary); }
     .legend-swatch { width: 16px; height: 4px; border-radius: 2px; }
 
-    /* Footer */
-    .footer { position: relative; z-index: 1; padding: 40px 0; border-top: 1px solid var(--line); background: var(--bg-deep); text-align: center; }
-    .footer p { font-size: 0.78rem; color: var(--text-muted); }
-    .footer-links { display: flex; justify-content: center; gap: 20px; margin-bottom: 12px; flex-wrap: wrap; }
-    .footer-links a { font-size: 0.8rem; color: var(--text-secondary); transition: color 0.2s; }
-    .footer-links a:hover { color: var(--emerald-300); }
+    /* Data credit (the shared footer does not carry it) */
+    .data-credit { position: relative; z-index: 1; text-align: center; padding: 0 0 40px; font-size: 0.78rem; color: var(--text-muted); }
 
     /* Daylight: white panels get the shared soft shadow */
     .range-chart, .attr-table, .temperament-card { box-shadow: var(--shadow-sm); }
@@ -306,7 +232,6 @@
       .attr-table-header, .attr-table-row { grid-template-columns: 100px repeat(var(--cols), 1fr); font-size: 0.72rem; }
     }
     @media (max-width: 768px) {
-      .nav-links { display: none; }
       .temperament-grid { grid-template-columns: 1fr; }
     }
   </style>
@@ -315,7 +240,7 @@
   <meta property="og:site_name" content="Aquacellum">
   <meta property="og:image" content="https://aquacellum.com/og-banner.png">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Compare Species — Aquacellum">
+  <meta name="twitter:title" content="Compare Species | Aquacellum">
   <meta name="twitter:description" content="Compare up to 3 species side-by-side. See overlapping temperature, pH, and hardness ranges to determine tank compatibility.">
 </head>
 <body>
@@ -326,43 +251,14 @@
     <div class="orb orb-3"></div>
   </div>
 
-  <!-- Navigation -->
-  <header class="nav">
-    <nav class="nav-inner">
-      <a href="/" class="nav-logo">
-        <div class="nav-logo-mark">
-          <svg width="28" height="28" viewBox="0 0 38 38" fill="none">
-            <defs><linearGradient id="nav-g" x1="0%" y1="100%" x2="100%" y2="0%"><stop offset="0%" stop-color="#5eead4"/><stop offset="50%" stop-color="#22d3ee"/><stop offset="100%" stop-color="#a78bfa"/></linearGradient></defs>
-            <circle cx="19" cy="19" r="15" stroke="url(#nav-g)" stroke-width="2.4" fill="none"/>
-            <path d="M19 4 C22.5 9.5, 24 14, 22.8 19 C21.6 24, 22.5 28.5, 19 34" stroke="url(#nav-g)" stroke-width="1.8" fill="none" stroke-linecap="round"/>
-            <path d="M19 4 C15.5 9.5, 14 14, 15.2 19 C16.4 24, 15.5 28.5, 19 34" stroke="url(#nav-g)" stroke-width="1.8" fill="none" stroke-linecap="round"/>
-            <path d="M4 19 C9.5 17, 14 16.2, 19 16.2 C24 16.2, 28.5 17, 34 19" stroke="#5eead4" stroke-width="1.4" fill="none" stroke-linecap="round" opacity="0.9"/>
-            <path d="M4 19 C9.5 21, 14 21.8, 19 21.8 C24 21.8, 28.5 21, 34 19" stroke="#a78bfa" stroke-width="1.4" fill="none" stroke-linecap="round" opacity="0.9"/>
-            <circle cx="19" cy="19" r="4" fill="url(#nav-g)"/>
-            <circle cx="17.5" cy="17.5" r="1.3" fill="#fff" opacity="0.7"/>
-          </svg>
-        </div>
-        <div>
-          <span class="nav-logo-text">AQUACELLUM</span>
-          <span class="nav-logo-sub">Compatibility Tool</span>
-        </div>
-      </a>
-      <ul class="nav-links">
-        <li><a href="/">Home</a></li>
-        <li><a href="/database">Database</a></li>
-        <li><a href="/marketplace">Marketplace</a></li>
-        <li><a href="/hobbyist">For Hobbyists</a></li>
-        <li><a href="/breeder">For Breeders</a></li>
-      </ul>
-      <a href="/database" class="nav-cta">Browse Database</a>
-    </nav>
-  </header>
+  <!-- Shared Navigation -->
+  <header id="site-nav"></header>
 
-  <div class="container">
+  <main class="container compare-main">
     <!-- Page Header -->
     <section class="page-header">
       <h1>Can they live <span class="gradient-text">together?</span></h1>
-      <p>Select 2 or 3 species to compare their parameter ranges side-by-side. See where they overlap — and where they don't.</p>
+      <p>Select 2 or 3 species to compare their parameter ranges side-by-side. See where they overlap and where they don't.</p>
     </section>
 
     <!-- Species Selector -->
@@ -399,36 +295,12 @@
     <section class="comparison-results" id="resultsSection">
       <div id="resultsContent"></div>
     </section>
-  </div>
 
-  <!-- Footer -->
-  <footer class="footer">
-    <div class="container">
-      <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:16px;">
-        <div class="nav-logo-mark" style="width:28px;height:28px;">
-          <svg width="18" height="18" viewBox="0 0 38 38" fill="none">
-            <defs><linearGradient id="ft-g" x1="0%" y1="100%" x2="100%" y2="0%"><stop offset="0%" stop-color="#5eead4"/><stop offset="50%" stop-color="#22d3ee"/><stop offset="100%" stop-color="#a78bfa"/></linearGradient></defs>
-            <circle cx="19" cy="19" r="15" stroke="url(#ft-g)" stroke-width="2.4" fill="none"/>
-            <path d="M19 4 C22.5 9.5, 24 14, 22.8 19 C21.6 24, 22.5 28.5, 19 34" stroke="url(#ft-g)" stroke-width="1.8" fill="none" stroke-linecap="round"/>
-            <path d="M19 4 C15.5 9.5, 14 14, 15.2 19 C16.4 24, 15.5 28.5, 19 34" stroke="url(#ft-g)" stroke-width="1.8" fill="none" stroke-linecap="round"/>
-            <path d="M4 19 C9.5 17, 14 16.2, 19 16.2 C24 16.2, 28.5 17, 34 19" stroke="#5eead4" stroke-width="1.4" fill="none" stroke-linecap="round" opacity="0.9"/>
-            <path d="M4 19 C9.5 21, 14 21.8, 19 21.8 C24 21.8, 28.5 21, 34 19" stroke="#a78bfa" stroke-width="1.4" fill="none" stroke-linecap="round" opacity="0.9"/>
-            <circle cx="19" cy="19" r="4" fill="url(#ft-g)"/>
-            <circle cx="17.5" cy="17.5" r="1.3" fill="#fff" opacity="0.7"/>
-          </svg>
-        </div>
-        <span class="nav-logo-text">AQUACELLUM</span>
-      </div>
-      <div class="footer-links">
-        <a href="/">Home</a>
-        <a href="/database">Database</a>
-        <a href="/hobbyist">For Hobbyists</a>
-        <a href="/breeder">For Breeders</a>
-        <a href="/app.html">Open Logbook</a>
-      </div>
-      <p>&copy; 2026 Aquacellum. Species data checked against FishBase &amp; WoRMS.</p>
-    </div>
-  </footer>
+    <p class="data-credit">Species data checked against FishBase and WoRMS.</p>
+  </main>
+
+  <!-- Shared Footer -->
+  <footer id="site-footer"></footer>
 
   <script>
     let allSpecies = [];
@@ -849,5 +721,9 @@
     // Boot
     init();
   </script>
+
+  <!-- Shared Scripts -->
+  <script src="/js/nav.js"></script>
+  <script src="/js/footer.js"></script>
 </body>
 </html>
