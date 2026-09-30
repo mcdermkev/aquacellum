@@ -1167,6 +1167,7 @@
   <!-- ========== SCRIPT ========== -->
   <script>
     let allSpecies = [];
+    let speciesWithVideo = new Set();
     let filteredSpecies = [];
     let isFlipped = false;
     let currentView = 'hobbyist';
@@ -1281,6 +1282,13 @@
         // Each species once: records kept under an older name (duplicateOf)
         // are dropped (window.CatalogAliases, /js/catalog-aliases.js).
         allSpecies = window.CatalogAliases.visibleCatalog(await res.json());
+        // Only species with a hover clip get a <video> (the list is built by
+        // scripts/build-home-videos.mjs). Without it every card requested a
+        // missing .mp4, about 450 404s per page load.
+        try {
+          const vr = await fetch('/home-videos.json');
+          if (vr.ok) speciesWithVideo = new Set(await vr.json());
+        } catch { /* no clips shown; the cards still work */ }
 
         document.getElementById('statTotal').textContent = String(allSpecies.length);
         const families = [...new Set(allSpecies.map(s => s.family).filter(f => f && f !== 'Information arriving soon' && f !== ''))];
@@ -1455,7 +1463,9 @@
         const tierClass = getTierClass(difficulty);
         const hasImage = sp.masterPhotoUrl && sp.masterPhotoUrl !== '';
         const videoSlug = sp.scientificName.toLowerCase().replace(/\s+/g, '-');
-        const videoPath = `/videos/species/${videoSlug}.mp4`;
+        const videoHtml = speciesWithVideo.has(videoSlug)
+          ? `<video class="card-video" src="/videos/species/${videoSlug}.mp4" muted loop playsinline preload="none"></video>`
+          : '';
 
         // Sexing badge — only for species we have actually documented. A grey
         // "not documented" pill on the other 296 cards would be noise on a
@@ -1466,7 +1476,7 @@
           : '';
 
         const imageHtml = hasImage
-          ? `<img class="blur-bg" src="${sp.masterPhotoUrl}" alt="" aria-hidden="true"><img class="main-img" src="${sp.masterPhotoUrl}" alt="${sp.commonName || sp.scientificName}" loading="lazy"><video class="card-video" src="${videoPath}" muted loop playsinline preload="metadata"></video>`
+          ? `<img class="blur-bg" src="${sp.masterPhotoUrl}" alt="" aria-hidden="true"><img class="main-img" src="${sp.masterPhotoUrl}" alt="${sp.commonName || sp.scientificName}" loading="lazy">${videoHtml}`
           : `<span class="placeholder-icon">🐟</span>`;
 
         // Contextual metadata based on view mode
