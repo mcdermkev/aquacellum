@@ -8,6 +8,7 @@
  */
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useVoiceProfiles } from "./useVoiceProfiles";
+import { realDietText } from "../../services/speciesDiet";
 
 /**
  * @param {object} species - Currently inspected species (full record from fishbase_master)
@@ -127,7 +128,7 @@ Species data for context:
 - Family: ${species.family || "unknown"}
 - Max length: ${species.maxLengthCm || "?"} cm
 - Ecology: ${species.ecology?.biotope || species.ecology?.comments || "no data"}
-- Diet: ${species.diet?.feedingPlaybook || species.diet?.fooditems || "no data"}
+- Diet: ${realDietText(species.diet?.feedingPlaybook) || realDietText(species.diet?.fooditems) || "no data"}
 - Social: ${species.ecology?.socialBehavior || "no data"}
 - Breeding: ${species.reproduction?.comments || species.reproduction?.spawningTrait || "no data"}
 - Difficulty: ${species.tankMetrics?.difficulty || "unknown"}

@@ -3,6 +3,7 @@ import { buildSpeciesCarePrompt } from "../../utils/poseidonPrompts";
 import { useUnitPrefs } from "../../hooks/useUnitPrefs";
 import { formatTemperatureRange } from "../../utils/units";
 import { coralCare, speciesCarePath, speciesRecordFor } from "./inhabitants";
+import { realDietText } from "../../services/speciesDiet";
 import "./SpeciesCareGuide.css";
 
 /**
@@ -146,7 +147,8 @@ export function getSpeciesCare(ref, fishbaseData = [], contractSpecies = []) {
     // Corals have no adult length; the catalog gives light / flow / placement instead.
     maxLengthCm: coral ? undefined : numOr(fb?.maxLengthCm, undefined),
     temperament: FAMILY_TEMPERAMENT[family] || null,
-    diet: fb?.diet?.trophicLevel && fb.diet.trophicLevel !== "Information arriving soon" ? fb.diet.trophicLevel : null,
+    // Null when no diet is recorded; the chip is then hidden.
+    diet: realDietText(fb?.diet?.trophicLevel),
     tip: truncate(fb?.ecology?.comments || fb?.marine?.notes),
     kind: kind || "fish",
     coral,

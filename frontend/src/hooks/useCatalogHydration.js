@@ -10,6 +10,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { db } from "../db";
+import { normalizeSpeciesRecord } from "../services/normalizeSpeciesRecord";
 
 export function useCatalogHydration() {
   const [catalogReady, setCatalogReady] = useState(false);
@@ -40,30 +41,9 @@ export function useCatalogHydration() {
       const rawData = await res.json();
       setProgress(60); // JSON parsed
 
-      // Enrich with safe fallbacks (same logic as useSpeciesData)
-      const data = rawData.map(item => ({
-        ...item,
-        family: item.family || "Information arriving soon",
-        ecology: {
-          comments: item.ecology?.comments || "Information arriving soon",
-          biotope: item.ecology?.biotope || "Generic Biotope Details",
-          phMin: item.ecology?.phMin ?? item.tankMetrics?.phRange?.[0] ?? 6.5,
-          phMax: item.ecology?.phMax ?? item.tankMetrics?.phRange?.[1] ?? 7.5,
-          hardnessRange: item.ecology?.hardnessRange || "5 - 15 dGH",
-          tempCeiling: item.ecology?.tempCeiling ?? item.tankMetrics?.tempRangeCelsius?.[1] ?? 28,
-          socialBehavior: item.ecology?.socialBehavior || "Information arriving soon",
-        },
-        diet: {
-          trophicLevel: item.diet?.trophicLevel || "Omnivore",
-          fooditems: item.diet?.fooditems || "Information arriving soon",
-          feedingPlaybook: item.diet?.feedingPlaybook || "Information arriving soon",
-        },
-        reproduction: {
-          spawningTrait: item.reproduction?.spawningTrait || "Information arriving soon",
-          layoutRequirement: item.reproduction?.layoutRequirement || "Information arriving soon",
-          comments: item.reproduction?.comments || "Information arriving soon",
-        }
-      }));
+      // Same enrichment as useSpeciesData (services/normalizeSpeciesRecord.js).
+      // A missing diet stays null; it is never backfilled.
+      const data = rawData.map(normalizeSpeciesRecord);
 
       setProgress(80); // Enrichment complete
 

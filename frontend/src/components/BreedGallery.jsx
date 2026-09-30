@@ -24,6 +24,7 @@ import { SpeciesCardPremium } from "./SpeciesCardPremium";
 import { SpeciesPhotoCredit } from "./SpeciesPhotoCredit";
 import { buildGlobalCatalog, CARE_LABELS } from "../services/speciesCatalog";
 import { assessSpeciesFit } from "../services/speciesFit";
+import { realDietText, isCarnivoreTrophic, isHerbivoreTrophic, DIET_NOT_RECORDED } from "../services/speciesDiet";
 import { CasualSpeciesDetail } from "./finder/CasualSpeciesDetail";
 import { resolveSpecimenPhoto } from "../services/tankMedia";
 import { useUnitPrefs } from "../hooks/useUnitPrefs";
@@ -1702,22 +1703,28 @@ export function BreedGallery({
               <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", textTransform: "uppercase", fontWeight: "600" }}>Trophic Level</span>
-                  <span className={`badge ${
-                    (fullProfile.diet?.trophicLevel || "Omnivore").toLowerCase().includes("carn") ? "badge-red" : 
-                    (fullProfile.diet?.trophicLevel || "Omnivore").toLowerCase().includes("herb") ? "badge-green" : "badge-blue"
-                  }`} style={{ fontSize: "0.8rem" }}>
-                    {fullProfile.diet?.trophicLevel || "Omnivore"}
-                  </span>
+                  {realDietText(fullProfile.diet?.trophicLevel) ? (
+                    <span className={`badge ${
+                      isCarnivoreTrophic(fullProfile.diet.trophicLevel) ? "badge-red" :
+                      isHerbivoreTrophic(fullProfile.diet.trophicLevel) ? "badge-green" : "badge-blue"
+                    }`} style={{ fontSize: "0.8rem" }}>
+                      {realDietText(fullProfile.diet.trophicLevel)}
+                    </span>
+                  ) : (
+                    <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>{DIET_NOT_RECORDED}</span>
+                  )}
                 </div>
 
-                <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                  <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", textTransform: "uppercase", fontWeight: "600" }}>Wild Food Items</span>
-                  <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)", lineHeight: "1.4" }}>
-                    {fullProfile.diet?.fooditems || "General micro-invertebrates and plant matter."}
-                  </p>
-                </div>
+                {realDietText(fullProfile.diet?.fooditems) && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                    <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", textTransform: "uppercase", fontWeight: "600" }}>Wild Food Items</span>
+                    <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)", lineHeight: "1.4" }}>
+                      {realDietText(fullProfile.diet.fooditems)}
+                    </p>
+                  </div>
+                )}
 
-                <div style={{ 
+                {realDietText(fullProfile.diet?.feedingPlaybook) && <div style={{ 
                   padding: "1rem", 
                   background: "var(--accent-blue-glow)", 
                   border: "1px solid rgba(56, 189, 248, 0.2)", 
@@ -1730,9 +1737,9 @@ export function BreedGallery({
                     📋 Hobbyist Feeding Playbook
                   </strong>
                   <p style={{ fontSize: "0.8rem", color: "var(--text-primary)", lineHeight: "1.4" }}>
-                    {fullProfile.diet?.feedingPlaybook || "Requires high-quality flakes/pellets as a daily staple. Supplement with live or frozen foods."}
+                    {realDietText(fullProfile.diet.feedingPlaybook)}
                   </p>
-                </div>
+                </div>}
               </div>
             )}
 

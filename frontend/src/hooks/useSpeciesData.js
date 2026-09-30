@@ -5,6 +5,7 @@ import aquadexAbi from "../abi/AquadexManager.json";
 import { getProvider } from "../utils/smartAccount";
 import { listPublishedSpeciesProfiles } from "../services/speciesCurationApi";
 import { readCatalogViaMulticall } from "../services/contractCatalogReader";
+import { normalizeSpeciesRecord } from "../services/normalizeSpeciesRecord";
 
 /**
  * Merge curator-authored profiles over the static reference catalog.
@@ -58,30 +59,9 @@ export function useSpeciesData() {
         const authored = await listPublishedSpeciesProfiles();
         const rawData = mergeAuthoredProfiles(rawJson, authored);
 
-        // Enrich reference data with safe fallbacks for missing rich fields
-        const data = rawData.map(item => ({
-          ...item,
-          family: item.family || "Information arriving soon",
-          ecology: {
-            comments: item.ecology?.comments || "Information arriving soon",
-            biotope: item.ecology?.biotope || "Generic Biotope Details",
-            phMin: item.ecology?.phMin ?? item.tankMetrics?.phRange?.[0] ?? 6.5,
-            phMax: item.ecology?.phMax ?? item.tankMetrics?.phRange?.[1] ?? 7.5,
-            hardnessRange: item.ecology?.hardnessRange || "5 - 15 dGH",
-            tempCeiling: item.ecology?.tempCeiling ?? item.tankMetrics?.tempRangeCelsius?.[1] ?? 28,
-            socialBehavior: item.ecology?.socialBehavior || "Information arriving soon",
-          },
-          diet: {
-            trophicLevel: item.diet?.trophicLevel || "Omnivore",
-            fooditems: item.diet?.fooditems || "Information arriving soon",
-            feedingPlaybook: item.diet?.feedingPlaybook || "Information arriving soon",
-          },
-          reproduction: {
-            spawningTrait: item.reproduction?.spawningTrait || "Information arriving soon",
-            layoutRequirement: item.reproduction?.layoutRequirement || "Information arriving soon",
-            comments: item.reproduction?.comments || "Information arriving soon",
-          }
-        }));
+        // Enrich reference data (services/normalizeSpeciesRecord.js). A missing
+        // diet stays null; it is never backfilled.
+        const data = rawData.map(normalizeSpeciesRecord);
 
         // Update Dexie database offline cache
         try {

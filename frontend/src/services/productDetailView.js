@@ -31,6 +31,7 @@ import { evaluateDeliveryEligibility } from "./deliveryEligibility.js";
 import { normalizePriceCents, formatPriceCents, getFulfillmentTypes, FULFILLMENT_TYPES } from "./catalogQuery.js";
 import { DEFAULT_CLAIM_WINDOW_MS } from "./doaClaims.js";
 import { fragFromListing, listingUnitLabel, coralCareFromSpecies } from "./fragListing.js";
+import { realDietText } from "./speciesDiet.js";
 
 const MS_PER_HOUR = 60 * 60 * 1000;
 
@@ -108,7 +109,7 @@ function buildCareRequirements(speciesProfile, listing, speciesRecord) {
     adultSizeCm: speciesProfile.adultSizeCm,
     temperament: speciesProfile.temperament?.value ?? "unknown",
     careLevel: listing.careLevel ?? speciesRecord?.careLevel ?? null,
-    diet: listing.diet ?? speciesRecord?.diet?.fooditems ?? null,
+    diet: realDietText(listing.diet) ?? realDietText(speciesRecord?.diet?.fooditems),
     dataConfidence: speciesProfile.dataConfidence,
   };
 }

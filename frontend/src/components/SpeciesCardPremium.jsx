@@ -5,6 +5,7 @@ import { getPersonality } from "../utils/personality";
 import { getEasterEggConfig } from "./BreedGallery";
 import { CARE_LABELS, CARE_BADGE_CLASS } from "../services/speciesCatalog";
 import { fitPresentationKind, VERDICT_CHIP } from "../services/speciesFit";
+import { casualCardTags } from "../services/speciesCardTags";
 
 const isPlantEntry = (item) => {
   if (typeof item === "object" && item !== null) {
@@ -96,15 +97,12 @@ export function SpeciesCardPremium({
        profile?.ecology?.socialBehavior || "")
     : "";
 
+  // Tags only when backed by recorded data (services/speciesCardTags.js).
+  // "Easy Feeder" needs a real trophic level and never applies to plants.
   const tags = useMemo(() => {
     if (!casualModeActive || !profile) return [];
-    const t = [];
-    if (profile?.ecology?.socialBehavior?.toLowerCase().includes("school"))
-      t.push("Schooling");
-    if (profile?.diet?.trophicLevel === "Omnivore") t.push("Easy Feeder");
-    if (breed.careLevel === 0) t.push("Beginner Friendly");
-    return t.slice(0, 2);
-  }, [casualModeActive, profile, breed.careLevel]);
+    return casualCardTags(profile, { careLevel: breed.careLevel, isPlant });
+  }, [casualModeActive, profile, breed.careLevel, isPlant]);
 
   const careLabel = CARE_LABELS[breed.careLevel] || "Easy";
   const badgeClass = CARE_BADGE_CLASS[breed.careLevel] || "easy";

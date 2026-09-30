@@ -27,6 +27,7 @@ import { normalizeSpeciesProfile } from "./shippingSafety.js";
 import { deriveDefaultPackingProfile } from "./packingEngine.js";
 import { buildCompatibilityExplanation } from "./compatibilityExplanation.js";
 import { normalizePriceCents, isListingActive } from "./catalogQuery.js";
+import { realDietText } from "./speciesDiet.js";
 
 // ─── Care level (informational only — not a safety input) ──────────────────
 
@@ -58,7 +59,8 @@ function resolveCareLevel(record = {}) {
 
 /** Resolve a diet description string, or null when the record has none. */
 function resolveDietText(record = {}) {
-  return record.diet?.fooditems || record.diet?.trophicLevel || null;
+  // Placeholders ("Information arriving soon") and blanks are not a diet.
+  return realDietText(record.diet?.fooditems) || realDietText(record.diet?.trophicLevel) || null;
 }
 
 /** Resolve a general origin/biotope description, or null. Descriptive only. */

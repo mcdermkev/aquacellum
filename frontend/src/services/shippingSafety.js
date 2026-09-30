@@ -12,11 +12,13 @@
  * here are deliberately conservative and are NOT the same as tank-mate
  * suitability (which is soft guidance handled elsewhere).
  *
- * Pure and dependency-free. The messy source data (free-text temperament,
- * maxLengthCm, trophicLevel from fishbase_master.json) is normalized first via
- * normalizeSpeciesProfile so the rules operate on structured, confidence-tagged
- * fields.
+ * Pure; its only import is the pure diet helper module. The messy source data
+ * (free-text temperament, maxLengthCm, trophicLevel from fishbase_master.json)
+ * is normalized first via normalizeSpeciesProfile so the rules operate on
+ * structured, confidence-tagged fields.
  */
+
+import { realDietText, isCarnivoreTrophic } from "./speciesDiet.js";
 
 // ─── Temperament ────────────────────────────────────────────────────────────
 
@@ -64,8 +66,6 @@ export function classifyTemperament(text) {
 
 // ─── Species normalization ───────────────────────────────────────────────────
 
-const CARNIVORE_TROPHIC = ["carnivore", "piscivore"];
-
 /**
  * Normalize a fishbase_master.json record (or a partial listing-derived record)
  * into the structured profile the safety rules consume. Missing fields become
@@ -94,7 +94,9 @@ export function normalizeSpeciesProfile(record = {}) {
 
   const adultSizeCm = num(record.maxLengthCm ?? record.adultSizeCm);
   const minVolumeGallons = num(tankMetrics.minVolumeGallons ?? record.minVolumeGallons);
-  const trophicLevel = record.diet?.trophicLevel ?? record.trophicLevel ?? null;
+  // Null when no diet is recorded (never assumed to be an omnivore); blank and
+  // placeholder strings count as missing. See services/speciesDiet.js.
+  const trophicLevel = realDietText(record.diet?.trophicLevel) ?? realDietText(record.trophicLevel);
 
   const temperamentText =
     record.behavior?.temperament || record.ecology?.socialBehavior || record.temperamentText || "";
@@ -120,7 +122,8 @@ export function normalizeSpeciesProfile(record = {}) {
     phRange,
     minVolumeGallons,
     trophicLevel,
-    carnivore: trophicLevel ? CARNIVORE_TROPHIC.includes(String(trophicLevel).toLowerCase()) : false,
+    // Token match so compound labels like "Carnivore / Piscivore" count.
+    carnivore: isCarnivoreTrophic(trophicLevel),
     temperament,
     dataConfidence: {
       size: adultSizeCm != null,

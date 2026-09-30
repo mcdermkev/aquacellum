@@ -178,10 +178,13 @@ export function formatSpeciesForContext(species, mode = 'casual') {
     }
   }
 
-  if (species.diet) {
-    if (species.diet.trophicLevel) {
-      lines.push(`- Diet: ${species.diet.trophicLevel} — ${species.diet.fooditems || ''}`);
-    }
+  // Only a recorded diet reaches the prompt. A record with no trophic level
+  // gets no Diet line (never an assumed "Omnivore"), and a missing or
+  // placeholder food list is left off instead of leaving a dangling dash.
+  const isRealDiet = (v) => typeof v === 'string' && v.trim() !== '' && v.trim() !== 'Information arriving soon';
+  if (species.diet && isRealDiet(species.diet.trophicLevel)) {
+    const food = isRealDiet(species.diet.fooditems) ? ` — ${species.diet.fooditems.trim()}` : '';
+    lines.push(`- Diet: ${species.diet.trophicLevel.trim()}${food}`);
   }
 
   if (species.reproduction && species.reproduction.spawningTrait && species.reproduction.spawningTrait !== 'Information arriving soon') {
