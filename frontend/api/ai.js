@@ -516,13 +516,9 @@ Always respond with valid JSON matching this schema:
     "payload": {}
   },
   "echoReaction": {
-    "mood": "happy | excited | calm | confused | alert",
-    "glowActive": true,
-    "glowColor": "#hex",
-    "swimSpeedMultiplier": 1.0,
-    "durationMs": 2000
+    "mood": "happy | excited | calm | confused | alert"
   },
-  "confidence": 0.0-1.0,
+  "confidence": "low | medium | high",
   "sources": ["optional array of knowledge sources used"]
 }
 

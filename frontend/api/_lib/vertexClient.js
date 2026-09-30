@@ -14,6 +14,7 @@
 
 import { createSign, createPrivateKey } from 'crypto';
 import { readFileSync } from 'fs';
+import { fallbackFor } from './aiModels.js';
 
 let _cachedToken = null;
 let _cachedTokenExpiry = 0;
@@ -179,10 +180,42 @@ export function buildVertexUrl({ project, location, model, apiVersion = 'v1' }) 
  *   carries the serving location, and a model reached at the wrong location 404s
  *   in a way that looks like a bad name (see `buildVertexUrl`).
  * @param {object} body   { contents, generationConfig, safetySettings }
- * @param {{ location?: string }} [options] Explicit location override.
+ * @param {{ location?: string, fallback?: object|null, fallbackBody?: object }} [options]
+ *   `location` overrides the serving location. `fallback` is a config from
+ *   `aiModels.fallbackFor(task)`: when the primary answers 404 (model retired)
+ *   or 429 (quota), the request is sent once more to the fallback, with
+ *   `fallbackBody` when the body is model-specific (thinking settings).
  * @returns {Promise<Response>} Raw fetch Response
  */
 export async function vertexGenerateContent(modelOrConfig, body, options = {}) {
+  const { fallback: explicitFallback, fallbackBody = null, ...rest } = options;
+  const response = await vertexGenerateOnce(modelOrConfig, body, rest);
+  if (!shouldFallBack(response.status)) return response;
+
+  // A config from modelFor(task) names its task, so its fallback can be found
+  // here and every call site gets it without being edited.
+  const task = typeof modelOrConfig === 'object' ? modelOrConfig?.task : null;
+  const fallback = explicitFallback !== undefined ? explicitFallback : (task ? fallbackFor(task) : null);
+  const primary = typeof modelOrConfig === 'string' ? modelOrConfig : modelOrConfig?.model;
+  if (!fallback?.model || fallback.model === primary) return response;
+
+  console.warn(`[VertexClient] ${primary} returned ${response.status}; retrying on ${fallback.model}.`);
+  return vertexGenerateOnce(fallback, fallbackBody || withoutThinking(body), {});
+}
+
+/** Retired model (404) or quota (429): worth one try on the fallback model. */
+export function shouldFallBack(status) {
+  return status === 404 || status === 429;
+}
+
+/** Thinking settings are model-specific; a fallback model gets none. */
+export function withoutThinking(body) {
+  if (!body?.generationConfig?.thinkingConfig) return body;
+  const { thinkingConfig: _drop, ...generationConfig } = body.generationConfig;
+  return { ...body, generationConfig };
+}
+
+async function vertexGenerateOnce(modelOrConfig, body, options = {}) {
   const model = typeof modelOrConfig === 'string' ? modelOrConfig : modelOrConfig?.model;
   const configLocation = typeof modelOrConfig === 'string' ? null : modelOrConfig?.location;
 

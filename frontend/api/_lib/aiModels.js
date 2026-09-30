@@ -46,11 +46,8 @@
 // that is a latency and cost regression bought with nothing. `gemini-3.5-flash-lite`
 // is the standout successor: GA, ~1s, no thinking overhead.
 //
-// NOTE: this commit deliberately does NOT change which model runs. Defaults are
-// the current ones, so the change is purely structural and behaviour-neutral;
-// flipping CHAT to gemini-3.5-flash-lite is now a one-variable change that can be
-// reverted just as fast. Answer QUALITY across many prompts was not measured, only
-// compatibility and latency — so that flip deserves its own look.
+// 2026-09-30: answer quality was measured and every task moved off 2.5; see
+// TASK_DEFAULTS below.
 
 /** Where a model is served from. The 3.x line only exists on `global`. */
 export const AI_LOCATION = Object.freeze({
@@ -67,12 +64,15 @@ export const AI_LOCATION = Object.freeze({
  * retirement email — the health check warns as it approaches.
  */
 export const KNOWN_MODELS = Object.freeze({
-  'gemini-2.5-flash': { location: AI_LOCATION.REGIONAL, sunsetOn: null, note: 'Retirement announced by email; record the date here.' },
-  'gemini-2.5-flash-lite': { location: AI_LOCATION.REGIONAL, sunsetOn: null },
-  'gemini-3.5-flash-lite': { location: AI_LOCATION.GLOBAL, sunsetOn: null, note: 'Recommended successor for chat/search: ~1s, no thinking overhead.' },
-  'gemini-3.5-flash': { location: AI_LOCATION.GLOBAL, sunsetOn: null, note: 'Thinking on by default (~600 hidden tokens, ~4s).' },
+  // Google's email (2026-09): the 2.5 line enters extended support on
+  // 2026-10-20 and its pricing jumps on 2027-01-28. No task defaults to it.
+  'gemini-2.5-flash': { location: AI_LOCATION.REGIONAL, sunsetOn: '2026-10-20', note: 'Deprecated 2026-10-20; price increase 2027-01-28.' },
+  'gemini-2.5-flash-lite': { location: AI_LOCATION.REGIONAL, sunsetOn: '2026-10-20', note: 'Deprecated 2026-10-20; price increase 2027-01-28.' },
+  'gemini-3.1-flash-lite': { location: AI_LOCATION.GLOBAL, sunsetOn: null, note: "Google's named successor to 2.5 Flash-Lite. Used as a fallback." },
+  'gemini-3.5-flash-lite': { location: AI_LOCATION.GLOBAL, sunsetOn: null, note: 'No thinking, ~1.5s. Structured tasks (search, vision, drafting).' },
+  'gemini-3.5-flash': { location: AI_LOCATION.GLOBAL, sunsetOn: null, note: 'Thinking on by default (~600-1500 hidden tokens, 10-15s on chat).' },
   'gemini-3.6-flash': { location: AI_LOCATION.GLOBAL, sunsetOn: null, note: 'Slowest probed (~6s).' },
-  'gemini-3.7-flash': { location: AI_LOCATION.GLOBAL, sunsetOn: null, note: 'Pick this if a task ever needs real reasoning.' },
+  'gemini-3.7-flash': { location: AI_LOCATION.GLOBAL, sunsetOn: null, note: 'Chat. Best answers in the 2026-09-30 probe; ~2-4s with thinkingLevel low.' },
 });
 
 /**
@@ -85,17 +85,24 @@ export const KNOWN_MODELS = Object.freeze({
  * `fallback` is used when the primary returns a model-not-found, so a retirement
  * degrades instead of taking the feature down.
  */
+// Migrated off the 2.5 line 2026-09-30, from a probe of four real Poseidon
+// prompts per model (compatibility question, nitrate trend, a care log, an
+// open recommendation). gemini-3.7-flash at thinkingLevel "low" gave the best
+// grounded answers (it caught that a 25°C tank is below a ram's 26°C minimum,
+// which 3.5-flash-lite missed) at 2-4s. The structured tasks have small output
+// caps (200-700 tokens) that a thinking model would spend on hidden reasoning,
+// so they run on 3.5-flash-lite, which does not think.
 const TASK_DEFAULTS = Object.freeze({
   /** Poseidon conversational chat (api/ai.js handlePoseidon). */
-  CHAT: { model: 'gemini-2.5-flash', fallback: 'gemini-3.5-flash-lite' },
+  CHAT: { model: 'gemini-3.7-flash', fallback: 'gemini-3.5-flash-lite' },
   /** Grounded listing-description drafting — review-gated prompt. */
-  EXTRACT: { model: 'gemini-2.5-flash', fallback: 'gemini-3.5-flash-lite' },
+  EXTRACT: { model: 'gemini-3.5-flash-lite', fallback: 'gemini-3.1-flash-lite' },
   /** Natural-language catalog search parsing (api/parse-search.js). */
-  SEARCH: { model: 'gemini-2.5-flash-lite', fallback: 'gemini-3.5-flash-lite' },
+  SEARCH: { model: 'gemini-3.5-flash-lite', fallback: 'gemini-3.1-flash-lite' },
   /** Image alt-text / photo understanding (api/ai.js handleAltText). */
-  VISION: { model: 'gemini-2.5-flash-lite', fallback: 'gemini-3.5-flash-lite' },
+  VISION: { model: 'gemini-3.5-flash-lite', fallback: 'gemini-3.1-flash-lite' },
   /** Grounded species recommendation (api/ai.js handleSuggestSpecies). */
-  SUGGEST: { model: 'gemini-2.5-flash', fallback: 'gemini-3.5-flash-lite' },
+  SUGGEST: { model: 'gemini-3.5-flash-lite', fallback: 'gemini-3.1-flash-lite' },
 });
 // Deliberately no NARRATION task: spawnNarration.js and useNarration.js post to
 // `?action=poseidon`, so they already run on CHAT. A separate entry would be

@@ -198,6 +198,30 @@ describe("generation config", () => {
     expect(thinkingConfigFor("gemini-3.5-flash-lite", POSEIDON_ATTEMPTS[0])).toBeNull();
     expect(buildPoseidonGenerationConfig("gemini-3.5-flash-lite", 0)).not.toHaveProperty("thinkingConfig");
   });
+
+  it("keeps 3.x Flash thinking at low so chat answers in seconds, not 10-15s", () => {
+    expect(thinkingConfigFor("gemini-3.7-flash", POSEIDON_ATTEMPTS[0])).toEqual({ thinkingLevel: "low" });
+    expect(thinkingConfigFor("gemini-3.5-flash", POSEIDON_ATTEMPTS[1])).toEqual({ thinkingLevel: "low" });
+    expect(thinkingConfigFor("gemini-3.1-flash-lite", POSEIDON_ATTEMPTS[0])).toBeNull();
+  });
+
+  it("asks for no free-form numbers, which 3.x models can run away on", () => {
+    // gemini-3.7-flash once wrote "1.1000000000000001" then zeros to the cap.
+    const schema = buildPoseidonGenerationConfig("gemini-3.7-flash", 0).responseSchema;
+    const numberFields = JSON.stringify(schema).match(/"type":"number"/g) || [];
+    expect(numberFields).toEqual([]);
+    expect(schema.properties.confidence.enum).toEqual(["low", "medium", "high"]);
+  });
+
+  it("turns the confidence word and the bare mood back into the numbers clients read", () => {
+    const reply = shapePoseidonReply({ message: "hi", intent: "general_knowledge", action: { type: "NONE" }, confidence: "high", echoReaction: { mood: "happy" } });
+    expect(reply.confidence).toBe(0.9);
+    expect(reply.echoReaction.mood).toBe("happy");
+    expect(reply.echoReaction.swimSpeedMultiplier).toBeGreaterThan(1);
+    expect(reply.echoReaction.durationMs).toBeGreaterThan(0);
+    // Gateway notices still pass numbers.
+    expect(shapePoseidonReply({ message: "x", confidence: 0 }).confidence).toBe(0);
+  });
 });
 
 // ─── Length caps ─────────────────────────────────────────────────────────────

@@ -176,3 +176,34 @@ describe("buildVertexUrl", () => {
     expect(url).toContain("/locations/global/");
   });
 });
+
+describe("off the 2.5 line (Google deprecates it 2026-10-20)", () => {
+  it("no task defaults to or falls back on a 2.5 model", () => {
+    for (const task of AI_TASKS) {
+      expect(modelFor(task).model, `${task} still on 2.5`).not.toMatch(/^gemini-2\./);
+      expect(fallbackFor(task).model, `${task} falls back on 2.5`).not.toMatch(/^gemini-2\./);
+    }
+  });
+
+  it("records the 2.5 sunset so an env override back onto it is flagged", () => {
+    expect(KNOWN_MODELS["gemini-2.5-flash"].sunsetOn).toBe("2026-10-20");
+    expect(KNOWN_MODELS["gemini-2.5-flash-lite"].sunsetOn).toBe("2026-10-20");
+  });
+});
+
+describe("vertexGenerateContent falls back on its own", () => {
+  const CLIENT = read("_lib/vertexClient.js");
+
+  it("finds the task's fallback from the modelFor() config, retrying on 404 or 429", () => {
+    expect(CLIENT).toContain("import { fallbackFor } from './aiModels.js';");
+    expect(CLIENT).toContain("fallbackFor(task)");
+    expect(CLIENT).toMatch(/status === 404 \|\| status === 429/);
+  });
+
+  it("drops thinking settings for the fallback model", async () => {
+    const { withoutThinking } = await import("../../api/_lib/vertexClient.js");
+    const body = { contents: [], generationConfig: { temperature: 0.7, thinkingConfig: { thinkingLevel: "low" } } };
+    expect(withoutThinking(body).generationConfig).toEqual({ temperature: 0.7 });
+    expect(body.generationConfig.thinkingConfig).toEqual({ thinkingLevel: "low" });
+  });
+});

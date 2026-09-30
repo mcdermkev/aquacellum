@@ -146,10 +146,27 @@ export function thinkingConfigFor(model, attempt) {
   if (/^gemini-2\.5-flash/.test(name)) {
     return { thinkingBudget: attempt.thinkingBudget };
   }
+  // The 3.x Flash line thinks by default (375-1500 hidden tokens, 5-15 s on
+  // chat in the 2026-09-30 probe). `low` keeps the quality that made us pick
+  // it and brings answers back to 2-4 s. Flash-Lite does not think, so it gets
+  // nothing.
+  if (/^gemini-3(\.\d+)?-(flash|pro)(?!-lite)/.test(name)) {
+    return { thinkingLevel: 'low' };
+  }
   return null;
 }
 
-/** Response schema. `propertyOrdering` puts `message` first so a cut-off reply still carries it. */
+/**
+ * Response schema. `propertyOrdering` puts `message` first so a cut-off reply
+ * still carries it.
+ *
+ * No free number fields. The 3.x models occasionally degenerate while writing
+ * a float ("1.1000000000000001" followed by thousands of zeros) and run to the
+ * output cap: 1 in 4 chat replies on gemini-3.7-flash in the 2026-09-30 probe.
+ * Confidence is a word and Echo's reaction is a mood; the gateway turns both
+ * into the numbers clients already read (`shapePoseidonReply`, `cleanEcho`).
+ */
+export const CONFIDENCE_LEVELS = Object.freeze({ low: 0.35, medium: 0.65, high: 0.9 });
 export const POSEIDON_RESPONSE_SCHEMA = Object.freeze({
   type: 'object',
   properties: {
@@ -163,15 +180,11 @@ export const POSEIDON_RESPONSE_SCHEMA = Object.freeze({
       },
       required: ['type'],
     },
-    confidence: { type: 'number' },
+    confidence: { type: 'string', enum: Object.keys(CONFIDENCE_LEVELS) },
     echoReaction: {
       type: 'object',
       properties: {
-        mood: { type: 'string' },
-        glowActive: { type: 'boolean' },
-        glowColor: { type: 'string' },
-        swimSpeedMultiplier: { type: 'number' },
-        durationMs: { type: 'number' },
+        mood: { type: 'string', enum: ['happy', 'excited', 'calm', 'confused', 'alert'] },
       },
     },
     sources: { type: 'array', items: { type: 'string' } },
@@ -266,12 +279,23 @@ export function tidyPartial(text) {
 const DEFAULT_ECHO = Object.freeze({ mood: 'calm', glowActive: false, glowColor: '', swimSpeedMultiplier: 1.0, durationMs: 1500 });
 const ECHO_MOODS = new Set(['happy', 'excited', 'calm', 'confused', 'alert']);
 
+// The model now sends only a mood; these give Echo's reaction its size.
+const MOOD_MOTION = Object.freeze({
+  happy: { swimSpeedMultiplier: 1.25, durationMs: 1800 },
+  excited: { swimSpeedMultiplier: 1.5, durationMs: 2200 },
+  calm: { swimSpeedMultiplier: 1.0, durationMs: 1500 },
+  confused: { swimSpeedMultiplier: 0.8, durationMs: 1800 },
+  alert: { swimSpeedMultiplier: 1.3, durationMs: 2000 },
+});
+
 function cleanEcho(raw) {
   if (!raw || typeof raw !== 'object') return { ...DEFAULT_ECHO };
-  const speed = Number(raw.swimSpeedMultiplier);
-  const duration = Number(raw.durationMs);
+  const mood = ECHO_MOODS.has(raw.mood) ? raw.mood : 'calm';
+  const motion = MOOD_MOTION[mood];
+  const speed = raw.swimSpeedMultiplier == null ? motion.swimSpeedMultiplier : Number(raw.swimSpeedMultiplier);
+  const duration = raw.durationMs == null ? motion.durationMs : Number(raw.durationMs);
   return {
-    mood: ECHO_MOODS.has(raw.mood) ? raw.mood : 'calm',
+    mood,
     glowActive: raw.glowActive === true,
     glowColor: typeof raw.glowColor === 'string' && /^#[0-9a-fA-F]{3,8}$/.test(raw.glowColor) ? raw.glowColor : '',
     swimSpeedMultiplier: Number.isFinite(speed) ? Math.min(3, Math.max(0.1, speed)) : 1.0,
@@ -291,7 +315,11 @@ function cleanAction(raw) {
  * `{ message, intent, action: {type, payload}, echoReaction, confidence, sources, truncated }`.
  */
 export function shapePoseidonReply(fields, { truncated = false } = {}) {
-  const confidence = Number(fields?.confidence);
+  // The schema asks for a word; older replies (and gateway notices) send a number.
+  const rawConfidence = fields?.confidence;
+  const confidence = typeof rawConfidence === 'string' && CONFIDENCE_LEVELS[rawConfidence] != null
+    ? CONFIDENCE_LEVELS[rawConfidence]
+    : Number(rawConfidence);
   return {
     message: String(fields?.message || ''),
     intent: typeof fields?.intent === 'string' && fields.intent.length <= 60 ? fields.intent : 'general_knowledge',
