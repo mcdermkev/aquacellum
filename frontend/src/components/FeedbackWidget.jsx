@@ -2,22 +2,58 @@ import React, { useState, useRef } from "react";
 import { Modal } from "./Modal";
 import { supabase, isSupabaseConfigured, getMintedToken } from "../services/supabaseClient";
 
+const SCREENSHOT_BUCKET = "feedback-screenshots";
+const SCREENSHOT_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif"];
+
 /**
- * FeedbackWidget — Floating "Report Bug / Feedback" button with modal form.
- * Stores submissions in Supabase `beta_feedback` table.
- * Falls back to localStorage queue if Supabase is unavailable.
+ * Upload a screenshot into the private feedback bucket through a one-time
+ * signed upload from our server (/api/retention?action=feedback-upload).
+ * Returns the object path, or null if anything fails (a report without its
+ * screenshot is still worth sending).
+ */
+async function uploadScreenshot(file) {
+  if (!file || !isSupabaseConfigured()) return null;
+  try {
+    const res = await fetch("/api/retention?action=feedback-upload", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ contentType: file.type, size: file.size }),
+    });
+    if (!res.ok) return null;
+    const { path, token } = await res.json();
+    if (!path || !token) return null;
+    const { error } = await supabase.storage
+      .from(SCREENSHOT_BUCKET)
+      .uploadToSignedUrl(path, token, file, { contentType: file.type });
+    return error ? null : path;
+  } catch (err) {
+    console.warn("[Feedback] Screenshot upload failed (non-blocking):", err.message);
+    return null;
+  }
+}
+
+/**
+ * FeedbackWidget: floating "Feedback" button with a modal form.
+ *
+ * The report goes to our server (/api/retention?action=feedback), which posts
+ * it to the team's private Discord channel. An optional screenshot goes into a
+ * private storage bucket and the team gets a link that expires in 7 days; the
+ * file is deleted after 90 days. Nothing is kept in this browser.
  *
  * Props:
- *  - walletAddress (string|null) — connected wallet for attribution
+ *  - walletAddress: accepted for compatibility but unused. Attribution comes
+ *    only from the verified session token, never from the client.
  *  - casualModeActive (boolean) — adjusts copy tone
  */
-export function FeedbackWidget({ walletAddress, casualModeActive = true }) {
+export function FeedbackWidget({ casualModeActive = true }) {
   const [isOpen, setIsOpen] = useState(false);
   const [category, setCategory] = useState("bug");
   const [description, setDescription] = useState("");
   const [screenshot, setScreenshot] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [sendError, setSendError] = useState(null);
+  const [fileNote, setFileNote] = useState(null);
   const fileInputRef = useRef(null);
 
   const handleOpen = () => {
@@ -33,15 +69,24 @@ export function FeedbackWidget({ walletAddress, casualModeActive = true }) {
       setCategory("bug");
       setScreenshot(null);
       setSubmitted(false);
+      setSendError(null);
+      setFileNote(null);
     }, 300);
   };
 
   const handleFileChange = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    // Only accept images under 5MB
-    if (!file.type.startsWith("image/")) return;
-    if (file.size > 5 * 1024 * 1024) return;
+    // PNG, JPEG, WebP or GIF under 5 MB (the bucket enforces the same limits).
+    if (!SCREENSHOT_TYPES.includes(file.type)) {
+      setFileNote("Screenshots must be PNG, JPEG, WebP or GIF.");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setFileNote("Screenshots must be under 5 MB.");
+      return;
+    }
+    setFileNote(null);
     setScreenshot(file);
   };
 
@@ -50,81 +95,42 @@ export function FeedbackWidget({ walletAddress, casualModeActive = true }) {
     if (!description.trim()) return;
 
     setSubmitting(true);
+    setSendError(null);
 
-    const feedback = {
-      category,
-      description: description.trim(),
-      wallet_address: walletAddress?.toLowerCase() || null,
-      page_url: window.location.href,
-      user_agent: navigator.userAgent,
-      screen_size: `${window.innerWidth}x${window.innerHeight}`,
-      created_at: new Date().toISOString(),
-    };
+    // 1. Optional screenshot into the private bucket (best-effort).
+    const screenshotPath = screenshot ? await uploadScreenshot(screenshot) : null;
 
-    // Step 1: Upload screenshot (best-effort; failure must not block anything).
-    let screenshotUrl = null;
-    if (screenshot && isSupabaseConfigured()) {
-      try {
-        const fileName = `feedback/${Date.now()}_${screenshot.name}`;
-        const { data: uploadData } = await supabase.storage
-          .from("media")
-          .upload(fileName, screenshot, { contentType: screenshot.type });
-        if (uploadData?.path) {
-          const { data: urlData } = supabase.storage
-            .from("media")
-            .getPublicUrl(uploadData.path);
-          screenshotUrl = urlData?.publicUrl || null;
-        }
-      } catch (err) {
-        console.warn("[Feedback] Screenshot upload failed (non-blocking):", err.message);
-      }
-    }
-    feedback.screenshot_url = screenshotUrl;
-
-    // Step 2: Notify the team channel FIRST and independently of the database
-    // write, so it still fires if Supabase is down or rejects the insert. The
-    // post goes through our server (/api/retention?action=feedback), which holds
-    // the Discord webhook in a server-only env var. It used to be read here from
-    // a VITE_ variable, which put the webhook URL in the public bundle.
+    // 2. The report goes through our server, which holds the Discord webhook in
+    //    a server-only env var. A signed session token only adds verified
+    //    wallet attribution; the report works signed out too.
     try {
       const headers = { "Content-Type": "application/json" };
       const token = getMintedToken();
-      if (token) headers.Authorization = `Bearer ${token}`; // verified wallet attribution only
+      if (token) headers.Authorization = `Bearer ${token}`;
       const res = await fetch("/api/retention?action=feedback", {
         method: "POST",
         headers,
         body: JSON.stringify({
           category,
-          description: feedback.description,
-          pageUrl: feedback.page_url,
-          screenSize: feedback.screen_size,
-          screenshotUrl,
+          description: description.trim(),
+          pageUrl: window.location.href,
+          screenSize: `${window.innerWidth}x${window.innerHeight}`,
+          screenshotPath,
         }),
       });
-      if (!res.ok) console.warn("[Feedback] Team notification returned", res.status);
-    } catch (err) {
-      console.warn("[Feedback] Team notification failed:", err.message);
-    }
-
-    // Step 3: Persist to Supabase (best-effort). On failure, queue locally for later sync.
-    try {
-      if (isSupabaseConfigured()) {
-        const { error } = await supabase
-          .from("beta_feedback")
-          .insert([feedback]);
-        if (error) throw error;
-      } else {
-        throw new Error("Supabase not configured");
+      if (!res.ok) {
+        const payload = await res.json().catch(() => ({}));
+        throw new Error(payload?.error || `status ${res.status}`);
       }
+      setSubmitted(true);
     } catch (err) {
-      console.warn("[Feedback] DB write failed, queuing locally:", err.message);
-      const queue = JSON.parse(localStorage.getItem("aquadex_feedback_queue") || "[]");
-      queue.push(feedback);
-      localStorage.setItem("aquadex_feedback_queue", JSON.stringify(queue));
+      console.warn("[Feedback] Send failed:", err.message);
+      setSendError(
+        `We could not send this (${err.message}). Your text is still here. Try again, or email kevin@aquacellum.com.`
+      );
+    } finally {
+      setSubmitting(false);
     }
-
-    setSubmitted(true);
-    setSubmitting(false);
   };
 
   return (
@@ -150,7 +156,7 @@ export function FeedbackWidget({ walletAddress, casualModeActive = true }) {
             <div style={styles.successState}>
               <div style={styles.successIcon}>✓</div>
               <h3 style={styles.successTitle}>
-                {casualModeActive ? "Thanks for the feedback!" : "Feedback submitted."}
+                {casualModeActive ? "Thanks for the feedback" : "Feedback submitted."}
               </h3>
               <p style={styles.successText}>
                 {casualModeActive
@@ -237,6 +243,8 @@ export function FeedbackWidget({ walletAddress, casualModeActive = true }) {
                   </button>
                 )}
               </div>
+              {fileNote && <p role="status" style={styles.note}>{fileNote}</p>}
+              {sendError && <p role="alert" style={styles.errorText}>{sendError}</p>}
 
               {/* Submit */}
               <button
@@ -272,7 +280,7 @@ const styles = {
     border: "1px solid rgba(56, 189, 248, 0.25)",
     borderRadius: "50px",
     color: "var(--accent-blue)",
-    fontFamily: "'Outfit', sans-serif",
+    fontFamily: "var(--font-display)",
     fontSize: "0.8rem",
     fontWeight: 500,
     cursor: "pointer",
@@ -296,7 +304,7 @@ const styles = {
   title: {
     margin: 0,
     fontSize: "1.1rem",
-    fontFamily: "'Outfit', sans-serif",
+    fontFamily: "var(--font-display)",
     fontWeight: 600,
     color: "var(--text-primary)",
     marginBottom: "0.25rem",
@@ -313,7 +321,7 @@ const styles = {
     background: "rgba(var(--ink-rgb), 0.03)",
     color: "var(--text-muted)",
     fontSize: "0.78rem",
-    fontFamily: "'Plus Jakarta Sans', sans-serif",
+    fontFamily: "var(--font-body)",
     cursor: "pointer",
     transition: "all 0.2s ease",
   },
@@ -335,7 +343,7 @@ const styles = {
     border: "1px solid rgba(var(--ink-rgb), 0.13)",
     background: "var(--bg-secondary)",
     color: "var(--text-primary)",
-    fontFamily: "'Plus Jakarta Sans', sans-serif",
+    fontFamily: "var(--font-body)",
     fontSize: "0.85rem",
     resize: "vertical",
     lineHeight: 1.5,
@@ -361,7 +369,7 @@ const styles = {
     color: "var(--text-muted)",
     fontSize: "0.78rem",
     cursor: "pointer",
-    fontFamily: "'Plus Jakarta Sans', sans-serif",
+    fontFamily: "var(--font-body)",
     transition: "border-color 0.2s ease",
     overflow: "hidden",
     textOverflow: "ellipsis",
@@ -376,6 +384,17 @@ const styles = {
     fontSize: "0.9rem",
     padding: "0.25rem",
   },
+  note: {
+    margin: 0,
+    fontSize: "0.78rem",
+    color: "var(--text-secondary)",
+  },
+  errorText: {
+    margin: 0,
+    fontSize: "0.82rem",
+    lineHeight: 1.5,
+    color: "#b91c1c",
+  },
   submitBtn: {
     marginTop: "0.5rem",
     padding: "0.75rem 1.5rem",
@@ -383,7 +402,7 @@ const styles = {
     border: "none",
     background: "linear-gradient(135deg, #0284c7 0%, #0369a1 100%)",
     color: "#fff",
-    fontFamily: "'Outfit', sans-serif",
+    fontFamily: "var(--font-display)",
     fontWeight: 500,
     fontSize: "0.9rem",
     cursor: "pointer",
@@ -413,7 +432,7 @@ const styles = {
   successTitle: {
     margin: 0,
     fontSize: "1.1rem",
-    fontFamily: "'Outfit', sans-serif",
+    fontFamily: "var(--font-display)",
     fontWeight: 600,
     color: "var(--text-primary)",
   },
@@ -429,7 +448,7 @@ const styles = {
     border: "1px solid rgba(var(--ink-rgb), 0.13)",
     background: "rgba(var(--ink-rgb), 0.05)",
     color: "var(--text-primary)",
-    fontFamily: "'Outfit', sans-serif",
+    fontFamily: "var(--font-display)",
     fontWeight: 500,
     fontSize: "0.85rem",
     cursor: "pointer",

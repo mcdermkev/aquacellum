@@ -29,6 +29,8 @@
  *     src/__tests__/serverlessFunctionBudget.test.js).
  *   POST     /api/retention?action=feedback → _lib/feedbackRelay.js. User-facing
  *     feedback relay to Discord (FEEDBACK_WEBHOOK_URL). Per-IP rate limited.
+ *   POST     /api/retention?action=feedback-upload → same file. Signed upload
+ *     into the private feedback-screenshots bucket.
  *   GET      /api/retention?action=purge-deletions → _lib/accountPurge.js.
  *     Daily cron (CRON_SECRET). Closes accounts 30 days after the owner asked.
  */
@@ -116,6 +118,11 @@ export default async function handler(req, res) {
     const { default: handleFeedback } = await import("./_lib/feedbackRelay.js");
     return handleFeedback(req, res);
   }
+  // One-time signed upload into the private feedback-screenshots bucket.
+  if (req.query?.action === "feedback-upload") {
+    const { handleFeedbackUpload } = await import("./_lib/feedbackRelay.js");
+    return handleFeedbackUpload(req, res);
+  }
 
   if (!isCronRequest(req)) {
     return res.status(401).json({ error: "Unauthorized" });
@@ -148,6 +155,9 @@ export default async function handler(req, res) {
   if (req.query?.action === "purge-deletions") {
     const { purgeDueAccounts } = await import("./_lib/accountPurge.js");
     const purgeResults = await purgeDueAccounts(supabase);
+    // Feedback screenshots older than 90 days go in the same daily run.
+    const { pruneFeedbackScreenshots } = await import("./_lib/feedbackRelay.js");
+    purgeResults.feedbackScreenshots = await pruneFeedbackScreenshots(supabase.storage.from("feedback-screenshots"));
     return res.status(purgeResults.error ? 500 : 200).json(purgeResults);
   }
 

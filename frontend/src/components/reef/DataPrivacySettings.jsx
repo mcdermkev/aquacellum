@@ -224,9 +224,10 @@ export function DataPrivacySettings({ casualModeActive = false }) {
             🗑️ Delete Account
           </h4>
           <p style={{ margin: "0 0 0.25rem", fontSize: "0.72rem", color: "var(--text-secondary)", lineHeight: 1.5 }}>
-            Deletion is not immediate. There is a 30-day grace period: your account keeps
-            working and you can cancel here at any time. After {DELETION_GRACE_DAYS} days
-            we permanently delete your account data. This cannot be undone.
+            Deletion is not immediate. For {DELETION_GRACE_DAYS} days your account keeps
+            working and you can cancel here at any time. After that we permanently delete
+            the data listed below. If an auction you are in has not finished, we wait for it
+            to finish first. This cannot be undone.
           </p>
           {deletionStatus?.error && (
             <p role="status" style={{ margin: "0.25rem 0", fontSize: "0.7rem", color: "var(--accent-red)" }}>

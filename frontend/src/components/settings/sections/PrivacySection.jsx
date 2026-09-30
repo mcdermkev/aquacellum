@@ -84,7 +84,7 @@ export function PrivacySection({ casualModeActive }) {
       title={{ casual: "Your Data", pro: "Data & Privacy" }}
       description={{
         casual:
-          "Download a copy of your data, or delete your account. Deletion happens after a 30-day grace period, and you can cancel any time before then.",
+          "Download a copy of your data, or delete your account. Nothing is deleted for 30 days, and you can cancel any time before then.",
         pro:
           "Data export and account deletion. A deletion request changes nothing for 30 days and can be cancelled; after that a daily job purges personal data and keeps order, payment and auction records.",
       }}
