@@ -1,4 +1,5 @@
 import React, { useMemo } from "react";
+import { Heart, Check, Medal, Egg, Thermometer, Drop, Ruler, Certificate, ArrowRight } from "@phosphor-icons/react";
 import { LazyImage } from "./LazyImage";
 import { FishSilhouetteSVG, PlantSilhouetteSVG } from "./SilhouetteSVG";
 import { getPersonality } from "../utils/personality";
@@ -7,6 +8,7 @@ import { CARE_LABELS, CARE_BADGE_CLASS } from "../services/speciesCatalog";
 import { fitPresentationKind, VERDICT_CHIP } from "../services/speciesFit";
 import { casualCardTags } from "../services/speciesCardTags";
 import { entryCareRanges, realCareText, realCareNumber } from "../services/speciesCare";
+import "./SpeciesCardPremium.css";
 
 const isPlantEntry = (item) => {
   if (typeof item === "object" && item !== null) {
@@ -17,7 +19,7 @@ const isPlantEntry = (item) => {
 
 // Verdict chip presentation now lives with the fit engine that keys it
 // (services/speciesFit.js, beside fitPresentationKind) so tests and other pure
-// consumers can read the chip vocabulary without importing this component —
+// consumers can read the chip vocabulary without importing this component,
 // which transitively pulls in BreedGallery → ethersCompat → `window.ethers`,
 // unavailable in the node test environment (Fish Finder T11).
 // Re-exported here so existing `from "./SpeciesCardPremium"` imports keep
@@ -27,7 +29,7 @@ export { VERDICT_CHIP } from "../services/speciesFit";
 // Resolve the canonical difficulty descriptor for tier styling, without
 // fabricating one. Only T1 global entries carry a canonical `.difficulty`
 // (see speciesCatalog.js toCatalogEntry). Contract entries (numeric
-// `careLevel` only, no raw string to normalize) resolve to null here — they
+// `careLevel` only, no raw string to normalize) resolve to null here; they
 // keep today's CARE_LABELS badge with no added tier class, per the "unknown
 // stays unstyled/neutral" rule.
 function resolveDifficultyDescriptor(breed) {
@@ -114,7 +116,7 @@ export function SpeciesCardPremium({
   const careLabel = CARE_LABELS[breed.careLevel] || "Easy";
   const badgeClass = CARE_BADGE_CLASS[breed.careLevel] || "easy";
 
-  // Honest difficulty tier (T6). Additive to the existing care-level badge —
+  // Honest difficulty tier (T6). Additive to the existing care-level badge,
   // never fabricated for a species with no recognized difficulty.
   const difficultyDescriptor = resolveDifficultyDescriptor(breed);
 
@@ -129,8 +131,8 @@ export function SpeciesCardPremium({
   const ctaText = hasAvailability
     ? "View listings"
     : casualModeActive
-      ? (breed.specimenCount > 0 ? "Browse Available" : "Learn More")
-      : (viewMode === "global" ? "Propose to Catalog" : "View Certificates");
+      ? (breed.specimenCount > 0 ? "See available fish" : "Learn more")
+      : (viewMode === "global" ? "View details" : "View certificates");
 
   const handleCtaClick = (e) => {
     if (hasAvailability && typeof onViewListings === "function") {
@@ -141,7 +143,7 @@ export function SpeciesCardPremium({
 
   return (
     <div
-      className={`species-card-premium${isOwned ? " card-owned" : ""}${difficultyDescriptor ? ` ${difficultyDescriptor.tierClass}` : ""}`}
+      className={`bgal-card species-card-premium${isOwned ? " card-owned" : ""}${difficultyDescriptor ? ` ${difficultyDescriptor.tierClass}` : ""}`}
       onClick={onSelect}
     >
       {/* Image Section */}
@@ -158,19 +160,23 @@ export function SpeciesCardPremium({
           {careLabel}
         </span>
 
-        {/* Verdict Chip (T6) — informational for missing data, warning for a real mismatch */}
+        {/* Verdict Chip (T6): informational for missing data, warning for a
+            real mismatch. The verdict colour is too light for text on white,
+            so it rides on the ring and the dot; the label stays dark. */}
         {verdictChip && (
           <span
             className="species-card-premium__verdict-chip"
-            style={{ color: verdictChip.color, borderColor: verdictChip.border }}
+            style={{ borderColor: verdictChip.border }}
           >
+            <span className="bgal-card__dot" style={{ background: verdictChip.color }} aria-hidden="true" />
             {verdictChip.label}
           </span>
         )}
 
-        {/* Wishlist toggle (T9) — only rendered when the caller wires it in
+        {/* Wishlist toggle (T9): only rendered when the caller wires it in
             (FishFinder); BreedGallery's call site passes neither prop, so this
-            never appears there. A bookmark, not an achievement — no XP here. */}
+            never appears there. A bookmark, not an achievement: no XP here.
+            A Phosphor heart, filled when saved. */}
         {typeof onToggleWishlist === "function" && (
           <button
             type="button"
@@ -182,132 +188,112 @@ export function SpeciesCardPremium({
               onToggleWishlist();
             }}
           >
-            {isWishlisted ? "♥" : "♡"}
+            <Heart size={20} weight={isWishlisted ? "fill" : "regular"} aria-hidden="true" />
           </button>
         )}
 
-        {/* "Kept" ribbon (T9) — this species is already in the keeper's Dex.
-            Upgraded with mastery color when species_mastery data is present. */}
+        {/* "Kept" ribbon (T9): this species is already in the keeper's Dex.
+            Upgraded with a mastery tier class when species_mastery data is
+            present (text-safe tones in SpeciesCardPremium.css). */}
         {isKept && (
           <span
-            className="species-card-premium__kept-ribbon"
+            className={`species-card-premium__kept-ribbon bgal-card__kept${
+              masteryTier === "gold" || masteryTier === "silver" || masteryTier === "bronze"
+                ? ` bgal-card__kept--${masteryTier}`
+                : ""
+            }`}
             title={
-              masteryTier === "gold" ? "Gold mastery — full lifecycle"
-              : masteryTier === "silver" ? "Silver mastery — bred or raised"
-              : masteryTier === "bronze" ? "Bronze mastery — 30+ days kept"
+              masteryTier === "gold" ? "Gold mastery: full lifecycle"
+              : masteryTier === "silver" ? "Silver mastery: bred or raised"
+              : masteryTier === "bronze" ? "Bronze mastery: 30+ days kept"
               : "In your Dex"
             }
-            style={masteryTier && masteryTier !== "kept" ? {
-              background: masteryTier === "gold" ? "rgba(255, 215, 0, 0.15)"
-                : masteryTier === "silver" ? "rgba(192, 192, 210, 0.12)"
-                : "rgba(205, 127, 50, 0.12)",
-              borderColor: masteryTier === "gold" ? "rgba(255, 215, 0, 0.4)"
-                : masteryTier === "silver" ? "rgba(192, 192, 210, 0.35)"
-                : "rgba(205, 127, 50, 0.35)",
-              color: masteryTier === "gold" ? "#ffd700"
-                : masteryTier === "silver" ? "#c0c0d2"
-                : "#cd7f32",
-            } : undefined}
           >
-            {masteryTier === "gold" ? "🥇 Gold"
-              : masteryTier === "silver" ? "🥈 Silver"
-              : masteryTier === "bronze" ? "🥉 Bronze"
-              : "✓ In your Dex"}
+            {masteryTier === "gold" || masteryTier === "silver" || masteryTier === "bronze"
+              ? <Medal size={12} weight="fill" aria-hidden="true" />
+              : <Check size={12} weight="bold" aria-hidden="true" />}
+            {masteryTier === "gold" ? "Gold"
+              : masteryTier === "silver" ? "Silver"
+              : masteryTier === "bronze" ? "Bronze"
+              : "In your Dex"}
           </span>
         )}
 
         {/* Owned Badge */}
         {isOwned && (
           <span className="species-card-premium__owned">
-            ✓ In Tank ({ownedCount})
+            <Check size={12} weight="bold" aria-hidden="true" />
+            In your tanks ({ownedCount})
           </span>
         )}
 
-        {/* Easter Egg Badge */}
+        {/* Easter Egg Badge: a real button so it is keyboard reachable. The
+            label and colours come from getEasterEggConfig unchanged. */}
         {isEggRevealed && eggConfig && (
-          <span
+          <button
+            type="button"
+            className="bgal-card__egg"
             onClick={(e) => {
               e.stopPropagation();
               onEasterEgg && onEasterEgg(eggConfig);
             }}
             style={{
-              position: "absolute",
-              bottom: "0.6rem",
-              left: "0.6rem",
-              fontSize: "0.6rem",
-              fontWeight: "800",
-              padding: "0.22rem 0.65rem",
-              borderRadius: "20px",
-              whiteSpace: "nowrap",
               color: eggConfig.color,
               background: eggConfig.bg,
               border: `1px solid ${eggConfig.border}`,
-              backdropFilter: "blur(8px)",
-              boxShadow: `0 0 10px ${eggConfig.glow}`,
-              cursor: "pointer",
-              zIndex: 10,
-              letterSpacing: "0.03em",
             }}
           >
             {eggConfig.label}
-          </span>
+          </button>
         )}
 
         {/* Pro: Spawning trait badge */}
         {proMode && spawningTrait && (
-          <span style={{
-            position: "absolute",
-            bottom: "0.6rem",
-            right: "0.6rem",
-            fontSize: "0.58rem",
-            fontWeight: "700",
-            padding: "0.2rem 0.6rem",
-            borderRadius: "20px",
-            color: "var(--accent-amber)",
-            background: "rgba(251, 191, 36, 0.14)",
-            border: "1px solid rgba(251, 191, 36, 0.35)",
-            backdropFilter: "blur(8px)",
-            zIndex: 3,
-          }}>
-            🥚 {spawningTrait}
+          <span className="bgal-card__spawn" title={spawningTrait}>
+            <Egg size={12} aria-hidden="true" /> {spawningTrait}
           </span>
         )}
       </div>
 
       {/* Card Body */}
       <div className="species-card-premium__body">
-        <h3 className="species-card-premium__name">{breed.commonName}</h3>
+        {/* The name is the card's keyboard target: its ::after stretches over
+            the card, and a click on it bubbles to the root's onSelect, so
+            mouse, Enter and Space all open the card once. */}
+        <h3 className="species-card-premium__name">
+          <button type="button" className="bgal-card__open">{breed.commonName}</button>
+        </h3>
         <p className="species-card-premium__sci">{breed.scientificName}</p>
 
         {/* Parameter Pills */}
         <div className="species-card-premium__params">
           {tempRange && (
             <span className="species-card-premium__pill">
-              <span className="species-card-premium__pill-icon">🌡️</span>
+              <span className="species-card-premium__pill-icon"><Thermometer size={13} aria-hidden="true" /></span>
               {tempRange[0]}–{tempRange[1]}°C
             </span>
           )}
           {phRange && (
             <span className="species-card-premium__pill">
-              <span className="species-card-premium__pill-icon">💧</span>
+              <span className="species-card-premium__pill-icon"><Drop size={13} aria-hidden="true" /></span>
               pH {phRange[0]}–{phRange[1]}
             </span>
           )}
           {proMode && minVolume != null && (
             <span className="species-card-premium__pill">
-              <span className="species-card-premium__pill-icon">📐</span>
+              <span className="species-card-premium__pill-icon"><Ruler size={13} aria-hidden="true" /></span>
               {minVolume} gal
             </span>
           )}
           {proMode && viewMode === "contract" && breed.specimenCount > 0 && (
             <span className="species-card-premium__pill">
-              <span className="species-card-premium__pill-icon">📜</span>
-              {breed.specimenCount} Certs
+              <span className="species-card-premium__pill-icon"><Certificate size={13} aria-hidden="true" /></span>
+              {breed.specimenCount} certificates
             </span>
           )}
         </div>
 
-        {/* Acquisition hook (T6) — rendered ONLY from summarizeAvailability's
+        {/* Acquisition hook (T6): rendered ONLY from summarizeAvailability's
             output; this component never computes its own price/seller count. */}
         {hasAvailability && (
           <p className="species-card-premium__availability">{availabilitySummary}</p>
@@ -330,13 +316,7 @@ export function SpeciesCardPremium({
         {/* Pro: catalog ID reference. speciesId is the Aquacellum catalog ID,
             not a FishBase SpecCode (that is fishbaseSpecCode on the record). */}
         {proMode && (
-          <span style={{
-            fontSize: "0.58rem",
-            color: "var(--text-muted)",
-            fontFamily: "monospace",
-            opacity: 0.7,
-            marginTop: "auto",
-          }}>
+          <span className="bgal-card__catalog-id">
             Catalog #{breed.speciesId}
           </span>
         )}
@@ -348,12 +328,12 @@ export function SpeciesCardPremium({
       {hasAvailability ? (
         <button type="button" className="species-card-premium__cta" onClick={handleCtaClick}>
           <span className="species-card-premium__cta-text">{ctaText}</span>
-          <span className="species-card-premium__cta-arrow">→</span>
+          <span className="species-card-premium__cta-arrow"><ArrowRight size={14} weight="bold" aria-hidden="true" /></span>
         </button>
       ) : (
         <div className="species-card-premium__cta">
           <span className="species-card-premium__cta-text">{ctaText}</span>
-          <span className="species-card-premium__cta-arrow">→</span>
+          <span className="species-card-premium__cta-arrow"><ArrowRight size={14} weight="bold" aria-hidden="true" /></span>
         </div>
       )}
     </div>
