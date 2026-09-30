@@ -107,6 +107,23 @@
   text-align: center;
 }
 
+/* A public label for a tank that isn't the user's: offer its public page. */
+.ts-public {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 0.75rem;
+  margin-bottom: 0.75rem;
+  border-radius: 8px;
+  background: rgba(56, 189, 248, 0.08);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  color: var(--text-primary);
+  font-size: 0.78rem;
+  text-align: center;
+}
+.ts-public .btn-primary { text-decoration: none; padding: 0.45rem 1rem; }
+
 .ts-manual { display: flex; gap: 0.5rem; }
 .ts-manual input {
   flex: 1;

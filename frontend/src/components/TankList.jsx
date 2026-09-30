@@ -4006,6 +4006,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
       {scannerOpen && (
         <TankScanner
           tanks={tanks}
+          walletAccount={walletAccount}
           casualModeActive={casualModeActive}
           onSelect={handleScanSelect}
           onClose={() => setScannerOpen(false)}

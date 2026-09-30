@@ -164,6 +164,131 @@ export function readTankPublication(wallet, tankId, storage = defaultStorage()) 
   }
 }
 
+/**
+ * Every publication this device remembers for `wallet`, as
+ * `[{ tankId, token, publicUrl, isPublic, updatedAt }]`. Entries that are not
+ * valid JSON or have no valid token are skipped. Never throws.
+ */
+export function listTankPublications(wallet, storage = defaultStorage()) {
+  const w = String(wallet || "").trim().toLowerCase();
+  if (!w || !storage) return [];
+  const prefix = `${STORAGE_PREFIX}${w}:`;
+  let count = 0;
+  try {
+    count = Number(storage.length) || 0;
+  } catch {
+    return [];
+  }
+  const keys = [];
+  for (let i = 0; i < count; i++) {
+    let key = null;
+    try {
+      key = storage.key(i);
+    } catch {
+      continue;
+    }
+    if (typeof key === "string" && key.startsWith(prefix) && key.length > prefix.length) keys.push(key);
+  }
+  const out = [];
+  for (const key of keys) {
+    const tankId = key.slice(prefix.length);
+    const publication = readTankPublication(w, tankId, storage);
+    if (publication) out.push({ tankId, ...publication });
+  }
+  return out;
+}
+
+/**
+ * The id of this wallet's tank that was published under `token`, as stored
+ * (a string), or null when this device has no such publication.
+ */
+export function findTankIdByPublicToken(wallet, token, storage = defaultStorage()) {
+  const t = typeof token === "string" ? token.trim() : "";
+  if (!TOKEN_RE.test(t)) return null;
+  const match = listTankPublications(wallet, storage).find((p) => p.token === t);
+  return match ? match.tankId : null;
+}
+
+// ─── Reading a scanned label ─────────────────────────────────────────────────
+
+const PRIVATE_TANK_PARAM_RE = /(?:^|[#?&])tank=(\d+)(?=&|$)/i;
+const PUBLIC_TANK_PATH_RE = /^\/t\/([A-Za-z0-9_-]{16,128})\/?$/;
+const HAS_SCHEME_RE = /^[a-z][a-z0-9+.-]*:/i;
+const BARE_HOST_PATH_RE = /^[^/\s#?]+\.[^/\s#?]+\//; // "aquacellum.com/t/..." typed without https://
+
+/**
+ * What a scanned (or typed) tank label points at. Pure.
+ *
+ * @param {unknown} text - the QR payload or manual entry
+ * @returns {{ kind: "private", tankId: number } | { kind: "public", token: string } | { kind: "unknown" }}
+ *   - private: a bare tank number, or any http(s) origin with path `/app` and a
+ *              numeric `tank=` in the hash or query (`/app#tank=123`)
+ *   - public:  any http(s) origin with path `/t/<token>` (16 to 128 of [A-Za-z0-9_-])
+ *   - unknown: anything else
+ */
+export function parseTankScan(text) {
+  const unknown = { kind: "unknown" };
+  if (text === null || text === undefined) return unknown;
+  let raw = String(text).trim();
+  if (!raw || raw.length > 2048) return unknown;
+
+  if (/^\d+$/.test(raw)) return { kind: "private", tankId: Number(raw) };
+
+  if (!HAS_SCHEME_RE.test(raw) && BARE_HOST_PATH_RE.test(raw)) raw = `https://${raw}`;
+
+  let u;
+  try {
+    u = new URL(raw, `${APP_ORIGIN}/`);
+  } catch {
+    return unknown;
+  }
+  if (u.protocol !== "https:" && u.protocol !== "http:") return unknown;
+
+  if (u.pathname.replace(/\/+$/, "") === "/app") {
+    const m = u.hash.match(PRIVATE_TANK_PARAM_RE) || u.search.match(PRIVATE_TANK_PARAM_RE);
+    return m ? { kind: "private", tankId: Number(m[1]) } : unknown;
+  }
+
+  const pm = u.pathname.match(PUBLIC_TANK_PATH_RE);
+  if (pm) return { kind: "public", token: pm[1] };
+
+  return unknown;
+}
+
+/**
+ * What the in-app scanner should do with a scan. Pure apart from reading this
+ * device's remembered publications.
+ *
+ * @param {unknown} text - the QR payload or manual entry
+ * @param {{ tanks?: Array, wallet?: string|null, storage?: Storage|null }} ctx
+ * @returns
+ *   { action: "open", tank }             - one of the user's tanks: open it
+ *   { action: "not-found", tankId }      - a private label for a tank not in this account
+ *   { action: "public", token, url }     - someone's public tank page (`/t/<token>`, same origin)
+ *   { action: "unknown" }                - not a tank label
+ *
+ * A public label for a tank this wallet published from this device opens the
+ * tank, the same as its private label would.
+ */
+export function resolveTankScan(text, { tanks = [], wallet = null, storage } = {}) {
+  const list = Array.isArray(tanks) ? tanks : [];
+  const scan = parseTankScan(text);
+
+  if (scan.kind === "private") {
+    const tank = list.find((t) => Number(t?.id) === Number(scan.tankId));
+    return tank ? { action: "open", tank } : { action: "not-found", tankId: scan.tankId };
+  }
+
+  if (scan.kind === "public") {
+    const ownedId = findTankIdByPublicToken(wallet, scan.token, storage);
+    const tank = ownedId !== null ? list.find((t) => tankIdOf(t) === ownedId) : null;
+    if (tank) return { action: "open", tank };
+    return { action: "public", token: scan.token, url: `/t/${scan.token}` };
+  }
+
+  return { action: "unknown" };
+}
+
 /** Remember a publish-tank response for this wallet's tank. Never throws. */
 export function saveTankPublication(wallet, tankId, response, storage = defaultStorage()) {
   const key = storageKey(wallet, tankId);

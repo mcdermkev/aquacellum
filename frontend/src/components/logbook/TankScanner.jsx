@@ -1,21 +1,29 @@
 import React, { useEffect, useRef, useState } from "react";
 import jsQR from "jsqr";
 import "./TankScanner.css";
+import { parseTankScan, resolveTankScan } from "../../utils/tankLabel";
 
 /**
  * TankScanner — real camera QR scanner for tank labels (replaces the old
  * simulation that just picked a random tank).
  *
- * Tank QR codes (TankQRCode.jsx + generateTankQRLabel in pdfExport.js) encode
- * the deep link `https://aquacellum.com/app#tank=<id>`. This opens the rear
- * camera, decodes frames with jsQR, extracts the tank id, and hands back the
- * matching tank. A manual unit-number entry is always available as a fallback
- * (camera denied / unavailable / poor lighting).
+ * Tank QR labels (utils/tankLabel.js `tankLabelTarget`) encode either the
+ * private deep link `https://aquacellum.com/app#tank=<id>` or, for a tank the
+ * owner published, its public page `https://aquacellum.com/t/<token>`. This
+ * opens the rear camera, decodes frames with jsQR, and hands the payload to
+ * `resolveTankScan`:
+ *   - private label for one of the user's tanks: open it (onSelect)
+ *   - public label this wallet published from this device: open the tank too
+ *   - any other public label: offer "Open public page" (/t/<token>)
+ *   - anything else: a plain "not a tank label" message
+ * A manual entry (tank number or pasted link) is always available as a
+ * fallback (camera denied / unavailable / poor lighting).
  *
  * Props:
  *   tanks            — the user's tanks, to resolve a scanned id → tank
+ *   walletAccount    — whose remembered publications to match public labels against
  *   casualModeActive — copy ("tank" vs "unit")
- *   onSelect(tank)   — a scanned/entered id matched one of the user's tanks
+ *   onSelect(tank)   — a scanned/entered label matched one of the user's tanks
  *   onClose()        — dismiss
  */
 
@@ -23,19 +31,20 @@ const DECODE_INTERVAL_MS = 160; // throttle jsQR so it doesn't run every frame
 const MAX_DECODE_WIDTH = 640; // downscale big camera frames for decode speed
 
 /**
- * Extract a tank id from a scanned QR payload. Accepts the app deep link
- * (`…#tank=123` or `…?tank=123`) or a bare number. Exported for testing.
+ * The tank id on a private label (`…/app#tank=123`, `…/app?tank=123`) or a
+ * bare number, else null. Exported for testing.
  */
 export function parseTankIdFromScan(text) {
-  if (text == null) return null;
-  const m = String(text).match(/tank=(\d+)/i);
-  if (m) return Number(m[1]);
-  const bare = String(text).trim();
-  if (/^\d+$/.test(bare)) return Number(bare);
-  return null;
+  const scan = parseTankScan(text);
+  return scan.kind === "private" ? scan.tankId : null;
 }
 
-export function TankScanner({ tanks = [], casualModeActive = false, onSelect, onClose }) {
+function sameNotice(a, b) {
+  if (!a || !b) return a === b;
+  return a.kind === b.kind && a.tankId === b.tankId && a.url === b.url;
+}
+
+export function TankScanner({ tanks = [], walletAccount = null, casualModeActive = false, onSelect, onClose }) {
   const noun = casualModeActive ? "tank" : "unit";
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -46,7 +55,9 @@ export function TankScanner({ tanks = [], casualModeActive = false, onSelect, on
 
   const [status, setStatus] = useState("starting"); // "starting" | "scanning" | "error"
   const [errorMsg, setErrorMsg] = useState("");
-  const [notFoundId, setNotFoundId] = useState(null);
+  // What the last scan or entry was, when it didn't open a tank:
+  // { kind: "not-found", tankId } | { kind: "public", url } | { kind: "unknown" } | null
+  const [notice, setNotice] = useState(null);
   const [manual, setManual] = useState("");
 
   const stopCamera = () => {
@@ -58,15 +69,21 @@ export function TankScanner({ tanks = [], casualModeActive = false, onSelect, on
     }
   };
 
-  const resolveId = (id) => {
-    const tank = tanks.find((t) => Number(t.id) === Number(id));
-    if (tank) {
+  // Act on a scan or manual entry. Returns true when a tank was opened.
+  const handleScan = (text) => {
+    const result = resolveTankScan(text, { tanks, wallet: walletAccount });
+    if (result.action === "open") {
       doneRef.current = true;
       stopCamera();
-      onSelect && onSelect(tank);
+      onSelect && onSelect(result.tank);
       return true;
     }
-    setNotFoundId(id);
+    const next =
+      result.action === "not-found" ? { kind: "not-found", tankId: result.tankId }
+      : result.action === "public" ? { kind: "public", url: result.url }
+      : { kind: "unknown" };
+    // The camera sees the same code many times a second; don't re-render for repeats.
+    setNotice((prev) => (sameNotice(prev, next) ? prev : next));
     return false;
   };
 
@@ -88,10 +105,7 @@ export function TankScanner({ tanks = [], casualModeActive = false, onSelect, on
         ctx.drawImage(v, 0, 0, w, h);
         const img = ctx.getImageData(0, 0, w, h);
         const code = jsQR(img.data, w, h, { inversionAttempts: "dontInvert" });
-        if (code && code.data) {
-          const id = parseTankIdFromScan(code.data);
-          if (id != null && resolveId(id)) return;
-        }
+        if (code && code.data && handleScan(code.data)) return;
       }
       rafRef.current = requestAnimationFrame(tick);
     };
@@ -131,9 +145,7 @@ export function TankScanner({ tanks = [], casualModeActive = false, onSelect, on
 
   const submitManual = (e) => {
     e.preventDefault();
-    const id = parseTankIdFromScan(manual);
-    if (id != null) resolveId(id);
-    else setNotFoundId(manual);
+    handleScan(manual);
   };
 
   return (
@@ -158,9 +170,20 @@ export function TankScanner({ tanks = [], casualModeActive = false, onSelect, on
         {/* Offscreen decode canvas */}
         <canvas ref={canvasRef} style={{ display: "none" }} />
 
-        {notFoundId != null && (
+        {notice?.kind === "not-found" && (
           <div className="ts-notfound" role="alert">
-            {`${casualModeActive ? "Tank" : "Unit"} #${notFoundId} isn't in your account.`}
+            {`${casualModeActive ? "Tank" : "Unit"} #${notice.tankId} isn't in your account.`}
+          </div>
+        )}
+        {notice?.kind === "public" && (
+          <div className="ts-public" role="status">
+            <span>This is a public tank page. It isn't one of your {noun}s on this device.</span>
+            <a className="btn-primary" href={notice.url} onClick={() => stopCamera()}>Open public page</a>
+          </div>
+        )}
+        {notice?.kind === "unknown" && (
+          <div className="ts-notfound" role="alert">
+            This code isn't a tank label.
           </div>
         )}
 
@@ -170,7 +193,7 @@ export function TankScanner({ tanks = [], casualModeActive = false, onSelect, on
             type="text"
             inputMode="numeric"
             value={manual}
-            onChange={(e) => { setManual(e.target.value); setNotFoundId(null); }}
+            onChange={(e) => { setManual(e.target.value); setNotice(null); }}
             placeholder={`Or enter ${noun} number`}
             aria-label={`${casualModeActive ? "Tank" : "Unit"} number`}
           />
