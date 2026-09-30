@@ -394,3 +394,28 @@ describe("compatibility lookups resolve duplicate catalog IDs", () => {
     expect(current.tempRange || current.phRange || current.minVolumeGallons).toBeTruthy();
   });
 });
+
+describe("minimum tank never below the record's own FishBase note", () => {
+  it("every record quoting a FishBase minimum aquarium length has at least the matching standard tank", async () => {
+    const { fishbaseMinLengthCm, standardTankFor, fixMinTanks } = await import("../../../scripts/fix-min-tank-from-fishbase.mjs");
+    expect(fixMinTanks(CATALOG).changes).toEqual([]);
+    let checked = 0;
+    for (const r of CATALOG) {
+      const tank = standardTankFor(fishbaseMinLengthCm(r));
+      const gal = r.tankMetrics?.minVolumeGallons;
+      if (!tank || gal == null) continue;
+      checked++;
+      expect(gal, `${r.specCode} ${r.scientificName}`).toBeGreaterThanOrEqual(tank.gallons);
+    }
+    expect(checked).toBeGreaterThan(40);
+  });
+
+  it("maps lengths to the smallest standard tank that is long enough", async () => {
+    const { standardTankFor } = await import("../../../scripts/fix-min-tank-from-fishbase.mjs");
+    expect(standardTankFor(60).gallons).toBe(15);
+    expect(standardTankFor(80).gallons).toBe(30);
+    expect(standardTankFor(100).gallons).toBe(40);
+    expect(standardTankFor(150).gallons).toBe(90);
+    expect(standardTankFor(null)).toBeNull();
+  });
+});

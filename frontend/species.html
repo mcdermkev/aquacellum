@@ -697,7 +697,7 @@
             ${sp.commonName && sp.commonName !== sp.scientificName ? `<p class="hero-sci-name">${sp.scientificName}</p>` : ''}
             <div class="hero-taxonomy">
               <span><strong>Family:</strong> ${String(sp.family || '').replace(/\s*\((Plant|Invertebrate|Coral)\)$/, '') || '—'}</span>
-              <span><strong>Genus:</strong> ${sp.genus || '—'}</span>
+              <span><strong>Genus:</strong> ${sp.genus || String(sp.scientificName || '').trim().split(/\s+/)[0] || '—'}</span>
               <span><strong>${source.idLabel}:</strong> ${source.id || '—'}</span>
             </div>
             ${olderName ? `<p class="hero-alias-note" role="note" style="margin:8px 0 0;font-size:0.85rem;color:var(--text-secondary);">You followed a link to ${olderName.scientificName}. It is listed here under its current name, ${sp.scientificName}.</p>` : ''}
@@ -775,9 +775,11 @@
       }
 
       // 2. Ecology & Habitat
-      const biotope = real(sp.ecology?.biotope);
-      const socialBehavior = real(sp.ecology?.socialBehavior);
       const ecoComments = real(sp.ecology?.comments);
+      // 117 records store the same text in biotope and comments; show it once.
+      const rawBiotope = real(sp.ecology?.biotope);
+      const biotope = rawBiotope && rawBiotope.trim() !== String(ecoComments || '').trim() ? rawBiotope : null;
+      const socialBehavior = real(sp.ecology?.socialBehavior);
 
       if (biotope || socialBehavior || ecoComments) {
         html += `
