@@ -1354,6 +1354,7 @@ export default function App() {
               onListOnMarketplace={handleListOnMarketplace}
               casualModeActive={casualModeActive}
               onSelectSpecimen={setSelectedSpecimenId}
+              setDisplayTank={setDisplayTank}
             />
             <div className="zone-leaderboard-sidebar" style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
               {/* The Echo dashboard card used to sit here. It was a static JPG
@@ -1578,7 +1579,16 @@ export default function App() {
       )}
 
       {/* Main Content Area */}
-      <main className="app-main" style={{ perspective: "1000px" }}>
+      {/* The mode-switch crossfade must leave NO containing block behind. A
+          `perspective` here, a `will-change: transform`, or an animation that
+          holds a transform with fill-mode `forwards` (even `scale(1)`) makes the
+          shell the containing block for every `position: fixed` descendant, so
+          modals, drawers and sheets get placed against the shell instead of the
+          viewport (the mobile tank sheet rendered off-screen after a scroll).
+          So: no perspective (nothing here is 3D), no will-change, no fill mode,
+          and the last keyframe is `transform: none`. The transform exists only
+          for the 0.5s the animation runs. */}
+      <main className="app-main">
         <style>
           {`
             @keyframes pulse-glow {
@@ -1587,16 +1597,15 @@ export default function App() {
             }
             @keyframes crossfadeScale {
               0% { opacity: 0; transform: scale(0.99); }
-              100% { opacity: 1; transform: scale(1); }
+              100% { opacity: 1; transform: none; }
             }
           `}
         </style>
         <div 
           key={casualModeActive ? "casual" : "pro"}
           style={{
-            animation: "crossfadeScale 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards",
+            animation: "crossfadeScale 0.5s cubic-bezier(0.16, 1, 0.3, 1)",
             transformOrigin: "top center",
-            willChange: "transform, opacity"
           }}
         >
           <TabErrorBoundary name={activeTab} resetKey={activeTab}>

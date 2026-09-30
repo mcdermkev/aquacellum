@@ -29844,6 +29844,9 @@
       "phMin": 8,
       "phMax": 8.4
     },
+    "diet": {
+      "trophicLevel": "Photosynthetic"
+    },
     "personality": {
       "vibeLine": {
         "casual": "A short-branched, colorful Acropora for a stable, mature reef with strong light and flow.",
@@ -29903,6 +29906,9 @@
       "comments": "Forms thin whorled plates that can shade corals beneath them as they grow. More forgiving than Acropora but still needs stable alkalinity and calcium. Watch for montipora-eating nudibranchs on new frags.",
       "phMin": 8,
       "phMax": 8.4
+    },
+    "diet": {
+      "trophicLevel": "Photosynthetic"
     },
     "personality": {
       "vibeLine": {
@@ -29964,6 +29970,9 @@
       "phMin": 8,
       "phMax": 8.4
     },
+    "diet": {
+      "trophicLevel": "Photosynthetic"
+    },
     "personality": {
       "vibeLine": {
         "casual": "A fast-growing branching montipora that is one of the hardier SPS corals.",
@@ -30023,6 +30032,9 @@
       "comments": "Delicate branching SPS that needs strong light and flow and stable water. Branches are brittle and it can be quickly stung by neighbors, so give it space.",
       "phMin": 8,
       "phMax": 8.4
+    },
+    "diet": {
+      "trophicLevel": "Photosynthetic"
     },
     "personality": {
       "vibeLine": {
@@ -30084,6 +30096,9 @@
       "phMin": 8,
       "phMax": 8.4
     },
+    "diet": {
+      "trophicLevel": "Photosynthetic"
+    },
     "personality": {
       "vibeLine": {
         "casual": "A blunt-branched SPS that is widely aquacultured and relatively forgiving.",
@@ -30143,6 +30158,9 @@
       "comments": "Hardy for an SPS and one of the few corals that often releases planula larvae in aquariums, so new colonies can appear on the rockwork.",
       "phMin": 8,
       "phMax": 8.4
+    },
+    "diet": {
+      "trophicLevel": "Photosynthetic"
     },
     "personality": {
       "vibeLine": {
@@ -30204,6 +30222,9 @@
       "phMin": 8,
       "phMax": 8.4
     },
+    "diet": {
+      "trophicLevel": "Photosynthetic + target feed"
+    },
     "personality": {
       "vibeLine": {
         "casual": "Long flowing tentacles with bright tips; a favorite host for clownfish.",
@@ -30263,6 +30284,9 @@
       "comments": "Large-polyp stony coral with stinging sweeper tentacles; give it room from other corals. Wall and branching forms are both common in the trade.",
       "phMin": 8,
       "phMax": 8.4
+    },
+    "diet": {
+      "trophicLevel": "Photosynthetic + target feed"
     },
     "personality": {
       "vibeLine": {
@@ -30324,6 +30348,9 @@
       "phMin": 8,
       "phMax": 8.4
     },
+    "diet": {
+      "trophicLevel": "Photosynthetic + target feed"
+    },
     "personality": {
       "vibeLine": {
         "casual": "Big green polyps on branching tubes that eagerly take food.",
@@ -30383,6 +30410,9 @@
       "comments": "Solitary, free-living stony coral kept on the sand bed, not the rockwork. Tentacles extend and can sting neighbors; avoid placing it where it can wander into other corals.",
       "phMin": 8,
       "phMax": 8.4
+    },
+    "diet": {
+      "trophicLevel": "Photosynthetic + target feed"
     },
     "personality": {
       "vibeLine": {
@@ -30444,6 +30474,9 @@
       "phMin": 8,
       "phMax": 8.4
     },
+    "diet": {
+      "trophicLevel": "Photosynthetic + target feed"
+    },
     "personality": {
       "vibeLine": {
         "casual": "A fleshy, often fluorescent brain coral that sits on the sand.",
@@ -30503,6 +30536,9 @@
       "comments": "Encrusting large-polyp stony coral that grows well under modest light when target fed. Extends short sweeper tentacles at night, so leave a little space around it.",
       "phMin": 8,
       "phMax": 8.4
+    },
+    "diet": {
+      "trophicLevel": "Photosynthetic + target feed"
     },
     "personality": {
       "vibeLine": {
@@ -30564,6 +30600,9 @@
       "phMin": 8,
       "phMax": 8.4
     },
+    "diet": {
+      "trophicLevel": "Photosynthetic + target feed"
+    },
     "personality": {
       "vibeLine": {
         "casual": "Striped tube-shaped heads that branch and grow into a bouquet.",
@@ -30623,6 +30662,9 @@
       "comments": "Large-polyp stony coral that prefers low light and gentle flow. Polyps inflate strongly when conditions suit it; small meaty foods help growth.",
       "phMin": 8,
       "phMax": 8.4
+    },
+    "diet": {
+      "trophicLevel": "Photosynthetic + target feed"
     },
     "personality": {
       "vibeLine": {
@@ -30684,6 +30726,9 @@
       "phMin": 8,
       "phMax": 8.4
     },
+    "diet": {
+      "trophicLevel": "Photosynthetic"
+    },
     "personality": {
       "vibeLine": {
         "casual": "A mushroom-shaped leather coral with a cap of long polyps.",
@@ -30743,6 +30788,9 @@
       "comments": "Hardy soft coral that grows quickly and propagates easily. Like other leathers it can release chemicals that affect stony corals; run carbon in mixed reefs.",
       "phMin": 8,
       "phMax": 8.4
+    },
+    "diet": {
+      "trophicLevel": "Photosynthetic"
     },
     "personality": {
       "vibeLine": {
@@ -30804,6 +30852,9 @@
       "phMin": 8,
       "phMax": 8.4
     },
+    "diet": {
+      "trophicLevel": "Photosynthetic"
+    },
     "personality": {
       "vibeLine": {
         "casual": "Feathery polyps that open and close in a rhythmic pulse.",
@@ -30863,6 +30914,9 @@
       "comments": "Hardy soft coral that spreads by stolons and can cover rock quickly. A good beginner coral; place it where spreading will not crowd other corals.",
       "phMin": 8,
       "phMax": 8.4
+    },
+    "diet": {
+      "trophicLevel": "Photosynthetic"
     },
     "personality": {
       "vibeLine": {
@@ -30924,6 +30978,9 @@
       "phMin": 8,
       "phMax": 8.4
     },
+    "diet": {
+      "trophicLevel": "Photosynthetic"
+    },
     "personality": {
       "vibeLine": {
         "casual": "A glowing green carpet of polyps on a purple mat.",
@@ -30983,6 +31040,9 @@
       "comments": "Hardy colonial zoanthid that spreads across rock. Some zoanthids contain palytoxin: wear gloves and eye protection when handling or fragging, and never boil rock with them attached.",
       "phMin": 8,
       "phMax": 8.4
+    },
+    "diet": {
+      "trophicLevel": "Photosynthetic"
     },
     "personality": {
       "vibeLine": {
@@ -31044,6 +31104,9 @@
       "phMin": 8,
       "phMax": 8.4
     },
+    "diet": {
+      "trophicLevel": "Photosynthetic + target feed"
+    },
     "personality": {
       "vibeLine": {
         "casual": "Larger polyps than Zoanthus that grow quickly and eat more readily.",
@@ -31103,6 +31166,9 @@
       "comments": "Very hardy corallimorph that prefers low light and gentle flow. Spreads by budding and can crowd or shade neighboring corals over time.",
       "phMin": 8,
       "phMax": 8.4
+    },
+    "diet": {
+      "trophicLevel": "Photosynthetic"
     },
     "personality": {
       "vibeLine": {
@@ -31164,6 +31230,9 @@
       "phMin": 8,
       "phMax": 8.4
     },
+    "diet": {
+      "trophicLevel": "Photosynthetic + target feed"
+    },
     "personality": {
       "vibeLine": {
         "casual": "A fuzzy-textured mushroom that can fold up around food.",
@@ -31224,6 +31293,9 @@
       "phMin": 8,
       "phMax": 8.4
     },
+    "diet": {
+      "trophicLevel": "Photosynthetic + target feed"
+    },
     "personality": {
       "vibeLine": {
         "casual": "Bubbly, bright Caribbean mushrooms prized for their color combinations.",
@@ -31283,6 +31355,9 @@
       "comments": "Add only to a mature, stable tank. Anemones wander until they find a spot they like and can sting corals along the way; cover pump and overflow intakes. Needs strong light plus occasional feeding of meaty foods.",
       "phMin": 8,
       "phMax": 8.4
+    },
+    "diet": {
+      "trophicLevel": "Photosynthetic + target feed"
     },
     "personality": {
       "vibeLine": {
@@ -31564,6 +31639,9 @@
       "phMin": 8,
       "phMax": 8.4
     },
+    "diet": {
+      "trophicLevel": "Herbivore"
+    },
     "personality": {
       "vibeLine": {
         "casual": "A cone-shaped grazing snail that keeps glass and rock clean.",
@@ -31619,6 +31697,9 @@
       "comments": "Hardy algae-grazing turban snail, a staple of reef cleanup crews. Keep a few per tank and add more only if algae outpaces them.",
       "phMin": 8,
       "phMax": 8.4
+    },
+    "diet": {
+      "trophicLevel": "Herbivore"
     },
     "personality": {
       "vibeLine": {
@@ -31844,6 +31925,9 @@
       "phMin": 8,
       "phMax": 8.4
     },
+    "diet": {
+      "trophicLevel": "Herbivore"
+    },
     "personality": {
       "vibeLine": {
         "casual": "A small banded urchin that decorates itself with bits of shell and rubble.",
@@ -31900,6 +31984,9 @@
       "phMin": 8,
       "phMax": 8.4
     },
+    "diet": {
+      "trophicLevel": "Photosynthetic, filter feeder"
+    },
     "personality": {
       "vibeLine": {
         "casual": "A giant clam with a vividly patterned mantle that opens toward the light.",
@@ -31955,6 +32042,9 @@
       "comments": "Grazes biofilm and detritus. Losses in the first months are common, so it suits only large, mature reefs. Do not expose it to air during acclimation.",
       "phMin": 8,
       "phMax": 8.4
+    },
+    "diet": {
+      "trophicLevel": "Herbivore / Detritivore"
     },
     "personality": {
       "vibeLine": {

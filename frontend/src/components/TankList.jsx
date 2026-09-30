@@ -70,10 +70,11 @@ import { TankConnections } from "./logbook/TankConnections";
 import { countInhabitants, inhabitantSummary, reefPlacement, speciesRecordFor } from "./logbook/inhabitants";
 import { withMarineGlobals } from "./finder/waterFilter";
 import { buildGlobalCatalog } from "../services/speciesCatalog";
+import { tankFitInputs } from "../services/compatibleTanks";
 import { FragListingModal } from "./FragListingModal";
 import { BatchListingWizard } from "./BatchListingWizard";
 import "./logbook/TankListDaylight.css";
-export function TankList({ contractAddress, walletAccount, onViewLineage, onListOnMarketplace, onSelectSpecimen, casualModeActive = false }) {
+export function TankList({ contractAddress, walletAccount, onViewLineage, onListOnMarketplace, onSelectSpecimen, setDisplayTank, casualModeActive = false }) {
   const queryClient = useQueryClient();
   // Settings → Units & Formatting. `primaryTempUnit` collapses "both" to the
   // leading scale, for lines (like the ideal range) that show one value only.
@@ -2317,11 +2318,13 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
         </div>
 
         {/* RIGHT: DETAILED ACTIVE TANK PANEL — Full-screen bottom sheet on mobile.
-            On mobile the sheet is position:fixed, but the app shell's page
-            transition leaves a transform on an ancestor (and main.app-main has a
-            perspective), which makes that ancestor the containing block: open a
-            tank after scrolling and the sheet rendered off-screen above the
-            viewport. Portalling it to <body> on mobile keeps it on screen. */}
+            On mobile the sheet is position:fixed. The app shell's mode-switch
+            transition used to leave a transform on an ancestor (and main.app-main
+            had a perspective), which made that ancestor the containing block: open
+            a tank after scrolling and the sheet rendered off-screen above the
+            viewport. The shell no longer does that (see App.jsx), but the portal to
+            <body> stays: it also keeps the sheet clear of any future ancestor
+            transform, filter or backdrop-filter. */}
         {activeTank && inSheetPortal((
           <>
             {/* Backdrop overlay for mobile */}
@@ -3352,6 +3355,12 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                     onLogTest={() => logTestLongPress()}
                     onLogFeed={() => logFeedClick()}
                     onPrintLabel={() => printTankQRLabel(activeTank)}
+                    // "Find fish that fit": make this the active tank first, so the
+                    // finder (which reads App's displayTank on mount) opens with it
+                    // selected. Stored normalized, same as every other writer.
+                    onFindFish={typeof setDisplayTank === "function"
+                      ? () => setDisplayTank({ id: activeTank.id, name: activeTank.name, ...tankFitInputs(activeTank) })
+                      : undefined}
                     onSellFish={() => setDetailSubTab("fish")}
                     onSellFrags={() => setFragModalOpen(true)}
                     onListBatch={casualModeActive ? undefined : () => setBatchWizardOpen(true)}

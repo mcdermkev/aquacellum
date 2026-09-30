@@ -15,6 +15,7 @@ import "./TankConnections.css";
  * Props:
  *   tank, fishbaseData, casualModeActive, walletAccount
  *   onLogTest(), onLogFeed(), onPrintLabel()
+ *   onFindFish()     — make this tank the active tank before opening the finder
  *   onSellFish()     — show the fish list, where each fish has its Sell button
  *   onSellFrags()    — open the coral frag listing (reef tanks)
  *   onListBatch()    — open the fry batch listing (Pro)
@@ -27,6 +28,7 @@ export function TankConnections({
   onLogTest,
   onLogFeed,
   onPrintLabel,
+  onFindFish,
   onSellFish,
   onSellFrags,
   onListBatch,
@@ -71,7 +73,15 @@ export function TankConnections({
             <span>{casual ? "One tap, standard feed" : "Standard ration"}</span>
           </span>
         </button>
-        <button type="button" className="tconn-action" onClick={() => goTab("gallery")}>
+        <button
+          type="button"
+          className="tconn-action"
+          onClick={() => {
+            // Select this tank before navigating, so the finder opens on it.
+            if (typeof onFindFish === "function") onFindFish();
+            goTab("gallery");
+          }}
+        >
           <span className="tconn-icon" aria-hidden="true">🔍</span>
           <span className="tconn-text">
             <strong>{casual ? "Find fish that fit" : "Check species fit"}</strong>

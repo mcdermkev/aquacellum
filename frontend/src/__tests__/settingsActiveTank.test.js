@@ -92,6 +92,7 @@ describe("every displayTank writer normalizes", () => {
     "components/settings/sections/AquariumsSection.jsx",
     "components/finder/FishFinder.jsx",
     "components/finder/CasualSpeciesDetail.jsx",
+    "components/TankList.jsx", // "Find fish that fit" selects the tank before navigating
   ];
 
   it.each(WRITERS)("%s spreads tankFitInputs into the stored value", (path) => {

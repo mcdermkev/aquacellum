@@ -1,7 +1,8 @@
 import { describe, it, expect, vi } from "vitest";
 import { Contract } from "ethers";
 import aquadexAbi from "../abi/AquadexManager.json";
-import { readCatalogViaMulticall, MULTICALL_CHUNK } from "../services/contractCatalogReader";
+import marketplaceAbi from "../abi/AquadexMarketplace.json";
+import { readCatalogViaMulticall, multicallRead, MULTICALL_CHUNK } from "../services/contractCatalogReader";
 
 const ADDRESS = "0x351ca8f34D94F29F6f865Afa419A636324473DeF";
 const catalog = new Contract(ADDRESS, aquadexAbi);
@@ -86,6 +87,106 @@ describe("readCatalogViaMulticall", () => {
   it("returns an empty list for an empty catalog without calling out", async () => {
     const mc = { aggregate3: vi.fn() };
     expect(await readCatalogViaMulticall(catalog, 0, { multicall: mc })).toEqual([]);
+    expect(mc.aggregate3).not.toHaveBeenCalled();
+  });
+});
+
+// ─── multicallRead (generic helper) ──────────────────────────────────────────
+
+const MARKET_ADDRESS = "0x0741D50d49e7374b855b532c17aD36aBF8AF3b3e";
+const market = new Contract(MARKET_ADDRESS, marketplaceAbi);
+const marketIface = market.interface;
+
+/** Encode `fnName`'s return value with every output zeroed except the named ones. */
+function encodeResult(ifc, fnName, overrides = {}) {
+  const fn = ifc.getFunction(fnName);
+  const values = fn.outputs.map((o) => {
+    if (o.name && o.name in overrides) return overrides[o.name];
+    if (o.type === "string") return "";
+    if (o.type === "bool") return false;
+    if (o.type === "address") return "0x0000000000000000000000000000000000000000";
+    return 0;
+  });
+  return ifc.encodeFunctionResult(fnName, values);
+}
+
+/** Fake Multicall3 that answers each sub-call through `answer(parsedTx)`. */
+function fakeMulticallFor(ifc, target, answer) {
+  const sizes = [];
+  const aggregate3 = vi.fn(async (calls) => {
+    sizes.push(calls.length);
+    return calls.map(({ target: t, allowFailure, callData }) => {
+      expect(t).toBe(target);
+      expect(allowFailure).toBe(true);
+      const out = answer(ifc.parseTransaction({ data: callData }));
+      return out == null ? { success: false, returnData: "0x" } : { success: true, returnData: out };
+    });
+  });
+  return { aggregate3, sizes };
+}
+
+const SELLER = "0x00000000000000000000000000000000000000A1";
+
+describe("multicallRead", () => {
+  it("returns multi-output results with named and positional fields, like a direct call", async () => {
+    const mc = fakeMulticallFor(marketIface, MARKET_ADDRESS, (tx) =>
+      encodeResult(marketIface, "listings", {
+        tokenId: tx.args[0], seller: SELLER, price: 1250, shippingFee: 300, active: true, isShipping: true,
+      }));
+    const out = await multicallRead(market, "listings", [[3], [9]], { multicall: mc });
+    expect(out).toHaveLength(2);
+    expect(Number(out[0].tokenId)).toBe(3);
+    expect(Number(out[1].tokenId)).toBe(9);
+    expect(out[0].seller).toBe(SELLER);
+    expect(out[0].active).toBe(true);
+    expect(out[0].price.toString()).toBe("1250");
+    expect(out[0][1]).toBe(SELLER); // positional access still works
+  });
+
+  it("returns the bare value for single-output functions", async () => {
+    const mc = fakeMulticallFor(iface, ADDRESS, (tx) =>
+      iface.encodeFunctionResult("getSpecimensCountByBreed", [Number(tx.args[0]) * 2]));
+    const out = await multicallRead(catalog, "getSpecimensCountByBreed", [[1], [4]], { multicall: mc });
+    expect(out.map(Number)).toEqual([2, 8]);
+  });
+
+  it("puts null at positions whose sub-call reverted or returned undecodable data", async () => {
+    const mc = {
+      aggregate3: vi.fn(async (calls) => [
+        { success: true, returnData: encodeResult(marketIface, "listings", { tokenId: 1, active: true }) },
+        { success: false, returnData: "0x" },
+        { success: true, returnData: "0x" },
+      ].slice(0, calls.length)),
+    };
+    const out = await multicallRead(market, "listings", [[1], [2], [3]], { multicall: mc });
+    expect(out[0].active).toBe(true);
+    expect(out[1]).toBeNull();
+    expect(out[2]).toBeNull();
+  });
+
+  it("chunks at MULTICALL_CHUNK sub-calls per request", async () => {
+    const mc = fakeMulticallFor(marketIface, MARKET_ADDRESS, (tx) =>
+      encodeResult(marketIface, "batchListings", { listingId: tx.args[0] }));
+    const argsList = Array.from({ length: 450 }, (_, k) => [k + 1]);
+    const out = await multicallRead(market, "batchListings", argsList, { multicall: mc });
+    expect(out).toHaveLength(450);
+    expect(mc.aggregate3).toHaveBeenCalledTimes(Math.ceil(450 / MULTICALL_CHUNK));
+    expect(Math.max(...mc.sizes)).toBeLessThanOrEqual(MULTICALL_CHUNK);
+    expect(Number(out[449].listingId)).toBe(450);
+  });
+
+  it("returns null so the caller falls back when Multicall3 throws or answers short", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const throwing = { aggregate3: vi.fn(async () => { throw new Error("call revert exception"); }) };
+    expect(await multicallRead(market, "listings", [[1]], { multicall: throwing })).toBeNull();
+    const short = { aggregate3: vi.fn(async () => []) };
+    expect(await multicallRead(market, "listings", [[1], [2]], { multicall: short })).toBeNull();
+    warn.mockRestore();
+  });
+
+  it("returns an empty list for no calls without calling out", async () => {
+    const mc = { aggregate3: vi.fn() };
+    expect(await multicallRead(market, "listings", [], { multicall: mc })).toEqual([]);
     expect(mc.aggregate3).not.toHaveBeenCalled();
   });
 });
