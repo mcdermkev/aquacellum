@@ -24,6 +24,10 @@ function storefrontRewritePlugin() {
         if (req.url && req.url.startsWith('/t/')) {
           req.url = '/tank.html';
         }
+        // Rewrite /clubs/<slug> to /club.html (one club's public page).
+        if (req.url && req.url.startsWith('/clubs/')) {
+          req.url = '/club.html';
+        }
         // Rewrite /species/* to /species.html (species detail pages)
         if (req.url && req.url.startsWith('/species/')) {
           req.url = '/species.html';
@@ -167,6 +171,8 @@ export default defineConfig({
         compare: resolve(__dirname, 'compare.html'),      // Species comparison tool
         howItWorks: resolve(__dirname, 'how-it-works.html'), // How it works / pricing
         breeders: resolve(__dirname, 'breeders.html'),     // Local breeder map
+        clubs: resolve(__dirname, 'clubs.html'),           // Club directory (/clubs)
+        club: resolve(__dirname, 'club.html'),             // One club's live page (/clubs/<slug>)
         breeds: resolve(__dirname, 'breeds.html'),          // Breed gallery / lineage registry
         poseidon: resolve(__dirname, 'poseidon.html'),       // Poseidon AI assistant
         leaderboard: resolve(__dirname, 'leaderboard.html'),  // Zone leaderboard

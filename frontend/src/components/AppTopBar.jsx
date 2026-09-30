@@ -22,6 +22,7 @@ export const SITE_LINKS = [
 export const SITE_MENU_LINKS = [
   { href: "/", label: "Home" },
   ...SITE_LINKS,
+  { href: "/clubs", label: "Clubs" },
   { href: "/poseidon.html", label: "Poseidon AI" },
   { href: "/breeds.html", label: "Breed Gallery" },
   { href: "/breeders.html", label: "Find Breeders" },

@@ -25,6 +25,7 @@ const COLUMNS = [
     title: "Community",
     links: [
       { href: "/app/reef", label: "The Reef" },
+      { href: "/clubs", label: "Clubs" },
       { href: "/app/auctions", label: "Auctions" },
       { href: "/app/auction-night", label: "Club auction night" },
       { href: "/leaderboard.html", label: "Leaderboard" },

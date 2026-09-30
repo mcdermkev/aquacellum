@@ -782,6 +782,19 @@ ul, ol { list-style: none; }
   .footer-grid { grid-template-columns: 1fr 1fr; gap: 32px; }
 }
 
+/* Six top links (Clubs joined the bar) only just fit at 1024px. Between the
+   phone menu and a wide window, tighten the links, then drop the wordmark
+   (the mark alone still goes home) so nothing overflows. */
+@media (min-width: 769px) and (max-width: 1100px) {
+  .nav { padding: 0 18px; }
+  .nav-links { gap: 2px; }
+  .nav-links a { padding: 6px 9px; font-size: 0.82rem; }
+}
+@media (min-width: 769px) and (max-width: 920px) {
+  .nav-logo > div:not(.nav-logo-mark) { display: none; }
+  .nav-cta { padding: 9px 14px; }
+}
+
 @media (max-width: 768px) {
   .nav-links { display: none; }
   .nav-cta { display: none; }

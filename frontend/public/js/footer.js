@@ -65,6 +65,7 @@
           <div class="footer-col">
             <h4 class="footer-col-title">Community</h4>
             <a href="/app/reef">The Reef</a>
+            <a href="/clubs">Clubs</a>
             <a href="/app/auctions">Auctions</a>
             <a href="/app/auction-night">Club auction night</a>
             <a href="/leaderboard.html">Leaderboard</a>

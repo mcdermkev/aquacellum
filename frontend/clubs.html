@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clubs | Aquacellum</title>
+  <meta name="description" content="Aquarium clubs on Aquacellum. Find people who keep the same fish as you, see what they keep, their events, and fish for sale from breeders.">
+  <meta property="og:title" content="Clubs | Aquacellum">
+  <meta property="og:description" content="Find people who keep the same fish as you. Clubs share tanks, run events and trade fish.">
+  <meta property="og:type" content="website">
+  <link rel="canonical" href="https://aquacellum.com/clubs">
+  <meta property="og:url" content="https://aquacellum.com/clubs">
+  <meta property="og:site_name" content="Aquacellum">
+  <meta property="og:image" content="https://aquacellum.com/og-banner.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Clubs | Aquacellum">
+  <meta name="twitter:description" content="Find people who keep the same fish as you. Clubs share tanks, run events and trade fish.">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/shared.css">
+  <link rel="stylesheet" href="/css/clubs.css">
+
+  <style>
+    /* Hero */
+    .cd-hero { position: relative; padding: 72px 0 44px; border-bottom: 1px solid var(--line); overflow: hidden; }
+    .cd-hero::before { content: ""; position: absolute; inset: 0; background:
+      radial-gradient(circle at 88% 10%, rgba(20,184,166,.14), transparent 40%),
+      radial-gradient(circle at 8% 0%, rgba(245,158,11,.08), transparent 38%),
+      linear-gradient(130deg, #ffffff 0%, #f5f9fa 55%, #eaf3f5 100%); }
+    .cd-hero__inner { position: relative; display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, .75fr); gap: 48px; align-items: end; }
+    .cd-hero h1 { margin: 0; font-family: var(--font-display); font-size: clamp(2.5rem, 6vw, 4.8rem); line-height: 1.04; letter-spacing: -.03em; font-weight: 700; }
+    .cd-hero h1 em { font-style: normal; color: #0f766e; }
+    .cd-hero__copy { margin: 20px 0 0; max-width: 580px; color: var(--text-secondary); font-size: clamp(1rem, 1.4vw, 1.14rem); line-height: 1.65; }
+    .cd-hero__actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 26px; }
+    .cd-stats { display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--line); border-radius: 6px; background: rgba(255,255,255,.88); box-shadow: var(--shadow-sm); }
+    .cd-stat { padding: 20px 12px; text-align: center; border-right: 1px solid var(--line); }
+    .cd-stat:last-child { border-right: 0; }
+    .cd-stat strong { display: block; font-family: var(--font-display); font-size: 1.7rem; font-variant-numeric: tabular-nums; }
+    .cd-stat span { color: var(--text-muted); font-size: .66rem; text-transform: uppercase; letter-spacing: .12em; }
+
+    /* Directory */
+    .cd-directory { padding: 34px 0 56px; }
+    .cd-toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 22px; }
+    .cd-search { position: relative; flex: 1 1 300px; }
+    .cd-search svg { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none; }
+    .cd-search input, .cd-select select { width: 100%; min-height: 46px; border: 1px solid var(--line); border-radius: 999px; background: #fff; outline: none; font-size: .9rem; }
+    .cd-search input { padding: 0 16px 0 42px; }
+    .cd-search input::placeholder { color: var(--text-muted); }
+    .cd-select { position: relative; flex: 0 1 260px; }
+    .cd-select select { appearance: none; -webkit-appearance: none; padding: 0 40px 0 18px; cursor: pointer; }
+    .cd-select svg { position: absolute; right: 16px; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none; }
+    .cd-search input:focus, .cd-select select:focus { border-color: #0d9488; box-shadow: 0 0 0 3px rgba(20,184,166,.18); }
+    .cd-count { color: var(--text-muted); font-size: .78rem; margin-left: auto; font-variant-numeric: tabular-nums; }
+
+    .cd-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+    .cl-card { position: relative; display: flex; flex-direction: column; min-width: 0; border: 1px solid var(--line); border-radius: 6px; background: #fff; box-shadow: var(--shadow-sm); overflow: hidden; text-decoration: none; transition: transform .25s, border-color .25s, box-shadow .25s; }
+    .cl-card:hover { transform: translateY(-3px); border-color: rgba(var(--ink-rgb),.18); box-shadow: var(--shadow-md); }
+    .cl-card .cl-banner { height: 124px; }
+    .cl-card .cl-banner__initials { font-size: 2.3rem; }
+    .cl-card__official { position: absolute; top: 12px; left: 12px; }
+    .cl-card__body { display: flex; flex-direction: column; gap: 10px; flex: 1; padding: 16px 18px 18px; }
+    .cl-card h2 { margin: 0; font-family: var(--font-display); font-size: 1.18rem; line-height: 1.25; letter-spacing: -.01em; }
+    .cl-card__desc { margin: 0; color: var(--text-secondary); font-size: .84rem; line-height: 1.55; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .cl-card__desc--none { color: var(--text-muted); font-style: italic; }
+    .cl-card__foot { display: flex; align-items: center; gap: 10px; margin-top: auto; padding-top: 12px; border-top: 1px solid var(--line); color: var(--text-secondary); font-size: .78rem; }
+    .cl-card__foot strong { color: var(--text-primary); font-variant-numeric: tabular-nums; }
+    .cl-card__members { display: inline-flex; align-items: center; gap: 6px; }
+    .cl-card__go { margin-left: auto; color: #0f766e; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; transition: gap .2s; }
+    .cl-card:hover .cl-card__go { gap: 8px; }
+
+    /* Start a club band */
+    .cd-start { padding: 0 0 80px; }
+    .cd-start__inner { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 28px; align-items: center; padding: 34px 36px; border: 1px solid var(--line); border-radius: 6px; background: linear-gradient(120deg, #f0fdfa, #ffffff 60%); box-shadow: var(--shadow-sm); }
+    .cd-start h2 { margin: 0 0 6px; font-family: var(--font-display); font-size: clamp(1.3rem, 2.4vw, 1.7rem); letter-spacing: -.01em; }
+    .cd-start p { margin: 0; max-width: 620px; color: var(--text-secondary); font-size: .92rem; line-height: 1.6; }
+
+    @media (max-width: 1000px) {
+      .cd-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 860px) {
+      .cd-hero { padding: 44px 0 30px; }
+      .cd-hero__inner { grid-template-columns: 1fr; gap: 26px; }
+    }
+    @media (max-width: 620px) {
+      .cd-grid { grid-template-columns: 1fr; }
+      .cd-select { flex: 1 1 100%; }
+      .cd-count { margin-left: 0; width: 100%; }
+      .cd-start__inner { grid-template-columns: 1fr; padding: 26px 22px; }
+      .cd-stat strong { font-size: 1.35rem; }
+      .cd-stat span { font-size: .58rem; letter-spacing: .08em; }
+    }
+  </style>
+</head>
+<body>
+  <header id="site-nav"></header>
+
+  <main>
+    <section class="cd-hero">
+      <div class="cl-wrap cd-hero__inner">
+        <div>
+          <div class="cl-eyebrow">Clubs</div>
+          <h1>Keep fish <em>together.</em></h1>
+          <p class="cd-hero__copy">A club is a group of people who keep the same fish. Members share their tanks, plan events and pass fish along to each other. Find one for the fish you keep, or start your own.</p>
+          <div class="cd-hero__actions">
+            <a class="cl-btn cl-btn--teal" href="/app/reef?tab=clubs">Start a club</a>
+            <a class="cl-btn" href="#directory">Browse clubs</a>
+          </div>
+        </div>
+        <div class="cd-stats" aria-live="polite">
+          <div class="cd-stat"><strong id="statClubs">&ndash;</strong><span>Clubs</span></div>
+          <div class="cd-stat"><strong id="statOfficial">&ndash;</strong><span>Official</span></div>
+          <div class="cd-stat"><strong id="statSpecies">&ndash;</strong><span>Species</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="cd-directory cl-wrap" id="directory" aria-labelledby="directoryHeading">
+      <h2 id="directoryHeading" class="sr-only">All clubs</h2>
+      <div class="cd-toolbar">
+        <label class="cd-search">
+          <span class="sr-only">Search clubs</span>
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="search" id="searchInput" placeholder="Search by club or fish name" autocomplete="off">
+        </label>
+        <label class="cd-select">
+          <span class="sr-only">Filter by species</span>
+          <select id="speciesFilter">
+            <option value="">All species</option>
+          </select>
+          <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+        </label>
+        <span class="cd-count" id="resultsCount" aria-live="polite">Loading clubs</span>
+      </div>
+
+      <div class="cd-grid" id="clubGrid" aria-busy="true">
+        <div class="cl-skeleton" style="height:300px"></div>
+        <div class="cl-skeleton" style="height:300px"></div>
+        <div class="cl-skeleton" style="height:300px"></div>
+      </div>
+    </section>
+
+    <section class="cd-start cl-wrap" aria-labelledby="startHeading">
+      <div class="cd-start__inner">
+        <div>
+          <h2 id="startHeading">Don't see a club for your fish?</h2>
+          <p>Start one in the app. Give it a name, pick the fish it is for, and invite the people you already trade and talk with.</p>
+        </div>
+        <a class="cl-btn cl-btn--teal" href="/app/reef?tab=clubs">Start a club</a>
+      </div>
+    </section>
+  </main>
+
+  <footer id="site-footer"></footer>
+
+  <script src="/js/nav.js"></script>
+  <script src="/js/footer.js"></script>
+  <script src="/js/clubs-public.js"></script>
+  <script>
+    "use strict";
+
+    const Clubs = window.AquadexClubs;
+    const escapeHtml = Clubs.escapeHtml;
+    const state = { clubs: [], index: new Map(), query: "", species: "", failed: false, painted: false };
+
+    const grid = document.getElementById("clubGrid");
+    const countEl = document.getElementById("resultsCount");
+    const searchInput = document.getElementById("searchInput");
+    const speciesFilter = document.getElementById("speciesFilter");
+
+    const OFFICIAL_ICON = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>';
+    const MEMBERS_ICON = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>';
+
+    /** A species name for display: the catalog's common name when we have one. */
+    function speciesInfo(t) {
+      const row = state.index.get(t.scientificName.toLowerCase());
+      return {
+        key: (row?.s || t.scientificName).toLowerCase(),
+        name: t.commonName || row?.n || t.scientificName,
+        scientificName: row?.s || t.scientificName,
+        photo: Clubs.safeImageUrl(row?.p),
+      };
+    }
+
+    function bannerHTML(club) {
+      const src = Clubs.safeImageUrl(club.banner_url);
+      const hue = Clubs.bannerHue(club.slug);
+      return `<div class="cl-banner${src ? " has-image" : ""}" style="--cl-hue:${hue}">
+        <div class="cl-banner__ripple"></div>
+        <div class="cl-banner__initials" aria-hidden="true">${escapeHtml(Clubs.initials(club.name))}</div>
+        ${src ? `<img src="${escapeHtml(src)}" alt="" loading="lazy" decoding="async" onerror="this.parentNode.classList.remove('has-image');this.remove()">` : ""}
+      </div>`;
+    }
+
+    function cardHTML(club, i) {
+      const species = Clubs.trackedSpecies(club).map(speciesInfo);
+      const type = Clubs.typeLabel(club.school_type);
+      const badges = [
+        type ? `<span class="cl-badge">${escapeHtml(type)}</span>` : "",
+        club.is_invite_only ? '<span class="cl-badge cl-badge--invite">Invite only</span>' : "",
+      ].join("");
+      const chips = species.slice(0, 3).map((sp) => sp.photo
+        ? `<span class="cl-chip"><img src="${escapeHtml(sp.photo)}" alt="" loading="lazy"><span>${escapeHtml(sp.name)}</span></span>`
+        : `<span class="cl-chip cl-chip--plain"><span>${escapeHtml(sp.name)}</span></span>`).join("")
+        + (species.length > 3 ? `<span class="cl-chip cl-chip--plain"><span>+${species.length - 3} more</span></span>` : "");
+      const desc = String(club.description || "").trim();
+      // Cards rise in on the first paint only, not on every keystroke.
+      const rise = state.painted ? "" : " cl-rise";
+      return `<a class="cl-card${rise}" style="--i:${Math.min(i, 12)}" href="${escapeHtml(Clubs.clubUrl(club.slug))}">
+        ${bannerHTML(club)}
+        ${club.is_official ? `<span class="cl-badge cl-badge--official cl-card__official">${OFFICIAL_ICON}Official</span>` : ""}
+        <div class="cl-card__body">
+          ${badges ? `<div class="cl-badges">${badges}</div>` : ""}
+          <h2>${escapeHtml(club.name || "Club")}</h2>
+          ${desc ? `<p class="cl-card__desc">${escapeHtml(desc)}</p>` : '<p class="cl-card__desc cl-card__desc--none">No description yet.</p>'}
+          ${chips ? `<div class="cl-chips">${chips}</div>` : ""}
+          <div class="cl-card__foot">
+            <span class="cl-card__members">${MEMBERS_ICON}<strong>${Math.max(0, Number(club.member_count) || 0)}</strong> ${Number(club.member_count) === 1 ? "member" : "members"}</span>
+            <span class="cl-card__go" aria-hidden="true">View club <span>&rarr;</span></span>
+          </div>
+        </div>
+      </a>`;
+    }
+
+    function matches(club) {
+      const species = Clubs.trackedSpecies(club).map(speciesInfo);
+      if (state.species && !species.some((sp) => sp.key === state.species)) return false;
+      if (!state.query) return true;
+      const hay = [club.name, club.description, ...species.flatMap((sp) => [sp.name, sp.scientificName])]
+        .join(" ").toLowerCase();
+      return state.query.split(/\s+/).every((word) => hay.includes(word));
+    }
+
+    function render() {
+      grid.removeAttribute("aria-busy");
+      if (state.failed) {
+        countEl.textContent = "";
+        grid.innerHTML = `<div class="cl-panel" style="grid-column:1/-1">
+          <h3>Clubs could not be loaded right now</h3>
+          <p>This is usually a brief connection problem. Try again in a moment.</p>
+          <button type="button" class="cl-btn" id="retryBtn">Try again</button>
+        </div>`;
+        document.getElementById("retryBtn").addEventListener("click", load);
+        return;
+      }
+      if (!state.clubs.length) {
+        countEl.textContent = "No clubs yet";
+        grid.innerHTML = `<div class="cl-panel" style="grid-column:1/-1">
+          <h3>No clubs yet</h3>
+          <p>Be the first. Start a club in the app and it will show up here.</p>
+          <a class="cl-btn cl-btn--teal" href="/app/reef?tab=clubs">Start a club</a>
+        </div>`;
+        return;
+      }
+      const shown = state.clubs.filter(matches);
+      const total = state.clubs.length;
+      countEl.textContent = shown.length === total
+        ? `${total} ${total === 1 ? "club" : "clubs"}`
+        : `${shown.length} of ${total} clubs`;
+      if (!shown.length) {
+        grid.innerHTML = `<div class="cl-panel" style="grid-column:1/-1">
+          <h3>No clubs match that</h3>
+          <p>Try another name or species. If there is no club for your fish yet, you can start one.</p>
+          <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+            <button type="button" class="cl-btn" id="clearBtn">Clear search</button>
+            <a class="cl-btn cl-btn--teal" href="/app/reef?tab=clubs">Start a club</a>
+          </div>
+        </div>`;
+        document.getElementById("clearBtn").addEventListener("click", () => {
+          state.query = ""; state.species = "";
+          searchInput.value = ""; speciesFilter.value = "";
+          render();
+        });
+        return;
+      }
+      grid.innerHTML = shown.map(cardHTML).join("");
+      state.painted = true;
+    }
+
+    function fillSpeciesFilter() {
+      const seen = new Map();
+      state.clubs.forEach((club) => Clubs.trackedSpecies(club).map(speciesInfo).forEach((sp) => {
+        if (!seen.has(sp.key)) seen.set(sp.key, sp.name);
+      }));
+      const options = [...seen.entries()].sort((a, b) => a[1].localeCompare(b[1]));
+      speciesFilter.innerHTML = '<option value="">All species</option>' +
+        options.map(([key, name]) => `<option value="${escapeHtml(key)}">${escapeHtml(name)}</option>`).join("");
+      speciesFilter.value = state.species;
+      speciesFilter.disabled = options.length === 0;
+      document.getElementById("statSpecies").textContent = String(options.length);
+    }
+
+    async function load() {
+      state.failed = false;
+      grid.setAttribute("aria-busy", "true");
+      try {
+        const [clubs, index] = await Promise.all([Clubs.fetchClubs(), Clubs.loadSpeciesIndex()]);
+        state.index = Clubs.indexByScientificName(index);
+        state.clubs = Clubs.sortClubs(clubs.filter((c) => Clubs.isValidSlug(c.slug)));
+      } catch (e) {
+        console.warn("[Clubs] load failed:", e && e.message);
+        state.failed = true;
+      }
+      document.getElementById("statClubs").textContent = state.failed ? "\u2013" : String(state.clubs.length);
+      document.getElementById("statOfficial").textContent = state.failed ? "\u2013" : String(state.clubs.filter((c) => c.is_official).length);
+      if (!state.failed) fillSpeciesFilter();
+      render();
+    }
+
+    let searchTimer = null;
+    searchInput.addEventListener("input", () => {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(() => {
+        state.query = searchInput.value.trim().toLowerCase();
+        render();
+      }, 120);
+    });
+    speciesFilter.addEventListener("change", () => {
+      state.species = speciesFilter.value;
+      render();
+    });
+
+    load();
+  </script>
+</body>
+</html>

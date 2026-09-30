@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Title, description, canonical and OG tags are set per club by the script below. -->
+  <title>Club | Aquacellum</title>
+  <meta name="description" id="metaDescription" content="An aquarium club on Aquacellum: what the members keep, their events, and fish for sale from breeders.">
+  <meta property="og:title" id="ogTitle" content="Club | Aquacellum">
+  <meta property="og:description" id="ogDescription" content="An aquarium club on Aquacellum: what the members keep, their events, and fish for sale from breeders.">
+  <meta property="og:type" content="website">
+  <link rel="canonical" id="canonicalLink" href="https://aquacellum.com/clubs">
+  <meta property="og:url" id="ogUrl" content="https://aquacellum.com/clubs">
+  <meta property="og:site_name" content="Aquacellum">
+  <meta property="og:image" id="ogImage" content="https://aquacellum.com/og-banner.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" id="twTitle" content="Club | Aquacellum">
+  <meta name="twitter:description" id="twDescription" content="An aquarium club on Aquacellum: what the members keep, their events, and fish for sale from breeders.">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/shared.css">
+  <link rel="stylesheet" href="/css/clubs.css">
+
+  <style>
+    /* Hero: banner strip, then the club card overlapping it. */
+    .cp-hero { position: relative; }
+    .cp-hero .cl-banner { height: clamp(170px, 24vw, 280px); }
+    .cp-hero .cl-banner__initials { font-size: clamp(3rem, 9vw, 6.5rem); place-items: center end; padding-right: max(6vw, 32px); color: rgba(255,255,255,.28); }
+    .cp-head { position: relative; margin-top: -92px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 28px; align-items: end; padding: 30px 32px; border: 1px solid var(--line); border-radius: 6px; background: #fff; box-shadow: var(--shadow-md); }
+    .cp-head h1 { margin: 12px 0 0; font-family: var(--font-display); font-size: clamp(2rem, 4.4vw, 3.3rem); line-height: 1.06; letter-spacing: -.025em; font-weight: 700; overflow-wrap: anywhere; }
+    .cp-desc { margin: 12px 0 0; max-width: 720px; color: var(--text-secondary); font-size: clamp(.95rem, 1.3vw, 1.06rem); line-height: 1.65; white-space: pre-line; overflow-wrap: anywhere; }
+    .cp-facts { display: flex; flex-wrap: wrap; gap: 8px 22px; margin-top: 18px; color: var(--text-secondary); font-size: .84rem; }
+    .cp-fact { display: inline-flex; align-items: center; gap: 7px; }
+    .cp-fact svg { color: #0f766e; flex: none; }
+    .cp-fact strong { color: var(--text-primary); font-variant-numeric: tabular-nums; }
+    .cp-actions { display: flex; flex-direction: column; align-items: stretch; gap: 10px; min-width: 210px; }
+    .cp-actions .cl-btn { min-height: 48px; }
+    .cp-live { display: inline-flex; align-items: center; justify-content: center; gap: 8px; color: var(--text-muted); font-size: .74rem; font-variant-numeric: tabular-nums; }
+    .cp-live__dot { position: relative; width: 8px; height: 8px; border-radius: 50%; background: #10b981; }
+    .cp-live__dot::after { content: ""; position: absolute; inset: -4px; border-radius: 50%; border: 2px solid rgba(16,185,129,.45); animation: cp-pulse 2.4s ease-out infinite; }
+    .cp-live.is-paused .cp-live__dot { background: #94a3b8; }
+    .cp-live.is-paused .cp-live__dot::after { animation: none; border-color: transparent; }
+    @keyframes cp-pulse { from { transform: scale(.6); opacity: 1; } to { transform: scale(1.6); opacity: 0; } }
+
+    /* Sections */
+    .cp-body { padding: 44px 0 84px; display: grid; gap: 44px; }
+    .cp-section__head { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 8px 18px; margin-bottom: 18px; }
+    .cp-kicker { color: #0f766e; font-size: .7rem; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; margin-bottom: 6px; }
+    .cp-section h2 { margin: 0; font-family: var(--font-display); font-size: clamp(1.4rem, 2.6vw, 1.9rem); letter-spacing: -.015em; }
+    .cp-section__note { margin: 6px 0 0; color: var(--text-muted); font-size: .82rem; }
+    .cp-split { display: grid; grid-template-columns: minmax(0, 1.75fr) minmax(300px, 1fr); gap: 36px; align-items: start; }
+
+    /* What we keep */
+    /* auto-fit so one or two species fill the row as wide feature cards. */
+    .cp-species-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr)); gap: 16px; }
+    .cl-species { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); border: 1px solid var(--line); border-radius: 6px; background: #fff; box-shadow: var(--shadow-sm); overflow: hidden; text-decoration: none; transition: transform .25s, box-shadow .25s, border-color .25s; }
+    .cl-species:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); border-color: rgba(var(--ink-rgb),.18); }
+    .cl-species__media { position: relative; min-height: 220px; max-height: 300px; background: linear-gradient(140deg, #dff1f3, #eef6f8); overflow: hidden; }
+    .cl-species__media img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .5s; }
+    .cl-species:hover .cl-species__media img { transform: scale(1.04); }
+    .cl-species__body { padding: 22px 24px; display: flex; flex-direction: column; justify-content: center; gap: 4px; }
+    .cl-species h3 { margin: 0; font-family: var(--font-display); font-size: 1.3rem; line-height: 1.25; }
+    .cl-species__sci { color: var(--text-muted); font-size: .84rem; font-style: italic; }
+    .cl-species__fam { color: var(--text-secondary); font-size: .78rem; }
+    .cl-care { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+    .cl-care span { padding: 4px 9px; border-radius: 999px; background: #f0fdfa; border: 1px solid #ccebe6; color: #115e59; font-size: .7rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+    .cl-species__go { padding-top: 14px; color: #0f766e; font-weight: 700; font-size: .84rem; }
+
+    /* For sale now */
+    .cp-listing-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 16px; }
+    .cl-listing { display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 6px; background: #fff; box-shadow: var(--shadow-sm); overflow: hidden; text-decoration: none; transition: transform .25s, box-shadow .25s; }
+    .cl-listing:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
+    .cl-listing__media { position: relative; aspect-ratio: 1; background: linear-gradient(140deg, #dff1f3, #eef6f8); overflow: hidden; }
+    .cl-listing__media img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .cl-listing__tag { position: absolute; left: 10px; bottom: 10px; padding: 4px 9px; border-radius: 999px; background: rgba(255,255,255,.94); color: var(--text-primary); font-size: .68rem; font-weight: 700; box-shadow: var(--shadow-sm); }
+    .cl-listing__body { padding: 12px 14px 14px; display: flex; flex-direction: column; gap: 3px; }
+    .cl-listing h3 { margin: 0; font-size: .92rem; font-weight: 700; line-height: 1.3; overflow-wrap: anywhere; }
+    .cl-listing__price { font-family: var(--font-display); font-size: 1.1rem; font-weight: 700; color: #0f766e; font-variant-numeric: tabular-nums; }
+    .cl-listing__meta { color: var(--text-muted); font-size: .74rem; }
+
+    /* Aside: join card + events */
+    .cp-aside { display: grid; gap: 22px; }
+    .cp-join { padding: 22px; border: 1px solid #ccebe6; border-radius: 6px; background: linear-gradient(150deg, #f0fdfa, #ffffff 70%); }
+    .cp-join__count { font-family: var(--font-display); font-size: 2.4rem; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+    .cp-join__label { margin-top: 4px; color: var(--text-secondary); font-size: .84rem; }
+    .cp-join p { margin: 12px 0 16px; color: var(--text-secondary); font-size: .84rem; line-height: 1.55; }
+    .cp-join .cl-btn { width: 100%; }
+    .cp-events { display: grid; gap: 10px; }
+    .cl-event { display: grid; grid-template-columns: 56px minmax(0, 1fr) auto; gap: 14px; align-items: center; padding: 12px 14px; border: 1px solid var(--line); border-radius: 6px; background: #fff; box-shadow: var(--shadow-sm); text-decoration: none; transition: transform .2s, box-shadow .2s, border-color .2s; }
+    .cl-event:hover { transform: translateX(2px); box-shadow: var(--shadow-md); border-color: rgba(var(--ink-rgb),.18); }
+    .cl-event__date { display: grid; place-items: center; height: 58px; border-radius: 6px; background: #0f766e; color: #fff; line-height: 1; }
+    .cl-event__date span { font-size: .64rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; opacity: .85; }
+    .cl-event__date strong { font-family: var(--font-display); font-size: 1.4rem; margin-top: -8px; }
+    .cl-event h3 { margin: 0; font-size: .94rem; font-weight: 700; line-height: 1.3; overflow-wrap: anywhere; }
+    .cl-event__meta { display: flex; flex-wrap: wrap; gap: 4px 10px; margin-top: 4px; color: var(--text-muted); font-size: .74rem; }
+    .cl-event__go { color: #0f766e; font-weight: 800; }
+    .cl-event--past .cl-event__date { background: #e2ecef; color: var(--text-secondary); }
+    .cl-event__now { padding: 2px 8px; border-radius: 999px; background: #dcfce7; color: #166534; font-weight: 700; }
+    .cl-event__cancelled { padding: 2px 8px; border-radius: 999px; background: #fee2e2; color: #991b1b; font-weight: 700; }
+    .cp-past { margin-top: 14px; }
+    .cp-past summary { cursor: pointer; list-style: none; display: inline-flex; align-items: center; gap: 8px; color: var(--text-secondary); font-size: .84rem; font-weight: 700; padding: 6px 0; }
+    .cp-past summary::-webkit-details-marker { display: none; }
+    .cp-past summary::before { content: ""; width: 7px; height: 7px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(-45deg); transition: transform .2s; }
+    .cp-past[open] summary::before { transform: rotate(45deg); }
+    .cp-past .cp-events { margin-top: 8px; }
+
+    /* Not found / error */
+    .cp-missing { padding: 90px 0 110px; }
+    .cp-missing .cl-panel { max-width: 560px; margin: 0 auto; padding: 48px 28px; }
+    .cp-missing h1 { margin: 0 0 10px; font-family: var(--font-display); font-size: 1.8rem; }
+    .cp-missing .cl-btn { margin-top: 20px; }
+
+    @media (max-width: 960px) {
+      .cp-split { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 720px) {
+      .cp-head { grid-template-columns: 1fr; margin-top: -56px; padding: 22px 20px; gap: 18px; }
+      .cp-actions { min-width: 0; }
+      .cp-body { padding: 30px 0 64px; gap: 36px; }
+      .cp-listing-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+      .cl-species { grid-template-columns: 1fr; }
+      .cl-species__media { min-height: 0; aspect-ratio: 16 / 10; }
+      .cl-species__body { padding: 16px 18px 18px; }
+      .cl-species h3 { font-size: 1.12rem; }
+      .cl-event { grid-template-columns: 50px minmax(0, 1fr); }
+      .cl-event__go { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <header id="site-nav"></header>
+
+  <main id="clubMain" aria-busy="true">
+    <section class="cp-hero" aria-label="Club">
+      <div class="cl-banner" id="heroBanner" style="--cl-hue:174"><div class="cl-banner__ripple"></div></div>
+      <div class="cl-wrap">
+        <div class="cp-head">
+          <div>
+            <div class="cl-skeleton" style="height:22px;width:160px"></div>
+            <div class="cl-skeleton" style="height:46px;width:min(420px,100%);margin-top:14px"></div>
+            <div class="cl-skeleton" style="height:18px;width:min(620px,100%);margin-top:14px"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer id="site-footer"></footer>
+
+  <script src="/js/nav.js"></script>
+  <script src="/js/footer.js"></script>
+  <script src="/js/public-listings.js"></script>
+  <script src="/js/catalog-aliases.js"></script>
+  <script src="/js/clubs-public.js"></script>
+  <script>
+    "use strict";
+
+    const Clubs = window.AquadexClubs;
+    const escapeHtml = Clubs.escapeHtml;
+    const REFRESH_MS = 60000;
+    const WATER_LABELS = { fresh: "Freshwater", salt: "Saltwater", marine: "Saltwater", brackish: "Brackish" };
+    const TIDE_TYPES = { expo: "Meetup", virtual: "Online", challenge: "Challenge", auction: "Auction" };
+
+    const main = document.getElementById("clubMain");
+    const state = {
+      slug: "",
+      club: null,
+      index: new Map(),
+      catalog: null,
+      listings: [],
+      events: { upcoming: [], past: [] },
+      updatedAt: 0,
+      painted: { species: false, listings: false, events: false },
+      timer: null,
+      loading: false,
+    };
+
+    const ICONS = {
+      official: '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>',
+      members: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+      calendar: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>',
+      fish: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6.5 12c3-5 9-6 13.5 0-4.5 6-10.5 5-13.5 0z"/><path d="M6.5 12L2 8.5v7z"/><circle cx="16" cy="11" r=".8" fill="currentColor"/></svg>',
+    };
+
+    // ── Meta ─────────────────────────────────────────────────────────────
+    function setMeta(id, value, attr = "content") {
+      const el = document.getElementById(id);
+      if (el) el.setAttribute(attr, value);
+    }
+
+    function applyMeta(club) {
+      const title = `${club.name || "Club"} | Clubs | Aquacellum`;
+      const desc = String(club.description || "").trim().replace(/\s+/g, " ");
+      const summary = (desc ? desc.slice(0, 180) : `${club.name}, an aquarium club on Aquacellum.`) +
+        (desc.length > 180 ? "..." : "");
+      const url = `https://aquacellum.com${Clubs.clubUrl(club.slug)}`;
+      document.title = title;
+      setMeta("metaDescription", summary);
+      setMeta("ogTitle", title);
+      setMeta("ogDescription", summary);
+      setMeta("twTitle", title);
+      setMeta("twDescription", summary);
+      setMeta("ogUrl", url);
+      setMeta("canonicalLink", url, "href");
+      const banner = Clubs.safeImageUrl(club.banner_url, "https://aquacellum.com");
+      if (banner) setMeta("ogImage", banner);
+    }
+
+    function noindex() {
+      const m = document.createElement("meta");
+      m.name = "robots";
+      m.content = "noindex";
+      document.head.appendChild(m);
+    }
+
+    // ── Species ──────────────────────────────────────────────────────────
+    /** Tracked species resolved to the catalog (current record for old IDs) and the de-duplicated index. */
+    function resolvedSpecies() {
+      return Clubs.trackedSpecies(state.club).map((t) => {
+        let record = null;
+        if (state.catalog && t.specCode) record = window.CatalogAliases.resolveSpecies(t.specCode, state.catalog);
+        if (!record && state.catalog && t.scientificName) {
+          const sci = t.scientificName.toLowerCase();
+          record = state.catalog.find((r) => String(r.scientificName || "").toLowerCase() === sci) || null;
+          if (record) record = window.CatalogAliases.resolveRecord(record, state.catalog);
+        }
+        const sci = record?.scientificName || t.scientificName;
+        const row = state.index.get(String(sci).toLowerCase()) || state.index.get(t.scientificName.toLowerCase()) || null;
+        const codes = new Set();
+        const code = Number(record?.specCode ?? t.specCode);
+        if (Number.isInteger(code) && code > 0) {
+          codes.add(code);
+          if (state.catalog) window.CatalogAliases.aliasSpecCodesFor(code, state.catalog).forEach((c) => codes.add(c));
+        }
+        if (t.specCode) codes.add(t.specCode);
+        return {
+          commonName: row?.n || record?.commonName || t.commonName || sci,
+          scientificName: row?.s || sci,
+          slug: row?.u || "",
+          family: row?.f || record?.family || "",
+          water: WATER_LABELS[row?.w] || "",
+          photo: Clubs.safeImageUrl(row?.p || record?.masterPhotoUrl),
+          difficulty: row?.d || record?.tankMetrics?.difficulty || "",
+          gallons: Number(row?.g || record?.tankMetrics?.minVolumeGallons) || 0,
+          temp: record?.tankMetrics?.tempRangeCelsius,
+          ph: record?.tankMetrics?.phRange,
+          names: [t.scientificName, sci].filter(Boolean).map((s) => s.toLowerCase()),
+          codes,
+        };
+      });
+    }
+
+    function isRange(r) {
+      return Array.isArray(r) && r.length === 2 && r.every((n) => Number.isFinite(Number(n))) && Number(r[0]) <= Number(r[1]);
+    }
+    const toF = (c) => Math.round(Number(c) * 9 / 5 + 32);
+    const trim = (n) => String(Math.round(Number(n) * 10) / 10);
+
+    function careChips(sp) {
+      const chips = [];
+      if (isRange(sp.temp)) chips.push(`<span title="${trim(sp.temp[0])} to ${trim(sp.temp[1])} &deg;C">${toF(sp.temp[0])} to ${toF(sp.temp[1])} &deg;F</span>`);
+      if (isRange(sp.ph)) chips.push(`<span>pH ${trim(sp.ph[0])} to ${trim(sp.ph[1])}</span>`);
+      if (sp.gallons > 0) chips.push(`<span>${sp.gallons}+ gal tank</span>`);
+      if (sp.difficulty) chips.push(`<span>${escapeHtml(sp.difficulty)}</span>`);
+      return chips.length ? `<div class="cl-care">${chips.join("")}</div>` : "";
+    }
+
+    function speciesCardHTML(sp, i, rise) {
+      const inner = `
+        <div class="cl-species__media">${sp.photo ? `<img src="${escapeHtml(sp.photo)}" alt="${escapeHtml(sp.commonName)}" loading="lazy" decoding="async">` : ""}</div>
+        <div class="cl-species__body">
+          <h3>${escapeHtml(sp.commonName)}</h3>
+          <span class="cl-species__sci">${escapeHtml(sp.scientificName)}</span>
+          ${sp.family || sp.water ? `<span class="cl-species__fam">${[sp.water, sp.family].filter(Boolean).map(escapeHtml).join(" &middot; ")}</span>` : ""}
+          ${careChips(sp)}
+          ${sp.slug ? '<span class="cl-species__go">Care guide <span aria-hidden="true">&rarr;</span></span>' : ""}
+        </div>`;
+      const cls = `cl-species${rise ? " cl-rise" : ""}`;
+      return sp.slug
+        ? `<a class="${cls}" style="--i:${i}" href="/species/${encodeURIComponent(sp.slug)}">${inner}</a>`
+        : `<div class="${cls}" style="--i:${i}">${inner}</div>`;
+    }
+
+    function renderSpecies() {
+      const el = document.getElementById("speciesBody");
+      if (!el) return;
+      const species = resolvedSpecies();
+      const rise = !state.painted.species;
+      state.painted.species = true;
+      if (!species.length) {
+        el.innerHTML = `<div class="cl-panel">
+          <h3>No species picked yet</h3>
+          <p>This club has not said which fish it is about yet. Once it does, they show up here with their care basics.</p>
+        </div>`;
+        return;
+      }
+      el.innerHTML = `<div class="cp-species-grid">${species.map((sp, i) => speciesCardHTML(sp, i, rise)).join("")}</div>`;
+    }
+
+    // ── Listings ─────────────────────────────────────────────────────────
+    function liveStock(row, d) {
+      if (Number.isFinite(d.quantityRemaining)) return Math.max(0, Math.floor(d.quantityRemaining));
+      const col = row.quantity_remaining;
+      if (col != null && col !== "" && Number.isFinite(Number(col))) return Math.max(0, Math.floor(Number(col)));
+      const legacy = d.quantity;
+      if (legacy != null && legacy !== "" && Number.isFinite(Number(legacy))) return Math.max(0, Math.floor(Number(legacy)));
+      return null;
+    }
+
+    function normalizeListing(row) {
+      const d = window.AquadexPublicListings.parseRow(row) || {};
+      const isBatch = d.isBatch ?? row.is_batch ?? false;
+      return {
+        ...d,
+        id: d.id ?? row.id,
+        listingId: d.listingId ?? (isBatch ? row.id : undefined),
+        tokenId: d.tokenId ?? (!isBatch ? row.id : undefined),
+        isBatch,
+        commonName: d.commonName || row.common_name || "Aquarium fish",
+        price: d.price ?? row.price,
+        sellerName: row.seller_display_name || d.sellerDisplayName || "",
+        stock: liveStock(row, d),
+        createdAt: row.created_at,
+      };
+    }
+
+    /** Same product link the marketplace uses. */
+    function listingUrl(l) {
+      const key = `${l.isBatch ? "batch" : "single"}-${l.isBatch ? (l.listingId ?? l.id) : (l.tokenId ?? l.id)}`;
+      return `/app/products/${encodeURIComponent(key)}`;
+    }
+
+    function priceLabel(l) {
+      const n = Number(l.price ?? (l.priceCentsUSD ? l.priceCentsUSD / 100 : 0));
+      if (!Number.isFinite(n) || n <= 0) return "Ask breeder";
+      const base = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(n);
+      return l.isBatch ? `${base} each` : base;
+    }
+
+    async function loadListings() {
+      const species = resolvedSpecies();
+      if (!species.length) { state.listings = []; return; }
+      const match = { names: new Set(species.flatMap((s) => s.names)), codes: new Set(species.flatMap((s) => [...s.codes])) };
+      // Display-safe projection, never the raw listings table (see /js/public-listings.js).
+      const rows = await window.AquadexPublicListings.fetchRows({
+        supabaseUrl: Clubs.SB_URL,
+        anonKey: Clubs.SB_KEY,
+        query: `is_active=eq.true&select=${Clubs.LISTING_COLUMNS}&order=created_at.desc&limit=500`,
+      });
+      state.listings = rows.map(normalizeListing).filter((l) => Clubs.listingMatches(l, match) && l.stock !== 0);
+    }
+
+    function listingCardHTML(l, i, rise, photoFor) {
+      const photo = Clubs.safeImageUrl(l.photoUrl || l.imageUrl) || photoFor(l);
+      const tag = l.isBatch ? (l.stock ? `${l.stock} available` : "Batch") : "Single fish";
+      const where = l.isShipping === true ? "Ships" : l.isShipping === false ? "Local pickup" : "";
+      const meta = [l.sellerName ? escapeHtml(l.sellerName) : "Independent breeder", where].filter(Boolean).join(" &middot; ");
+      return `<a class="cl-listing${rise ? " cl-rise" : ""}" style="--i:${Math.min(i, 10)}" href="${escapeHtml(listingUrl(l))}">
+        <div class="cl-listing__media">
+          ${photo ? `<img src="${escapeHtml(photo)}" alt="${escapeHtml(l.commonName)}" loading="lazy" decoding="async">` : ""}
+          <span class="cl-listing__tag">${escapeHtml(tag)}</span>
+        </div>
+        <div class="cl-listing__body">
+          <h3>${escapeHtml(l.commonName)}</h3>
+          <span class="cl-listing__price">${escapeHtml(priceLabel(l))}</span>
+          <span class="cl-listing__meta">${meta}</span>
+        </div>
+      </a>`;
+    }
+
+    function renderListings() {
+      const el = document.getElementById("listingsBody");
+      const count = document.getElementById("listingsCount");
+      if (!el) return;
+      const species = resolvedSpecies();
+      const rise = !state.painted.listings;
+      state.painted.listings = true;
+      const n = state.listings.length;
+      if (count) count.textContent = n ? `${n} ${n === 1 ? "listing" : "listings"} right now` : "";
+      if (!species.length) {
+        el.innerHTML = `<div class="cl-panel">
+          <h3>Nothing to match yet</h3>
+          <p>When this club picks its species, fish for sale from breeders show up here.</p>
+          <a class="cl-link" href="/marketplace">Browse the marketplace <span aria-hidden="true">&rarr;</span></a>
+        </div>`;
+        return;
+      }
+      if (!n) {
+        const names = species.map((s) => escapeHtml(s.commonName)).join(", ");
+        el.innerHTML = `<div class="cl-panel">
+          <h3>No listings right now</h3>
+          <p>No breeder has ${names} listed at the moment. This list checks again every minute while the page is open.</p>
+          <a class="cl-link" href="/marketplace">Browse the marketplace <span aria-hidden="true">&rarr;</span></a>
+        </div>`;
+        return;
+      }
+      const bySci = new Map(species.flatMap((s) => s.names.map((name) => [name, s.photo])));
+      const photoFor = (l) => bySci.get(String(l.scientificName || "").toLowerCase()) || "";
+      el.innerHTML = `<div class="cp-listing-grid">${state.listings.slice(0, 12).map((l, i) => listingCardHTML(l, i, rise, photoFor)).join("")}</div>`;
+    }
+
+    // ── Events ───────────────────────────────────────────────────────────
+    const parseTime = Clubs.parseTimestamp;
+
+    function eventHTML(t, past, i, rise) {
+      const start = parseTime(t.start_time);
+      const end = parseTime(t.end_time);
+      const month = start ? start.toLocaleDateString(undefined, { month: "short" }) : "";
+      const day = start ? start.getDate() : "?";
+      const when = start
+        ? start.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" }) + ", " +
+          start.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" }) +
+          (end && end > start && end.toDateString() === start.toDateString()
+            ? " to " + end.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" }) : "")
+        : "Date to be set";
+      const type = TIDE_TYPES[t.tide_type] || "Event";
+      const target = String(t.settings?.target_species || "").trim();
+      const flags = t._live ? '<span class="cl-event__now">Happening now</span>'
+        : t.status === "cancelled" ? '<span class="cl-event__cancelled">Cancelled</span>' : "";
+      return `<a class="cl-event${past ? " cl-event--past" : ""}${rise ? " cl-rise" : ""}" style="--i:${Math.min(i, 8)}" href="${escapeHtml(Clubs.eventUrl(t.id))}">
+        <div class="cl-event__date" aria-hidden="true"><span>${escapeHtml(month)}</span><strong>${escapeHtml(day)}</strong></div>
+        <div>
+          <h3>${escapeHtml(t.title || "Club event")}</h3>
+          <div class="cl-event__meta">${flags}<span>${escapeHtml(type)}</span><span>${escapeHtml(when)}</span>${target ? `<span>${escapeHtml(target)}</span>` : ""}</div>
+        </div>
+        <span class="cl-event__go" aria-hidden="true">&rarr;</span>
+      </a>`;
+    }
+
+    async function loadEvents() {
+      const tides = await Clubs.fetchClubEvents(state.club.id);
+      state.events = Clubs.splitEvents(tides, Date.now());
+    }
+
+    function renderEvents() {
+      const el = document.getElementById("eventsBody");
+      if (!el) return;
+      const rise = !state.painted.events;
+      state.painted.events = true;
+      const wasOpen = !!el.querySelector(".cp-past[open]");
+      const { upcoming, past } = state.events;
+      let html = upcoming.length
+        ? `<div class="cp-events">${upcoming.map((t, i) => eventHTML(t, false, i, rise)).join("")}</div>`
+        : `<div class="cl-panel">
+            <h3>No upcoming events</h3>
+            <p>When the club plans a meetup, an online get-together or an auction, it shows up here.</p>
+          </div>`;
+      if (past.length) {
+        html += `<details class="cp-past"${wasOpen ? " open" : ""}>
+          <summary>Past events (${past.length})</summary>
+          <div class="cp-events">${past.slice(0, 20).map((t, i) => eventHTML(t, true, i, false)).join("")}</div>
+        </details>`;
+      }
+      el.innerHTML = html;
+    }
+
+    // ── Hero ─────────────────────────────────────────────────────────────
+    function heroHTML(club) {
+      const src = Clubs.safeImageUrl(club.banner_url);
+      const type = Clubs.typeLabel(club.school_type);
+      const founded = Clubs.formatMonthYear(club.created_at);
+      const nSpecies = Clubs.trackedSpecies(club).length;
+      const desc = String(club.description || "").trim();
+      const badges = [
+        club.is_official ? `<span class="cl-badge cl-badge--official">${ICONS.official}Official</span>` : "",
+        type ? `<span class="cl-badge">${escapeHtml(type)}</span>` : "",
+        club.is_invite_only ? '<span class="cl-badge cl-badge--invite">Invite only</span>' : "",
+      ].join("");
+      return `
+        <div class="cl-banner${src ? " has-image" : ""}" id="heroBanner" style="--cl-hue:${Clubs.bannerHue(club.slug)}">
+          <div class="cl-banner__ripple"></div>
+          <div class="cl-banner__initials" aria-hidden="true">${escapeHtml(Clubs.initials(club.name))}</div>
+          ${src ? `<img src="${escapeHtml(src)}" alt="" decoding="async" onerror="this.parentNode.classList.remove('has-image');this.remove()">` : ""}
+        </div>
+        <div class="cl-wrap">
+          <div class="cp-head cl-rise">
+            <div>
+              <div class="cl-badges">${badges}</div>
+              <h1>${escapeHtml(club.name || "Club")}</h1>
+              ${desc ? `<p class="cp-desc">${escapeHtml(desc)}</p>` : ""}
+              <div class="cp-facts">
+                <span class="cp-fact">${ICONS.members}<span><strong id="memberCount">${Math.max(0, Number(club.member_count) || 0)}</strong> <span id="memberWord">${Number(club.member_count) === 1 ? "member" : "members"}</span></span></span>
+                ${founded ? `<span class="cp-fact">${ICONS.calendar}<span>Founded ${escapeHtml(founded)}</span></span>` : ""}
+                ${nSpecies ? `<span class="cp-fact">${ICONS.fish}<span><strong>${nSpecies}</strong> species</span></span>` : ""}
+              </div>
+            </div>
+            <div class="cp-actions">
+              ${joinButtonHTML(club)}
+              <a class="cl-btn" href="/clubs">All clubs</a>
+              <span class="cp-live" id="liveStatus"><span class="cp-live__dot" aria-hidden="true"></span><span id="updatedLabel">Updated just now</span></span>
+            </div>
+          </div>
+        </div>`;
+    }
+
+    function joinButtonHTML(club) {
+      const href = escapeHtml(Clubs.joinUrl(club.slug));
+      return club.is_invite_only
+        ? `<a class="cl-btn cl-btn--muted" href="${href}" aria-label="Invite only. Open this club in the app">Invite only</a>`
+        : `<a class="cl-btn cl-btn--teal" href="${href}">Join in the app</a>`;
+    }
+
+    function renderPage(club) {
+      const name = escapeHtml(club.name || "this club");
+      main.innerHTML = `
+        <section class="cp-hero" aria-label="Club">${heroHTML(club)}</section>
+        <div class="cl-wrap cp-body">
+          <section class="cp-section" aria-labelledby="keepHeading">
+            <div class="cp-section__head">
+              <div><div class="cp-kicker">The fish</div><h2 id="keepHeading">What we keep</h2></div>
+            </div>
+            <div id="speciesBody"></div>
+          </section>
+
+          <div class="cp-split">
+            <section class="cp-section" aria-labelledby="saleHeading">
+              <div class="cp-section__head">
+                <div><div class="cp-kicker">Live stock</div><h2 id="saleHeading">For sale now from breeders</h2>
+                  <p class="cp-section__note" id="listingsCount"></p></div>
+                <a class="cl-link" href="/marketplace">Marketplace <span aria-hidden="true">&rarr;</span></a>
+              </div>
+              <div id="listingsBody" aria-live="polite"><div class="cp-listing-grid"><div class="cl-skeleton" style="height:280px"></div><div class="cl-skeleton" style="height:280px"></div><div class="cl-skeleton" style="height:280px"></div></div></div>
+            </section>
+
+            <aside class="cp-aside" aria-label="Membership and events">
+              <div class="cp-join">
+                <div class="cp-join__count" id="joinCount">${Math.max(0, Number(club.member_count) || 0)}</div>
+                <div class="cp-join__label" id="joinLabel">${Number(club.member_count) === 1 ? "member" : "members"} in ${name}</div>
+                <p>${club.is_invite_only
+                  ? "This club takes new members by invite. Open it in the app to see how to get in."
+                  : "Join in the app to post your tanks to the club and hear about its events."}</p>
+                ${joinButtonHTML(club)}
+              </div>
+              <section class="cp-section" aria-labelledby="eventsHeading">
+                <div class="cp-section__head">
+                  <div><div class="cp-kicker">Get together</div><h2 id="eventsHeading">Upcoming events</h2></div>
+                </div>
+                <div id="eventsBody" aria-live="polite"><div class="cl-skeleton" style="height:84px"></div></div>
+              </section>
+            </aside>
+          </div>
+        </div>`;
+      main.removeAttribute("aria-busy");
+    }
+
+    function renderMissing(kind) {
+      const failed = kind === "error";
+      if (!failed) { document.title = "Club not found | Aquacellum"; noindex(); }
+      main.innerHTML = `<section class="cp-missing cl-wrap">
+        <div class="cl-panel">
+          <h1>${failed ? "This club could not be loaded" : "We could not find that club"}</h1>
+          <p>${failed
+            ? "This is usually a brief connection problem. Try again in a moment."
+            : "The link may be old, or the club may have changed its address. All clubs are listed on the clubs page."}</p>
+          ${failed
+            ? '<button type="button" class="cl-btn cl-btn--teal" id="retryBtn">Try again</button>'
+            : '<a class="cl-btn cl-btn--teal" href="/clubs">Browse all clubs</a>'}
+        </div>
+      </section>`;
+      main.removeAttribute("aria-busy");
+      document.getElementById("retryBtn")?.addEventListener("click", () => location.reload());
+    }
+
+    // ── Live refresh ─────────────────────────────────────────────────────
+    function tickUpdated() {
+      const label = document.getElementById("updatedLabel");
+      if (label && state.updatedAt) label.textContent = Clubs.updatedLabel(Date.now() - state.updatedAt);
+      document.getElementById("liveStatus")?.classList.toggle("is-paused", document.visibilityState !== "visible");
+    }
+
+    function updateMemberCount(club) {
+      const n = Math.max(0, Number(club.member_count) || 0);
+      const word = n === 1 ? "member" : "members";
+      const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+      set("memberCount", String(n));
+      set("memberWord", word);
+      set("joinCount", String(n));
+      set("joinLabel", `${word} in ${club.name || "this club"}`);
+    }
+
+    /** Re-read the club row, listings and events. Failures keep what is on screen. */
+    async function refresh() {
+      if (state.loading || !state.club) return;
+      state.loading = true;
+      try {
+        const [club] = await Promise.all([
+          Clubs.fetchClubBySlug(state.slug).catch(() => null),
+          loadListings().catch(() => {}),
+          loadEvents().catch(() => {}),
+        ]);
+        if (club) { state.club = club; updateMemberCount(club); }
+        renderListings();
+        renderEvents();
+        state.updatedAt = Date.now();
+      } finally {
+        state.loading = false;
+        tickUpdated();
+      }
+    }
+
+    function startTimer() {
+      stopTimer();
+      state.timer = setInterval(() => { if (document.visibilityState === "visible") refresh(); }, REFRESH_MS);
+    }
+    function stopTimer() {
+      if (state.timer) clearInterval(state.timer);
+      state.timer = null;
+    }
+
+    document.addEventListener("visibilitychange", () => {
+      if (!state.club) return;
+      if (document.visibilityState === "visible") {
+        if (Date.now() - state.updatedAt >= REFRESH_MS) refresh();
+        startTimer();
+      } else {
+        stopTimer();
+      }
+      tickUpdated();
+    });
+    setInterval(tickUpdated, 15000);
+
+    // ── Boot ─────────────────────────────────────────────────────────────
+    async function loadCatalog() {
+      try {
+        const res = await fetch("/fishbase_master.json?v=2");
+        if (res.ok) state.catalog = await res.json();
+      } catch { state.catalog = null; }
+    }
+
+    async function boot() {
+      state.slug = Clubs.slugFromLocation(window.location);
+      if (!Clubs.isValidSlug(state.slug)) { renderMissing("notfound"); return; }
+
+      let club;
+      try {
+        const [row, index] = await Promise.all([Clubs.fetchClubBySlug(state.slug), Clubs.loadSpeciesIndex()]);
+        club = row;
+        state.index = Clubs.indexByScientificName(index);
+      } catch (e) {
+        console.warn("[Club] load failed:", e && e.message);
+        renderMissing("error");
+        return;
+      }
+      if (!club) { renderMissing("notfound"); return; }
+
+      state.club = club;
+      applyMeta(club);
+      renderPage(club);
+      renderSpecies();
+
+      await Promise.all([loadListings().catch(() => {}), loadEvents().catch(() => {})]);
+      renderListings();
+      renderEvents();
+      state.updatedAt = Date.now();
+      tickUpdated();
+      startTimer();
+
+      // Care details and old catalog IDs come from the full catalog; it is
+      // large, so it loads after the page is up and then fills in.
+      if (Clubs.trackedSpecies(club).length) {
+        await loadCatalog();
+        if (state.catalog) {
+          renderSpecies();
+          await loadListings().catch(() => {});
+          renderListings();
+        }
+      }
+    }
+
+    boot();
+  </script>
+</body>
+</html>

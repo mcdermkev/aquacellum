@@ -1,0 +1,64 @@
+/* Public club pages (clubs.html, club.html). Daylight, same vocabulary as
+   breeders.html and marketplace.html: white cards on the pale page, teal
+   accents, Outfit headings, pill buttons. Loaded after shared.css. */
+* { box-sizing: border-box; }
+body { margin: 0; color: var(--text-primary); font-family: var(--font-body); }
+a { color: inherit; }
+button, input, select { font: inherit; color: inherit; }
+.cl-wrap { width: min(1200px, calc(100% - 40px)); margin: 0 auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+
+/* Buttons */
+.cl-btn { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 0 20px; border-radius: 999px; border: 1px solid var(--line); background: #fff; color: var(--text-primary); font-weight: 700; font-size: .86rem; text-decoration: none; cursor: pointer; transition: transform .2s, border-color .2s, box-shadow .2s, background .2s; }
+.cl-btn:hover { transform: translateY(-1px); border-color: rgba(var(--ink-rgb),.28); box-shadow: var(--shadow-sm); }
+.cl-btn:focus-visible, .cl-card:focus-visible, .cl-link:focus-visible, .cl-species:focus-visible, .cl-listing:focus-visible, .cl-event:focus-visible { outline: 3px solid rgba(13,148,136,.45); outline-offset: 2px; }
+.cl-btn--teal { background: #0f766e; border-color: #0f766e; color: #fff; }
+.cl-btn--teal:hover { background: #115e59; border-color: #115e59; }
+.cl-btn--muted { background: #f5f9fa; color: var(--text-secondary); }
+.cl-link { color: #0f766e; font-weight: 700; font-size: .84rem; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+.cl-link:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+.cl-eyebrow { display: flex; align-items: center; gap: 10px; color: #0f766e; font-size: .72rem; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; margin-bottom: 16px; }
+.cl-eyebrow::before { content: ""; width: 34px; height: 1px; background: currentColor; }
+
+/* Badges */
+.cl-badges { display: flex; flex-wrap: wrap; gap: 6px; }
+.cl-badge { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); background: #fff; color: var(--text-secondary); font-size: .68rem; font-weight: 700; letter-spacing: .02em; white-space: nowrap; }
+.cl-badge--official { background: #0f766e; border-color: #0f766e; color: #fff; }
+.cl-badge--official svg { flex: none; }
+.cl-badge--invite { background: #fef3c7; border-color: #fcd34d; color: #92400e; }
+
+/* Banner (image or teal gradient with initials) */
+.cl-banner { position: relative; overflow: hidden; background: linear-gradient(135deg, hsl(var(--cl-hue, 174) 70% 26%), hsl(calc(var(--cl-hue, 174) + 6) 68% 36%) 55%, hsl(calc(var(--cl-hue, 174) + 12) 55% 52%)); }
+.cl-banner img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+.cl-banner__initials { position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--font-display); font-weight: 800; letter-spacing: .04em; color: rgba(255,255,255,.92); text-shadow: 0 2px 18px rgba(0,0,0,.12); }
+.cl-banner__ripple { position: absolute; inset: 0; background:
+  radial-gradient(120% 90% at 100% 0%, rgba(255,255,255,.22), transparent 55%),
+  radial-gradient(80% 70% at 0% 100%, rgba(11,37,48,.22), transparent 60%); pointer-events: none; }
+.cl-banner.has-image .cl-banner__initials, .cl-banner.has-image .cl-banner__ripple { display: none; }
+
+/* Species chips (directory cards) */
+.cl-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.cl-chip { display: inline-flex; align-items: center; gap: 7px; max-width: 100%; padding: 3px 10px 3px 3px; border: 1px solid var(--line); border-radius: 999px; background: #f5f9fa; color: var(--text-secondary); font-size: .72rem; font-weight: 600; }
+.cl-chip img, .cl-chip__dot { flex: none; width: 24px; height: 24px; border-radius: 50%; object-fit: cover; background: #dff1f3; }
+.cl-chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cl-chip--plain { padding-left: 10px; }
+
+/* Panels, skeletons */
+.cl-panel { padding: 36px 22px; border: 1px dashed #c5d9de; border-radius: 6px; background: #fff; text-align: center; }
+.cl-panel h3 { margin: 0 0 8px; font-family: var(--font-display); font-size: 1.08rem; }
+.cl-panel p { margin: 0 auto; max-width: 420px; color: var(--text-secondary); font-size: .86rem; line-height: 1.6; }
+.cl-panel .cl-btn, .cl-panel .cl-link { margin-top: 16px; }
+.cl-skeleton { border: 1px solid var(--line); border-radius: 6px; background: linear-gradient(100deg, #eef4f6 20%, #f9fbfc 42%, #eef4f6 64%); background-size: 300% 100%; animation: cl-shimmer 1.4s infinite; }
+@keyframes cl-shimmer { to { background-position: -150% 0; } }
+
+/* Entrance: content fades up once. Reduced motion shows it immediately. */
+.cl-rise { animation: cl-rise .5s cubic-bezier(.2,.7,.2,1) both; animation-delay: calc(var(--i, 0) * 45ms); }
+@keyframes cl-rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+@media (max-width: 480px) {
+  .cl-wrap { width: calc(100% - 28px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-delay: 0s !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+}

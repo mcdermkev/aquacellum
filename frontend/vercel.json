@@ -60,6 +60,8 @@
     { "source": "/compare", "destination": "/compare.html" },
     { "source": "/how-it-works", "destination": "/how-it-works.html" },
     { "source": "/breeders", "destination": "/breeders.html" },
+    { "source": "/clubs", "destination": "/clubs.html" },
+    { "source": "/clubs/:slug", "destination": "/club.html" },
     { "source": "/breeds", "destination": "/breeds.html" },
     { "source": "/about", "destination": "/about.html" },
     { "source": "/legal", "destination": "/legal.html" },

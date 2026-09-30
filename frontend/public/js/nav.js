@@ -22,6 +22,7 @@
     { href: '/marketplace.html', label: 'Marketplace' },
     { href: '/app/auctions', label: 'Auctions' },
     { href: '/app/reef', label: 'The Reef' },
+    { href: '/clubs', label: 'Clubs' },
     { href: '/poseidon.html', label: 'Poseidon AI' },
   ];
 
@@ -41,6 +42,7 @@
     '/species': '/database',
     '/compare': '/database',
     '/store': '/marketplace',
+    '/club': '/clubs',
   };
 
   // "/database.html", "/database" and "/database/" are the same page (the host
@@ -55,6 +57,8 @@
 
   function currentSection() {
     const p = normalize(window.location.pathname);
+    // A single club (/clubs/<slug>, or club.html in dev) lights up Clubs.
+    if (p.startsWith('/clubs/')) return '/clubs';
     return SECTION_ALIASES[p] || p;
   }
 

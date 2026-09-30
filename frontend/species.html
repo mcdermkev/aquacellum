@@ -1800,8 +1800,9 @@
             matching.slice(0, 6).forEach(school => {
               const name = escapeCommunityText(school.name || 'Club');
               const avatar = `<div class="school-avatar school-avatar-fallback" aria-hidden="true">${name.charAt(0)}</div>`;
-              // Clubs open inside The Reef in the app (there is no per-club URL).
-              const link = '/app/reef';
+              // Each club has a public page at /clubs/<slug> (club.html).
+              const slug = String(school.slug || '');
+              const link = /^[a-z0-9-]{1,80}$/.test(slug) ? `/clubs/${slug}` : '/clubs';
               const members = school.member_count || 0;
 
               schoolsHtml += `<a href="${link}" class="school-chip">
