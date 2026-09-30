@@ -524,9 +524,19 @@ export async function generateFacilitySummary({ tanks, ownerAddress, recentSpawn
 // ─── Tank QR Label (printable sticker) ───────────────────────────────────────
 
 /**
- * Generate a small printable QR label PDF for a tank/rack unit.
- * Designed to be printed on standard label paper (2" x 1.5" per label, 4-up on a page).
- * 
+ * Generate a small printable QR label PDF for a tank/rack unit (one-up, 51mm x
+ * 76mm: `format: [76, 51]` + portrait resolves to a 51mm-wide page, so the
+ * layout stacks: QR on top, name and details under it, the printed link and
+ * any note at the bottom).
+ *
+ * `target` comes from utils/tankLabel.js `tankLabelTarget`:
+ *   - public:  the QR and printed link are the tank's `/t/<token>` page. The
+ *              owner's location (facility, room, rack) and local tank id are
+ *              left off, since anyone can read this label.
+ *   - private: the QR is the in-app `/app#tank=<id>` link, and the label says in
+ *              small text that it opens only in the owner's app.
+ * Without a target it prints the private label, as before.
+ *
  * @param {Object} params
  * @param {number} params.tankId
  * @param {string} params.tankName
@@ -535,64 +545,122 @@ export async function generateFacilitySummary({ tanks, ownerAddress, recentSpawn
  * @param {string} params.rack
  * @param {number} params.volumeLiters
  * @param {string} params.containment - "Tank" | "Tub" | "Basket"
+ * @param {{kind:string, url:string, shortUrl:string, note:string}} [params.target]
  */
-export async function generateTankQRLabel({ tankId, tankName, facility, room, rack, volumeLiters, containment }) {
-  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: [76, 51] }); // ~3" x 2" label
+export async function generateTankQRLabel({ tankId, tankName, facility, room, rack, volumeLiters, containment, target }) {
+  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: [76, 51] }); // ~2" x 3" label, one-up
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
   const margin = 4;
+  const contentW = pageW - margin * 2;
+  const centerX = pageW / 2;
+
+  const isPublic = target?.kind === "public" && !!target?.url;
+  const privateUrl = `https://aquacellum.com/app#tank=${tankId}`;
+  const scanUrl = isPublic ? target.url : (target?.url || privateUrl);
+  const printedUrl = target?.shortUrl || scanUrl.replace(/^https?:\/\//i, "");
+  const note = isPublic ? "" : (target?.note || "Private label. Opens only in the owner's app.");
 
   // Background
-  doc.setFillColor(255, 255, 255);
+  doc.setFillColor(...WHITE);
   doc.rect(0, 0, pageW, pageH, "F");
 
-  // QR Code (left side)
-  const deepLink = `https://aquacellum.com/app#tank=${tankId}`;
-  const qrDataUrl = await generateQRDataUrl(deepLink);
-  const qrSize = 28;
+  // ── QR code (top, centered) ─────────────────────────────────────────────
+  const qrSize = 30;
+  const qrX = (pageW - qrSize) / 2;
+  const qrDataUrl = await generateQRDataUrl(scanUrl);
+  let placed = false;
   if (qrDataUrl) {
     try {
-      doc.addImage(qrDataUrl, "PNG", margin, margin, qrSize, qrSize);
+      doc.addImage(qrDataUrl, "PNG", qrX, margin, qrSize, qrSize);
+      placed = true;
     } catch {
-      // QR failed, draw placeholder
-      doc.setDrawColor(200, 200, 200);
-      doc.rect(margin, margin, qrSize, qrSize);
+      placed = false;
     }
   }
+  if (!placed) {
+    doc.setDrawColor(200, 200, 200);
+    doc.rect(qrX, margin, qrSize, qrSize);
+  }
 
-  // Text (right side of QR)
-  const textX = margin + qrSize + 4;
-  let y = margin + 2;
+  if (isPublic) {
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(5.5);
+    doc.setTextColor(...ACCENT_BLUE);
+    doc.text("SCAN TO SEE THIS TANK", centerX, margin + qrSize + 3.5, { align: "center" });
+  }
 
-  // Tank name
+  // ── Bottom block (laid out first so the middle text can't run into it) ──
+  const brandY = pageH - 1.8;
+  const lineStep = 2.4;
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(8);
-  doc.setTextColor(...DARK_TEXT);
-  doc.text(tankName || `Unit #${tankId}`, textX, y);
-  y += 4;
+  doc.setFontSize(5);
+  const noteLines = note ? doc.splitTextToSize(note, contentW).slice(0, 2) : [];
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(5);
+  const urlLines = doc.splitTextToSize(printedUrl, contentW).slice(0, 2);
+  const bottomRows = urlLines.length + noteLines.length;
+  const bottomTop = brandY - 2.8 - (bottomRows - 1) * lineStep;
+  const maxTextY = bottomTop - 3;
 
-  // Containment type + volume
+  let by = bottomTop;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(5);
+  doc.setTextColor(...(isPublic ? ACCENT_BLUE : MUTED_TEXT));
+  urlLines.forEach((line) => {
+    doc.text(line, centerX, by, { align: "center" });
+    by += lineStep;
+  });
+  if (noteLines.length) {
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...DARK_TEXT);
+    noteLines.forEach((line) => {
+      doc.text(line, centerX, by, { align: "center" });
+      by += lineStep;
+    });
+  }
+
+  // ── Name and details (between the QR and the bottom block) ──────────────
+  let y = margin + qrSize + (isPublic ? 8 : 5);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9);
+  doc.setTextColor(...DARK_TEXT);
+  doc.splitTextToSize(String(tankName || (isPublic ? "Aquarium" : `Unit #${tankId}`)), contentW).slice(0, 2).forEach((line) => {
+    if (y > maxTextY) return;
+    doc.text(line, centerX, y, { align: "center" });
+    y += 4;
+  });
+
   doc.setFont("helvetica", "normal");
   doc.setFontSize(6);
   doc.setTextColor(...MUTED_TEXT);
-  doc.text(`${containment || "Tank"} • ${volumeLiters || 0}L`, textX, y);
-  y += 3.5;
+  const volume = Number(volumeLiters);
+  const meta = [containment || "Tank", Number.isFinite(volume) && volume > 0 ? `${volume}L` : ""].filter(Boolean).join(" • ");
+  if (y <= maxTextY) {
+    doc.text(meta, centerX, y, { align: "center" });
+    y += 3.2;
+  }
 
-  // Location path
-  doc.text(`${facility || ""} › ${room || ""} › ${rack || ""}`, textX, y);
-  y += 3.5;
-
-  // ID
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(7);
-  doc.setTextColor(...ACCENT_BLUE);
-  doc.text(`ID: ${tankId}`, textX, y);
+  if (!isPublic) {
+    const path = [facility, room, rack].map((p) => String(p || "").trim()).filter(Boolean).join(" › ");
+    if (path && y <= maxTextY) {
+      const [clipped] = doc.splitTextToSize(path, contentW);
+      doc.text(clipped, centerX, y, { align: "center" });
+      y += 3.2;
+    }
+    if (y <= maxTextY) {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(6.5);
+      doc.setTextColor(...ACCENT_BLUE);
+      doc.text(`ID: ${tankId}`, centerX, y, { align: "center" });
+    }
+  }
 
   // Bottom strip — Aquadex branding
   doc.setFont("helvetica", "normal");
   doc.setFontSize(4.5);
   doc.setTextColor(...MUTED_TEXT);
-  doc.text("aquacellum.com • Aquadex Protocol", margin, pageH - 2);
+  doc.text("aquacellum.com • Aquadex Protocol", centerX, brandY, { align: "center" });
 
   // Border
   doc.setDrawColor(...LIGHT_LINE);
@@ -600,7 +668,7 @@ export async function generateTankQRLabel({ tankId, tankName, facility, room, ra
   doc.roundedRect(0.5, 0.5, pageW - 1, pageH - 1, 2, 2);
 
   // Save
-  const fileName = `Aquadex_QR_Label_Unit_${tankId}.pdf`;
+  const fileName = isPublic ? `Aquadex_Tank_Label_${tankId}_public.pdf` : `Aquadex_QR_Label_Unit_${tankId}.pdf`;
   doc.save(fileName);
 }
 

@@ -73,6 +73,8 @@ import { buildGlobalCatalog } from "../services/speciesCatalog";
 import { tankFitInputs } from "../services/compatibleTanks";
 import { FragListingModal } from "./FragListingModal";
 import { BatchListingWizard } from "./BatchListingWizard";
+import { TankLabelDialog } from "./logbook/TankLabelDialog";
+import { readTankPublication, tankLabelTarget } from "../utils/tankLabel";
 import "./logbook/TankListDaylight.css";
 export function TankList({ contractAddress, walletAccount, onViewLineage, onListOnMarketplace, onSelectSpecimen, setDisplayTank, casualModeActive = false }) {
   const queryClient = useQueryClient();
@@ -107,6 +109,8 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
   // mounted here too so a keeper can list without leaving the tank.
   const [fragModalOpen, setFragModalOpen] = useState(false);
   const [batchWizardOpen, setBatchWizardOpen] = useState(false);
+  // The tank whose QR label dialog is open (TankLabelDialog), or null.
+  const [labelDialogTank, setLabelDialogTank] = useState(null);
 
   const [userAlias, setUserAlias] = useState("");
   const [draggedOverTankId, setDraggedOverTankId] = useState(null);
@@ -808,25 +812,13 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
     }
   };
 
-  // Generate + print the tank's QR label PDF. Reachable from the detail
-  // quick-actions menu (was a click on the banner corner tag).
-  const printTankQRLabel = async (tank) => {
+  // Print the tank's QR label. Reachable from the detail quick-actions menu and
+  // Tank actions. Opens TankLabelDialog, which points the label at the tank's
+  // public /t/ page when it is published, and otherwise asks: publish a public
+  // page, or print a private /app#tank= label. The PDF is made there.
+  const printTankQRLabel = (tank) => {
     if (!tank) return;
-    try {
-      const { generateTankQRLabel } = await import("../utils/pdfExport");
-      await generateTankQRLabel({
-        tankId: tank.id,
-        tankName: tank.name,
-        facility: tank.facility,
-        room: tank.room,
-        rack: tank.rack,
-        volumeLiters: tank.volumeLiters,
-        containment: CONTAINMENT_TYPES[tank.containment],
-      });
-    } catch (err) {
-      console.error("QR label generation failed:", err);
-      showToast("Could not generate the QR label.");
-    }
+    setLabelDialogTank(tank);
   };
 
   // Open the Poseidon console pre-seeded with a grounded, contextual question.
@@ -3355,6 +3347,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                     onLogTest={() => logTestLongPress()}
                     onLogFeed={() => logFeedClick()}
                     onPrintLabel={() => printTankQRLabel(activeTank)}
+                    labelIsPublic={tankLabelTarget(activeTank, readTankPublication(walletAccount, activeTank?.id)).kind === "public"}
                     // "Find fish that fit": make this the active tank first, so the
                     // finder (which reads App's displayTank on mount) opens with it
                     // selected. Stored normalized, same as every other writer.
@@ -4034,6 +4027,19 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
           onClose={() => setBatchWizardOpen(false)}
           walletAccount={walletAccount}
           onSuccess={() => { setBatchWizardOpen(false); showToast("Batch listing saved."); }}
+        />
+      )}
+
+      {/* Print label: public /t/ page if published, otherwise publish or private. */}
+      {labelDialogTank && (
+        <TankLabelDialog
+          key={`${walletAccount || "signed-out"}:${labelDialogTank.id}`}
+          isOpen={!!labelDialogTank}
+          tank={labelDialogTank}
+          walletAccount={walletAccount}
+          casualModeActive={casualModeActive}
+          onClose={() => setLabelDialogTank(null)}
+          onNotify={showToast}
         />
       )}
 

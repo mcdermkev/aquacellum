@@ -15,6 +15,7 @@ import "./TankConnections.css";
  * Props:
  *   tank, fishbaseData, casualModeActive, walletAccount
  *   onLogTest(), onLogFeed(), onPrintLabel()
+ *   labelIsPublic    — the tank is published, so its label opens the /t/ page
  *   onFindFish()     — make this tank the active tank before opening the finder
  *   onSellFish()     — show the fish list, where each fish has its Sell button
  *   onSellFrags()    — open the coral frag listing (reef tanks)
@@ -28,6 +29,7 @@ export function TankConnections({
   onLogTest,
   onLogFeed,
   onPrintLabel,
+  labelIsPublic = false,
   onFindFish,
   onSellFish,
   onSellFrags,
@@ -96,7 +98,11 @@ export function TankConnections({
           <span className="tconn-icon" aria-hidden="true">🏷️</span>
           <span className="tconn-text">
             <strong>{casual ? "Print a tank label" : "Print QR label"}</strong>
-            <span>{casual ? "Scan it to open this tank in the app" : "PDF tag; scans to this tank in the app"}</span>
+            <span>
+              {labelIsPublic
+                ? (casual ? "Scans to this tank's public page" : "PDF tag; scans to the public /t/ page")
+                : (casual ? "Choose a public page or a private label" : "PDF tag; public page or private label")}
+            </span>
           </span>
         </button>
       </div>

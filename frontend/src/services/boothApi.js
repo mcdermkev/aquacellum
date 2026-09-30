@@ -168,6 +168,10 @@ export async function adjustInventory({ listingId, delta, fetchImpl = fetch } = 
  * @param {string} [params.title]
  * @param {string} [params.caption]
  * @param {Array<string|number>} params.listingIds
+ * @param {Array<{publicName?:string, commonName?:string, scientificName?:string}>} [params.specimens]
+ *   Display-only fish list for the public page (the handler bounds and cleans it).
+ *   Sent only when given, so the booth's request body is unchanged.
+ * @param {{tankType?:string, volumeLiters?:number}} [params.facts] - display-only, sent only when given
  * @param {boolean} [params.isPublic]
  * @param {typeof fetch} [params.fetchImpl]
  * @returns {Promise<{ok:boolean, token:string, publicUrl:string, isPublic:boolean, sellableLines:number}>}
@@ -177,6 +181,8 @@ export async function publishTank({
   title = "",
   caption = "",
   listingIds = [],
+  specimens,
+  facts,
   isPublic = true,
   fetchImpl = fetch,
 } = {}) {
@@ -194,6 +200,8 @@ export async function publishTank({
       title,
       caption,
       listingIds: (Array.isArray(listingIds) ? listingIds : []).map(String),
+      ...(Array.isArray(specimens) ? { specimens } : {}),
+      ...(facts && typeof facts === "object" ? { facts } : {}),
       isPublic,
     }),
   });

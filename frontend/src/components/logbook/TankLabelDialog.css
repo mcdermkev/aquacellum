@@ -1,0 +1,153 @@
+/* TankLabelDialog — choose what a tank's printed QR label opens. Daylight card. */
+
+.modal-inner-card.tlabel-card {
+  max-width: 480px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+}
+
+.tlabel {
+  padding: 1.25rem 1.25rem 1.35rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  font-family: var(--font-body, "Inter", system-ui, sans-serif);
+  color: var(--text-primary);
+}
+
+.tlabel-head { display: flex; align-items: flex-start; gap: 0.6rem; }
+.tlabel-head-text { flex: 1; min-width: 0; }
+.tlabel-kicker {
+  margin: 0;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent-teal);
+}
+.tlabel-title {
+  margin: 0.2rem 0 0;
+  font-family: var(--font-display, "Outfit", system-ui, sans-serif);
+  font-size: 1.2rem;
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+.tlabel-title:focus { outline: none; }
+.tlabel-title:focus-visible { outline: 2px solid var(--accent-teal); outline-offset: 2px; border-radius: 4px; }
+
+.tlabel-close {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.tlabel-close:hover { background: var(--bg-band); color: var(--text-primary); }
+
+.tlabel-text { margin: 0; font-size: 0.9rem; line-height: 1.55; color: var(--text-secondary); }
+.tlabel-note { margin: 0; font-size: 0.78rem; line-height: 1.5; color: var(--text-muted); }
+.tlabel-note a { color: var(--accent-teal); font-weight: 600; }
+
+.tlabel-status { margin: 0; font-size: 0.84rem; color: var(--accent-teal); }
+.tlabel-status:empty { display: none; }
+.tlabel-error {
+  margin: 0;
+  padding: 0.7rem 0.85rem;
+  border-radius: 10px;
+  background: #fef2f2;
+  border: 1px solid rgba(220, 38, 38, 0.3);
+  color: #b91c1c;
+  font-size: 0.86rem;
+}
+
+.tlabel-choices { display: flex; flex-direction: column; gap: 0.55rem; }
+.tlabel-choice {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  width: 100%;
+  min-height: 56px;
+  padding: 0.8rem 0.9rem;
+  text-align: left;
+  background: var(--bg-band);
+  border: 1px solid rgba(var(--ink-rgb), 0.08);
+  border-radius: 12px;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.tlabel-choice strong { font-size: 0.92rem; }
+.tlabel-choice span { font-size: 0.8rem; line-height: 1.45; color: var(--text-secondary); }
+.tlabel-choice:hover:not(:disabled) { border-color: rgba(15, 118, 110, 0.4); background: #fff; }
+.tlabel-choice:disabled { cursor: not-allowed; opacity: 0.75; }
+.tlabel-choice:disabled strong { color: var(--text-muted); }
+
+.tlabel-choice:focus-visible,
+.tlabel-close:focus-visible,
+.tlabel-btn:focus-visible,
+.tlabel-note a:focus-visible { outline: 2px solid var(--accent-teal); outline-offset: 2px; }
+
+.tlabel-public-list {
+  margin: 0;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--bg-band);
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+.tlabel-public-list dt {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.tlabel-public-list dd { margin: 0.1rem 0 0; font-size: 0.88rem; line-height: 1.45; color: var(--text-primary); overflow-wrap: anywhere; }
+
+/* The preview mirrors the PDF: 51mm x 76mm, QR on top, link and note at the bottom. */
+.tlabel-preview { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 0.45rem; }
+.tlabel-sheet {
+  width: 204px;
+  aspect-ratio: 51 / 76;
+  box-sizing: border-box;
+  padding: 16px 14px 10px;
+  background: #fff;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  box-shadow: var(--shadow-sm, 0 1px 3px rgba(15, 23, 42, 0.08));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  color: #1e293b;
+  font-family: Helvetica, Arial, sans-serif;
+}
+.tlabel-qr { width: 120px; height: 120px; display: block; }
+.tlabel-qr-empty { background: repeating-linear-gradient(45deg, #f1f5f9, #f1f5f9 6px, #fff 6px, #fff 12px); border: 1px solid #e2e8f0; }
+.tlabel-sheet-kicker { margin-top: 6px; font-size: 0.55rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: #0ea5e9; }
+.tlabel-sheet-name { margin-top: 8px; font-size: 0.85rem; font-weight: 700; line-height: 1.2; overflow-wrap: anywhere; }
+.tlabel-sheet-meta { margin-top: 3px; font-size: 0.6rem; line-height: 1.3; color: #64748b; overflow-wrap: anywhere; }
+.tlabel-sheet-id { margin-top: 3px; font-size: 0.62rem; font-weight: 700; color: #0ea5e9; }
+.tlabel-sheet-url { margin-top: auto; font-size: 0.5rem; line-height: 1.35; color: #64748b; overflow-wrap: anywhere; }
+.tlabel-sheet-note { margin-top: 2px; font-size: 0.5rem; font-weight: 700; line-height: 1.35; }
+
+.tlabel-actions { display: flex; flex-wrap: wrap; gap: 0.55rem; justify-content: flex-end; margin-top: 0.25rem; }
+.tlabel-btn { min-height: 44px; padding: 0 1.1rem; }
+
+@media (max-width: 520px) {
+  .tlabel-actions { flex-direction: column-reverse; }
+  .tlabel-btn { width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tlabel-choice { transition: none; }
+}
