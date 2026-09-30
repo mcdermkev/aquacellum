@@ -8555,6 +8555,37 @@ input:checked + .broadcast-slider:before {
   }
 }
 
+/* Phones: the Feedback pill floated over cards and bottom actions. It becomes a
+   44px round icon in the bottom-right corner (Poseidon sits bottom-left), and
+   the app content gets enough bottom room that its last card and buttons can
+   scroll above both floating buttons. The button keeps its aria-label. */
+@media (max-width: 768px) {
+  .feedback-fab {
+    right: calc(1rem + env(safe-area-inset-right, 0px)) !important;
+    bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px)) !important;
+    width: 44px;
+    height: 44px;
+    padding: 0 !important;
+    justify-content: center;
+    border-radius: 50% !important;
+  }
+  .feedback-fab__label { display: none; }
+  /* Room at the end of the page (footer included) for the floating stack in the
+     bottom corners: Poseidon and Feedback, and the Echo fish above Poseidon
+     (public/css/echo.css). Its top edge is 144px up, or 206px with the bottom nav. */
+  .app-footer {
+    padding-bottom: calc(150px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+  body:has(.casual-bottom-nav) .app-footer {
+    padding-bottom: calc(214px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+}
+.feedback-fab:focus-visible,
+.poseidon-global-fab:focus-visible {
+  outline: 3px solid #0d9488;
+  outline-offset: 3px;
+}
+
 /* Kill phantom horizontal scroll. Decorative, intentionally-oversized elements
    (e.g. LivingTank's .lt-caustic light bands at left:-30%/right:-30%) are clipped
    visually by their card's overflow:hidden, but still leak into the document's

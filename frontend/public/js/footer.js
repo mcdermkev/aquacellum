@@ -83,7 +83,7 @@
         </div>
 
         <div class="footer-bottom">
-          <span class="footer-copy">&copy; ${new Date().getFullYear()} Aquacellum Protocol. All rights reserved.</span>
+          <span class="footer-copy">&copy; ${new Date().getFullYear()} Aquacellum. All rights reserved.</span>
           <!-- Social links intentionally omitted until real profiles exist —
                dead href="#" placeholders shipped on every page. Add real URLs here
                (Twitter/X, Discord, GitHub) to restore the socials row. -->

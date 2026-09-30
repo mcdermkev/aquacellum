@@ -75,7 +75,7 @@ export function AppFooter({ onNavigate, children }) {
           ))}
         </div>
         <div className="app-footer-bottom">
-          <span className="app-footer-copy">&copy; {new Date().getFullYear()} Aquacellum Protocol. All rights reserved.</span>
+          <span className="app-footer-copy">&copy; {new Date().getFullYear()} Aquacellum. All rights reserved.</span>
           {children}
         </div>
       </div>

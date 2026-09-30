@@ -452,6 +452,14 @@
     bottom: 10.25rem;
     left: 0.75rem;
   }
+  /* With the casual bottom nav, the Poseidon button lifts to 90px (48px tall),
+     which would sit on her at 5.5rem. She goes above it, bubble with her. */
+  body:has(.casual-bottom-nav) .echo-ambient {
+    bottom: calc(150px + env(safe-area-inset-bottom, 0px));
+  }
+  body:has(.casual-bottom-nav) .echo-whisper {
+    bottom: calc(226px + env(safe-area-inset-bottom, 0px));
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
