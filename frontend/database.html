@@ -476,6 +476,9 @@
         .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
     }
     const real = (val) => (val && typeof val === 'string' && !PLACEHOLDER_TEXT.has(val.trim()) ? val.trim() : null);
+    // Catalog prose from FishBase italicises names with <i>…</i>. Escape
+    // everything, then allow back only those two exact tags.
+    const prose = (val) => escapeHtml(val).replace(/&lt;(\/?)i&gt;/g, '<$1i>');
     const toSlug = (name) => String(name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
     const videoSlug = (sp) => String(sp.scientificName || '').toLowerCase().replace(/\s+/g, '-');
     const nameOf = (sp) => sp.commonName || sp.scientificName || 'Unnamed species';
@@ -953,16 +956,16 @@
         </div>
         <div class="db-sheet__body">
           ${kv.length ? `<dl class="db-kv">${kv.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join('')}</dl>` : '<p class="db-facts--none" style="margin-top:14px">Care ranges not recorded yet.</p>'}
-          ${section('Where it lives', [real(sp.ecology?.biotope) ? `<p>${escapeHtml(sp.ecology.biotope)}</p>` : ''])}
-          ${section('Behaviour and tankmates', [real(sp.ecology?.socialBehavior) ? `<p>${escapeHtml(sp.ecology.socialBehavior)}</p>` : ''])}
+          ${section('Where it lives', [real(sp.ecology?.biotope) ? `<p>${prose(sp.ecology.biotope)}</p>` : ''])}
+          ${section('Behaviour and tankmates', [real(sp.ecology?.socialBehavior) ? `<p>${prose(sp.ecology.socialBehavior)}</p>` : ''])}
           ${section('Feeding', [
-            real(sp.diet?.fooditems) ? `<p>${escapeHtml(sp.diet.fooditems)}</p>` : '',
-            real(sp.diet?.feedingPlaybook) ? `<p>${escapeHtml(sp.diet.feedingPlaybook)}</p>` : '',
+            real(sp.diet?.fooditems) ? `<p>${prose(sp.diet.fooditems)}</p>` : '',
+            real(sp.diet?.feedingPlaybook) ? `<p>${prose(sp.diet.feedingPlaybook)}</p>` : '',
           ])}
           ${section('Breeding', [
             real(sp.reproduction?.spawningTrait) ? `<p><strong>${escapeHtml(sp.reproduction.spawningTrait)}</strong></p>` : '',
-            real(sp.reproduction?.layoutRequirement) ? `<p>${escapeHtml(sp.reproduction.layoutRequirement)}</p>` : '',
-            real(sp.reproduction?.comments) ? `<p>${escapeHtml(sp.reproduction.comments)}</p>` : '',
+            real(sp.reproduction?.layoutRequirement) ? `<p>${prose(sp.reproduction.layoutRequirement)}</p>` : '',
+            real(sp.reproduction?.comments) ? `<p>${prose(sp.reproduction.comments)}</p>` : '',
           ])}
           ${sexing}
           ${section('Personality', [real(sp.personality?.flavorText?.casual) ? `<p>${escapeHtml(sp.personality.flavorText.casual)}</p>` : ''])}
