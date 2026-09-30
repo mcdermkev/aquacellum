@@ -1,13 +1,21 @@
 <!DOCTYPE html>
-<html lang="en" class="scroll-smooth">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Aquacellum Species Database — Full Registry</title>
-  <meta name="description" content="Browse the complete Aquacellum species database. 500+ freshwater and saltwater species with care parameters, diet profiles, breeding data, and personality tags, checked against FishBase and WoRMS.">
-  <meta name="keywords" content="aquarium species database, fish species list, freshwater fish database, saltwater fish database, aquarium care parameters, fishbase, aquacellum registry">
-  <meta property="og:title" content="Aquacellum Species Database — Full Registry">
-  <meta property="og:description" content="500+ freshwater and saltwater species with care data checked against FishBase and WoRMS, tank parameters, and personality profiles. A species registry you can actually use.">
+  <title>Species Database | Aquacellum</title>
+  <meta name="description" content="Browse the Aquacellum species database. 500+ freshwater and saltwater species with care ranges, diet, breeding and sexing notes, checked against FishBase and WoRMS.">
+  <meta name="keywords" content="aquarium species database, fish species list, freshwater fish database, saltwater fish database, aquarium care parameters, fishbase, aquacellum">
+  <meta property="og:title" content="Species Database | Aquacellum">
+  <meta property="og:description" content="500+ freshwater and saltwater species with care ranges, diet, breeding and sexing notes, checked against FishBase and WoRMS.">
+  <meta property="og:type" content="website">
+  <link rel="canonical" href="https://aquacellum.com/database">
+  <meta property="og:url" content="https://aquacellum.com/database">
+  <meta property="og:site_name" content="Aquacellum">
+  <meta property="og:image" content="https://aquacellum.com/og-banner.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Species Database | Aquacellum">
+  <meta name="twitter:description" content="500+ freshwater and saltwater species with care ranges, diet, breeding and sexing notes, checked against FishBase and WoRMS.">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -17,1131 +25,390 @@
   <link rel="stylesheet" href="/css/echo.css">
 
   <style>
+    /* Species database, Daylight (2026-09-30). Same visual language as
+       /clubs: left-aligned hero with a stats panel, pill toolbar, white cards
+       with 6px corners, teal accents. Every value shown comes from
+       /fishbase_master.json; missing values are left out, never filled in. */
+    .db-wrap { width: min(1200px, calc(100% - 40px)); margin: 0 auto; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+    .db-page :focus-visible { outline: 3px solid rgba(13,148,136,.45); outline-offset: 2px; }
 
-    /* =========================================
-       HERO / HEADER
-    ========================================= */
-    .db-hero {
-      padding: 80px 0 48px;
-      text-align: center;
-      position: relative;
-      z-index: 1;
-    }
-    .db-hero h1 {
-      font-family: 'Outfit', sans-serif;
-      font-size: clamp(2rem, 4vw, 3rem);
-      font-weight: 900;
-      line-height: 1.15;
-      margin-bottom: 16px;
-    }
-    .gradient-emerald {
-      background: linear-gradient(135deg, var(--emerald-300), var(--teal-300));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-    .db-hero p {
-      font-size: 1.05rem;
-      color: var(--text-secondary);
-      max-width: 600px;
-      margin: 0 auto 32px;
-      line-height: 1.7;
-    }
-    .db-stats {
-      display: flex;
-      justify-content: center;
-      gap: 32px;
-      flex-wrap: wrap;
-      margin-bottom: 16px;
-    }
-    .db-stat { text-align: center; }
-    .db-stat-num {
-      font-family: 'Outfit', sans-serif;
-      font-size: 1.8rem;
-      font-weight: 800;
-      background: linear-gradient(135deg, var(--emerald-300), var(--teal-300));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-    .db-stat-label {
-      font-size: 0.75rem;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      font-weight: 600;
-    }
-    .db-api-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      margin-top: 24px;
-      padding: 8px 18px;
-      border-radius: 20px;
-      font-size: 0.78rem;
-      font-weight: 600;
-      color: var(--cyan-300);
-      background: #fff;
-      border: 1px solid var(--line);
-      box-shadow: var(--shadow-sm);
-      transition: var(--transition);
-    }
-    .db-api-badge:hover {
-      background: #f5f9fa;
-      border-color: rgba(8,145,178,0.35);
-      box-shadow: var(--shadow-md);
-      transform: translateY(-1px);
-    }
+    /* Buttons */
+    .db-btn { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 0 20px; border-radius: 999px; border: 1px solid var(--line); background: #fff; color: var(--text-primary); font: inherit; font-weight: 700; font-size: .86rem; text-decoration: none; cursor: pointer; white-space: nowrap; transition: transform .2s, border-color .2s, box-shadow .2s, background .2s; }
+    .db-btn:hover { transform: translateY(-1px); border-color: rgba(var(--ink-rgb),.28); box-shadow: var(--shadow-sm); }
+    .db-btn--teal { background: #0f766e; border-color: #0f766e; color: #fff; }
+    .db-btn--teal:hover { background: #115e59; border-color: #115e59; }
+    .db-btn:disabled { opacity: .55; cursor: not-allowed; transform: none; box-shadow: none; }
+    .db-link { color: #0f766e; font-weight: 700; font-size: .84rem; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+    .db-link:hover { text-decoration: underline; text-underline-offset: 3px; }
 
-    /* =========================================
-       FILTERS & SEARCH
-    ========================================= */
-    .filters-bar {
-      position: relative;
-      z-index: 10;
-      max-width: 900px;
-      margin: 0 auto 40px;
-      padding: 20px 24px;
-      background: #fff;
-      border: 1px solid var(--line);
-      border-radius: var(--radius-lg);
-      box-shadow: var(--shadow-sm);
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-      align-items: center;
-    }
-    .search-input {
-      flex: 1;
-      min-width: 200px;
-      padding: 10px 16px 10px 40px;
-      font-size: 0.88rem;
-      color: var(--text-primary);
-      background: #f5f9fa;
-      border: 1px solid var(--line);
-      border-radius: var(--radius-sm);
-      outline: none;
-      transition: var(--transition);
-    }
-    .search-input:focus {
-      border-color: var(--emerald-500);
-      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
-    }
-    .search-input::placeholder { color: var(--text-muted); }
-    .search-wrap {
-      position: relative;
-      flex: 1;
-      min-width: 200px;
-    }
-    .search-wrap svg {
-      position: absolute;
-      left: 14px;
-      top: 50%;
-      transform: translateY(-50%);
-      color: var(--text-muted);
-      pointer-events: none;
-    }
-    .filter-select {
-      padding: 10px 16px;
-      font-size: 0.82rem;
-      color: var(--text-primary);
-      background-color: #f5f9fa;
-      border: 1px solid var(--line);
-      border-radius: var(--radius-sm);
-      outline: none;
-      cursor: pointer;
-      transition: var(--transition);
-      appearance: none;
-      -webkit-appearance: none;
-      padding-right: 32px;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' viewBox='0 0 24 24' stroke='%233d6b5a' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: right 12px center;
-    }
-    .filter-select:focus {
-      border-color: var(--emerald-500);
-      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
-    }
-    .filter-select option { background: #fff; color: var(--text-primary); }
-    .result-count {
-      font-size: 0.78rem;
-      color: var(--text-muted);
-      font-weight: 500;
-      width: 100%;
-      margin-top: 4px;
-    }
+    /* Hero */
+    .db-hero { position: relative; padding: 72px 0 44px; border-bottom: 1px solid var(--line); overflow: hidden; }
+    .db-hero::before { content: ""; position: absolute; inset: 0; background:
+      radial-gradient(circle at 88% 10%, rgba(20,184,166,.14), transparent 40%),
+      radial-gradient(circle at 8% 0%, rgba(245,158,11,.08), transparent 38%),
+      linear-gradient(130deg, #ffffff 0%, #f5f9fa 55%, #eaf3f5 100%); }
+    .db-hero__inner { position: relative; display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, .8fr); gap: 48px; align-items: end; }
+    .db-eyebrow { display: flex; align-items: center; gap: 10px; color: #0f766e; font-size: .72rem; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; margin-bottom: 16px; }
+    .db-eyebrow::before { content: ""; width: 34px; height: 1px; background: currentColor; }
+    .db-hero h1 { margin: 0; font-family: var(--font-display); font-size: clamp(2.5rem, 6vw, 4.6rem); line-height: 1.04; letter-spacing: -.03em; font-weight: 700; text-wrap: balance; }
+    .db-hero h1 em { font-style: normal; color: #0f766e; }
+    .db-hero__copy { margin: 20px 0 0; max-width: 600px; color: var(--text-secondary); font-size: clamp(1rem, 1.4vw, 1.12rem); line-height: 1.65; }
+    .db-hero__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin-top: 26px; }
+    .db-stats { display: grid; grid-template-columns: repeat(2, 1fr); border: 1px solid var(--line); border-radius: 6px; background: rgba(255,255,255,.9); box-shadow: var(--shadow-sm); }
+    .db-stat { padding: 20px 14px; text-align: center; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+    .db-stat:nth-child(2n) { border-right: 0; }
+    .db-stat:nth-last-child(-n+2) { border-bottom: 0; }
+    .db-stat strong { display: block; font-family: var(--font-display); font-size: 1.8rem; font-variant-numeric: tabular-nums; }
+    .db-stat span { color: var(--text-muted); font-size: .66rem; text-transform: uppercase; letter-spacing: .12em; }
 
-    /* =========================================
-       SPECIES GRID — Premium Trading Card Style
-    ========================================= */
-    .species-grid {
-      position: relative;
-      z-index: 1;
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-      gap: 24px;
-      padding-bottom: 80px;
-    }
-    .species-grid.grid-large {
-      grid-template-columns: repeat(2, 1fr);
-      gap: 32px;
-    }
-    .species-grid.grid-compact {
-      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-      gap: 14px;
-    }
+    /* Toolbar */
+    .db-browse { padding: 26px 0 72px; }
+    .db-toolbar { margin: 0 0 22px; }
+    /* Only the search row stays pinned under the nav; the chips and filters
+       scroll away so the pinned bar stays one line tall. The spread shadow
+       plus clip-path paints the bar edge to edge without leaving the wrap. */
+    .db-sticky { position: sticky; top: 64px; z-index: 50; padding: 14px 0 12px; background: rgba(245,249,250,.95); box-shadow: 0 0 0 100vmax rgba(245,249,250,.95); clip-path: inset(0 -100vmax); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+    .db-sticky.is-stuck { box-shadow: 0 0 0 100vmax rgba(245,249,250,.95), 0 1px 0 100vmax var(--line); clip-path: inset(0 -100vmax -1px); }
+    .db-toolbar > .db-row + .db-row { margin-top: 10px; }
+    .db-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    .db-row + .db-row { margin-top: 10px; }
+    .db-search { position: relative; flex: 1 1 320px; }
+    .db-search svg { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none; }
+    .db-search input, .db-select select { width: 100%; min-height: 46px; border: 1px solid var(--line); border-radius: 999px; background: #fff; color: var(--text-primary); outline: none; font: inherit; font-size: .9rem; }
+    .db-search input { padding: 0 16px 0 44px; }
+    .db-search input::placeholder { color: var(--text-muted); }
+    .db-search input::-webkit-search-cancel-button { cursor: pointer; }
+    .db-select { position: relative; flex: 0 1 200px; min-width: 150px; }
+    .db-select select { appearance: none; -webkit-appearance: none; padding: 0 38px 0 18px; cursor: pointer; font-size: .86rem; }
+    .db-select svg { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none; }
+    .db-search input:focus, .db-select select:focus { border-color: #0d9488; box-shadow: 0 0 0 3px rgba(20,184,166,.18); }
+    .db-select select.is-set { border-color: rgba(13,148,136,.55); background: #f0fdfa; color: #0f766e; font-weight: 600; }
 
-    /* Grid density toggle */
-    .grid-density-toggle {
-      display: flex;
-      gap: 4px;
-      background: #f5f9fa;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      padding: 3px;
-    }
-    .grid-density-btn {
-      padding: 6px 10px;
-      border-radius: 6px;
-      font-size: 0.75rem;
-      font-weight: 600;
-      color: var(--text-muted);
-      background: none;
-      border: none;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-    .grid-density-btn.active {
-      background: #fff;
-      color: var(--teal-300);
-      border: 1px solid rgba(20,184,166,0.35);
-      box-shadow: var(--shadow-sm);
-    }
-    .grid-density-btn:hover:not(.active) {
-      color: var(--text-secondary);
-      background: rgba(var(--ink-rgb),0.04);
-    }
+    .db-seg { display: inline-flex; padding: 3px; border: 1px solid var(--line); border-radius: 999px; background: #fff; }
+    .db-seg button { min-height: 38px; padding: 0 14px; border: 0; border-radius: 999px; background: transparent; color: var(--text-secondary); font: inherit; font-size: .82rem; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .db-seg button:hover { color: var(--text-primary); }
+    .db-seg button[aria-pressed="true"] { background: #0f766e; color: #fff; }
+    .db-count { margin-left: auto; color: var(--text-muted); font-size: .8rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .db-clear { border: 0; background: none; color: #0f766e; font: inherit; font-size: .8rem; font-weight: 700; cursor: pointer; padding: 6px 4px; }
+    .db-clear:hover { text-decoration: underline; text-underline-offset: 3px; }
+    .db-try { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 10px; font-size: .78rem; color: var(--text-muted); }
+    .db-try button { min-height: 30px; padding: 0 12px; border: 1px solid var(--line); border-radius: 999px; background: #fff; color: var(--text-secondary); font: inherit; font-size: .76rem; font-weight: 600; cursor: pointer; }
+    .db-try button:hover { border-color: rgba(13,148,136,.45); color: #0f766e; }
+    .db-try[hidden] { display: none; }
 
-    /* Micro parameter indicators on cards */
-    .card-params {
-      display: flex; gap: 8px; margin-top: 6px; align-items: center;
-    }
-    .micro-gauge {
-      flex: 1; display: flex; flex-direction: column; gap: 2px;
-    }
-    .micro-gauge-label {
-      font-size: 0.55rem; font-weight: 600; color: var(--text-muted);
-      text-transform: uppercase; letter-spacing: 0.04em;
-      display: flex; justify-content: space-between; align-items: center;
-    }
-    .micro-gauge-value {
-      font-family: 'JetBrains Mono', monospace; font-size: 0.55rem; color: var(--text-secondary);
-    }
-    .micro-track {
-      height: 3px; border-radius: 2px; background: rgba(var(--ink-rgb),0.08);
-      position: relative; overflow: hidden;
-    }
-    .micro-fill {
-      position: absolute; top: 0; height: 100%; border-radius: 2px;
-      transition: width 0.6s cubic-bezier(0.4,0,0.2,1);
-    }
-    .micro-fill.temp { background: linear-gradient(90deg, #fbbf24, #fb7185); }
-    .micro-fill.ph { background: linear-gradient(90deg, #22d3ee, #a78bfa); }
-    .micro-fill.size { background: linear-gradient(90deg, #10b981, #34d399); }
+    /* Grid + cards */
+    .db-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 18px; }
+    .db-group { grid-column: 1 / -1; display: flex; align-items: baseline; gap: 10px; margin: 14px 0 -4px; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
+    .db-group:first-child { margin-top: 0; }
+    .db-group h2 { margin: 0; font-family: var(--font-display); font-size: 1.15rem; letter-spacing: -.01em; }
+    .db-group span { color: var(--text-muted); font-size: .78rem; font-variant-numeric: tabular-nums; }
 
-    /* Taxonomy view - family groups */
-    .family-group {
-      grid-column: 1 / -1; margin-bottom: 8px;
-    }
-    .family-header {
-      display: flex; align-items: center; gap: 14px; padding: 16px 20px;
-      background: #fff; border: 1px solid var(--line); box-shadow: var(--shadow-sm);
-      border-radius: var(--radius-md); margin-bottom: 16px;
-      cursor: pointer; transition: var(--transition);
-    }
-    .family-header:hover { border-color: rgba(20,184,166,0.35); box-shadow: var(--shadow-md); }
-    .family-header-icon {
-      width: 40px; height: 40px; border-radius: 10px;
-      background: linear-gradient(135deg, rgba(16,185,129,0.12), rgba(20,184,166,0.08));
-      display: flex; align-items: center; justify-content: center;
-      font-size: 1.2rem; flex-shrink: 0;
-    }
-    .family-header-info { flex: 1; }
-    .family-header-name {
-      font-family: 'Outfit', sans-serif; font-weight: 700;
-      font-size: 1rem; color: var(--text-primary);
-    }
-    .family-header-meta {
-      font-size: 0.72rem; color: var(--text-muted); margin-top: 2px;
-      display: flex; gap: 12px;
-    }
-    .family-header-count {
-      font-family: 'JetBrains Mono', monospace; font-size: 0.78rem;
-      color: var(--emerald-300); font-weight: 600;
-    }
-    .family-header-toggle {
-      color: var(--text-muted); transition: transform 0.3s; font-size: 1rem;
-    }
-    .family-header.expanded .family-header-toggle { transform: rotate(180deg); }
-    .family-species-grid {
-      display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-      gap: 20px; padding-left: 12px; margin-bottom: 24px;
-      max-height: 0; overflow: hidden; transition: max-height 0.4s ease, opacity 0.3s;
-      opacity: 0;
-    }
-    .family-species-grid.open {
-      max-height: 4000px; opacity: 1;
-    }
+    .db-card { position: relative; display: flex; flex-direction: column; min-width: 0; border: 1px solid var(--line); border-radius: 6px; background: #fff; box-shadow: var(--shadow-sm); overflow: hidden; transition: transform .25s, border-color .25s, box-shadow .25s; }
+    .db-card:hover { transform: translateY(-3px); border-color: rgba(var(--ink-rgb),.18); box-shadow: var(--shadow-md); }
+    .db-card:focus-within { border-color: rgba(13,148,136,.5); }
+    .db-card.is-picked { border-color: #0f766e; box-shadow: 0 0 0 2px rgba(15,118,110,.25), var(--shadow-sm); }
+    .db-card__media { position: relative; aspect-ratio: 4 / 3; background: #eaf3f5; overflow: hidden; }
+    .db-card__media img, .db-card__media video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 40%; }
+    .db-card__media img { transition: transform .45s cubic-bezier(.4,0,.2,1); }
+    .db-card:hover .db-card__media img { transform: scale(1.05); }
+    .db-card__media video { opacity: 0; transition: opacity .3s; pointer-events: none; }
+    .db-card__media video.playing { opacity: 1; }
+    .db-noimg { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; color: #6b8a96; font-size: .74rem; font-weight: 600; background: linear-gradient(135deg, #eaf3f5, #f5f9fa); }
+    .db-card__badges { position: absolute; top: 10px; left: 10px; right: 10px; display: flex; justify-content: space-between; gap: 6px; pointer-events: none; }
+    .db-card__badges > span:last-child { margin-left: auto; }
 
-    /* Compare button */
-    .compare-cta {
-      display: inline-flex; align-items: center; gap: 6px;
-      padding: 9px 18px; border-radius: 10px; font-size: 0.78rem; font-weight: 600;
-      color: var(--cyan-300); background: rgba(6,182,212,0.08);
-      border: 1px solid rgba(8,145,178,0.28); transition: var(--transition);
-      white-space: nowrap;
-    }
-    .compare-cta:hover { background: rgba(6,182,212,0.14); transform: translateY(-1px); box-shadow: var(--shadow-md); }
-    .card-compare-btn {
-      position: absolute; top: 10px; left: 10px; z-index: 4;
-      width: 28px; height: 28px; border-radius: 50%;
-      background: rgba(255,255,255,0.92); border: 1px solid rgba(8,145,178,0.35);
-      color: var(--cyan-300); font-size: 0.7rem; font-weight: 700;
-      display: flex; align-items: center; justify-content: center;
-      opacity: 0; transition: opacity 0.2s, transform 0.2s; cursor: pointer;
-      backdrop-filter: blur(6px);
-    }
-    .species-card:hover .card-compare-btn { opacity: 1; }
-    .card-compare-btn:hover { transform: scale(1.15); background: #fff; }
+    .db-pill { display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 999px; font-size: .66rem; font-weight: 700; letter-spacing: .02em; white-space: nowrap; background: rgba(255,255,255,.95); border: 1px solid var(--line); color: var(--text-secondary); }
+    .db-pill--beginner { color: #047857; border-color: rgba(16,185,129,.45); }
+    .db-pill--intermediate { color: #0e7490; border-color: rgba(8,145,178,.45); }
+    .db-pill--advanced { color: #be123c; border-color: rgba(225,29,72,.4); }
+    .db-pill--difficult { color: #6d28d9; border-color: rgba(124,58,237,.4); }
+    .db-pill--unknown { color: var(--text-muted); }
+    .db-pill--salt { color: #0369a1; border-color: rgba(2,132,199,.4); }
+    /* Sexing states come from the shared contract (window.SexingGuide badgeClass). */
+    .sexing-badge--reliable { background: #ecfdf5; color: #047857; border-color: rgba(16,185,129,.4); }
+    .sexing-badge--unreliable { background: #fffbeb; color: #b45309; border-color: rgba(217,119,6,.4); }
+    .sexing-badge--undocumented { background: #f5f9fa; color: var(--text-muted); }
 
-    .species-card {
-      aspect-ratio: 3 / 4;
-      border-radius: var(--radius-md);
-      overflow: hidden;
-      cursor: pointer;
-      position: relative;
-      background: #fff;
-      border: 1px solid var(--line);
-      box-shadow: var(--shadow-sm);
-      transition: transform 0.35s cubic-bezier(0.4,0,0.2,1), box-shadow 0.35s ease, border-color 0.35s ease;
-      display: flex;
-      flex-direction: column;
-      /* Entrance is a short slide only. Cards are always fully opaque, so a card the
-         observer has not reached yet (or a screenshot mid-stagger) never reads as a
-         faded grey ghost on the light page. */
-      opacity: 1;
-      transform: translateY(12px);
-    }
-    .species-card.card-visible {
-      opacity: 1;
-      transform: translateY(0);
-      transition: transform 0.4s cubic-bezier(0.4,0,0.2,1), box-shadow 0.35s ease, border-color 0.35s ease;
-    }
+    .db-card__body { display: flex; flex-direction: column; gap: 10px; flex: 1; padding: 14px 16px 14px; }
+    .db-card h3 { margin: 0; font-family: var(--font-display); font-size: 1.08rem; line-height: 1.25; letter-spacing: -.01em; }
+    /* The name is the card's one real control; its ::after stretches over the
+       card so the whole card opens the details, while the links and the
+       Compare button below sit above it. */
+    .db-card__open { all: unset; cursor: pointer; }
+    .db-card__open::after { content: ""; position: absolute; inset: 0; z-index: 1; }
+    .db-card__open:focus-visible { outline: none; }
+    .db-card__open:focus-visible::after { outline: 3px solid rgba(13,148,136,.45); outline-offset: -3px; border-radius: 6px; }
+    .db-card__sci { margin: 2px 0 0; color: var(--text-muted); font-size: .78rem; font-style: italic; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .db-facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 0; border: 1px solid var(--line); border-radius: 6px; background: #f8fbfc; }
+    .db-facts div { padding: 7px 8px; min-width: 0; border-right: 1px solid var(--line); }
+    .db-facts div:last-child { border-right: 0; }
+    .db-facts dt { font-size: .6rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--text-muted); }
+    .db-facts dd { margin: 2px 0 0; font-family: 'JetBrains Mono', monospace; font-size: .74rem; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .db-facts--none { margin: 0; font-size: .76rem; color: var(--text-muted); }
+    .db-tags { display: flex; flex-wrap: wrap; gap: 5px; }
+    .db-tag { padding: 2px 8px; border-radius: 4px; font-size: .68rem; font-weight: 600; background: #f1f7f8; color: var(--text-secondary); }
+    .db-card__foot { position: relative; z-index: 2; display: flex; align-items: center; gap: 8px; margin-top: auto; padding-top: 10px; border-top: 1px solid var(--line); }
+    .db-card__foot .db-link { font-size: .78rem; }
+    .db-avail { display: inline-flex; align-items: center; gap: 4px; padding: 2px 9px; border-radius: 999px; font-size: .7rem; font-weight: 700; color: #0f766e; background: #f0fdfa; border: 1px solid rgba(13,148,136,.3); text-decoration: none; }
+    .db-avail:hover { background: #ccfbf1; }
+    .db-pick { margin-left: auto; min-height: 32px; display: inline-flex; align-items: center; gap: 5px; padding: 0 11px; border: 1px solid var(--line); border-radius: 999px; background: #fff; color: var(--text-secondary); font: inherit; font-size: .74rem; font-weight: 700; cursor: pointer; }
+    .db-pick:hover { border-color: rgba(13,148,136,.45); color: #0f766e; }
+    .db-pick[aria-pressed="true"] { background: #0f766e; border-color: #0f766e; color: #fff; }
+
+    .db-more { display: flex; justify-content: center; margin-top: 28px; }
+    .db-empty { grid-column: 1 / -1; padding: 56px 20px; text-align: center; border: 1px dashed var(--line); border-radius: 6px; background: #fff; }
+    .db-empty h2 { margin: 0 0 6px; font-family: var(--font-display); font-size: 1.25rem; }
+    .db-empty p { margin: 0 0 16px; color: var(--text-secondary); font-size: .9rem; }
+    .db-skel { border-radius: 6px; border: 1px solid var(--line); background: linear-gradient(110deg, #fff 25%, #eef5f7 37%, #fff 63%); background-size: 200% 100%; animation: db-shimmer 1.5s ease-in-out infinite; height: 330px; }
+    @keyframes db-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+    /* API band */
+    .db-api { padding: 0 0 80px; }
+    .db-api__inner { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 28px; align-items: center; padding: 30px 34px; border: 1px solid var(--line); border-radius: 6px; background: linear-gradient(120deg, #f0fdfa, #ffffff 60%); box-shadow: var(--shadow-sm); }
+    .db-api h2 { margin: 0 0 6px; font-family: var(--font-display); font-size: clamp(1.25rem, 2.4vw, 1.6rem); letter-spacing: -.01em; }
+    .db-api p { margin: 0; max-width: 640px; color: var(--text-secondary); font-size: .92rem; line-height: 1.6; }
+
+    /* Compare tray */
+    .db-tray { position: fixed; left: 50%; bottom: 20px; z-index: 900; transform: translate(-50%, 24px); opacity: 0; visibility: hidden; display: flex; align-items: center; gap: 12px; max-width: calc(100% - 32px); padding: 10px 10px 10px 18px; border: 1px solid var(--line); border-radius: 999px; background: #fff; box-shadow: var(--shadow-lg); transition: transform .3s cubic-bezier(.4,0,.2,1), opacity .2s, visibility 0s linear .3s; }
+    .db-tray.is-open { transform: translate(-50%, 0); opacity: 1; visibility: visible; transition: transform .3s cubic-bezier(.4,0,.2,1), opacity .2s, visibility 0s; }
+    .db-tray__text { font-size: .86rem; color: var(--text-secondary); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .db-tray__text strong { color: var(--text-primary); }
+    .db-tray .db-btn { min-height: 40px; }
+
+    /* Detail sheet (native <dialog>: focus trap, Escape and backdrop for free) */
+    .db-sheet { width: min(560px, 100%); max-width: 100%; height: 100%; max-height: 100%; margin: 0 0 0 auto; padding: 0; border: 0; background: #fff; color: var(--text-primary); box-shadow: var(--shadow-lg); overflow: hidden; }
+    .db-sheet[open] { display: flex; flex-direction: column; animation: db-slide-in .28s cubic-bezier(.4,0,.2,1); }
+    .db-sheet::backdrop { background: rgba(11,37,48,.42); backdrop-filter: blur(4px); }
+    @keyframes db-slide-in { from { transform: translateX(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+    .db-sheet__scroll { flex: 1; overflow-y: auto; overscroll-behavior: contain; }
+    .db-sheet__media { position: relative; aspect-ratio: 16 / 10; background: #eaf3f5; }
+    .db-sheet__media img { width: 100%; height: 100%; object-fit: cover; object-position: center 40%; display: block; }
+    .db-sheet__close { position: absolute; top: 12px; right: 12px; z-index: 2; width: 44px; height: 44px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--line); border-radius: 50%; background: rgba(255,255,255,.95); color: var(--text-primary); cursor: pointer; box-shadow: var(--shadow-sm); }
+    .db-sheet__close:hover { background: #fff; }
+    .db-sheet__head { padding: 20px 24px 4px; }
+    .db-sheet__head h2 { margin: 0; font-family: var(--font-display); font-size: 1.65rem; line-height: 1.15; letter-spacing: -.02em; }
+    .db-sheet__sci { margin: 4px 0 0; color: var(--text-muted); font-style: italic; font-size: .92rem; }
+    .db-sheet__vibe { margin: 12px 0 0; color: var(--text-secondary); font-size: .95rem; line-height: 1.55; }
+    .db-sheet__pills { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+    .db-sheet__body { padding: 8px 24px 24px; }
+    .db-kv { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 14px 0 6px; }
+    .db-kv div { padding: 10px 12px; border: 1px solid var(--line); border-radius: 6px; background: #f8fbfc; min-width: 0; }
+    .db-kv dt { font-size: .62rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--text-muted); }
+    .db-kv dd { margin: 3px 0 0; font-size: .86rem; font-weight: 600; color: var(--text-primary); overflow-wrap: anywhere; }
+    .db-kv dd small { display: block; font-weight: 500; color: var(--text-muted); font-size: .72rem; }
+    .db-sec { padding: 16px 0 2px; border-top: 1px solid var(--line); margin-top: 14px; }
+    .db-sec h3 { margin: 0 0 8px; font-family: var(--font-display); font-size: 1rem; letter-spacing: -.005em; }
+    .db-sec p { margin: 0 0 8px; color: var(--text-secondary); font-size: .88rem; line-height: 1.6; }
+    .db-sec p strong { color: var(--text-primary); }
+    .db-sex { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+    .db-sex div { padding: 10px 12px; border: 1px solid var(--line); border-radius: 6px; background: #f8fbfc; }
+    .db-sex h4 { margin: 0 0 4px; font-size: .7rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--text-muted); }
+    .db-sex p { margin: 0; font-size: .82rem; }
+    .db-sources { margin: 14px 0 0; font-size: .74rem; color: var(--text-muted); }
+    .db-sources a { color: #0f766e; }
+    .db-sheet__actions { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 24px calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); background: #fff; }
+    .db-sheet__actions .db-btn { flex: 1 1 auto; }
+
     @media (prefers-reduced-motion: reduce) {
-      .species-card, .species-card.card-visible { transform: none; }
-    }
-
-    /* ---- Tier: Beginner (common) — muted, clean ---- */
-    .species-card.tier-beginner {
-      border-color: var(--line);
-    }
-    .species-card.tier-beginner:hover {
-      transform: translateY(-4px) scale(1.015);
-      box-shadow: var(--shadow-md);
-      border-color: rgba(16, 185, 129, 0.45);
-    }
-
-    /* ---- Tier: Intermediate — subtle glow ---- */
-    .species-card.tier-intermediate {
-      border-color: rgba(8, 145, 178, 0.28);
-      border-width: 1.5px;
-    }
-    .species-card.tier-intermediate:hover {
-      transform: translateY(-5px) scale(1.02);
-      box-shadow: var(--shadow-md);
-      border-color: rgba(8, 145, 178, 0.55);
-    }
-
-    /* ---- Tier: Advanced — warm glow, thicker border ---- */
-    .species-card.tier-advanced {
-      border-color: rgba(225, 29, 72, 0.25);
-      border-width: 1.5px;
-    }
-    .species-card.tier-advanced:hover {
-      transform: translateY(-6px) scale(1.02);
-      box-shadow: var(--shadow-md);
-      border-color: rgba(225, 29, 72, 0.5);
-    }
-
-    /* ---- Tier: Difficult/Rare — holographic chase card ---- */
-    .species-card.tier-difficult {
-      border-width: 2px;
-      border-color: rgba(124,58,237,0.3);
-      position: relative;
-    }
-    .species-card.tier-difficult::before {
-      content: '';
-      position: absolute;
-      inset: -2px;
-      border-radius: var(--radius-md);
-      padding: 2px;
-      background: linear-gradient(135deg, rgba(167,139,250,0.5), rgba(232,121,249,0.4), rgba(251,191,36,0.4), rgba(34,211,238,0.3), rgba(167,139,250,0.5));
-      background-size: 300% 300%;
-      animation: holo-shift 6s ease-in-out infinite;
-      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-      -webkit-mask-composite: xor;
-      mask-composite: exclude;
-      pointer-events: none;
-      z-index: 3;
-      opacity: 0.6;
-      transition: opacity 0.3s;
-    }
-    .species-card.tier-difficult:hover::before {
-      opacity: 1;
-    }
-    .species-card.tier-difficult:hover {
-      transform: translateY(-6px) scale(1.025);
-      box-shadow: var(--shadow-lg);
-    }
-    @keyframes holo-shift {
-      0%, 100% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-    }
-
-    /* ---- Vignette overlay for depth ---- */
-    .card-vignette {
-      position: absolute;
-      inset: 0;
-      z-index: 1;
-      pointer-events: none;
-      background: radial-gradient(ellipse at center, transparent 60%, rgba(var(--ink-rgb),0.14) 100%);
-    }
-
-    .card-image {
-      flex: 1;
-      position: relative;
-      overflow: hidden;
-      background: #eaf3f5;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .card-image .blur-bg {
-      position: absolute;
-      inset: -20px;
-      width: calc(100% + 40px);
-      height: calc(100% + 40px);
-      object-fit: cover;
-      filter: blur(20px) brightness(0.95) saturate(1.2);
-      transform: scale(1.1);
-    }
-    .card-image .main-img {
-      position: relative;
-      z-index: 1;
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      object-position: center 40%;
-      transition: transform 0.45s cubic-bezier(0.4,0,0.2,1);
-    }
-    .species-card:hover .card-image .main-img {
-      transform: scale(1.06);
-    }
-    .card-image .placeholder-icon {
-      font-size: 3rem;
-      opacity: 0.4;
-    }
-    .card-image .card-video {
-      position: absolute;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      object-fit: cover;
-      z-index: 2;
-      opacity: 0;
-      transition: opacity 0.3s ease;
-      pointer-events: none;
-    }
-    .species-card:hover .card-image .card-video.playing {
-      opacity: 1;
-    }
-    .card-difficulty-badge {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      z-index: 4;
-      padding: 4px 10px;
-      border-radius: 20px;
-      font-size: 0.65rem;
-      font-weight: 700;
-      letter-spacing: 0.03em;
-      backdrop-filter: blur(8px);
-    }
-    /* Badges sit over photos, so they get an opaque white pill with dark accent text. */
-    .badge-beginner { background: rgba(255,255,255,0.94); color: var(--emerald-300); border: 1px solid rgba(16,185,129,0.4); }
-    .badge-intermediate { background: rgba(255,255,255,0.94); color: var(--cyan-300); border: 1px solid rgba(8,145,178,0.4); }
-    .badge-advanced { background: rgba(255,255,255,0.94); color: #be123c; border: 1px solid rgba(225,29,72,0.4); }
-    .badge-difficult { background: rgba(255,255,255,0.94); color: var(--violet-300); border: 1px solid rgba(124,58,237,0.4); }
-    .badge-unknown { background: rgba(255,255,255,0.94); color: var(--text-muted); border: 1px solid var(--line); }
-
-    /* Sexing badge. Class names come from the shared contract
-       (window.SexingGuide badgeClass) so this page and the in-app SexingGuide
-       style the same three states. Sits top-LEFT so it never collides with the
-       difficulty badge on the right. Semantic colours, always paired with text:
-       green = tell by eye, amber = documented but don't trust your eyes.
-       Amber not red — "hard to sex" is information, not a failure. */
-    .card-sexing-badge {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      z-index: 4;
-      padding: 3px 8px;
-      border-radius: 20px;
-      font-size: 0.6rem;
-      font-weight: 700;
-      letter-spacing: 0.02em;
-      backdrop-filter: blur(8px);
-      white-space: nowrap;
-    }
-    .sexing-badge--reliable { background: #ecfdf5; color: var(--emerald-300); border: 1px solid rgba(16,185,129,0.4); }
-    .sexing-badge--unreliable { background: #fffbeb; color: var(--amber-300); border: 1px solid rgba(217,119,6,0.4); }
-    .sexing-badge--undocumented { background: #f5f9fa; color: var(--text-muted); border: 1px solid var(--line); }
-
-    /* Male/female comparison inside the detail popup. Mirrors the layout
-       species.html already uses for its dimorphism section. */
-    .sex-compare { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px; }
-    .sex-col { padding: 12px; border-radius: 10px; background: #f5f9fa; border: 1px solid var(--line); }
-    .sex-col-title { font-size: 0.68rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
-    .sex-col-text { font-size: 0.78rem; line-height: 1.5; color: var(--text-secondary); }
-    @media (max-width: 640px) { .sex-compare { grid-template-columns: 1fr; } }
-
-    .card-info {
-      padding: 18px 20px 16px;
-      background: #fff;
-      border-top: 1px solid var(--line);
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-    .card-common-name {
-      font-family: 'Outfit', sans-serif;
-      font-weight: 800;
-      font-size: 1rem;
-      color: var(--text-primary);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .card-sci-name {
-      font-size: 0.74rem;
-      font-style: italic;
-      color: var(--emerald-300);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      margin-bottom: 2px;
-    }
-    .card-cta {
-      font-size: 0.68rem;
-      font-weight: 600;
-      color: var(--teal-300);
-      opacity: 0;
-      transform: translateY(4px);
-      transition: opacity 0.3s, transform 0.3s;
-      margin-top: 4px;
-    }
-    .species-card:hover .card-cta {
-      opacity: 1;
-      transform: translateY(0);
-    }
-    /* Public marketplace availability pill (Fish Finder T4c) */
-    .card-avail {
-      display: inline-block;
-      margin-top: 6px;
-      font-size: 0.62rem;
-      font-weight: 700;
-      color: var(--teal-300);
-      background: #f0fdfa;
-      border: 1px solid rgba(13,148,136,0.3);
-      border-radius: 20px;
-      padding: 2px 8px;
-      text-decoration: none;
-      transition: var(--transition);
-    }
-    .card-avail:hover {
-      background: #ccfbf1;
-      border-color: rgba(13,148,136,0.5);
-    }
-
-    /* =========================================
-       SKELETON LOADING CARDS
-    ========================================= */
-    .skeleton-card {
-      aspect-ratio: 2.5 / 3.5;
-      border-radius: var(--radius-md);
-      background: #fff;
-      border: 1px solid var(--line);
-      box-shadow: var(--shadow-sm);
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-    }
-    .skeleton-image {
-      flex: 1;
-      background: linear-gradient(110deg, rgba(var(--ink-rgb),0.04) 25%, rgba(var(--ink-rgb),0.08) 37%, rgba(var(--ink-rgb),0.04) 63%);
-      background-size: 200% 100%;
-      animation: skeleton-shimmer 1.5s ease-in-out infinite;
-    }
-    .skeleton-info {
-      padding: 16px 18px;
-      border-top: 1px solid var(--line);
-    }
-    .skeleton-line {
-      height: 12px;
-      border-radius: 6px;
-      background: linear-gradient(110deg, rgba(var(--ink-rgb),0.05) 25%, rgba(var(--ink-rgb),0.10) 37%, rgba(var(--ink-rgb),0.05) 63%);
-      background-size: 200% 100%;
-      animation: skeleton-shimmer 1.5s ease-in-out infinite;
-      margin-bottom: 8px;
-    }
-    .skeleton-line:last-child { width: 60%; margin-bottom: 0; }
-    @keyframes skeleton-shimmer {
-      0% { background-position: 200% 0; }
-      100% { background-position: -200% 0; }
-    }
-
-    /* =========================================
-       VIEW MODE TOGGLE
-    ========================================= */
-    .view-toggle {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      padding: 4px;
-      border-radius: 10px;
-      background: #f5f9fa;
-      border: 1px solid var(--line);
-    }
-    .view-toggle-btn {
-      padding: 8px 16px;
-      border-radius: 7px;
-      font-size: 0.78rem;
-      font-weight: 600;
-      color: var(--text-muted);
-      transition: all 0.25s;
-      cursor: pointer;
-    }
-    .view-toggle-btn.active {
-      background: #fff;
-      color: var(--emerald-300);
-      box-shadow: var(--shadow-sm);
-    }
-    .view-toggle-btn:hover:not(.active) {
-      color: var(--text-secondary);
-      background: rgba(var(--ink-rgb),0.04);
-    }
-
-    /* =========================================
-       SEARCH SUGGESTIONS
-    ========================================= */
-    .search-suggestions {
-      display: flex; gap: 6px; flex-wrap: wrap; width: 100%;
-    }
-    .suggestion-chip {
-      padding: 4px 10px; border-radius: 14px; font-size: 0.65rem; font-weight: 600;
-      color: var(--text-secondary); background: #f5f9fa;
-      border: 1px solid var(--line); cursor: pointer;
-      transition: all 0.2s; white-space: nowrap;
-    }
-    .suggestion-chip:hover {
-      color: var(--emerald-300); border-color: rgba(16,185,129,0.4);
-      background: #ecfdf5;
-    }
-
-    /* =========================================
-       SORT TOGGLE
-    ========================================= */
-    .sort-chips {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      width: 100%;
-      margin-top: 8px;
-    }
-    .sort-chip {
-      padding: 6px 14px;
-      border-radius: 20px;
-      font-size: 0.72rem;
-      font-weight: 600;
-      color: var(--text-secondary);
-      background: #fff;
-      border: 1px solid var(--line);
-      cursor: pointer;
-      transition: all 0.2s;
-      white-space: nowrap;
-    }
-    .sort-chip:hover {
-      color: var(--text-primary);
-      border-color: rgba(var(--ink-rgb),0.2);
-    }
-    .sort-chip.active {
-      color: var(--emerald-300);
-      background: #ecfdf5;
-      border-color: rgba(16, 185, 129, 0.45);
-    }
-
-    /* =========================================
-       POPUP OVERLAY
-    ========================================= */
-    .popup-overlay {
-      display: none;
-      position: fixed;
-      inset: 0;
-      z-index: 2000;
-      background: rgba(var(--ink-rgb), 0.45);
-      backdrop-filter: blur(8px);
-      align-items: center;
-      justify-content: center;
-      padding: 24px;
-      animation: overlay-in 0.3s ease;
-    }
-    .popup-overlay.active { display: flex; }
-    @keyframes overlay-in {
-      from { opacity: 0; }
-      to { opacity: 1; }
-    }
-
-    /* =========================================
-       3D FLIP CARD
-    ========================================= */
-    .flip-card-container {
-      width: 360px;
-      max-width: 90vw;
-      aspect-ratio: 3 / 4;
-      perspective: 1200px;
-      cursor: pointer;
-    }
-    .flip-card {
-      width: 100%;
-      height: 100%;
-      position: relative;
-      transform-style: preserve-3d;
-      transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    .flip-card.flipped {
-      transform: rotateY(180deg);
-    }
-
-    .flip-face {
-      position: absolute;
-      inset: 0;
-      backface-visibility: hidden;
-      -webkit-backface-visibility: hidden;
-      border-radius: var(--radius-lg);
-      border: 1px solid var(--line);
-      box-shadow: var(--shadow-lg);
-    }
-
-    /* FRONT FACE */
-    .flip-front {
-      display: flex;
-      flex-direction: column;
-      background: #fff;
-      overflow: hidden;
-    }
-    .flip-front-image {
-      flex: 1;
-      position: relative;
-      overflow: hidden;
-      background: #eaf3f5;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .flip-front-image .blur-bg {
-      position: absolute;
-      inset: -20px;
-      width: calc(100% + 40px);
-      height: calc(100% + 40px);
-      object-fit: cover;
-      filter: blur(20px) brightness(0.95) saturate(1.2);
-      transform: scale(1.1);
-    }
-    .flip-front-image .main-img {
-      position: relative;
-      z-index: 1;
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      object-position: center 40%;
-    }
-    .flip-front-image .placeholder-icon {
-      font-size: 4rem;
-      opacity: 0.4;
-    }
-    .flip-front-info {
-      padding: 20px;
-      background: #fff;
-      border-top: 1px solid var(--line);
-    }
-    .flip-front-common {
-      font-family: 'Outfit', sans-serif;
-      font-weight: 800;
-      font-size: 1.2rem;
-      color: var(--text-primary);
-      margin-bottom: 4px;
-    }
-    .flip-front-sci {
-      font-size: 0.85rem;
-      font-style: italic;
-      color: var(--emerald-300);
-      margin-bottom: 8px;
-    }
-    .flip-front-family {
-      font-size: 0.72rem;
-      color: var(--text-muted);
-      font-weight: 500;
-      margin-bottom: 10px;
-    }
-    .flip-front-vibe {
-      font-size: 0.78rem;
-      color: var(--text-secondary);
-      line-height: 1.5;
-      font-style: italic;
-      border-top: 1px solid var(--line);
-      padding-top: 10px;
-    }
-    .flip-front-badges {
-      position: absolute;
-      top: 12px;
-      right: 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-    .flip-badge {
-      padding: 4px 10px;
-      border-radius: 20px;
-      font-size: 0.65rem;
-      font-weight: 700;
-      backdrop-filter: blur(8px);
-    }
-    .flip-hint {
-      position: absolute;
-      bottom: 12px;
-      right: 16px;
-      font-size: 0.68rem;
-      color: var(--text-muted);
-      opacity: 0.7;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-
-    /* BACK FACE */
-    .flip-back {
-      transform: rotateY(180deg);
-      background: var(--bg-surface);
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      border-radius: var(--radius-lg);
-    }
-    .flip-back-scroll {
-      flex: 1;
-      overflow-y: auto;
-      overflow-x: hidden;
-      -webkit-overflow-scrolling: touch;
-    }
-    .flip-back-header {
-      padding: 20px 20px 12px;
-      border-bottom: 1px solid var(--line);
-      background: linear-gradient(180deg, #ecfdf5, #fff);
-    }
-    .flip-back-title {
-      font-family: 'Outfit', sans-serif;
-      font-weight: 800;
-      font-size: 1.1rem;
-      color: var(--text-primary);
-      margin-bottom: 2px;
-    }
-    .flip-back-sci {
-      font-size: 0.78rem;
-      font-style: italic;
-      color: var(--emerald-300);
-    }
-    .flip-back-content {
-      flex: 1;
-      padding: 16px 20px;
-      overflow-y: auto;
-    }
-    .back-section {
-      margin-bottom: 16px;
-    }
-    .back-section-title {
-      font-size: 0.68rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: var(--emerald-300);
-      margin-bottom: 8px;
-    }
-    .back-params {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-    }
-    .back-param {
-      padding: 8px 10px;
-      background: #f5f9fa;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-    }
-    .back-param-label {
-      font-size: 0.62rem;
-      color: var(--text-muted);
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      margin-bottom: 2px;
-    }
-    .back-param-value {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.75rem;
-      color: var(--text-primary);
-    }
-    .back-text {
-      font-size: 0.78rem;
-      color: var(--text-secondary);
-      line-height: 1.6;
-    }
-    .back-text strong { color: var(--text-primary); }
-    .flip-back-hint {
-      padding: 12px 20px;
-      border-top: 1px solid var(--line);
-      text-align: center;
-      font-size: 0.68rem;
-      color: var(--text-muted);
-    }
-
-
-
-    /* Page-specific empty state additions */
-    .empty-state { grid-column: 1 / -1; }
-    .empty-state svg { width: 48px; height: 48px; margin-bottom: 16px; opacity: 0.5; }
-
-    /* =========================================
-       RESPONSIVE
-    ========================================= */
-    @media (max-width: 768px) {
-      .db-hero { padding: 48px 0 24px; }
-      .db-hero p { font-size: 0.9rem; margin-bottom: 20px; }
-      .db-stats { gap: 16px; }
-      .db-stat-num { font-size: 1.4rem; }
-
-      .filters-bar {
-        padding: 14px 16px; gap: 10px; margin-bottom: 24px;
-        border-radius: var(--radius-md);
-      }
-      .filters-bar .search-wrap { min-width: 100%; order: -1; }
-      .filter-select { flex: 1; min-width: 0; font-size: 0.78rem; padding: 8px 28px 8px 12px; }
-      .view-toggle { width: 100%; justify-content: stretch; }
-      .view-toggle-btn { flex: 1; text-align: center; padding: 7px 8px; font-size: 0.72rem; }
-      .compare-cta { width: 100%; justify-content: center; padding: 8px 14px; font-size: 0.75rem; }
-      .result-count { font-size: 0.72rem; margin-top: 0; }
-      .sort-chips { gap: 6px; }
-      .sort-chip { padding: 5px 10px; font-size: 0.68rem; }
-      .search-suggestions { gap: 4px; }
-      .suggestion-chip { padding: 3px 8px; font-size: 0.6rem; }
-      .grid-density-toggle { width: 100%; justify-content: center; }
-
-      /* Cards: hide verbose data on mobile medium grid so image stays dominant */
-      .species-card { aspect-ratio: 2.5 / 4; }
-      .card-params { display: none; }
-      .card-info { padding: 12px 14px 10px; gap: 2px; }
-      .card-common-name { font-size: 0.85rem; }
-      .card-sci-name { font-size: 0.68rem; }
-
-      .species-grid { grid-template-columns: repeat(auto-fill, minmax(155px, 1fr)); gap: 14px; }
-      .species-grid.grid-large { grid-template-columns: 1fr; gap: 16px; }
-      .species-grid.grid-large .species-card { aspect-ratio: 3 / 4; }
-      .species-grid.grid-large .card-params { display: flex; }
-      .species-grid.grid-large .card-info { padding: 18px 20px 16px; gap: 4px; }
-      .species-grid.grid-large .card-common-name { font-size: 1rem; }
-      .species-grid.grid-large .card-sci-name { font-size: 0.74rem; }
-      .species-grid.grid-compact { grid-template-columns: repeat(3, 1fr); gap: 10px; }
-
-      .flip-card-container { width: 300px; }
-
-      .family-header { padding: 12px 14px; gap: 10px; }
-      .family-header-icon { width: 34px; height: 34px; font-size: 1rem; }
-      .family-header-name { font-size: 0.88rem; }
-      .family-header-meta { font-size: 0.65rem; }
-      .family-species-grid { padding-left: 0; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(155px, 1fr)); }
-    }
-    @media (max-width: 480px) {
-      .db-hero { padding: 36px 0 16px; }
-      .db-hero h1 { font-size: 1.6rem; }
-      .db-hero p { font-size: 0.82rem; }
-      .species-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
-      .species-grid.grid-large { grid-template-columns: 1fr; gap: 14px; }
-      .species-grid.grid-compact { grid-template-columns: repeat(3, 1fr); gap: 8px; }
-      .species-grid.grid-compact .card-info { padding: 8px 10px 6px; }
-      .species-grid.grid-compact .card-common-name { font-size: 0.72rem; }
-      .species-grid.grid-compact .card-sci-name { display: none; }
-      .flip-card-container { width: 260px; }
-      .filters-bar { padding: 12px 12px; gap: 8px; }
-      .filter-select { font-size: 0.72rem; }
-      .family-species-grid { grid-template-columns: repeat(2, 1fr); }
+      .db-card, .db-card__media img, .db-btn, .db-tray { transition: none; }
+      .db-card:hover, .db-btn:hover { transform: none; }
+      .db-card:hover .db-card__media img { transform: none; }
+      .db-sheet[open] { animation: none; }
+      .db-skel { animation: none; }
+    }
+    @media (max-width: 1000px) {
+      .db-select { flex: 1 1 160px; }
+    }
+    @media (max-width: 860px) {
+      .db-hero { padding: 44px 0 30px; }
+      .db-hero__inner { grid-template-columns: 1fr; gap: 26px; }
+      .db-stats { grid-template-columns: repeat(4, 1fr); }
+      .db-stat { border-bottom: 0; }
+      .db-stat:nth-child(2n) { border-right: 1px solid var(--line); }
+      .db-stat:last-child { border-right: 0; }
+      .db-sticky { top: 56px; }
+    }
+    @media (max-width: 620px) {
+      .db-wrap { width: calc(100% - 28px); }
+      .db-stat { padding: 14px 6px; }
+      .db-stat strong { font-size: 1.3rem; }
+      .db-stat span { font-size: .56rem; letter-spacing: .06em; }
+      .db-sticky { position: static; padding: 4px 0 0; box-shadow: none; clip-path: none; background: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
+      .db-sticky.is-stuck { box-shadow: none; clip-path: none; }
+      .db-row--filters { display: grid; grid-template-columns: 1fr 1fr; }
+      .db-select { min-width: 0; }
+      .db-row--chips { overflow-x: auto; flex-wrap: nowrap; scrollbar-width: none; margin: 10px -14px 0; padding: 0 14px; }
+      .db-row--chips::-webkit-scrollbar { display: none; }
+      .db-count { margin-left: 0; }
+      .db-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+      .db-card__body { padding: 10px 11px 11px; gap: 8px; }
+      .db-card h3 { font-size: .92rem; }
+      .db-card__sci { font-size: .7rem; }
+      .db-facts { grid-template-columns: 1fr; }
+      .db-facts div { display: flex; justify-content: space-between; gap: 6px; padding: 4px 8px; border-right: 0; border-bottom: 1px solid var(--line); }
+      .db-facts div:last-child { border-bottom: 0; }
+      .db-facts dd { margin: 0; font-size: .68rem; }
+      .db-tags { display: none; }
+      .db-card__foot { flex-wrap: wrap; gap: 6px; }
+      .db-card__foot .db-link { display: none; }
+      .db-pick { margin-left: 0; width: 100%; justify-content: center; }
+      .db-card__badges .sexing-pill { display: none; }
+      .db-api__inner { grid-template-columns: 1fr; padding: 24px 20px; }
+      .db-sheet { width: 100%; height: auto; max-height: 92vh; margin: auto 0 0; border-radius: 18px 18px 0 0; }
+      .db-sheet[open] { animation-name: db-rise; }
+      @keyframes db-rise { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+      .db-sheet__head { padding: 16px 18px 2px; }
+      .db-sheet__body { padding: 6px 18px 18px; }
+      .db-sheet__actions { padding-left: 18px; padding-right: 18px; }
+      .db-kv { grid-template-columns: 1fr 1fr; }
+      .db-sex { grid-template-columns: 1fr; }
+      .db-tray { bottom: 86px; border-radius: 16px; }
     }
   </style>
-  <link rel="canonical" href="https://aquacellum.com/database">
-  <meta property="og:url" content="https://aquacellum.com/database">
-  <meta property="og:site_name" content="Aquacellum">
-  <meta property="og:image" content="https://aquacellum.com/og-banner.png">
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Aquacellum Species Database — Full Registry">
-  <meta name="twitter:description" content="500+ freshwater and saltwater species with care data checked against FishBase and WoRMS, tank parameters, and personality profiles. A species registry you can actually use.">
 </head>
-<body>
-
-  <!-- Ambient Background -->
-  <div class="ambient-layer">
-    <div class="orb orb-1"></div>
-    <div class="orb orb-2"></div>
-    <div class="orb orb-3"></div>
-  </div>
-
-  <!-- ========== NAVIGATION ========== -->
+<body class="db-page">
   <header id="site-nav"></header>
 
-  <!-- ========== HERO ========== -->
-  <section class="db-hero">
-    <div class="container">
-      <h1>The Complete<br><span class="gradient-emerald">Species Registry</span></h1>
-      <p>Browse every species in the Aquacellum database. Click any card to inspect it up close — click again to flip and see the full care profile.</p>
-
-      <div class="db-stats">
-        <div class="db-stat">
-          <div class="db-stat-num" id="statTotal">—</div>
-          <div class="db-stat-label">Total Species</div>
+  <main>
+    <section class="db-hero">
+      <div class="db-wrap db-hero__inner">
+        <div>
+          <div class="db-eyebrow">Species database</div>
+          <h1>Know the fish <em>before you buy.</em></h1>
+          <p class="db-hero__copy">Care ranges, diet, breeding and sexing notes for every freshwater and saltwater species we track, checked against FishBase and WoRMS. Tap a species to see everything we have on it.</p>
+          <div class="db-hero__actions">
+            <a class="db-btn db-btn--teal" href="#browse">Browse species</a>
+            <a class="db-btn" href="/compare.html">Compare two species</a>
+          </div>
         </div>
-        <div class="db-stat">
-          <div class="db-stat-num" id="statFamilies">—</div>
-          <div class="db-stat-label">Families</div>
+        <div class="db-stats" aria-live="polite">
+          <div class="db-stat"><strong id="statTotal">&ndash;</strong><span>Species</span></div>
+          <div class="db-stat"><strong id="statFamilies">&ndash;</strong><span>Families</span></div>
+          <div class="db-stat"><strong id="statFresh">&ndash;</strong><span>Freshwater</span></div>
+          <div class="db-stat"><strong id="statSalt">&ndash;</strong><span>Saltwater</span></div>
         </div>
-        <div class="db-stat">
-          <div class="db-stat-num" id="statPhotos">—</div>
-          <div class="db-stat-label">With Photos</div>
+      </div>
+    </section>
+
+    <section class="db-browse db-wrap" id="browse" aria-labelledby="browseHeading">
+      <h2 id="browseHeading" class="sr-only">All species</h2>
+
+      <!-- Direct child of the section so it stays pinned while the grid scrolls. -->
+        <div class="db-row db-sticky" id="stickyRow">
+          <label class="db-search">
+            <span class="sr-only">Search species</span>
+            <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="search" id="searchInput" placeholder="Search by name, diet, behaviour or size" autocomplete="off" maxlength="100">
+          </label>
+          <label class="db-select">
+            <span class="sr-only">Sort</span>
+            <select id="sortSelect">
+              <option value="popular">Popular first</option>
+              <option value="alpha">A to Z</option>
+              <option value="easy">Easiest first</option>
+              <option value="hard">Hardest first</option>
+              <option value="large">Largest first</option>
+              <option value="small">Smallest first</option>
+              <option value="family">Group by family</option>
+            </select>
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+          </label>
+        </div>
+
+      <div class="db-toolbar" id="toolbar">
+        <div class="db-row db-row--chips">
+          <div class="db-seg" role="group" aria-label="Water type" id="waterSeg">
+            <button type="button" data-water="" aria-pressed="true">All water</button>
+            <button type="button" data-water="freshwater" aria-pressed="false">Freshwater</button>
+            <button type="button" data-water="marine" aria-pressed="false">Saltwater</button>
+            <button type="button" data-water="brackish" aria-pressed="false">Brackish</button>
+          </div>
+          <div class="db-seg" role="group" aria-label="Kind" id="kindSeg">
+            <button type="button" data-kind="" aria-pressed="true">Everything</button>
+            <button type="button" data-kind="fish" aria-pressed="false">Fish</button>
+            <button type="button" data-kind="invertebrate" aria-pressed="false">Invertebrates</button>
+            <button type="button" data-kind="coral" aria-pressed="false">Corals</button>
+            <button type="button" data-kind="plant" aria-pressed="false">Plants</button>
+          </div>
+        </div>
+
+        <div class="db-row db-row--filters">
+          <label class="db-select">
+            <span class="sr-only">Family</span>
+            <select id="familyFilter"><option value="">All families</option></select>
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+          </label>
+          <label class="db-select">
+            <span class="sr-only">Care level</span>
+            <select id="careFilter">
+              <option value="">Any care level</option>
+              <option value="beginner">Beginner</option>
+              <option value="intermediate">Intermediate</option>
+              <option value="advanced">Advanced</option>
+              <option value="difficult">Difficult</option>
+              <option value="unknown">Not rated yet</option>
+            </select>
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+          </label>
+          <label class="db-select">
+            <span class="sr-only">Telling males from females</span>
+            <select id="sexingFilter">
+              <option value="any">Any sexing info</option>
+              <option value="reliable">Easy to sex by eye</option>
+              <option value="documented">Sexing notes</option>
+              <option value="undocumented">No sexing notes yet</option>
+            </select>
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+          </label>
+          <button type="button" class="db-clear" id="clearFilters" hidden>Clear filters</button>
+          <span class="db-count" id="resultCount" aria-live="polite">Loading species</span>
+        </div>
+
+        <div class="db-try" id="searchSuggestions">
+          <span>Try:</span>
+          <button type="button" data-q="peaceful">peaceful</button>
+          <button type="button" data-q="schooling">schooling</button>
+          <button type="button" data-q="nano">nano</button>
+          <button type="button" data-q="livebearer">livebearer</button>
+          <button type="button" data-q="cave">cave spawner</button>
+          <button type="button" data-q="herbivore">herbivore</button>
         </div>
       </div>
 
-      <a href="/developers.html" class="db-api-badge">
-        <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M18 16.98h-5.99c-1.1 0-1.95.94-2.48 1.9A2.5 2.5 0 0 1 7 20.5"/><path d="M7 3.5a2.5 2.5 0 0 1 2.5 2.5v.5"/><path d="M17 7l3 3-3 3M7 7 4 10l3 3"/></svg>
-        This data also powers a free public API — build with it →
-      </a>
-    </div>
-  </section>
+      <div class="db-grid" id="speciesGrid" aria-busy="true">
+        <div class="db-skel"></div><div class="db-skel"></div><div class="db-skel"></div><div class="db-skel"></div>
+        <div class="db-skel"></div><div class="db-skel"></div><div class="db-skel"></div><div class="db-skel"></div>
+      </div>
+      <div class="db-more" id="moreWrap" hidden>
+        <button type="button" class="db-btn" id="moreBtn">Show more</button>
+      </div>
+    </section>
 
-  <!-- ========== FILTERS ========== -->
-  <div class="container">
-    <div class="filters-bar">
-      <div class="search-wrap">
-        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input type="text" class="search-input" id="searchInput" placeholder="Search name, temperament, diet, size...">
+    <section class="db-api db-wrap" aria-labelledby="apiHeading">
+      <div class="db-api__inner">
+        <div>
+          <h2 id="apiHeading">Build with this data</h2>
+          <p>The same species data is available through a free public API, so you can use it in your own tools, club sites or spreadsheets.</p>
+        </div>
+        <a class="db-btn db-btn--teal" href="/developers.html">See the API</a>
       </div>
-      <select class="filter-select" id="familyFilter">
-        <option value="">All Families</option>
-      </select>
-      <select class="filter-select" id="sexingFilter" title="Filter by whether we document how to tell males from females">
-        <option value="any">Any sexing info</option>
-        <option value="reliable">Visually sexable</option>
-        <option value="documented">Sexing documented</option>
-        <option value="undocumented">Sexing missing</option>
-      </select>
-      <select class="filter-select" id="difficultyFilter">
-        <option value="">All Difficulties</option>
-        <option value="Beginner">Beginner</option>
-        <option value="Intermediate">Intermediate</option>
-        <option value="Advanced">Advanced</option>
-        <option value="Difficult">Difficult</option>
-      </select>
-      <div class="view-toggle">
-        <button class="view-toggle-btn active" data-view="hobbyist" onclick="setViewMode('hobbyist')">🐠 Hobbyist</button>
-        <button class="view-toggle-btn" data-view="breeder" onclick="setViewMode('breeder')">🧬 Breeder</button>
-        <button class="view-toggle-btn" data-view="taxonomy" onclick="setViewMode('taxonomy')">🌿 Taxonomy</button>
-      </div>
-      <a href="/compare.html" class="compare-cta" id="compareCta">
-        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M16 3h5v5"/><path d="M21 3l-7 7"/><path d="M8 21H3v-5"/><path d="M3 21l7-7"/></svg>
-        Compare Species
-      </a>
-      <div class="result-count" id="resultCount"></div>
-      <div class="search-suggestions" id="searchSuggestions">
-        <button class="suggestion-chip" onclick="quickSearch('peaceful')">peaceful</button>
-        <button class="suggestion-chip" onclick="quickSearch('aggressive')">aggressive</button>
-        <button class="suggestion-chip" onclick="quickSearch('schooling')">schooling</button>
-        <button class="suggestion-chip" onclick="quickSearch('nano')">nano</button>
-        <button class="suggestion-chip" onclick="quickSearch('carnivore')">carnivore</button>
-        <button class="suggestion-chip" onclick="quickSearch('herbivore')">herbivore</button>
-        <button class="suggestion-chip" onclick="quickSearch('cave')">cave spawner</button>
-        <button class="suggestion-chip" onclick="quickSearch('livebearer')">livebearer</button>
-        <button class="suggestion-chip" onclick="quickSearch('territorial')">territorial</button>
-        <button class="suggestion-chip" onclick="quickSearch('plant')">plants</button>
-      </div>
-      <div class="sort-chips">
-        <button class="sort-chip active" data-sort="popular" onclick="setSort('popular')">Popular</button>
-        <button class="sort-chip" data-sort="alpha" onclick="setSort('alpha')">A → Z</button>
-        <button class="sort-chip" data-sort="difficulty" onclick="setSort('difficulty')">Difficulty</button>
-        <button class="sort-chip" data-sort="size" onclick="setSort('size')">Size</button>
-        <button class="sort-chip" data-sort="family" onclick="setSort('family')">Family</button>
-      </div>
-      <div class="grid-density-toggle">
-        <button class="grid-density-btn" data-density="large" onclick="setGridDensity('large')">
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1" y="1" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="8" y="1" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="1" y="8" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="8" y="8" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.5"/></svg>
-          Large
-        </button>
-        <button class="grid-density-btn active" data-density="medium" onclick="setGridDensity('medium')">
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="0.5" y="0.5" width="3.5" height="3.5" rx="0.75" stroke="currentColor" stroke-width="1.2"/><rect x="5.25" y="0.5" width="3.5" height="3.5" rx="0.75" stroke="currentColor" stroke-width="1.2"/><rect x="10" y="0.5" width="3.5" height="3.5" rx="0.75" stroke="currentColor" stroke-width="1.2"/><rect x="0.5" y="5.25" width="3.5" height="3.5" rx="0.75" stroke="currentColor" stroke-width="1.2"/><rect x="5.25" y="5.25" width="3.5" height="3.5" rx="0.75" stroke="currentColor" stroke-width="1.2"/><rect x="10" y="5.25" width="3.5" height="3.5" rx="0.75" stroke="currentColor" stroke-width="1.2"/><rect x="0.5" y="10" width="3.5" height="3.5" rx="0.75" stroke="currentColor" stroke-width="1.2"/><rect x="5.25" y="10" width="3.5" height="3.5" rx="0.75" stroke="currentColor" stroke-width="1.2"/><rect x="10" y="10" width="3.5" height="3.5" rx="0.75" stroke="currentColor" stroke-width="1.2"/></svg>
-          Medium
-        </button>
-        <button class="grid-density-btn" data-density="compact" onclick="setGridDensity('compact')">
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="0.5" y="0.5" width="2.5" height="2.5" rx="0.5" stroke="currentColor" stroke-width="1"/><rect x="4" y="0.5" width="2.5" height="2.5" rx="0.5" stroke="currentColor" stroke-width="1"/><rect x="7.5" y="0.5" width="2.5" height="2.5" rx="0.5" stroke="currentColor" stroke-width="1"/><rect x="11" y="0.5" width="2.5" height="2.5" rx="0.5" stroke="currentColor" stroke-width="1"/><rect x="0.5" y="4" width="2.5" height="2.5" rx="0.5" stroke="currentColor" stroke-width="1"/><rect x="4" y="4" width="2.5" height="2.5" rx="0.5" stroke="currentColor" stroke-width="1"/><rect x="7.5" y="4" width="2.5" height="2.5" rx="0.5" stroke="currentColor" stroke-width="1"/><rect x="11" y="4" width="2.5" height="2.5" rx="0.5" stroke="currentColor" stroke-width="1"/><rect x="0.5" y="7.5" width="2.5" height="2.5" rx="0.5" stroke="currentColor" stroke-width="1"/><rect x="4" y="7.5" width="2.5" height="2.5" rx="0.5" stroke="currentColor" stroke-width="1"/><rect x="7.5" y="7.5" width="2.5" height="2.5" rx="0.5" stroke="currentColor" stroke-width="1"/><rect x="11" y="7.5" width="2.5" height="2.5" rx="0.5" stroke="currentColor" stroke-width="1"/><rect x="0.5" y="11" width="2.5" height="2.5" rx="0.5" stroke="currentColor" stroke-width="1"/><rect x="4" y="11" width="2.5" height="2.5" rx="0.5" stroke="currentColor" stroke-width="1"/><rect x="7.5" y="11" width="2.5" height="2.5" rx="0.5" stroke="currentColor" stroke-width="1"/><rect x="11" y="11" width="2.5" height="2.5" rx="0.5" stroke="currentColor" stroke-width="1"/></svg>
-          Compact
-        </button>
-      </div>
-    </div>
+    </section>
+  </main>
+
+  <!-- Compare tray: appears once a species is picked. -->
+  <div class="db-tray" id="compareTray" role="region" aria-label="Compare species" aria-live="polite">
+    <span class="db-tray__text" id="trayText"></span>
+    <button type="button" class="db-btn" id="trayClear">Clear</button>
+    <a class="db-btn db-btn--teal" id="trayGo" href="/compare.html">Compare</a>
   </div>
 
-  <!-- ========== SPECIES GRID ========== -->
-  <div class="container">
-    <div id="speciesGrid" class="species-grid">
-      <!-- Skeleton loading cards -->
-      <div class="skeleton-card"><div class="skeleton-image"></div><div class="skeleton-info"><div class="skeleton-line"></div><div class="skeleton-line"></div></div></div>
-      <div class="skeleton-card"><div class="skeleton-image"></div><div class="skeleton-info"><div class="skeleton-line"></div><div class="skeleton-line"></div></div></div>
-      <div class="skeleton-card"><div class="skeleton-image"></div><div class="skeleton-info"><div class="skeleton-line"></div><div class="skeleton-line"></div></div></div>
-      <div class="skeleton-card"><div class="skeleton-image"></div><div class="skeleton-info"><div class="skeleton-line"></div><div class="skeleton-line"></div></div></div>
-      <div class="skeleton-card"><div class="skeleton-image"></div><div class="skeleton-info"><div class="skeleton-line"></div><div class="skeleton-line"></div></div></div>
-      <div class="skeleton-card"><div class="skeleton-image"></div><div class="skeleton-info"><div class="skeleton-line"></div><div class="skeleton-line"></div></div></div>
-      <div class="skeleton-card"><div class="skeleton-image"></div><div class="skeleton-info"><div class="skeleton-line"></div><div class="skeleton-line"></div></div></div>
-      <div class="skeleton-card"><div class="skeleton-image"></div><div class="skeleton-info"><div class="skeleton-line"></div><div class="skeleton-line"></div></div></div>
-    </div>
-  </div>
+  <!-- Species details -->
+  <dialog class="db-sheet" id="detailSheet" aria-labelledby="sheetTitle">
+    <div class="db-sheet__scroll" id="sheetContent"></div>
+    <div class="db-sheet__actions" id="sheetActions"></div>
+  </dialog>
 
-  <!-- ========== POPUP OVERLAY WITH FLIP CARD ========== -->
-  <div class="popup-overlay" id="popupOverlay">
-    <div class="flip-card-container" id="flipCardContainer">
-      <div class="flip-card" id="flipCard">
-        <!-- FRONT -->
-        <div class="flip-face flip-front" id="flipFront"></div>
-        <!-- BACK -->
-        <div class="flip-face flip-back" id="flipBack"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ========== FOOTER ========== -->
   <footer id="site-footer"></footer>
 
   <!-- Canonical difficulty contract (shared with the in-app catalog) -->
@@ -1160,21 +427,26 @@
   <!-- Echo. The behaviour core is the same module the React app imports (kept in
        lockstep by src/services/echoBehaviour.test.js), so she is one character
        rather than a lookalike. The mount must load after it.
-       She is decorative and pointer-events:none — see /css/echo.css. -->
+       She is decorative and pointer-events:none, see /css/echo.css. -->
   <script src="/js/echo-behaviour.js"></script>
   <script src="/js/echo-ambient.js"></script>
 
-  <!-- ========== SCRIPT ========== -->
   <script>
-    let allSpecies = [];
-    let speciesWithVideo = new Set();
-    let filteredSpecies = [];
-    let isFlipped = false;
-    let currentView = 'hobbyist';
-    let currentSort = 'popular';
-    let availabilityByName = {}; // Fish Finder T4c: public marketplace availability, keyed by lowercased scientific name
+    "use strict";
 
-    // Species that have videos — these are the most popular aquarium fish
+    let allSpecies = [];
+    let filteredSpecies = [];
+    let speciesWithVideo = new Set();
+    let availabilityByName = {}; // public marketplace availability, keyed by lowercased scientific name
+    let shownCount = 0;
+    let picked = []; // up to two slugs for Compare
+
+    const PAGE_SIZE = 48;
+    const PLACEHOLDER_TEXT = new Set(['Information arriving soon', 'Generic Biotope Details']);
+    const state = { q: '', water: '', kind: '', family: '', care: '', sexing: 'any', sort: 'popular' };
+
+    // Species that have videos. These are the most popular aquarium fish, so
+    // the "Popular first" sort puts them up front.
     const videoSlugs = new Set([
       'ancistrus-cirrhosus','biotodoma-cupido','botia-striata','carassius-auratus',
       'chromobotia-macracanthus','corydoras-aeneus','corydoras-paleatus','corydoras-panda',
@@ -1193,793 +465,564 @@
       'trigonostigma-heteromorpha','xiphophorus-hellerii','xiphophorus-maculatus'
     ]);
 
+    const $ = (id) => document.getElementById(id);
+    const grid = $('speciesGrid');
+
     // ---- Helpers ----
-    // Escape catalog prose before it goes into markup. The sexing descriptions
-    // are free text from the catalog (and, once contribution lands, from
-    // curators), so they get escaped rather than trusted — unlike the short
-    // enumerated values this page interpolates elsewhere.
+    // Everything from the catalog is escaped before it goes into markup.
     function escapeHtml(value) {
       return String(value == null ? '' : value)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;');
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+    const real = (val) => (val && typeof val === 'string' && !PLACEHOLDER_TEXT.has(val.trim()) ? val.trim() : null);
+    const toSlug = (name) => String(name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    const videoSlug = (sp) => String(sp.scientificName || '').toLowerCase().replace(/\s+/g, '-');
+    const nameOf = (sp) => sp.commonName || sp.scientificName || 'Unnamed species';
+    const photoOf = (sp) => {
+      const url = sp.masterPhotoUrl || '';
+      return /^\/[a-z0-9/_.-]+$/i.test(url) ? url : ''; // our own images only
+    };
+
+    // Difficulty comes from the shared contract (window.SpeciesCatalog) so this
+    // page and the in-app Fish Finder agree. It also folds "Expert" into
+    // Difficult, which a raw string match used to miss.
+    const care = (sp) => window.SpeciesCatalog.normalizeDifficulty(sp.tankMetrics?.difficulty);
+    const careLabel = (c) => (c.key === 'unknown' ? 'Not rated' : c.label);
+
+    function waterOf(sp) {
+      const w = Array.isArray(sp.waterTypes) ? sp.waterTypes : [];
+      return { fresh: w.includes('freshwater'), salt: w.includes('marine'), brackish: w.includes('brackish') };
+    }
+    function waterLabel(sp) {
+      const w = waterOf(sp);
+      if (w.salt && !w.fresh) return w.brackish ? 'Brackish to saltwater' : 'Saltwater';
+      if (w.fresh && w.brackish) return 'Freshwater or brackish';
+      if (w.fresh) return 'Freshwater';
+      if (w.brackish) return 'Brackish';
+      return null;
+    }
+    function kindOf(sp) {
+      const t = (sp.type || '').toLowerCase();
+      if (!t || t === 'fish') return 'fish';
+      return t; // invertebrate, coral, plant, amphibian
+    }
+    const range = (r, unit) => (Array.isArray(r) && r.length === 2 && r[0] != null && r[1] != null
+      ? (r[0] === r[1] ? `${r[0]}${unit}` : `${r[0]}–${r[1]}${unit}`) : null);
+    const cToF = (c) => Math.round(c * 9 / 5 + 32);
+
+    // ---- URL state (so a filtered view can be shared or bookmarked) ----
+    function readUrl() {
+      const p = new URLSearchParams(window.location.search);
+      state.q = (p.get('q') || '').slice(0, 100);
+      state.water = ['freshwater', 'marine', 'brackish'].includes(p.get('water')) ? p.get('water') : '';
+      state.kind = ['fish', 'invertebrate', 'coral', 'plant'].includes(p.get('kind')) ? p.get('kind') : '';
+      state.family = (p.get('family') || '').slice(0, 60);
+      state.care = ['beginner', 'intermediate', 'advanced', 'difficult', 'unknown'].includes(p.get('care')) ? p.get('care') : '';
+      state.sexing = ['reliable', 'documented', 'undocumented'].includes(p.get('sexing')) ? p.get('sexing') : 'any';
+      state.sort = ['popular', 'alpha', 'easy', 'hard', 'large', 'small', 'family'].includes(p.get('sort')) ? p.get('sort') : 'popular';
+    }
+    function writeUrl() {
+      const p = new URLSearchParams();
+      if (state.q) p.set('q', state.q);
+      if (state.water) p.set('water', state.water);
+      if (state.kind) p.set('kind', state.kind);
+      if (state.family) p.set('family', state.family);
+      if (state.care) p.set('care', state.care);
+      if (state.sexing !== 'any') p.set('sexing', state.sexing);
+      if (state.sort !== 'popular') p.set('sort', state.sort);
+      const qs = p.toString();
+      history.replaceState(null, '', window.location.pathname + (qs ? '?' + qs : '') + window.location.hash);
+    }
+    function syncControls() {
+      $('searchInput').value = state.q;
+      $('sortSelect').value = state.sort;
+      $('familyFilter').value = state.family;
+      $('careFilter').value = state.care;
+      $('sexingFilter').value = state.sexing;
+      document.querySelectorAll('#waterSeg button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.water === state.water)));
+      document.querySelectorAll('#kindSeg button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.kind === state.kind)));
+      $('familyFilter').classList.toggle('is-set', !!state.family);
+      $('careFilter').classList.toggle('is-set', !!state.care);
+      $('sexingFilter').classList.toggle('is-set', state.sexing !== 'any');
+      $('clearFilters').hidden = !(state.q || state.water || state.kind || state.family || state.care || state.sexing !== 'any');
+      $('searchSuggestions').hidden = !!state.q;
     }
 
-    function escapeAttr(value) {
-      return escapeHtml(value).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-    }
-
-    function toSlug(name) {
-      return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-    }
-
-    // Difficulty classification is delegated to the shared species-catalog
-    // contract (window.SpeciesCatalog, /js/species-catalog.js) so this page and
-    // the in-app Fish Finder always agree. A parity test pins the two together.
-    function getDifficultyClass(diff) {
-      return window.SpeciesCatalog.normalizeDifficulty(diff).badgeClass;
-    }
-
-    function getTierClass(diff) {
-      return window.SpeciesCatalog.normalizeDifficulty(diff).tierClass;
-    }
-
-    function getDifficultyWeight(diff) {
-      return window.SpeciesCatalog.normalizeDifficulty(diff).order;
-    }
-
-    // ---- View Mode ----
-    function setViewMode(mode) {
-      currentView = mode;
-      document.querySelectorAll('.view-toggle-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.view === mode);
-      });
-      renderGrid();
-    }
-
-    // ---- Sort ----
-    function setSort(sort) {
-      currentSort = sort;
-      document.querySelectorAll('.sort-chip').forEach(chip => {
-        chip.classList.toggle('active', chip.dataset.sort === sort);
-      });
-      applyFilters();
-    }
-
-    function setGridDensity(density) {
-      const grid = document.getElementById('speciesGrid');
-      grid.classList.remove('grid-large', 'grid-compact');
-      if (density === 'large') grid.classList.add('grid-large');
-      if (density === 'compact') grid.classList.add('grid-compact');
-      document.querySelectorAll('.grid-density-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.density === density);
-      });
-    }
-
-    // ---- Fetch & Initialize ----
-    // ---- Public marketplace availability (Fish Finder T4c) ----
-    // Aggregate-only signal from /api/species?availability=true (never raw
-    // listings). Merged into the species function to stay within Vercel's
-    // Hobby-plan 12-serverless-function limit.
+    // ---- Load ----
     async function fetchAvailability() {
+      // Aggregate-only signal (seller count and lowest price), never raw listings.
       try {
         const res = await fetch('/api/species?availability=true');
         if (!res.ok) return;
         const data = await res.json();
         availabilityByName = data.byScientificName || {};
-        if (Object.keys(availabilityByName).length > 0) {
-          renderGrid(); // re-render so cards pick up the availability pill
-        }
-      } catch (e) {
-        // Graceful: no availability shown if the endpoint is unavailable.
-      }
+        if (Object.keys(availabilityByName).length > 0) render(false);
+      } catch { /* no availability shown if the endpoint is down */ }
     }
 
     async function init() {
+      readUrl();
       try {
         const res = await fetch('/fishbase_master.json?v=2');
         if (!res.ok) throw new Error(`Server returned ${res.status}`);
         // Each species once: records kept under an older name (duplicateOf)
         // are dropped (window.CatalogAliases, /js/catalog-aliases.js).
         allSpecies = window.CatalogAliases.visibleCatalog(await res.json());
-        // Only species with a hover clip get a <video> (the list is built by
-        // scripts/build-home-videos.mjs). Without it every card requested a
-        // missing .mp4, about 450 404s per page load.
+        // Only species with a hover clip get a <video> (list built by
+        // scripts/build-home-videos.mjs), so cards never request missing files.
         try {
           const vr = await fetch('/home-videos.json');
           if (vr.ok) speciesWithVideo = new Set(await vr.json());
-        } catch { /* no clips shown; the cards still work */ }
+        } catch { /* no clips; the cards still work */ }
 
-        document.getElementById('statTotal').textContent = String(allSpecies.length);
-        const families = [...new Set(allSpecies.map(s => s.family).filter(f => f && f !== 'Information arriving soon' && f !== ''))];
-        document.getElementById('statFamilies').textContent = families.length;
-        document.getElementById('statPhotos').textContent = allSpecies.filter(s => s.masterPhotoUrl && s.masterPhotoUrl !== '').length;
+        const families = [...new Set(allSpecies.map((s) => real(s.family)).filter(Boolean))].sort();
+        $('statTotal').textContent = String(allSpecies.length);
+        $('statFamilies').textContent = String(families.length);
+        $('statFresh').textContent = String(allSpecies.filter((s) => waterOf(s).fresh).length);
+        $('statSalt').textContent = String(allSpecies.filter((s) => waterOf(s).salt).length);
 
-        const familySelect = document.getElementById('familyFilter');
-        families.sort().forEach(fam => {
+        const familySelect = $('familyFilter');
+        families.forEach((fam) => {
           const opt = document.createElement('option');
           opt.value = fam;
           opt.textContent = fam;
           familySelect.appendChild(opt);
         });
+        if (state.family && !families.includes(state.family)) state.family = '';
 
-        // Detect referrer for auto view mode
-        const ref = document.referrer || '';
-        if (ref.includes('/breeder')) {
-          setViewMode('breeder');
-        }
-
-        applyFilters();
-
-        // Fish Finder T4c: fetch public marketplace availability (non-blocking,
-        // graceful). Cards re-render with an availability pill when it arrives.
+        syncControls();
+        applyFilters(false);
         fetchAvailability();
+        openFromHash();
       } catch (err) {
-        document.getElementById('speciesGrid').innerHTML = `
-          <div class="empty-state">
-            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
-            <h3>Failed to load database</h3>
-            <p>Please try refreshing the page.</p>
-          </div>`;
+        grid.setAttribute('aria-busy', 'false');
+        grid.innerHTML = `<div class="db-empty">
+          <h2>The species list didn't load</h2>
+          <p>Check your connection and try again.</p>
+          <button type="button" class="db-btn db-btn--teal" onclick="location.reload()">Try again</button>
+        </div>`;
+        $('resultCount').textContent = '';
       }
     }
 
-    // ---- Filtering ----
-    function applyFilters() {
-      const query = document.getElementById('searchInput').value.toLowerCase().trim();
-      const familyVal = document.getElementById('familyFilter').value;
-      const diffVal = document.getElementById('difficultyFilter').value;
-      const sexingVal = document.getElementById('sexingFilter').value;
+    // ---- Filter + sort ----
+    function searchableText(sp) {
+      const w = waterOf(sp);
+      return [
+        sp.commonName, sp.scientificName, sp.genus, sp.family,
+        sp.ecology?.socialBehavior, sp.diet?.trophicLevel, sp.diet?.fooditems,
+        sp.reproduction?.spawningTrait,
+        sp.personality?.vibeLine?.casual, sp.personality?.flavorText?.casual,
+        sp.tankMetrics?.difficulty,
+        // Sexing notes: "gravid", "ovipositor" or "nuchal hump" should find them.
+        sp.sexualDimorphism?.male, sp.sexualDimorphism?.female,
+        w.fresh ? 'freshwater' : '', w.salt ? 'saltwater marine reef' : '', w.brackish ? 'brackish' : '',
+        (sp.maxLengthCm && sp.maxLengthCm <= 4) ? 'nano tiny small' : '',
+        (sp.maxLengthCm && sp.maxLengthCm >= 20) ? 'large big' : '',
+        (sp.tankMetrics?.minVolumeGallons && sp.tankMetrics.minVolumeGallons <= 10) ? 'nano small tank' : '',
+        kindOf(sp) === 'plant' ? 'plant plants' : '',
+      ].filter(Boolean).join(' ').toLowerCase();
+    }
 
-      filteredSpecies = allSpecies.filter(sp => {
-        if (query) {
-          // Build comprehensive searchable text
-          const searchable = [
-            sp.commonName || '',
-            sp.scientificName || '',
-            sp.genus || '',
-            sp.family || '',
-            // Temperament / behavior keywords
-            sp.ecology?.socialBehavior || '',
-            // Diet type
-            sp.diet?.trophicLevel || '',
-            sp.diet?.fooditems || '',
-            // Spawning
-            sp.reproduction?.spawningTrait || '',
-            // Personality vibes
-            sp.personality?.vibeLine?.casual || '',
-            sp.personality?.flavorText?.casual || '',
-            // Difficulty
-            sp.tankMetrics?.difficulty || '',
-            // Sexing notes — searching "gravid", "ovipositor" or "nuchal hump"
-            // should find the species whose sexing description says it.
-            sp.sexualDimorphism?.male || '',
-            sp.sexualDimorphism?.female || '',
-            // Size category hints
-            (sp.maxLengthCm && sp.maxLengthCm <= 4) ? 'nano tiny small' : '',
-            (sp.maxLengthCm && sp.maxLengthCm >= 20) ? 'large big' : '',
-            // Tank size hints
-            (sp.tankMetrics?.minVolumeGallons && sp.tankMetrics.minVolumeGallons <= 10) ? 'nano small tank' : '',
-          ].join(' ').toLowerCase();
-          if (!searchable.includes(query)) return false;
+    function isPlantOrInvert(sp) {
+      const k = kindOf(sp);
+      return k === 'plant' || k === 'invertebrate' || k === 'coral' || k === 'amphibian';
+    }
+
+    function popularity(a, b) {
+      // Fish before invertebrates and plants; then fish with clips (the most
+      // kept species); then Wikimedia photos; then easier care; then has a photo.
+      const pi = (isPlantOrInvert(a) ? 1 : 0) - (isPlantOrInvert(b) ? 1 : 0);
+      if (pi) return pi;
+      const vid = (videoSlugs.has(videoSlug(a)) ? 0 : 1) - (videoSlugs.has(videoSlug(b)) ? 0 : 1);
+      if (vid) return vid;
+      const good = (s) => ((s.masterPhotoUrl || '').includes('wikimedia-resized') ? 0 : 1);
+      if (good(a) !== good(b)) return good(a) - good(b);
+      const ca = care(a).order || 5;
+      const cb = care(b).order || 5;
+      if (ca !== cb) return ca - cb;
+      const img = (s) => (photoOf(s) ? 0 : 1);
+      if (img(a) !== img(b)) return img(a) - img(b);
+      return nameOf(a).localeCompare(nameOf(b));
+    }
+
+    function sorter(a, b) {
+      const byName = () => nameOf(a).localeCompare(nameOf(b));
+      switch (state.sort) {
+        case 'alpha': return byName();
+        case 'easy': return ((care(a).order || 9) - (care(b).order || 9)) || byName();
+        case 'hard': return (care(b).order - care(a).order) || byName();
+        case 'large': return ((b.maxLengthCm || 0) - (a.maxLengthCm || 0)) || byName();
+        case 'small': return ((a.maxLengthCm || 9999) - (b.maxLengthCm || 9999)) || byName();
+        case 'family': return (real(a.family) || '~').localeCompare(real(b.family) || '~') || byName();
+        default: return popularity(a, b);
+      }
+    }
+
+    function applyFilters(updateUrl = true) {
+      const q = state.q.toLowerCase().trim();
+      filteredSpecies = allSpecies.filter((sp) => {
+        if (q && !searchableText(sp).includes(q)) return false;
+        if (state.water) {
+          const w = waterOf(sp);
+          if (state.water === 'freshwater' && !w.fresh) return false;
+          if (state.water === 'marine' && !w.salt) return false;
+          if (state.water === 'brackish' && !w.brackish) return false;
         }
-        if (familyVal && sp.family !== familyVal) return false;
-        if (diffVal && sp.tankMetrics?.difficulty !== diffVal) return false;
-        // Shared predicate, not a local reimplementation — see /js/sexing-guide.js.
-        if (!window.SexingGuide.matchesSexingFilter(sp, sexingVal)) return false;
+        if (state.kind && kindOf(sp) !== state.kind) return false;
+        if (state.family && sp.family !== state.family) return false;
+        if (state.care && care(sp).key !== state.care) return false;
+        // Shared predicate, see /js/sexing-guide.js.
+        if (!window.SexingGuide.matchesSexingFilter(sp, state.sexing)) return false;
         return true;
-      });
+      }).sort(sorter);
 
-      filteredSpecies.sort((a, b) => {
-        switch (currentSort) {
-          case 'popular': {
-            // Priority: fish with videos > fish with good photos > other fish > invertebrates/plants
-            const isPlantOrInvert = (sp) => {
-              const fam = (sp.family || '').toLowerCase();
-              const type = (sp.type || '').toLowerCase();
-              return type === 'plant' || fam === 'atyidae' || fam === 'palaemonidae' || fam === 'ampullariidae' || fam === 'planorbidae' || fam === 'neritidae' || fam === 'thiaridae' || fam === 'physidae' || fam === 'ambystomatidae' || sp.scientificName?.match(/^(Neocaridina|Caridina|Palaemonetes|Pomacea|Melanoides|Planorbella|Neritina|Physella|Lemna|Taxiphyllum|Ludwigia|Cryptocoryne|Leptochilus|Echinodorus|Anubias|Limnobium|Vallisneria|Hygrophila|Vesicularia|Bucephalandra|Bacopa|Ambystoma)/);
-            };
-            const piA = isPlantOrInvert(a) ? 1 : 0;
-            const piB = isPlantOrInvert(b) ? 1 : 0;
-            if (piA !== piB) return piA - piB;
-
-            // Species with videos first (video = popular fish)
-            const slugA = a.scientificName?.toLowerCase().replace(/\s+/g, '-') || '';
-            const slugB = b.scientificName?.toLowerCase().replace(/\s+/g, '-') || '';
-            const vidA = videoSlugs.has(slugA) ? 0 : 1;
-            const vidB = videoSlugs.has(slugB) ? 0 : 1;
-            if (vidA !== vidB) return vidA - vidB;
-
-            // Then species with wikimedia (good) photos before specimen/AI photos
-            const goodImgA = (a.masterPhotoUrl && a.masterPhotoUrl.includes('wikimedia-resized')) ? 0 : 1;
-            const goodImgB = (b.masterPhotoUrl && b.masterPhotoUrl.includes('wikimedia-resized')) ? 0 : 1;
-            if (goodImgA !== goodImgB) return goodImgA - goodImgB;
-
-            // Then beginner-friendly first
-            const diffOrder = { 'Beginner': 0, 'Intermediate': 1, 'Advanced': 2, 'Difficult': 3 };
-            const da = diffOrder[a.tankMetrics?.difficulty] ?? 4;
-            const db = diffOrder[b.tankMetrics?.difficulty] ?? 4;
-            if (da !== db) return da - db;
-
-            // Then has any image vs no image
-            const imgA = (a.masterPhotoUrl && a.masterPhotoUrl !== '') ? 0 : 1;
-            const imgB = (b.masterPhotoUrl && b.masterPhotoUrl !== '') ? 0 : 1;
-            if (imgA !== imgB) return imgA - imgB;
-
-            const nameA = (a.commonName || a.scientificName || '').toLowerCase();
-            const nameB = (b.commonName || b.scientificName || '').toLowerCase();
-            return nameA.localeCompare(nameB);
-          }
-          case 'alpha': {
-            const nameA = (a.commonName || a.scientificName || '').toLowerCase();
-            const nameB = (b.commonName || b.scientificName || '').toLowerCase();
-            return nameA.localeCompare(nameB);
-          }
-          case 'difficulty':
-            return getDifficultyWeight(b.tankMetrics?.difficulty) - getDifficultyWeight(a.tankMetrics?.difficulty);
-          case 'size':
-            return (b.maxLengthCm || 0) - (a.maxLengthCm || 0);
-          case 'family': {
-            const famA = (a.family || '').toLowerCase();
-            const famB = (b.family || '').toLowerCase();
-            return famA.localeCompare(famB);
-          }
-          default:
-            return 0;
-        }
-      });
-
-      document.getElementById('resultCount').textContent =
-        `Showing ${filteredSpecies.length} of ${allSpecies.length} species`;
-
-      renderGrid();
+      const n = filteredSpecies.length;
+      $('resultCount').textContent = n === allSpecies.length
+        ? `${n} species`
+        : `${n} of ${allSpecies.length} species`;
+      syncControls();
+      if (updateUrl) writeUrl();
+      render(true);
     }
 
-    // ---- Render Grid ----
-    function renderGrid() {
-      const grid = document.getElementById('speciesGrid');
-
-      if (filteredSpecies.length === 0) {
-        grid.innerHTML = `
-          <div class="empty-state">
-            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <h3>No species found</h3>
-            <p>Try adjusting your search or filters.</p>
-          </div>`;
-        return;
-      }
-
-      // Taxonomy grouped view
-      if (currentView === 'taxonomy') {
-        renderTaxonomyView(grid);
-        return;
-      }
-
-      const hasQuery = document.getElementById('searchInput').value.trim();
-
-      grid.innerHTML = filteredSpecies.map((sp, idx) => {
-        const difficulty = sp.tankMetrics?.difficulty || 'Unknown';
-        const badgeClass = getDifficultyClass(difficulty);
-        const tierClass = getTierClass(difficulty);
-        const hasImage = sp.masterPhotoUrl && sp.masterPhotoUrl !== '';
-        const videoSlug = sp.scientificName.toLowerCase().replace(/\s+/g, '-');
-        const videoHtml = speciesWithVideo.has(videoSlug)
-          ? `<video class="card-video" src="/videos/species/${videoSlug}.mp4" muted loop playsinline preload="none"></video>`
-          : '';
-
-        // Sexing badge — only for species we have actually documented. A grey
-        // "not documented" pill on the other 296 cards would be noise on a
-        // browsing grid; the Sexing filter is how you find the gaps deliberately.
-        const sexing = window.SexingGuide.normalizeSexingGuide(sp);
-        const sexingHtml = sexing.documented
-          ? `<span class="card-sexing-badge ${sexing.badgeClass}" title="${escapeAttr(window.SexingGuide.sexingBlurb(sexing))}">♂♀ ${window.SexingGuide.sexingShortLabel(sexing)}</span>`
-          : '';
-
-        const imageHtml = hasImage
-          ? `<img class="blur-bg" src="${sp.masterPhotoUrl}" alt="" aria-hidden="true"><img class="main-img" src="${sp.masterPhotoUrl}" alt="${sp.commonName || sp.scientificName}" loading="lazy">${videoHtml}`
-          : `<span class="placeholder-icon">🐟</span>`;
-
-        // Contextual metadata based on view mode
-        let metaHtml = '';
-
-        // Micro parameter indicators (always visible)
-        const temp = sp.tankMetrics?.tempRangeCelsius;
-        const ph = sp.tankMetrics?.phRange;
-        const maxSize = sp.maxLengthCm;
-        let paramsHtml = '<div class="card-params">';
-        if (temp) {
-          const tLeft = ((temp[0] - 15) / 20) * 100;
-          const tWidth = ((temp[1] - temp[0]) / 20) * 100;
-          paramsHtml += `<div class="micro-gauge">
-            <div class="micro-gauge-label"><span>Temp</span><span class="micro-gauge-value">${temp[0]}–${temp[1]}°</span></div>
-            <div class="micro-track"><div class="micro-fill temp" style="left:${tLeft}%;width:${tWidth}%"></div></div>
-          </div>`;
-        }
-        if (ph) {
-          const pLeft = ((ph[0] - 5) / 4.5) * 100;
-          const pWidth = ((ph[1] - ph[0]) / 4.5) * 100;
-          paramsHtml += `<div class="micro-gauge">
-            <div class="micro-gauge-label"><span>pH</span><span class="micro-gauge-value">${ph[0]}–${ph[1]}</span></div>
-            <div class="micro-track"><div class="micro-fill ph" style="left:${pLeft}%;width:${pWidth}%"></div></div>
-          </div>`;
-        }
-        if (maxSize) {
-          const sWidth = Math.min((maxSize / 30) * 100, 100);
-          paramsHtml += `<div class="micro-gauge">
-            <div class="micro-gauge-label"><span>Size</span><span class="micro-gauge-value">${maxSize}cm</span></div>
-            <div class="micro-track"><div class="micro-fill size" style="left:0%;width:${sWidth}%"></div></div>
-          </div>`;
-        }
-        paramsHtml += '</div>';
-
-        if (currentView === 'breeder') {
-          const spawning = sp.reproduction?.spawningTrait || null;
-          const maxSizeLabel = sp.maxLengthCm ? sp.maxLengthCm + 'cm' : '—';
-          const spawnTag = spawning ? (spawning.length > 20 ? spawning.slice(0,18) + '…' : spawning) : '';
-          metaHtml = paramsHtml + `<div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;">
-            ${spawnTag ? `<span style="font-size:0.62rem;padding:2px 7px;border-radius:4px;background:#f5f3ff;border:1px solid rgba(124,58,237,0.3);color:#6d28d9;font-weight:600;">${spawnTag}</span>` : ''}
-            <span style="font-size:0.62rem;padding:2px 7px;border-radius:4px;background:#ecfdf5;border:1px solid rgba(16,185,129,0.35);color:#047857;font-weight:600;">Max ${maxSizeLabel}</span>
-          </div>`;
-        } else {
-          const minTank = sp.tankMetrics?.minVolumeGallons;
-          const vibe = sp.personality?.vibeLine?.casual;
-          const vibeShort = vibe ? (vibe.length > 35 ? vibe.slice(0,33) + '…' : vibe) : '';
-          metaHtml = paramsHtml + `<div style="margin-top:5px;">
-            ${minTank ? `<span style="font-size:0.62rem;padding:2px 7px;border-radius:4px;background:#f0f9ff;border:1px solid rgba(2,132,199,0.3);color:#0369a1;font-weight:600;">${minTank}+ gal</span>` : ''}
-            ${vibeShort ? `<div style="font-size:0.65rem;color:var(--text-muted);margin-top:4px;font-style:italic;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">"${vibeShort}"</div>` : ''}
-          </div>`;
-        }
-
-        const avail = availabilityByName[(sp.scientificName || '').toLowerCase()];
-        const availHtml = avail
-          ? `<a href="/app/gallery?species=${encodeURIComponent(sp.scientificName)}" class="card-avail" onclick="event.stopPropagation()" title="See sellers in the app">🛒 ${avail.sellerCount} seller${avail.sellerCount === 1 ? '' : 's'}${avail.fromPriceDisplay ? ` · from ${avail.fromPriceDisplay}` : ''}</a>`
-          : '';
-
-        return `
-          <div class="species-card ${tierClass}" onclick="openPopup(${idx})" data-idx="${idx}">
-            <div class="card-image">
-              ${imageHtml}
-              <div class="card-vignette"></div>
-              ${sexingHtml}
-              <span class="card-difficulty-badge ${badgeClass}">${difficulty}</span>
-              <button class="card-compare-btn" onclick="event.stopPropagation();addToCompare(${idx})" title="Add to Compare">⇄</button>
-            </div>
-            <div class="card-info">
-              <div class="card-common-name">${sp.commonName || 'Unknown'}</div>
-              <div class="card-sci-name">${sp.scientificName}</div>
-              ${metaHtml}
-              ${availHtml}
-              <div class="card-cta">View Details →</div>
-              <a href="/species/${toSlug(sp.scientificName)}" class="card-cta" style="display:block;margin-top:2px;color:var(--emerald-300);opacity:1;font-size:0.64rem;" onclick="event.stopPropagation()">Full Profile ↗</a>
-            </div>
-          </div>`;
-      }).join('');
-
-      // Staggered entrance animation via IntersectionObserver
-      requestAnimationFrame(() => {
-        const cards = grid.querySelectorAll('.species-card');
-        const observer = new IntersectionObserver((entries) => {
-          entries.forEach((entry) => {
-            if (entry.isIntersecting) {
-              const card = entry.target;
-              const idx = Array.from(cards).indexOf(card) % 8;
-              setTimeout(() => { card.classList.add('card-visible'); }, idx * 60);
-              observer.unobserve(card);
-            }
-          });
-        }, { threshold: 0.05, rootMargin: '50px' });
-        cards.forEach(card => observer.observe(card));
-      });
-
-      // Video hover playback for cards with .card-video
-      grid.addEventListener('mouseenter', (e) => {
-        const card = e.target.closest('.species-card');
-        if (!card) return;
-        const video = card.querySelector('.card-video');
-        if (!video || video.dataset.noVideo) return;
-        video.currentTime = 0;
-        video.play().then(() => {
-          video.classList.add('playing');
-        }).catch(() => {
-          // Retry once after a short buffer delay instead of giving up permanently
-          setTimeout(() => {
-            if (card.matches(':hover')) {
-              video.play().then(() => {
-                video.classList.add('playing');
-              }).catch(() => {
-                // Only mark as no-video after second failure
-                video.dataset.noVideo = '1';
-              });
-            }
-          }, 300);
-        });
-      }, true);
-      grid.addEventListener('mouseleave', (e) => {
-        const card = e.target.closest('.species-card');
-        if (!card) return;
-        const video = card.querySelector('.card-video');
-        if (!video) return;
-        video.classList.remove('playing');
-        video.pause();
-      }, true);
+    // ---- Render ----
+    function factsHtml(sp) {
+      const t = range(sp.tankMetrics?.tempRangeCelsius, '°C');
+      const ph = range(sp.tankMetrics?.phRange, '');
+      const gal = sp.tankMetrics?.minVolumeGallons;
+      const size = sp.maxLengthCm;
+      const cells = [];
+      if (t) cells.push(['Temp', t]);
+      if (ph) cells.push(['pH', ph]);
+      if (gal) cells.push(['Tank', `${gal}+ gal`]);
+      else if (size) cells.push(['Size', `${size} cm`]);
+      if (cells.length < 3 && gal && size) cells.push(['Size', `${size} cm`]);
+      if (!cells.length) return '<p class="db-facts--none">Care ranges not recorded yet.</p>';
+      return `<dl class="db-facts">${cells.slice(0, 3).map(([k, v]) => `<div><dt>${k}</dt><dd>${escapeHtml(v)}</dd></div>`).join('')}</dl>`;
     }
 
-    // ---- Popup / Flip Logic ----
-    function openPopup(idx) {
-      const sp = filteredSpecies[idx];
-      if (!sp) return;
+    function sexingPill(sp, extraClass = '') {
+      const g = window.SexingGuide.normalizeSexingGuide(sp);
+      if (!g.documented) return '';
+      return `<span class="db-pill ${escapeHtml(g.badgeClass)} ${extraClass}" title="${escapeHtml(window.SexingGuide.sexingBlurb(g))}">♂♀ ${escapeHtml(window.SexingGuide.sexingShortLabel(g))}</span>`;
+    }
 
-      isFlipped = false;
-      document.getElementById('flipCard').classList.remove('flipped');
-
-      // Build FRONT
-      const difficulty = sp.tankMetrics?.difficulty || 'Unknown';
-      const badgeClass = getDifficultyClass(difficulty);
-      const hasImage = sp.masterPhotoUrl && sp.masterPhotoUrl !== '';
-      const imageHtml = hasImage
-        ? `<img class="blur-bg" src="${sp.masterPhotoUrl}" alt="" aria-hidden="true"><img class="main-img" src="${sp.masterPhotoUrl}" alt="${sp.commonName || sp.scientificName}">`
-        : `<span class="placeholder-icon">🐟</span>`;
-      const vibe = sp.personality?.vibeLine?.casual || '';
-
-      document.getElementById('flipFront').innerHTML = `
-        <div class="flip-front-image">
-          ${imageHtml}
-          <div class="flip-front-badges">
-            <span class="flip-badge ${badgeClass}">${difficulty}</span>
+    function cardHtml(sp, idx) {
+      const c = care(sp);
+      const photo = photoOf(sp);
+      const vs = videoSlug(sp);
+      const name = nameOf(sp);
+      const slug = toSlug(sp.scientificName);
+      const media = photo
+        ? `<img src="${escapeHtml(photo)}" alt="" loading="lazy" decoding="async">${speciesWithVideo.has(vs) ? `<video src="/videos/species/${escapeHtml(vs)}.mp4" muted loop playsinline preload="none" aria-hidden="true"></video>` : ''}`
+        : `<div class="db-noimg"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M3 12c3-5 9-6 13-3l5-3v12l-5-3c-4 3-10 2-13-3z"/><circle cx="8" cy="11" r="1" fill="currentColor"/></svg>No photo yet</div>`;
+      const salt = waterOf(sp).salt && !waterOf(sp).fresh;
+      // Card tags stay short. Long spawning notes (the FishBase guild
+      // sentences on most saltwater records) are shown in full in the sheet.
+      const spawn = real(sp.reproduction?.spawningTrait);
+      const tags = [
+        salt ? 'Saltwater' : null,
+        real(sp.diet?.trophicLevel),
+        spawn && spawn.length <= 32 && !/reproductive guild/i.test(spawn) ? spawn : null,
+      ].filter(Boolean).slice(0, 3);
+      const avail = availabilityByName[(sp.scientificName || '').toLowerCase()];
+      const availHtml = avail && avail.sellerCount > 0
+        ? `<a class="db-avail" href="/app/gallery?species=${encodeURIComponent(sp.scientificName)}" title="See sellers in the app">${avail.sellerCount} seller${avail.sellerCount === 1 ? '' : 's'}${avail.fromPriceDisplay ? ` · from ${escapeHtml(avail.fromPriceDisplay)}` : ''}</a>`
+        : `<a class="db-link" href="/species/${escapeHtml(slug)}">Full profile <span aria-hidden="true">&rarr;</span></a>`;
+      const isPicked = picked.includes(slug);
+      return `<article class="db-card${isPicked ? ' is-picked' : ''}" data-idx="${idx}">
+        <div class="db-card__media">
+          ${media}
+          <div class="db-card__badges">
+            ${sexingPill(sp, 'sexing-pill')}
+            <span class="db-pill db-pill--${escapeHtml(c.key)}">${escapeHtml(careLabel(c))}</span>
           </div>
         </div>
-        <div class="flip-front-info">
-          <div class="flip-front-common">${sp.commonName || 'Unknown'}</div>
-          <div class="flip-front-sci">${sp.scientificName}</div>
-          <div class="flip-front-family">${sp.family || ''} · Catalog ID ${sp.specCode || '—'}</div>
-          ${vibe ? `<div class="flip-front-vibe">"${vibe}"</div>` : ''}
+        <div class="db-card__body">
+          <div>
+            <h3><button type="button" class="db-card__open" data-open="${idx}" aria-haspopup="dialog">${escapeHtml(name)}</button></h3>
+            <p class="db-card__sci">${escapeHtml(sp.scientificName)}</p>
+          </div>
+          ${factsHtml(sp)}
+          ${tags.length ? `<div class="db-tags">${tags.map((t) => `<span class="db-tag">${escapeHtml(t)}</span>`).join('')}</div>` : ''}
+          <div class="db-card__foot">
+            ${availHtml}
+            <button type="button" class="db-pick" data-pick="${idx}" aria-pressed="${isPicked}" aria-label="${isPicked ? 'Remove' : 'Add'} ${escapeHtml(name)} ${isPicked ? 'from' : 'to'} compare">${isPicked ? 'Picked' : 'Compare'}</button>
+          </div>
         </div>
-        <div class="flip-hint">
-          <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 014-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>
-          Tap to flip
+      </article>`;
+    }
+
+    function render(reset) {
+      grid.setAttribute('aria-busy', 'false');
+      if (reset) shownCount = Math.min(PAGE_SIZE, filteredSpecies.length);
+      if (!filteredSpecies.length) {
+        grid.innerHTML = `<div class="db-empty">
+          <h2>No species match</h2>
+          <p>Try a different word, or clear the filters to see everything.</p>
+          <button type="button" class="db-btn" data-clear>Clear filters</button>
         </div>`;
-
-      // Build BACK
-      const temp = sp.tankMetrics?.tempRangeCelsius;
-      const ph = sp.tankMetrics?.phRange;
-
-      let backHtml = `
-        <div class="flip-back-scroll">
-        <div class="flip-back-header">
-          <div class="flip-back-title">${sp.commonName || 'Unknown'}</div>
-          <div class="flip-back-sci">${sp.scientificName}</div>
-        </div>
-        <div class="flip-back-content">
-          <div class="back-section">
-            <div class="back-section-title">Tank Parameters</div>
-            <div class="back-params">
-              <div class="back-param">
-                <div class="back-param-label">Temp</div>
-                <div class="back-param-value">${temp ? temp[0] + '–' + temp[1] + '°C' : '—'}</div>
-              </div>
-              <div class="back-param">
-                <div class="back-param-label">pH</div>
-                <div class="back-param-value">${ph ? ph[0] + '–' + ph[1] : '—'}</div>
-              </div>
-              <div class="back-param">
-                <div class="back-param-label">Max Size</div>
-                <div class="back-param-value">${sp.maxLengthCm ? sp.maxLengthCm + ' cm' : '—'}</div>
-              </div>
-              <div class="back-param">
-                <div class="back-param-label">Min Volume</div>
-                <div class="back-param-value">${sp.tankMetrics?.minVolumeGallons ? sp.tankMetrics.minVolumeGallons + ' gal' : '—'}</div>
-              </div>
-              <div class="back-param">
-                <div class="back-param-label">Hardness</div>
-                <div class="back-param-value">${sp.ecology?.hardnessRange || '—'}</div>
-              </div>
-              <div class="back-param">
-                <div class="back-param-label">Difficulty</div>
-                <div class="back-param-value">${difficulty}</div>
-              </div>
-            </div>
-          </div>`;
-
-      // Helper: filter out placeholder text
-      const real = (val) => val && val !== 'Information arriving soon' && val !== 'Generic Biotope Details' ? val : null;
-
-      if (real(sp.ecology?.biotope) || real(sp.ecology?.socialBehavior)) {
-        backHtml += `
-          <div class="back-section">
-            <div class="back-section-title">Ecology</div>
-            ${real(sp.ecology.biotope) ? `<p class="back-text">${sp.ecology.biotope}</p>` : ''}
-            ${real(sp.ecology.socialBehavior) ? `<p class="back-text" style="margin-top:6px;"><strong>Social:</strong> ${sp.ecology.socialBehavior}</p>` : ''}
-          </div>`;
+        $('moreWrap').hidden = true;
+        return;
       }
-
-      if (sp.diet && (real(sp.diet.fooditems) || real(sp.diet.feedingPlaybook))) {
-        backHtml += `
-          <div class="back-section">
-            <div class="back-section-title">Diet</div>
-            <p class="back-text"><strong>${sp.diet.trophicLevel || ''}</strong>${real(sp.diet.fooditems) ? ' — ' + sp.diet.fooditems : ''}</p>
-            ${real(sp.diet.feedingPlaybook) ? `<p class="back-text" style="margin-top:6px;">${sp.diet.feedingPlaybook}</p>` : ''}
-          </div>`;
-      }
-
-      if (sp.reproduction && (real(sp.reproduction.spawningTrait) || real(sp.reproduction.layoutRequirement) || real(sp.reproduction.comments))) {
-        backHtml += `
-          <div class="back-section">
-            <div class="back-section-title">Reproduction</div>
-            ${real(sp.reproduction.spawningTrait) ? `<p class="back-text"><strong>${sp.reproduction.spawningTrait}</strong></p>` : ''}
-            ${real(sp.reproduction.layoutRequirement) ? `<p class="back-text" style="margin-top:6px;">${sp.reproduction.layoutRequirement}</p>` : ''}
-            ${real(sp.reproduction.comments) ? `<p class="back-text" style="margin-top:6px;">${sp.reproduction.comments}</p>` : ''}
-          </div>`;
-      }
-
-      // Sexual dimorphism. Placed straight after Reproduction because it is the
-      // question that precedes breeding: you cannot pair what you cannot sex.
-      // Rendered for the unreliable state too — an entry saying "you need the
-      // genital papilla in breeding condition" is the answer for that species,
-      // not a gap, and omitting it would read as "males and females look alike".
-      const sexingDetail = window.SexingGuide.normalizeSexingGuide(sp);
-      if (sexingDetail.documented) {
-        backHtml += `
-          <div class="back-section">
-            <div class="back-section-title">Sexual Dimorphism</div>
-            <p class="back-text"><span class="${sexingDetail.badgeClass}" style="padding:2px 8px;border-radius:20px;font-size:0.62rem;font-weight:700;">♂♀ ${window.SexingGuide.sexingShortLabel(sexingDetail)}</span></p>
-            <p class="back-text" style="margin-top:6px;">${escapeHtml(window.SexingGuide.sexingBlurb(sexingDetail))}</p>
-            ${sexingDetail.maturityAge ? `<p class="back-text" style="margin-top:6px;"><strong>Sexual maturity:</strong> ${escapeHtml(sexingDetail.maturityAge)}</p>` : ''}
-            <div class="sex-compare">
-              ${sexingDetail.male ? `<div class="sex-col"><div class="sex-col-title">♂ Male</div><div class="sex-col-text">${escapeHtml(sexingDetail.male)}</div></div>` : ''}
-              ${sexingDetail.female ? `<div class="sex-col"><div class="sex-col-title">♀ Female</div><div class="sex-col-text">${escapeHtml(sexingDetail.female)}</div></div>` : ''}
-            </div>
-          </div>`;
-      }
-
-      if (sp.personality?.flavorText?.casual) {
-        backHtml += `
-          <div class="back-section">
-            <div class="back-section-title">Personality</div>
-            <p class="back-text" style="font-style:italic;">${sp.personality.flavorText.casual}</p>
-          </div>`;
-      }
-
-      backHtml += `</div>
-        </div>
-        <div class="flip-back-hint">
-          <a href="/app/gallery?species=${encodeURIComponent(sp.scientificName)}" style="color:var(--teal-300);font-weight:600;font-size:0.78rem;text-decoration:none;" onclick="event.stopPropagation()">Check if it fits my tank →</a>
-          <span style="margin:0 8px;color:var(--text-muted);">·</span>
-          <a href="/species/${toSlug(sp.scientificName)}" style="color:var(--emerald-300);font-weight:600;font-size:0.78rem;text-decoration:none;" onclick="event.stopPropagation()">Full Profile →</a>
-          <span style="margin:0 8px;color:var(--text-muted);">·</span>
-          Tap to flip back
-        </div>`;
-
-      document.getElementById('flipBack').innerHTML = backHtml;
-
-      // Show overlay
-      document.getElementById('popupOverlay').classList.add('active');
-      document.body.style.overflow = 'hidden';
-
-      // Echo looks at what you opened. This is the guide behaviour, and it is the
-      // cheapest version of it: orientation alone is the strongest believability
-      // cue there is (spec §4 rule 1), so pointing her at the card you are reading
-      // does more than any amount of animation. Optional-chained so the page works
-      // identically if Echo is switched off in Settings or fails to load.
-      window.AquadexEcho?.attend(document.getElementById('flipCardContainer'));
-    }
-
-    function flipCard() {
-      isFlipped = !isFlipped;
-      document.getElementById('flipCard').classList.toggle('flipped', isFlipped);
-    }
-
-    function closePopup() {
-      document.getElementById('popupOverlay').classList.remove('active');
-      document.body.style.overflow = '';
-      isFlipped = false;
-      document.getElementById('flipCard').classList.remove('flipped');
-
-      // Nothing to look at any more — she goes back to idle drifting rather than
-      // staring at a closed overlay.
-      window.AquadexEcho?.release();
-    }
-
-    // ---- Event Listeners ----
-    let flipMouseDownY = 0;
-    let flipMouseMoved = false;
-
-    document.getElementById('flipCardContainer').addEventListener('mousedown', function(e) {
-      flipMouseDownY = e.clientY;
-      flipMouseMoved = false;
-    });
-
-    document.getElementById('flipCardContainer').addEventListener('mousemove', function(e) {
-      if (Math.abs(e.clientY - flipMouseDownY) > 5) flipMouseMoved = true;
-    });
-
-    document.getElementById('flipCardContainer').addEventListener('mouseup', function(e) {
-      // If user scrolled (moved mouse vertically), don't flip
-      if (flipMouseMoved) return;
-      // Don't flip when clicking inside scrollable back content
-      if (isFlipped && (e.target.closest('.flip-back-content') || e.target.closest('.flip-back-scroll'))) return;
-      e.stopPropagation();
-      flipCard();
-    });
-
-    // Also prevent the click from bubbling so overlay doesn't close
-    document.getElementById('flipCardContainer').addEventListener('click', function(e) {
-      e.stopPropagation();
-    });
-
-    document.getElementById('popupOverlay').addEventListener('click', function(e) {
-      if (e.target === this) closePopup();
-    });
-
-    document.addEventListener('keydown', function(e) {
-      if (e.key === 'Escape') closePopup();
-    });
-
-    document.getElementById('searchInput').addEventListener('input', applyFilters);
-    document.getElementById('familyFilter').addEventListener('change', applyFilters);
-    document.getElementById('difficultyFilter').addEventListener('change', applyFilters);
-    document.getElementById('sexingFilter').addEventListener('change', applyFilters);
-
-    // ---- Taxonomy Grouped View ----
-    function quickSearch(term) {
-      const input = document.getElementById('searchInput');
-      input.value = term;
-      applyFilters();
-      // Hide suggestions once a search is active
-      document.getElementById('searchSuggestions').style.display = 'none';
-    }
-
-    // Show suggestions again when search is cleared
-    document.getElementById('searchInput').addEventListener('input', function() {
-      const suggestions = document.getElementById('searchSuggestions');
-      if (this.value.trim() === '') {
-        suggestions.style.display = 'flex';
-      } else {
-        suggestions.style.display = 'none';
-      }
-    });
-
-    function renderTaxonomyView(grid) {
-      // Group by family
-      const PLACEHOLDER = 'Information arriving soon';
-      const familyMap = {};
-      filteredSpecies.forEach((sp, idx) => {
-        let fam = sp.family || '';
-        if (!fam || fam === PLACEHOLDER) fam = '__unclassified__';
-        if (!familyMap[fam]) familyMap[fam] = [];
-        familyMap[fam].push({ sp, idx });
-      });
-
-      // Sort families alphabetically, but push unclassified to the end
-      const families = Object.keys(familyMap)
-        .filter(f => f !== '__unclassified__')
-        .sort();
-      if (familyMap['__unclassified__']) families.push('__unclassified__');
-
-      // Family icons based on common families
-      const familyIcons = {
-        'Cichlidae': '🐟', 'Characidae': '🐠', 'Poeciliidae': '🐡',
-        'Loricariidae': '🪨', 'Cyprinidae': '🏊', 'Osphronemidae': '💨',
-        'Callichthyidae': '🛡️', 'Botiidae': '🌊', 'Gobiidae': '🦐',
-      };
-
+      const visible = filteredSpecies.slice(0, shownCount);
       let html = '';
-      families.forEach(family => {
-        const species = familyMap[family];
-        const isUnclassified = family === '__unclassified__';
-        const displayName = isUnclassified ? 'Awaiting Classification' : family;
-        const icon = isUnclassified ? '🔬' : (familyIcons[family] || '🐟');
-
-        // Compute family-level stats
-        const difficulties = species.map(s => s.sp.tankMetrics?.difficulty).filter(Boolean);
-        const sizes = species.map(s => s.sp.maxLengthCm).filter(Boolean);
-        const avgSize = sizes.length > 0 ? (sizes.reduce((a,b) => a+b, 0) / sizes.length).toFixed(1) : '—';
-        const genera = [...new Set(species.map(s => s.sp.genus).filter(Boolean))];
-
-        html += `<div class="family-group">
-          <div class="family-header" onclick="toggleFamily(this)">
-            <div class="family-header-icon">${icon}</div>
-            <div class="family-header-info">
-              <div class="family-header-name">${displayName}</div>
-              <div class="family-header-meta">
-                ${isUnclassified ? '<span>Family data pending</span>' : `<span>${genera.length} ${genera.length === 1 ? 'genus' : 'genera'}</span>
-                <span>Avg size: ${avgSize} cm</span>`}
-              </div>
-            </div>
-            <span class="family-header-count">${species.length}</span>
-            <span class="family-header-toggle">▾</span>
-          </div>
-          <div class="family-species-grid">`;
-
-        species.forEach(({ sp, idx }) => {
-          const difficulty = sp.tankMetrics?.difficulty || 'Unknown';
-          const badgeClass = getDifficultyClass(difficulty);
-          const tierClass = getTierClass(difficulty);
-          const hasImage = sp.masterPhotoUrl && sp.masterPhotoUrl !== '';
-          const imageHtml = hasImage
-            ? `<img class="blur-bg" src="${sp.masterPhotoUrl}" alt="" aria-hidden="true"><img class="main-img" src="${sp.masterPhotoUrl}" alt="${sp.commonName || sp.scientificName}" loading="lazy">`
-            : `<span class="placeholder-icon">🐟</span>`;
-
-          // Same badge as the flat grid — the taxonomy view is a second render
-          // path over the same cards, so it has to stay in step.
-          const taxSexing = window.SexingGuide.normalizeSexingGuide(sp);
-          const taxSexingHtml = taxSexing.documented
-            ? `<span class="card-sexing-badge ${taxSexing.badgeClass}" title="${escapeAttr(window.SexingGuide.sexingBlurb(taxSexing))}">♂♀ ${window.SexingGuide.sexingShortLabel(taxSexing)}</span>`
-            : '';
-
-          html += `
-            <div class="species-card card-visible ${tierClass}" onclick="openPopup(${idx})" data-idx="${idx}">
-              <div class="card-image">
-                ${imageHtml}
-                <div class="card-vignette"></div>
-                ${taxSexingHtml}
-                <span class="card-difficulty-badge ${badgeClass}">${difficulty}</span>
-                <button class="card-compare-btn" onclick="event.stopPropagation();addToCompare(${idx})" title="Add to Compare">⇄</button>
-              </div>
-              <div class="card-info">
-                <div class="card-common-name">${sp.commonName || 'Unknown'}</div>
-                <div class="card-sci-name">${sp.scientificName}</div>
-                <div class="card-cta">View Details →</div>
-                <a href="/species/${toSlug(sp.scientificName)}" class="card-cta" style="display:block;margin-top:2px;color:var(--emerald-300);opacity:1;font-size:0.64rem;" onclick="event.stopPropagation()">Full Profile ↗</a>
-              </div>
-            </div>`;
+      if (state.sort === 'family') {
+        const counts = {};
+        filteredSpecies.forEach((s) => { const f = real(s.family) || 'Family not recorded'; counts[f] = (counts[f] || 0) + 1; });
+        let last = null;
+        visible.forEach((sp, i) => {
+          const fam = real(sp.family) || 'Family not recorded';
+          if (fam !== last) {
+            html += `<div class="db-group"><h2>${escapeHtml(fam)}</h2><span>${counts[fam]} species</span></div>`;
+            last = fam;
+          }
+          html += cardHtml(sp, i);
         });
-
-        html += `</div></div>`;
-      });
-
-      grid.innerHTML = html;
-
-      // Auto-expand first family
-      const firstHeader = grid.querySelector('.family-header');
-      if (firstHeader) toggleFamily(firstHeader);
-    }
-
-    function toggleFamily(header) {
-      const grid = header.nextElementSibling;
-      const isOpen = grid.classList.contains('open');
-      if (isOpen) {
-        grid.classList.remove('open');
-        header.classList.remove('expanded');
       } else {
-        grid.classList.add('open');
-        header.classList.add('expanded');
+        html = visible.map(cardHtml).join('');
       }
+      grid.innerHTML = html;
+      const left = filteredSpecies.length - shownCount;
+      $('moreWrap').hidden = left <= 0;
+      $('moreBtn').textContent = `Show ${Math.min(left, PAGE_SIZE)} more (${left} left)`;
     }
 
-    // ---- Compare Tool Integration ----
-    let compareSlots = [null, null]; // track 2 species for quick-compare
+    // ---- Grid events (one delegated listener each) ----
+    grid.addEventListener('click', (e) => {
+      const pick = e.target.closest('[data-pick]');
+      if (pick) { togglePick(Number(pick.dataset.pick)); return; }
+      if (e.target.closest('[data-clear]')) { clearFilters(); return; }
+      if (e.target.closest('a')) return;
+      const card = e.target.closest('.db-card');
+      if (card) openDetail(Number(card.dataset.idx), card.querySelector('.db-card__open'));
+    });
 
-    function addToCompare(idx) {
+    // Hover clips (mouse only; touch devices never autoplay).
+    grid.addEventListener('mouseover', (e) => {
+      const card = e.target.closest('.db-card');
+      if (!card || card.contains(e.relatedTarget)) return;
+      const video = card.querySelector('video');
+      if (!video || video.dataset.failed) return;
+      video.currentTime = 0;
+      video.play().then(() => video.classList.add('playing')).catch(() => { video.dataset.failed = '1'; });
+    });
+    grid.addEventListener('mouseout', (e) => {
+      const card = e.target.closest('.db-card');
+      if (!card || card.contains(e.relatedTarget)) return;
+      const video = card.querySelector('video');
+      if (!video) return;
+      video.classList.remove('playing');
+      video.pause();
+    });
+
+    $('moreBtn').addEventListener('click', () => {
+      const firstNew = shownCount;
+      shownCount = Math.min(shownCount + PAGE_SIZE, filteredSpecies.length);
+      render(false);
+      // Keep keyboard users in place: focus the first newly shown card.
+      grid.querySelector(`[data-open="${firstNew}"]`)?.focus({ preventScroll: true });
+    });
+
+    // ---- Toolbar events ----
+    let searchTimer = null;
+    $('searchInput').addEventListener('input', (e) => {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(() => { state.q = e.target.value.slice(0, 100); applyFilters(); }, 120);
+    });
+    $('sortSelect').addEventListener('change', (e) => { state.sort = e.target.value; applyFilters(); });
+    $('familyFilter').addEventListener('change', (e) => { state.family = e.target.value; applyFilters(); });
+    $('careFilter').addEventListener('change', (e) => { state.care = e.target.value; applyFilters(); });
+    $('sexingFilter').addEventListener('change', (e) => { state.sexing = e.target.value; applyFilters(); });
+    $('waterSeg').addEventListener('click', (e) => {
+      const b = e.target.closest('button'); if (!b) return;
+      state.water = b.dataset.water; applyFilters();
+    });
+    $('kindSeg').addEventListener('click', (e) => {
+      const b = e.target.closest('button'); if (!b) return;
+      state.kind = b.dataset.kind; applyFilters();
+    });
+    $('searchSuggestions').addEventListener('click', (e) => {
+      const b = e.target.closest('button[data-q]'); if (!b) return;
+      state.q = b.dataset.q; applyFilters(); $('searchInput').focus();
+    });
+    function clearFilters() {
+      Object.assign(state, { q: '', water: '', kind: '', family: '', care: '', sexing: 'any' });
+      applyFilters();
+    }
+    $('clearFilters').addEventListener('click', clearFilters);
+
+    // The pinned search row gets a hairline once it is stuck under the nav.
+    const stickyRow = $('stickyRow');
+    const sentinel = document.createElement('div');
+    stickyRow.before(sentinel);
+    new IntersectionObserver(([entry]) => stickyRow.classList.toggle('is-stuck', !entry.isIntersecting), { rootMargin: '-72px 0px 0px 0px' }).observe(sentinel);
+
+    // ---- Compare ----
+    function togglePick(idx) {
       const sp = filteredSpecies[idx];
       if (!sp) return;
       const slug = toSlug(sp.scientificName);
-
-      // Fill first empty slot
-      if (!compareSlots[0]) {
-        compareSlots[0] = slug;
-      } else if (!compareSlots[1]) {
-        compareSlots[1] = slug;
-        // Both slots filled, navigate to compare page
-        window.location.href = `/compare.html?s1=${compareSlots[0]}&s2=${compareSlots[1]}`;
-        return;
-      } else {
-        // Both full, replace second and navigate
-        compareSlots[1] = slug;
-        window.location.href = `/compare.html?s1=${compareSlots[0]}&s2=${compareSlots[1]}`;
-        return;
+      if (picked.includes(slug)) picked = picked.filter((s) => s !== slug);
+      else picked = [...picked, slug].slice(-2);
+      updateTray();
+      render(false);
+      grid.querySelector(`[data-pick="${idx}"]`)?.focus({ preventScroll: true });
+    }
+    function pickedName(slug) {
+      const sp = allSpecies.find((s) => toSlug(s.scientificName) === slug);
+      return sp ? nameOf(sp) : slug;
+    }
+    function updateTray() {
+      const tray = $('compareTray');
+      tray.classList.toggle('is-open', picked.length > 0);
+      const go = $('trayGo');
+      if (picked.length === 2) {
+        $('trayText').innerHTML = `<strong>${escapeHtml(pickedName(picked[0]))}</strong> and <strong>${escapeHtml(pickedName(picked[1]))}</strong>`;
+        go.href = `/compare.html?s1=${encodeURIComponent(picked[0])}&s2=${encodeURIComponent(picked[1])}`;
+        go.removeAttribute('aria-disabled');
+        go.textContent = 'Compare';
+      } else if (picked.length === 1) {
+        $('trayText').innerHTML = `<strong>${escapeHtml(pickedName(picked[0]))}</strong>. Pick one more, or compare with anything.`;
+        go.href = `/compare.html?s1=${encodeURIComponent(picked[0])}`;
+        go.textContent = 'Open compare';
       }
+    }
+    $('trayClear').addEventListener('click', () => { picked = []; updateTray(); render(false); });
 
-      // Update the compare CTA to show status
-      const cta = document.getElementById('compareCta');
-      cta.innerHTML = `<svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M16 3h5v5"/><path d="M21 3l-7 7"/><path d="M8 21H3v-5"/><path d="M3 21l7-7"/></svg> 1 selected — pick another`;
-      cta.href = `/compare.html?s1=${compareSlots[0]}`;
+    // ---- Detail sheet ----
+    const sheet = $('detailSheet');
+    let lastTrigger = null;
+
+    function section(title, parts) {
+      const body = parts.filter(Boolean).join('');
+      return body ? `<section class="db-sec"><h3>${title}</h3>${body}</section>` : '';
     }
 
-    // Init. `?q=` pre-fills the search (the homepage links here with its query).
-    (function prefillQuery() {
-      const q = new URLSearchParams(window.location.search).get('q');
-      if (q) document.getElementById('searchInput').value = q.slice(0, 100);
-    })();
+    function detailHtml(sp) {
+      const c = care(sp);
+      const photo = photoOf(sp);
+      const name = nameOf(sp);
+      const t = sp.tankMetrics?.tempRangeCelsius;
+      const tempC = range(t, '°C');
+      const tempF = Array.isArray(t) && t.length === 2 ? range([cToF(t[0]), cToF(t[1])], '°F') : null;
+      const kv = [
+        tempC ? ['Temperature', `${escapeHtml(tempC)}${tempF ? `<small>${escapeHtml(tempF)}</small>` : ''}`] : null,
+        range(sp.tankMetrics?.phRange, '') ? ['pH', escapeHtml(range(sp.tankMetrics.phRange, ''))] : null,
+        real(sp.ecology?.hardnessRange) ? ['Hardness', escapeHtml(sp.ecology.hardnessRange)] : null,
+        sp.maxLengthCm ? ['Adult size', `${escapeHtml(sp.maxLengthCm)} cm<small>${escapeHtml((sp.maxLengthCm / 2.54).toFixed(1))} in</small>`] : null,
+        sp.tankMetrics?.minVolumeGallons ? ['Smallest tank', `${escapeHtml(sp.tankMetrics.minVolumeGallons)} gal<small>${escapeHtml(Math.round(sp.tankMetrics.minVolumeGallons * 3.785))} L</small>`] : null,
+        real(sp.diet?.trophicLevel) ? ['Diet', escapeHtml(sp.diet.trophicLevel)] : null,
+      ].filter(Boolean);
+
+      const g = window.SexingGuide.normalizeSexingGuide(sp);
+      const sexing = g.documented ? `<section class="db-sec">
+          <h3>Telling males from females</h3>
+          <p>${escapeHtml(window.SexingGuide.sexingBlurb(g))}</p>
+          ${g.maturityAge ? `<p><strong>Mature at:</strong> ${escapeHtml(g.maturityAge)}</p>` : ''}
+          ${(g.male || g.female) ? `<div class="db-sex">
+            ${g.male ? `<div><h4>♂ Male</h4><p>${escapeHtml(g.male)}</p></div>` : ''}
+            ${g.female ? `<div><h4>♀ Female</h4><p>${escapeHtml(g.female)}</p></div>` : ''}
+          </div>` : ''}
+        </section>` : '';
+
+      const sources = Array.isArray(sp.sources)
+        ? sp.sources.filter((s) => s && s.name && /^https:\/\//.test(s.url || '')).slice(0, 4)
+        : [];
+      const vibe = real(sp.personality?.vibeLine?.casual);
+      const water = waterLabel(sp);
+
+      return `
+        <div class="db-sheet__media">
+          ${photo ? `<img src="${escapeHtml(photo)}" alt="${escapeHtml(name)}">` : '<div class="db-noimg">No photo yet</div>'}
+          <button type="button" class="db-sheet__close" data-close aria-label="Close">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <div class="db-sheet__head">
+          <h2 id="sheetTitle">${escapeHtml(name)}</h2>
+          <p class="db-sheet__sci">${escapeHtml(sp.scientificName)}${real(sp.family) ? ` · ${escapeHtml(sp.family)}` : ''}</p>
+          <div class="db-sheet__pills">
+            <span class="db-pill db-pill--${escapeHtml(c.key)}">${c.key === 'unknown' ? 'Care level not rated' : `${escapeHtml(c.label)} care`}</span>
+            ${water ? `<span class="db-pill${waterOf(sp).salt ? ' db-pill--salt' : ''}">${escapeHtml(water)}</span>` : ''}
+            ${sexingPill(sp)}
+          </div>
+          ${vibe ? `<p class="db-sheet__vibe">${escapeHtml(vibe)}</p>` : ''}
+        </div>
+        <div class="db-sheet__body">
+          ${kv.length ? `<dl class="db-kv">${kv.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join('')}</dl>` : '<p class="db-facts--none" style="margin-top:14px">Care ranges not recorded yet.</p>'}
+          ${section('Where it lives', [real(sp.ecology?.biotope) ? `<p>${escapeHtml(sp.ecology.biotope)}</p>` : ''])}
+          ${section('Behaviour and tankmates', [real(sp.ecology?.socialBehavior) ? `<p>${escapeHtml(sp.ecology.socialBehavior)}</p>` : ''])}
+          ${section('Feeding', [
+            real(sp.diet?.fooditems) ? `<p>${escapeHtml(sp.diet.fooditems)}</p>` : '',
+            real(sp.diet?.feedingPlaybook) ? `<p>${escapeHtml(sp.diet.feedingPlaybook)}</p>` : '',
+          ])}
+          ${section('Breeding', [
+            real(sp.reproduction?.spawningTrait) ? `<p><strong>${escapeHtml(sp.reproduction.spawningTrait)}</strong></p>` : '',
+            real(sp.reproduction?.layoutRequirement) ? `<p>${escapeHtml(sp.reproduction.layoutRequirement)}</p>` : '',
+            real(sp.reproduction?.comments) ? `<p>${escapeHtml(sp.reproduction.comments)}</p>` : '',
+          ])}
+          ${sexing}
+          ${section('Personality', [real(sp.personality?.flavorText?.casual) ? `<p>${escapeHtml(sp.personality.flavorText.casual)}</p>` : ''])}
+          ${sources.length ? `<p class="db-sources">Sources: ${sources.map((s) => `<a href="${escapeHtml(s.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(s.name)}</a>`).join(', ')}</p>` : ''}
+        </div>`;
+    }
+
+    function openDetail(idx, trigger) {
+      const sp = filteredSpecies[idx];
+      if (!sp) return;
+      lastTrigger = trigger || null;
+      const slug = toSlug(sp.scientificName);
+      $('sheetContent').innerHTML = detailHtml(sp);
+      $('sheetContent').scrollTop = 0;
+      const isPicked = picked.includes(slug);
+      $('sheetActions').innerHTML = `
+        <a class="db-btn db-btn--teal" href="/species/${escapeHtml(slug)}">Full profile</a>
+        <a class="db-btn" href="/app/gallery?species=${encodeURIComponent(sp.scientificName)}">Check it fits my tank</a>
+        <button type="button" class="db-btn" data-sheet-pick="${idx}" aria-pressed="${isPicked}">${isPicked ? 'Picked for compare' : 'Add to compare'}</button>`;
+      if (!sheet.open) sheet.showModal();
+      sheet.querySelector('[data-close]')?.focus();
+      history.replaceState(null, '', window.location.pathname + window.location.search + '#' + slug);
+      // Echo looks at what you opened (orientation is the strongest
+      // believability cue). Optional so the page works with her switched off.
+      window.AquadexEcho?.attend(sheet);
+    }
+
+    function closeDetail() { if (sheet.open) sheet.close(); }
+    sheet.addEventListener('close', () => {
+      history.replaceState(null, '', window.location.pathname + window.location.search);
+      window.AquadexEcho?.release();
+      lastTrigger?.focus({ preventScroll: true });
+    });
+    sheet.addEventListener('click', (e) => {
+      if (e.target === sheet) { closeDetail(); return; } // backdrop
+      if (e.target.closest('[data-close]')) { closeDetail(); return; }
+      const p = e.target.closest('[data-sheet-pick]');
+      if (p) {
+        togglePick(Number(p.dataset.sheetPick));
+        const on = picked.includes(toSlug(filteredSpecies[Number(p.dataset.sheetPick)].scientificName));
+        p.setAttribute('aria-pressed', String(on));
+        p.textContent = on ? 'Picked for compare' : 'Add to compare';
+        p.focus();
+      }
+    });
+
+    // /database#paracheirodon-innesi opens that species directly.
+    function openFromHash() {
+      const slug = decodeURIComponent(window.location.hash.slice(1));
+      if (!slug || slug === 'browse') return;
+      let idx = filteredSpecies.findIndex((s) => toSlug(s.scientificName) === slug);
+      if (idx === -1) {
+        const sp = allSpecies.find((s) => toSlug(s.scientificName) === slug);
+        if (!sp) return;
+        clearFilters();
+        idx = filteredSpecies.indexOf(sp);
+      }
+      if (idx > -1) openDetail(idx, null);
+    }
+
     init();
   </script>
   <script src="/js/nav.js"></script>
