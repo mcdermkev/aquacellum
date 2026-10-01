@@ -323,7 +323,7 @@
   font-size: 0.78rem;
   line-height: 1.4;
 }
-.bgal-nl-chip img { width: 16px; height: 16px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+.bgal-nl-chip img { width: 18px; height: 18px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
 .bgal-nl-chip button {
   position: relative;
   display: inline-flex;
@@ -818,7 +818,8 @@
   align-items: center;
   gap: 1rem;
   padding: 0.9rem 1rem;
-  background: var(--bg-band);
+  /* #f8fbfc, not --bg-band: keeps the muted label and amber verdict above 4.5:1 */
+  background: #f8fbfc;
   border: 1px solid var(--line);
   border-radius: 12px;
 }

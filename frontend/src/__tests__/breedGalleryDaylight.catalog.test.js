@@ -212,6 +212,19 @@ describe("BreedGallery list: Daylight header, tabs, filters and states", () => {
     expect(LIST).toMatch(/className="bgal-btn"\s*autoFocus/);
   });
 
+  it("keeps Tab and Shift+Tab inside the lore dialog", () => {
+    expect(LIST).toContain('if (e.key === "Tab") {');
+    expect(LIST).toContain("e.currentTarget.querySelectorAll(");
+    expect(LIST).toMatch(/e\.shiftKey && document\.activeElement === first\) \{\s*e\.preventDefault\(\);\s*last\.focus\(\);/);
+    expect(LIST).toMatch(/!e\.shiftKey && document\.activeElement === last\) \{\s*e\.preventDefault\(\);\s*first\.focus\(\);/);
+  });
+
+  it("puts the fit score on a near-white panel so muted and amber text pass AA", () => {
+    const rule = GALLERY_CSS.match(/\.bgal-sim-score\s*\{[^}]*\}/)[0];
+    expect(rule).toContain("background: #f8fbfc;");
+    expect(rule).not.toContain("var(--bg-band)");
+  });
+
   it("shows the suggestion notification as a status message", () => {
     expect(LIST).toContain('<div className="bgal-toast" role="status">');
     expect(LIST).toContain("<strong>Suggestion sent</strong>");

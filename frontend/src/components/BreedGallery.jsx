@@ -2362,6 +2362,22 @@ export function BreedGallery({
               setActiveLoreEgg(null);
               setEvolutionError("");
             }
+            // Keep Tab and Shift+Tab inside the dialog
+            if (e.key === "Tab") {
+              const focusable = e.currentTarget.querySelectorAll(
+                '.bgal-egg-dialog button:not([disabled]), .bgal-egg-dialog a[href], .bgal-egg-dialog input, .bgal-egg-dialog [tabindex]:not([tabindex="-1"])'
+              );
+              if (focusable.length === 0) return;
+              const first = focusable[0];
+              const last = focusable[focusable.length - 1];
+              if (e.shiftKey && document.activeElement === first) {
+                e.preventDefault();
+                last.focus();
+              } else if (!e.shiftKey && document.activeElement === last) {
+                e.preventDefault();
+                first.focus();
+              }
+            }
           }}
         >
           <div
