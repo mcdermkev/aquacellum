@@ -33,13 +33,14 @@ import { cleanupGarbledActionLogs } from "./utils/cleanupGarbledLogs";
 import { RewardCreditsCard } from "./components/RewardCreditsCard";
 import { EchoWhispers } from "./components/EchoWhispers";
 import { EchoAmbient } from "./components/EchoAmbient";
+import { EchoChat } from "./components/EchoChat";
+import { readingTrends } from "./services/echoNotices";
 import { useAiPrefs } from "./hooks/useAiPrefs";
 import { BetaBanner } from "./components/BetaBanner";
 import { db } from "./db";
 import { TabErrorBoundary } from "./components/TabErrorBoundary";
 import { NetworkStatusBanner } from "./components/NetworkStatusBanner";
 import { FeedbackWidget } from "./components/FeedbackWidget";
-import { PoseidonGlobalWidget } from "./components/PoseidonGlobalWidget";
 import { WhatsNewModal } from "./components/WhatsNewModal";
 import { IncomingBadge } from "./components/IncomingBadge";
 import { useArrivalNudge } from "./hooks/useArrivalNudge";
@@ -696,13 +697,15 @@ export default function App() {
         const paramTests = logs.filter(l => l.actionType === "Quick Water Test" || l.actionType === "Water Parameters");
         // Tanks store `active` as a boolean; IndexedDB can't index booleans,
         // so `.where("active").equals(1)` always matched nothing. Filter in JS.
-        const tankCount = await db.tanks.filter((t) => t.active !== false).count();
+        const activeTanks = await db.tanks.filter((t) => t.active !== false).toArray();
 
         setEchoTankData({
           lastWaterChange: waterChanges[0]?.timestamp ? new Date(waterChanges[0].timestamp * 1000).toISOString() : null,
           lastFeeding: feedings[0]?.timestamp ? new Date(feedings[0].timestamp * 1000).toISOString() : null,
           lastParams: paramTests[0]?.timestamp ? new Date(paramTests[0].timestamp * 1000).toISOString() : null,
-          tankCount,
+          tankCount: activeTanks.length,
+          // What changed between each tank's last two tests (services/echoNotices.js).
+          trends: readingTrends(activeTanks),
         });
       } catch (err) {
         console.warn("App: Failed to load Echo state from Dexie:", err);
@@ -1652,11 +1655,15 @@ export default function App() {
       {/* Feedback Widget — floating bug report / feedback button */}
       <FeedbackWidget walletAddress={account} casualModeActive={casualModeActive} />
 
-      {/* Poseidon Global Widget — AI assistant accessible from anywhere */}
-      <PoseidonGlobalWidget
+      {/* Echo's chat, powered by Poseidon. The one chat in the app: Echo opens it
+          (echo:toggle), and every "Ask Echo" elsewhere lands here
+          (services/echoChatBus.js). With Echo switched off she is not there to
+          tap, so the chat shows its own small launcher instead. */}
+      <EchoChat
         walletAddress={account}
         casualModeActive={casualModeActive}
         activeTab={activeTab}
+        showLauncher={!echoEnabled}
       />
 
       {/* Cloud Sync Status Toast */}

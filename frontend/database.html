@@ -984,6 +984,7 @@
       $('sheetActions').innerHTML = `
         <a class="db-btn db-btn--teal" href="/species/${escapeHtml(slug)}">Full profile</a>
         <a class="db-btn" href="/app/gallery?species=${encodeURIComponent(sp.scientificName)}">Check it fits my tank</a>
+        <a class="db-btn" href="/poseidon.html?ask=${encodeURIComponent(`Tell me about keeping ${nameOf(sp)} (${sp.scientificName}).`)}">Ask Echo about it</a>
         <button type="button" class="db-btn" data-sheet-pick="${idx}" aria-pressed="${isPicked}">${isPicked ? 'Picked for compare' : 'Add to compare'}</button>`;
       if (!sheet.open) sheet.showModal();
       sheet.querySelector('[data-close]')?.focus();

@@ -251,7 +251,7 @@
 }
 
 /* The `.csd-poseidon-dock` rules were removed with the wrapper they styled.
-   PoseidonChatConsole portals to document.body and docks to the viewport itself,
+   The chat (now EchoChat, app-wide) portals to document.body and docks itself,
    so no docking container is needed. See CasualSpeciesDetail.jsx for why keeping
    the empty wrapper would have blocked taps on phones. */
 
@@ -267,4 +267,23 @@
     transition: none !important;
     animation: none !important;
   }
+}
+
+/* Ask Echo + Plan a tank, side by side; they wrap on narrow screens. */
+.csd-echo-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+.csd-echo-actions .cg-ask {
+  margin-top: 0;
+}
+.cg-ask--plan {
+  color: #0369a1;
+  background: rgba(3, 105, 161, 0.06);
+  border-color: rgba(3, 105, 161, 0.25);
+}
+.cg-ask--plan:hover {
+  background: rgba(3, 105, 161, 0.12);
 }

@@ -17,20 +17,20 @@ import "./WhatsNewModal.css";
 // Bump this when there is a meaningful set of changes to announce. Exported so
 // Settings > App & Support can show the running version (docs/SETTINGS_SPEC.md
 // §6 #12) without a second copy of the string.
-export const CURRENT_VERSION = "0.10.0";
+export const CURRENT_VERSION = "0.11.0";
 const VERSION_KEY = "aquadex_last_seen_version";
 
 // Most recent first. Keep it to what people will notice, 5 to 7 items.
 const RELEASE = {
   date: "September 30, 2026",
   items: [
-    "A lighter look across the app and the public pages, with one set of fonts everywhere.",
-    "Saltwater tanks: set a tank as reef or fish only, log marine water tests, and find corals and inverts in the species catalog.",
-    "Coral frags can be listed in the marketplace.",
-    "Clubs can run a live auction night, with a console for organizers and a room screen for the projector.",
-    "Tank service tools for people who look after other people's tanks.",
-    "My Aquariums tank labels can open a public page for the tank when you publish one.",
-    "Species pages show real values only, link to the right FishBase record, and list related clubs and events.",
+    "Meet Echo, your fish guide, powered by Poseidon. Tap her in the corner of any screen to chat.",
+    "Ask whether fish can live together and Echo shows a card with the shared temperature and pH, tank size and temperament from the species catalog.",
+    "Plan a tank with Echo: pick a size and water type, add fish, and see how the group fits as you go.",
+    "Send Echo a photo of a fish for her best guesses, each with a match percentage.",
+    "Echo mentions changes between your last two water tests, like a nitrate rise, and you can ask her why.",
+    "Ask by voice and have answers read aloud, in browsers that support it.",
+    "Opening your profile no longer pops up a MetaMask request.",
   ],
 };
 

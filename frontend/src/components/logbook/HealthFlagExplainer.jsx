@@ -64,7 +64,7 @@ export function HealthFlagExplainer({ tank, casualModeActive = false, onAskPosei
           className="fx-ask-poseidon"
           onClick={() => onAskPoseidon(buildFlagFixPrompt(tank, items))}
         >
-          💬 Ask Poseidon what to do
+          💬 Ask Echo what to do
         </button>
       )}
     </div>

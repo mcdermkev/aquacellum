@@ -23,8 +23,9 @@
  *   <script src="/js/echo-behaviour.js"></script>
  *   <script src="/js/echo-ambient.js"></script>
  *
- * It self-mounts on DOM ready and exposes a small API for the page to point her
- * at things:
+ * It self-mounts on DOM ready, in the bottom-left corner, or inside an element
+ * marked `data-echo-stage` (optional `data-echo-size` in px) when the page has
+ * one. It exposes a small API for the page to point her at things:
  *
  *   window.AquadexEcho.attend(element)   // look at it
  *   window.AquadexEcho.release()         // stop looking
@@ -43,7 +44,7 @@
     return;
   }
 
-  var SIZE = 56;
+  var SIZE = 74;
 
   /**
    * Honour the app's Settings toggle.
@@ -72,32 +73,67 @@
   }
 
   function mount() {
-    if (!isEnabled()) return;
+    // A page can give her a stage instead of the corner: an element with
+    // `data-echo-stage` (and optionally `data-echo-size`, her height in px).
+    // Her own page (poseidon.html) does, because there she is the content,
+    // so the stage mounts even with the corner Echo switched off in Settings.
+    var stage = document.querySelector("[data-echo-stage]");
+    if (!stage && !isEnabled()) return;
     if (document.querySelector(".echo-ambient")) return; // already mounted
 
     var reducedMotion = prefersReducedMotion();
+    var size = stage ? Number(stage.getAttribute("data-echo-size")) || 220 : SIZE;
+    var baseClass = stage ? "echo-ambient echo-ambient--stage" : "echo-ambient";
 
     var wrap = document.createElement("div");
-    wrap.className = "echo-ambient";
-    wrap.setAttribute("aria-hidden", "true"); // decorative and inert
-    wrap.style.width = SIZE + "px";
-    wrap.style.height = SIZE + "px";
+    wrap.className = baseClass;
+
+    // She is a button: tapping her opens a chat. A page with its own chat
+    // (poseidon.html, database.html) listens for `echo:toggle` and calls
+    // preventDefault(); anywhere else she takes you to her page.
+    var button = document.createElement("button");
+    button.type = "button";
+    button.className = "echo-ambient__button";
+    button.setAttribute("aria-label", "Ask Echo");
+    button.title = "Ask Echo";
+    button.addEventListener("click", function () {
+      var ev;
+      try {
+        ev = new CustomEvent("echo:toggle", { cancelable: true });
+      } catch (err) {
+        ev = null;
+      }
+      if (ev) window.dispatchEvent(ev);
+      if (!ev || !ev.defaultPrevented) window.location.href = "/poseidon.html";
+    });
 
     var inner = document.createElement("div");
     inner.className = "echo-renderer";
-    inner.style.width = "100%";
-    inner.style.height = "100%";
+    inner.setAttribute("aria-hidden", "true");
+    inner.style.width = Math.round(size * EB.ECHO_ASPECT) + "px";
+    inner.style.height = size + "px";
 
-    // Same bytes the React renderer injects, straight from the core, so the app
-    // and this page cannot show two different fish. Static literal from our own
-    // source — no interpolation, no user input, nothing injectable.
+    // The same seven faces the app draws, from the same list in the core.
     var art = document.createElement("div");
     art.className = "echo-art";
-    art.innerHTML = EB.ECHO_SVG;
+    var faces = {};
+    for (var name in EB.ECHO_ART) {
+      if (!Object.prototype.hasOwnProperty.call(EB.ECHO_ART, name)) continue;
+      var img = document.createElement("img");
+      img.src = EB.ECHO_ART[name];
+      img.alt = "";
+      img.decoding = "async";
+      img.draggable = false;
+      img.className = "echo-face";
+      faces[name] = img;
+      art.appendChild(img);
+    }
 
     inner.appendChild(art);
-    wrap.appendChild(inner);
-    document.body.appendChild(wrap);
+    button.appendChild(inner);
+    wrap.appendChild(button);
+    (stage || document.body).appendChild(wrap);
+    var shownFace = null;
 
     var state = EB.createEchoState(Date.now());
     var wakeTimer = null;
@@ -117,7 +153,7 @@
 
       // Class carries the state name so the stylesheet can style examining and
       // speaking without this file knowing what those look like.
-      wrap.className = "echo-ambient echo-ambient--" + view.state;
+      wrap.className = baseClass + " echo-ambient--" + view.state;
 
       var visuals = EB.wrapperVisuals(view);
       wrap.style.transform = visuals.transform;
@@ -128,6 +164,13 @@
 
       art.style.transform = EB.artTransform(view);
       art.className = view.animate && !reducedMotion ? "echo-art echo-art--animated" : "echo-art";
+
+      var face = faces[view.expression] ? view.expression : "idle";
+      if (face !== shownFace) {
+        if (shownFace && faces[shownFace]) faces[shownFace].className = "echo-face";
+        faces[face].className = "echo-face echo-face--on";
+        shownFace = face;
+      }
 
       scheduleWake(now);
     }
@@ -154,7 +197,8 @@
     // Each leg schedules the next with its own jittered delay from the core. A
     // shared interval is the tell that reads as a screensaver.
     function scheduleDrift() {
-      if (reducedMotion) return;
+      // On a stage she stays put; the corner is where she wanders.
+      if (reducedMotion || stage) return;
       driftTimer = setTimeout(function () {
         var o = EB.nextDriftOffset();
         send(EB.ECHO_EVENT.DRIFT, { x: o.x, y: o.y });
@@ -193,7 +237,18 @@
       send(EB.ECHO_EVENT.POSEIDON_REACTION, {
         durationMs: d.durationMs,
         swimSpeedMultiplier: d.swimSpeedMultiplier,
+        mood: d.mood,
       });
+    });
+    // A page chat brackets each question, so she thinks, then talks.
+    window.addEventListener("echo:thinking-start", function () {
+      send(EB.ECHO_EVENT.THINKING_START);
+    });
+    window.addEventListener("echo:thinking-end", function () {
+      send(EB.ECHO_EVENT.THINKING_END);
+    });
+    window.addEventListener("echo:speaking", function (e) {
+      send(EB.ECHO_EVENT.POSEIDON_SPEAKING, { durationMs: e && e.detail && e.detail.durationMs });
     });
 
     // Vision (spec §6). `src/services/echoVision.js` brackets an identification

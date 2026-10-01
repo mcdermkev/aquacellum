@@ -68,79 +68,71 @@ export const ECHO_EVENT = Object.freeze({
   POSEIDON_REACTION: "poseidon-reaction",
   VISION_START: "vision-start",
   VISION_END: "vision-end",
+  // Poseidon is working on an answer. She concentrates (EXAMINING) until it
+  // arrives, so the wait reads as her thinking rather than as a frozen app.
+  THINKING_START: "thinking-start",
+  THINKING_END: "thinking-end",
   ATTEND: "attend",
   RELEASE: "release",
   DRIFT: "drift",
   GLANCE: "glance",
 });
 
+// ─── Expressions (2026-09-30 art) ────────────────────────────────────────────
+//
+// Echo is one character, Echo, powered by Poseidon. Her face is one of seven
+// painted poses, all cropped to the same box so swapping faces never moves her.
+// The core picks the face (`expressionFor`), both mounts draw it, and neither
+// decides anything, which is the rule that kept her one character across the
+// app and the static pages.
+
+export const ECHO_EXPRESSION = Object.freeze({
+  IDLE: "idle",
+  TALKING: "talking",
+  THINKING: "thinking",
+  HAPPY: "happy",
+  SURPRISED: "surprised",
+  CONCERNED: "concerned",
+  SLEEPY: "sleepy",
+});
+
+/** Where each face lives. Same files on every surface (public/echo/). */
+export const ECHO_ART = Object.freeze({
+  idle: "/echo/idle.webp",
+  talking: "/echo/talking.webp",
+  thinking: "/echo/thinking.webp",
+  happy: "/echo/happy.webp",
+  surprised: "/echo/surprised.webp",
+  concerned: "/echo/concerned.webp",
+  sleepy: "/echo/sleepy.webp",
+});
+
+/** Round head-and-body crop for avatars (chat header, message rows). */
+export const ECHO_FACE = "/echo/face.webp";
+
+/** The art is portrait; width = height x this. */
+export const ECHO_ASPECT = 368 / 480;
+
 /**
- * Echo, as vector art. One constant, one character, every surface.
- *
- * Step 7 of docs/ECHO_CHARACTER_SPEC.md, and what `docs/BRAND_KIT.md` asked for
- * all along: *"Animated SVG with brand teal/violet palette… playful, organic
- * shapes — intentionally 'gamey'"*. The old implementation was a 2 MB photographic
- * PNG, which is neither of those things.
- *
- * WHY A STRING IN THE CORE, and not an .svg file or a JSX component:
- *
- *   - An `<img src="echo.svg">` is opaque to CSS, so expressions would need one
- *     file per state and we would be back to seven images.
- *   - A JSX component cannot be used by `database.html`, and duplicating it in the
- *     vanilla mount is the second-renderer trap (spec §8) in its purest form.
- *   - As one string in the core, both mounts inject the SAME bytes. The parity
- *     test asserts the app and the static page hold an identical string, so they
- *     cannot drift into two characters.
- *
- * Safe to inject: this is a static literal with no interpolation and no user
- * input, which is the one case where setting innerHTML is not a smell.
- *
- * EXPRESSIONS ARE CSS, NOT MARKUP. Every part carries a class, and
- * `/css/echo.css` moves them per state using the `.echo-ambient--{state}` wrapper
- * both mounts already set. So the six states in this module get six faces for
- * free, with no extra plumbing and nothing to keep in sync — and a state added to
- * the machine later needs only a CSS rule, not new art.
- *
- * Drawn facing RIGHT at 100×100; `artTransform()` mirrors her when she looks left.
+ * Moods Poseidon's replies carry (api/_lib/poseidonGateway.js ECHO_MOODS),
+ * plus the two the app sends for its own news.
  */
-export const ECHO_SVG = `<svg class="echo-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" role="presentation" focusable="false">
-<defs>
-<radialGradient id="echoBody" cx="62%" cy="40%" r="70%">
-<stop offset="0%" stop-color="#7ff3e4"/><stop offset="52%" stop-color="#2dd4bf"/><stop offset="100%" stop-color="#0e9488"/>
-</radialGradient>
-<linearGradient id="echoFin" x1="0%" y1="0%" x2="100%" y2="100%">
-<stop offset="0%" stop-color="#a78bfa" stop-opacity="0.78"/><stop offset="100%" stop-color="#22d3ee" stop-opacity="0.5"/>
-</linearGradient>
-<radialGradient id="echoAura" cx="50%" cy="50%" r="50%">
-<stop offset="55%" stop-color="#2dd4bf" stop-opacity="0"/><stop offset="100%" stop-color="#5eead4" stop-opacity="0.22"/>
-</radialGradient>
-</defs>
-<circle class="echo-aura" cx="50" cy="50" r="46" fill="url(#echoAura)"/>
-<g class="echo-tail">
-<path d="M6 25 C11 40 11 60 6 75 C14 66 21 57 28 50 C21 43 14 34 6 25 Z" fill="url(#echoFin)"/>
-</g>
-<g class="echo-fin-dorsal">
-<path d="M59 36 C55 22 46 14 37 17 C45 23 51 29 54 38 Z" fill="url(#echoFin)"/>
-</g>
-<g class="echo-fin-pectoral">
-<path d="M60 62 C56 74 48 83 39 80 C46 73 53 67 56 61 Z" fill="url(#echoFin)"/>
-</g>
-<path class="echo-body" d="M87 50 C86 43 80 36 68 32 C56 28 42 30 32 37 C26 41 22 46 22 50 C22 54 26 59 32 63 C42 70 56 72 68 68 C80 64 86 57 87 50 Z" fill="url(#echoBody)"/>
-<path class="echo-sheen" d="M40 38 C50 33 63 34 72 40 C62 37 50 37 41 40 Z" fill="#e8fffb" opacity="0.5"/>
-<g class="echo-spots" fill="#5eead4">
-<circle cx="44" cy="45" r="2.1" opacity="0.75"/>
-<circle cx="37" cy="52" r="1.7" opacity="0.6"/>
-<circle cx="47" cy="57" r="1.5" opacity="0.55"/>
-</g>
-<g class="echo-eye">
-<circle class="echo-eye-white" cx="70" cy="45" r="6.4" fill="#0b2b2f"/>
-<circle class="echo-eye-iris" cx="71" cy="45" r="4.2" fill="#5eead4"/>
-<circle class="echo-eye-pupil" cx="72" cy="45" r="2.2" fill="#04181b"/>
-<circle class="echo-eye-glint" cx="73.4" cy="43" r="1.2" fill="#ffffff" opacity="0.9"/>
-<circle class="echo-eye-lid" cx="70" cy="45" r="6.9" fill="#35d8c4"/>
-</g>
-<path class="echo-mouth" d="M83 54 C80 56 77 56 75 55" stroke="#0b2b2f" stroke-width="1.6" stroke-linecap="round" fill="none" opacity="0.55"/>
-</svg>`;
+const MOOD_FACE = Object.freeze({
+  happy: ECHO_EXPRESSION.HAPPY,
+  excited: ECHO_EXPRESSION.HAPPY,
+  celebrate: ECHO_EXPRESSION.HAPPY,
+  alert: ECHO_EXPRESSION.SURPRISED,
+  surprised: ECHO_EXPRESSION.SURPRISED,
+  confused: ECHO_EXPRESSION.CONCERNED,
+  concerned: ECHO_EXPRESSION.CONCERNED,
+  calm: ECHO_EXPRESSION.IDLE,
+});
+
+/** A mood word from a payload, or null when it is not one we know. */
+export function normalizeMood(mood) {
+  const key = typeof mood === "string" ? mood.trim().toLowerCase() : "";
+  return Object.prototype.hasOwnProperty.call(MOOD_FACE, key) ? key : null;
+}
 
 // ─── Timing (spec §4 rules 2–5) ──────────────────────────────────────────────
 
@@ -196,9 +188,11 @@ export function createEchoState(now = 0) {
     lastActivityAt: now,
     speakingUntil: 0,
     examining: false,
+    thinking: false,
     reactFrom: 0,
     reactUntil: 0,
     reactIntensity: 0,
+    reactMood: null,
     gaze: null,
     // Which way she looks when nothing is being attended to. Owned here rather
     // than by a renderer so both renderers stay dumb — see `describe()`.
@@ -254,6 +248,7 @@ export function reduce(state, event) {
         reactFrom: from,
         reactUntil: from + duration,
         reactIntensity: reactionIntensity(event),
+        reactMood: normalizeMood(event.mood),
       };
     }
 
@@ -262,6 +257,12 @@ export function reduce(state, event) {
 
     case ECHO_EVENT.VISION_END:
       return { ...state, examining: false, lastActivityAt: now };
+
+    case ECHO_EVENT.THINKING_START:
+      return { ...state, hidden: false, lastActivityAt: now, thinking: true };
+
+    case ECHO_EVENT.THINKING_END:
+      return state.thinking ? { ...state, thinking: false, lastActivityAt: now } : state;
 
     case ECHO_EVENT.ATTEND: {
       const dx = Number(event.dx) || 0;
@@ -308,7 +309,8 @@ export function observe(state, now = 0) {
   if (!state) return ECHO_STATE.IDLE;
   if (state.hidden) return ECHO_STATE.RESTING;
   if (now >= state.reactFrom && now < state.reactUntil) return ECHO_STATE.REACTING;
-  if (state.examining) return ECHO_STATE.EXAMINING;
+  // Waiting on Poseidon is the same concentration as looking at a photo.
+  if (state.examining || state.thinking) return ECHO_STATE.EXAMINING;
   if (now < state.speakingUntil) return ECHO_STATE.SPEAKING;
   if (state.gaze) return ECHO_STATE.ATTENDING;
   if (now - state.lastActivityAt >= TIMING.restAfterMs) return ECHO_STATE.RESTING;
@@ -490,12 +492,39 @@ export function offsetBetweenRects(target, self) {
  * compose them differently from the next surface — the drift that produced five
  * Echos in the first place.
  */
+/**
+ * Which face she shows for an observed state.
+ *
+ * A reaction shows the mood Poseidon (or the app) sent with it; a reaction with
+ * no known mood is the startle she always had. Speaking is her TALKING face
+ * because she is the one speaking now: one character, Echo, powered by Poseidon.
+ *
+ * @param {string} observed one of ECHO_STATE
+ * @param {string|null} mood normalized mood of the current reaction
+ * @returns {string} one of ECHO_EXPRESSION
+ */
+export function expressionFor(observed, mood = null) {
+  switch (observed) {
+    case ECHO_STATE.RESTING:
+      return ECHO_EXPRESSION.SLEEPY;
+    case ECHO_STATE.REACTING:
+      return (mood && MOOD_FACE[mood]) || ECHO_EXPRESSION.SURPRISED;
+    case ECHO_STATE.EXAMINING:
+      return ECHO_EXPRESSION.THINKING;
+    case ECHO_STATE.SPEAKING:
+      return ECHO_EXPRESSION.TALKING;
+    default:
+      return ECHO_EXPRESSION.IDLE;
+  }
+}
+
 export function describe(state, now = 0) {
   const observed = observe(state, now);
   const gaze = state?.gaze ? gazeFromOffset(state.gaze.dx, state.gaze.dy) : null;
 
   return {
     state: observed,
+    expression: expressionFor(observed, observed === ECHO_STATE.REACTING ? state?.reactMood || null : null),
     // Only meaningful while REACTING; zero otherwise so a renderer cannot leak
     // a stale intensity into an idle pose.
     intensity: observed === ECHO_STATE.REACTING ? state.reactIntensity : 0,

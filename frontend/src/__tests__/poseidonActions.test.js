@@ -112,8 +112,9 @@ describe("the action registry is the single source of truth", () => {
     expect(actionLabel("DROP_EVERYTHING")).toBe("drop everything");
   });
 
-  it("neither host keeps its own copy of the action labels", () => {
-    for (const file of ["components/PoseidonChatConsole.jsx", "components/PoseidonGlobalWidget.jsx"]) {
+  it("the chat keeps no copy of its own of the action labels", () => {
+    // One host now: EchoChat replaced PoseidonChatConsole and PoseidonGlobalWidget.
+    for (const file of ["components/EchoChat.jsx"]) {
       const source = read(file);
       expect(source, `${file} still declares a local label map`).not.toMatch(/const labels = \{/);
       expect(source, `${file} must gate on requiresConfirmation`).toContain("requiresConfirmation(");

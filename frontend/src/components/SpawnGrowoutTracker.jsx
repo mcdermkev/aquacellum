@@ -666,7 +666,7 @@ export function SpawnGrowoutTracker({ spawnId, eggCount, speciesName, mode }) {
                 fontStyle: "italic",
                 lineHeight: "1.4"
               }}>
-                <img src="/poseidon-avatar.jpg" alt="" style={{ width: "16px", height: "16px", borderRadius: "50%", objectFit: "cover", flexShrink: 0, marginTop: "1px", opacity: 0.8 }} />
+                <img src="/echo/face.webp" alt="" style={{ width: "18px", height: "18px", borderRadius: "50%", objectFit: "cover", flexShrink: 0, marginTop: "1px" }} />
                 <span style={{ flex: 1 }}>{cp.note}</span>
                 <ShareButton
                   generateCard={() => generateNarrationCard({ narration: cp.note, speciesName: speciesName, daysSinceSpawn: Math.floor((cp.timestamp - (checkpoints[checkpoints.length - 1]?.timestamp || cp.timestamp)) / 86400) })}
@@ -695,8 +695,8 @@ export function SpawnGrowoutTracker({ spawnId, eggCount, speciesName, mode }) {
           ))}
           {narrationLoading && (
             <div style={{ fontSize: "0.68rem", color: "rgba(56, 189, 248, 0.6)", fontStyle: "italic", padding: "0.3rem 0", display: "flex", alignItems: "center", gap: "0.3rem" }}>
-              <img src="/poseidon-avatar.jpg" alt="" style={{ width: "14px", height: "14px", borderRadius: "50%", objectFit: "cover", opacity: 0.5 }} />
-              Poseidon is observing...
+              <img src="/echo/face.webp" alt="" style={{ width: "16px", height: "16px", borderRadius: "50%", objectFit: "cover" }} />
+              Echo is taking a look…
             </div>
           )}
         </div>

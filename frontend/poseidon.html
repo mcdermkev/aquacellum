@@ -3,20 +3,30 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>Poseidon: fish care questions, answered from the species catalog | Aquacellum</title>
-  <meta name="description" content="Ask Poseidon about fish care. Answers are grounded in the Aquacellum species catalog. In the app, Poseidon can also read your tanks and water logs and help you record care.">
+  <title>Ask Echo: fish care answers from the species catalog | Aquacellum</title>
+  <meta name="description" content="Echo is the fish guide in Aquacellum, powered by Poseidon. Ask about fish care and compatibility; answers draw on the Aquacellum species catalog, with the numbers shown on a card.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/shared.css">
+  <!-- Echo's one stylesheet, shared with the app (see /css/echo.css). -->
+  <link rel="stylesheet" href="/css/echo.css">
   <style>
     .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
-    .pz-main{max-width:1100px;margin:0 auto;padding:48px 24px 80px;position:relative;z-index:1}
-    /* Desktop: intro + limits on the left, chat on the right. Narrow: intro, chat, limits. */
+    .pz-main{max-width:1100px;margin:0 auto;padding:40px 24px 80px;position:relative;z-index:1}
+    /* Desktop: Echo + intro + limits on the left, chat on the right. Narrow: intro, chat, limits. */
     .pz-hero{display:grid;grid-template-columns:1fr 1.15fr;grid-template-areas:"intro chat" "limits chat";grid-template-rows:auto 1fr;column-gap:40px;row-gap:0;align-items:start}
     .pz-intro{grid-area:intro}.pz-chat{grid-area:chat}.pz-hero>.pz-limits{grid-area:limits}
+
+    /* Echo on her stage, with a speech bubble */
+    .pz-meet{display:flex;align-items:flex-end;gap:6px;margin:0 0 18px -6px;min-height:200px}
+    .pz-stage{flex-shrink:0;line-height:0}
+    .pz-hello{position:relative;margin-bottom:96px;padding:12px 16px;max-width:17rem;background:#fff;border:1px solid var(--line);border-radius:18px 18px 18px 4px;box-shadow:var(--shadow-md);font-size:0.92rem;line-height:1.5;color:var(--text-primary);animation:pzHello .5s cubic-bezier(.16,1,.3,1) both .3s}
+    .pz-hello strong{color:var(--teal-300)}
+    @keyframes pzHello{from{opacity:0;transform:translateY(8px) scale(.96)}to{opacity:1;transform:none}}
+
     .pz-label{font-size:0.72rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--teal-300);margin-bottom:12px}
-    .pz-title{font-family:'Outfit',sans-serif;font-size:clamp(2rem,4.2vw,3.1rem);font-weight:800;line-height:1.08;letter-spacing:-0.025em;margin-bottom:18px}
+    .pz-title{font-family:var(--font-display);font-size:clamp(2rem,4.2vw,3.1rem);font-weight:800;line-height:1.08;letter-spacing:-0.025em;margin-bottom:18px}
     .pz-lede{font-size:1.02rem;color:var(--text-secondary);line-height:1.7;margin-bottom:24px;max-width:36rem}
     .pz-ctas{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:28px}
     .pz-limits{font-size:0.84rem;color:var(--text-muted);line-height:1.65;border-left:3px solid var(--line);padding-left:14px;max-width:34rem}
@@ -24,79 +34,105 @@
 
     /* Live chat card */
     .pz-chat{background:#fff;border:1px solid var(--line);border-radius:var(--radius-lg);box-shadow:var(--shadow-md);display:flex;flex-direction:column;overflow:hidden}
-    .pz-chat-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 18px;border-bottom:1px solid var(--line);background:#fbfdfd}
-    .pz-chat-title{display:flex;align-items:center;gap:10px;font-weight:700;font-size:0.92rem}
-    .pz-mark{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;background:#f0fdfa;border:1px solid rgba(13,148,136,0.3);font-size:0.95rem}
+    .pz-chat-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#effaf8,#fff)}
+    .pz-chat-title{display:flex;align-items:center;gap:10px}
+    .pz-avatar{width:40px;height:40px;border-radius:50%;background:#e6f6f3;object-fit:cover}
+    .pz-names{display:flex;flex-direction:column;line-height:1.2}
+    .pz-names b{font-family:var(--font-display);font-size:1.02rem;font-weight:700}
+    .pz-names span{font-size:0.74rem;font-weight:600;color:var(--teal-300)}
     .pz-live{display:inline-flex;align-items:center;gap:6px;font-size:0.7rem;font-weight:600;color:var(--emerald-300);background:var(--emerald-100);padding:3px 9px;border-radius:100px}
     .pz-live::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--emerald-500)}
+    .pz-headr{display:flex;align-items:center;gap:6px}
     .pz-clear{font-size:0.76rem;font-weight:600;color:var(--text-muted);padding:6px 10px;border-radius:8px}
     .pz-clear:hover{color:var(--text-primary);background:var(--glass-hover)}
-    .pz-log{min-height:340px;max-height:min(56vh,520px);overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:14px}
+    .pz-log{min-height:360px;max-height:min(60vh,560px);overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:12px}
     .pz-empty{margin:auto 0;text-align:center;padding:12px 4px}
     .pz-empty p{font-size:0.88rem;color:var(--text-secondary);margin-bottom:14px}
     .pz-chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
     .pz-chip{padding:8px 14px;font-size:0.8rem;font-weight:500;color:var(--text-secondary);background:#fff;border:1px solid var(--line);border-radius:100px;box-shadow:var(--shadow-sm);transition:var(--transition-fast);text-align:left}
     .pz-chip:hover{color:var(--teal-300);border-color:rgba(13,148,136,0.45);background:#f0fdfa}
-    .pz-msg{max-width:88%;font-size:0.9rem;line-height:1.6;padding:12px 16px;border-radius:16px;white-space:pre-wrap;overflow-wrap:anywhere}
-    .pz-msg-user{align-self:flex-end;background:#e6f6f4;border:1px solid rgba(13,148,136,0.25);border-bottom-right-radius:6px}
-    .pz-msg-ai{align-self:flex-start;background:#f7fafb;border:1px solid var(--line);border-bottom-left-radius:6px}
+    .pz-row{display:flex;gap:8px;align-items:flex-start}
+    .pz-row-user{justify-content:flex-end}
+    .pz-row .pz-mini{width:28px;height:28px;border-radius:50%;background:#e6f6f3;flex-shrink:0;margin-top:2px}
+    .pz-stack{display:flex;flex-direction:column;align-items:flex-start;gap:6px;min-width:0;max-width:calc(100% - 36px)}
+    .pz-msg{font-size:0.9rem;line-height:1.6;padding:11px 15px;border-radius:16px;white-space:pre-wrap;overflow-wrap:anywhere}
+    .pz-msg-user{max-width:88%;background:var(--teal-300);color:#fff;border-bottom-right-radius:6px}
+    .pz-msg-ai{background:#f1f7f8;border-top-left-radius:6px}
     .pz-msg-note{align-self:center;max-width:100%;font-size:0.8rem;color:var(--text-muted);background:none;border:1px dashed var(--line);border-radius:12px;text-align:center}
-    .pz-who{display:block;font-size:0.68rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--text-muted);margin-bottom:4px;white-space:normal}
+    .pz-listen{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:100px;font-size:0.72rem;font-weight:600;color:var(--text-muted)}
+    .pz-listen:hover,.pz-listen[aria-pressed="true"]{background:#eef6f7;color:var(--teal-300)}
     .pz-typing{display:flex;gap:4px;padding:6px 2px}
-    .pz-typing span{width:7px;height:7px;border-radius:50%;background:var(--text-muted);animation:pzb 1.3s infinite}
+    .pz-typing span{width:7px;height:7px;border-radius:50%;background:var(--teal-300);opacity:.4;animation:pzb 1.3s infinite}
     .pz-typing span:nth-child(2){animation-delay:0.15s}.pz-typing span:nth-child(3){animation-delay:0.3s}
-    @keyframes pzb{0%,60%,100%{transform:translateY(0);opacity:0.5}30%{transform:translateY(-5px);opacity:1}}
-    @media (prefers-reduced-motion: reduce){.pz-typing span{animation:none}}
-    .pz-form{display:flex;gap:10px;padding:14px;border-top:1px solid var(--line);background:#fbfdfd}
+    @keyframes pzb{0%,60%,100%{transform:translateY(0);opacity:0.4}30%{transform:translateY(-5px);opacity:1}}
+    .pz-form{display:flex;gap:8px;padding:12px;border-top:1px solid var(--line);background:#fbfdfd}
     .pz-form textarea{flex:1;resize:none;min-height:46px;max-height:140px;padding:12px 14px;font:inherit;font-size:0.9rem;color:var(--text-primary);background:#fff;border:1px solid rgba(var(--ink-rgb),0.2);border-radius:12px;outline:none;line-height:1.45}
     .pz-form textarea:focus{border-color:var(--teal-400);box-shadow:0 0 0 3px rgba(13,148,136,0.15)}
     .pz-form textarea::placeholder{color:var(--text-muted)}
-    .pz-send{flex-shrink:0;align-self:flex-end;height:46px;padding:0 18px;border-radius:12px;background:linear-gradient(135deg,#0d9488,#0284c7);color:#fff;font-weight:600;font-size:0.88rem}
+    .pz-mic{flex-shrink:0;align-self:flex-end;display:grid;place-items:center;width:46px;height:46px;border-radius:12px;border:1px solid var(--line);background:#fff;color:var(--text-secondary)}
+    .pz-mic:hover{color:var(--teal-300);background:#f0fdfa}
+    .pz-mic[aria-pressed="true"]{border-color:#fca5a5;background:#fef2f2;color:#b91c1c}
+    .pz-send{flex-shrink:0;align-self:flex-end;height:46px;padding:0 18px;border-radius:12px;background:var(--teal-300);color:#fff;font-weight:600;font-size:0.88rem}
     .pz-send:disabled{opacity:0.5;cursor:not-allowed}
     .pz-foot{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:0 16px 12px;background:#fbfdfd;font-size:0.72rem;color:var(--text-muted)}
 
     /* In-app capabilities */
     .pz-section{margin-top:72px}
-    .pz-h2{font-family:'Outfit',sans-serif;font-size:clamp(1.4rem,2.6vw,1.9rem);font-weight:800;letter-spacing:-0.02em;margin-bottom:8px}
+    .pz-h2{font-family:var(--font-display);font-size:clamp(1.4rem,2.6vw,1.9rem);font-weight:800;letter-spacing:-0.02em;margin-bottom:8px}
     .pz-sub{color:var(--text-secondary);font-size:0.95rem;margin-bottom:24px;max-width:44rem}
-    .pz-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+    .pz-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
     .pz-card{background:#fff;border:1px solid var(--line);border-radius:var(--radius-md);padding:22px;box-shadow:var(--shadow-sm)}
+    .pz-card .pz-ico{display:block;font-size:1.4rem;margin-bottom:10px}
     .pz-card h3{font-size:1rem;font-weight:700;margin-bottom:6px}
     .pz-card p{font-size:0.88rem;color:var(--text-secondary);line-height:1.65}
     .pz-card .pz-eg{margin-top:12px;font-size:0.8rem;color:var(--text-muted)}
     .pz-card .pz-eg q{color:var(--text-primary);font-style:italic}
+    .pz-voice{margin-top:14px;font-size:0.86rem;color:var(--text-muted)}
     .pz-open{margin-top:28px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:22px 24px;border-radius:var(--radius-md);background:var(--bg-deep);border:1px solid var(--line)}
     .pz-open p{font-size:0.92rem;color:var(--text-secondary);max-width:40rem}
 
-    @media (max-width:900px){.pz-hero{grid-template-columns:1fr;grid-template-areas:"intro" "chat" "limits";grid-template-rows:auto;row-gap:24px}.pz-ctas{margin-bottom:0}.pz-grid{grid-template-columns:1fr}}
-    @media (max-width:600px){.pz-main{padding:28px 14px 60px}.pz-log{min-height:300px;max-height:60vh;padding:14px}.pz-msg{max-width:94%}.pz-form{padding:10px}.pz-send{padding:0 14px}.pz-section{margin-top:52px}}
+    @media (max-width:980px){.pz-grid{grid-template-columns:repeat(2,1fr)}}
+    @media (max-width:900px){.pz-hero{grid-template-columns:1fr;grid-template-areas:"intro" "chat" "limits";grid-template-rows:auto;row-gap:24px}.pz-ctas{margin-bottom:0}}
+    @media (max-width:600px){.pz-main{padding:22px 14px 60px}.pz-meet{min-height:0;margin-bottom:10px}.pz-stage .echo-renderer{width:107px!important;height:140px!important}.pz-hello{margin-bottom:58px;font-size:0.86rem}.pz-log{min-height:300px;max-height:64vh;padding:14px}.pz-form{padding:10px}.pz-send{padding:0 14px}.pz-section{margin-top:52px}.pz-grid{grid-template-columns:1fr}}
+    @media (prefers-reduced-motion: reduce){.pz-typing span,.pz-hello{animation:none}}
   </style>
   <link rel="canonical" href="https://aquacellum.com/poseidon">
   <meta property="og:url" content="https://aquacellum.com/poseidon">
   <meta property="og:site_name" content="Aquacellum">
   <meta property="og:image" content="https://aquacellum.com/og-banner.png">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Poseidon: fish care questions, answered from the species catalog">
+  <meta name="twitter:title" content="Ask Echo: fish care answers from the species catalog">
 </head>
 <body>
   <header id="site-nav"></header>
   <main class="pz-main">
     <section class="pz-hero">
       <div class="pz-intro">
-        <div class="pz-label">Poseidon</div>
-        <h1 class="pz-title">Ask about fish care. Answers draw on the species catalog.</h1>
-        <p class="pz-lede">Poseidon is the assistant built into Aquacellum. When your question names a species, it looks that species up in the Aquacellum catalog and answers from the catalog's temperature, pH, size and temperament data before general knowledge.</p>
+        <div class="pz-meet">
+          <!-- /js/echo-ambient.js mounts Echo here instead of the corner. -->
+          <div class="pz-stage" data-echo-stage data-echo-size="200"></div>
+          <p class="pz-hello" id="pzHello">Hi, I'm <strong>Echo</strong>. Ask me what can live together, or anything about your fish.</p>
+        </div>
+        <div class="pz-label">Echo · powered by Poseidon</div>
+        <h1 class="pz-title">Ask Echo about your fish.</h1>
+        <p class="pz-lede">Echo is the guide in Aquacellum. Her answers run on Poseidon, which looks up the species you name in the Aquacellum catalog and answers from its temperature, pH, size and temperament data before general knowledge. Ask whether fish can live together and she shows the numbers on a card.</p>
         <div class="pz-ctas">
-          <a class="btn btn-primary" href="/app/tanks">Open Poseidon in the app</a>
+          <a class="btn btn-primary" href="/app/tanks">Open Echo in the app</a>
           <a class="btn btn-secondary" href="/database.html">Browse the species catalog</a>
         </div>
       </div>
-      <p class="pz-limits"><strong>Good to know.</strong> Answers are written by an AI model and can be wrong, so check anything important. Poseidon does not diagnose sick fish; for illness, talk to an aquatic vet. On this page it cannot see your tanks. You get 30 questions an hour, shared with the app.</p>
+      <p class="pz-limits"><strong>Good to know.</strong> Answers are written by an AI model and can be wrong, so check anything important. The cards come straight from the catalog. Echo does not diagnose sick fish; for illness, talk to an aquatic vet. On this page she cannot see your tanks. You get 30 questions an hour, shared with the app.</p>
 
-      <div class="pz-chat" aria-label="Chat with Poseidon">
+      <div class="pz-chat" aria-label="Chat with Echo">
         <div class="pz-chat-head">
-          <div class="pz-chat-title"><span class="pz-mark" aria-hidden="true">🔱</span>Poseidon <span class="pz-live">Live</span></div>
-          <button class="pz-clear" id="pzClear" type="button" hidden>Clear chat</button>
+          <div class="pz-chat-title">
+            <img class="pz-avatar" src="/echo/face.webp" alt="" width="40" height="40">
+            <span class="pz-names"><b>Echo</b><span>Powered by Poseidon</span></span>
+          </div>
+          <div class="pz-headr">
+            <button class="pz-clear" id="pzClear" type="button" hidden>Clear chat</button>
+            <span class="pz-live">Live</span>
+          </div>
         </div>
         <div class="pz-log" id="pzLog" role="log" aria-live="polite" aria-relevant="additions">
           <div class="pz-empty" id="pzEmpty">
@@ -105,7 +141,10 @@
           </div>
         </div>
         <form class="pz-form" id="pzForm">
-          <label for="pzInput" class="sr-only">Your question for Poseidon</label>
+          <button class="pz-mic" id="pzMic" type="button" aria-label="Ask by voice" aria-pressed="false" hidden>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="17" x2="12" y2="22"/></svg>
+          </button>
+          <label for="pzInput" class="sr-only">Your question for Echo</label>
           <textarea id="pzInput" rows="1" maxlength="1000" placeholder="Ask about a species or your water" autocomplete="off"></textarea>
           <button class="pz-send" id="pzSend" type="submit">Ask</button>
         </form>
@@ -114,71 +153,119 @@
     </section>
 
     <section class="pz-section" aria-labelledby="inAppHeading">
-      <h2 class="pz-h2" id="inAppHeading">What Poseidon does inside the app</h2>
-      <p class="pz-sub">In the app, the same assistant sits behind the Poseidon button on every screen, and it can use the records you keep there.</p>
+      <h2 class="pz-h2" id="inAppHeading">What Echo does inside the app</h2>
+      <p class="pz-sub">In the app she sits in the corner of every screen. Tap her to chat. There she can use the records you keep.</p>
       <div class="pz-grid">
         <div class="pz-card">
+          <span class="pz-ico" aria-hidden="true">🐠</span>
           <h3>Answers with your tanks in mind</h3>
-          <p>It reads the tanks you have set up, their latest water reading, their inhabitants and your recent care log. That context is sent only along with a question you ask.</p>
+          <p>She reads the tanks you have set up, their latest water reading, their inhabitants and your recent care log. That context is sent only along with a question you ask.</p>
           <p class="pz-eg">For example: <q>Is my 20 gallon warm enough for the fish I have?</q></p>
         </div>
         <div class="pz-card">
-          <h3>Logs care when you tell it to</h3>
-          <p>Tell it a water test result or a care task and it can offer to record it, or to set up a new tank. Nothing is saved until you confirm.</p>
+          <span class="pz-ico" aria-hidden="true">✅</span>
+          <h3>Shows the numbers</h3>
+          <p>Ask whether fish can live together and a card lists the shared temperature and pH, the tank size needed, temperament and the catalog's own tankmate notes, checked against your tank.</p>
+          <p class="pz-eg">For example: <q>Can I add German blue rams to my living room tank?</q></p>
+        </div>
+        <div class="pz-card">
+          <span class="pz-ico" aria-hidden="true">📷</span>
+          <h3>Looks at a photo</h3>
+          <p>Send a photo and she gives her best guesses, ranked, with a match percentage and a link to the catalog entry. A photo can only suggest, so nothing is recorded for you. Needs a signed-in account.</p>
+        </div>
+        <div class="pz-card">
+          <span class="pz-ico" aria-hidden="true">🧪</span>
+          <h3>Plans a tank with you</h3>
+          <p>Pick a tank size and water type, or start from one of your tanks, and add species. The card re-checks the whole group as you go, and she reacts to each change.</p>
+        </div>
+        <div class="pz-card">
+          <span class="pz-ico" aria-hidden="true">📈</span>
+          <h3>Notices what changed</h3>
+          <p>She mentions a change between your last two water tests, like nitrate going from 10 to 40 ppm, or a care task that has not been logged in a while. Tap it to ask her why.</p>
+        </div>
+        <div class="pz-card">
+          <span class="pz-ico" aria-hidden="true">📝</span>
+          <h3>Logs care when you say so</h3>
+          <p>Tell her a water test result or a care task and she can offer to record it, or to set up a new tank. Nothing is saved until you confirm.</p>
           <p class="pz-eg">For example: <q>Log pH 7.2, ammonia 0, nitrate 20 for the shrimp tank.</q></p>
         </div>
-        <div class="pz-card">
-          <h3>Checks compatibility and suggests species</h3>
-          <p>It compares temperature and pH ranges, tank size, adult size and temperament from the catalog against what you already keep.</p>
-          <p class="pz-eg">For example: <q>Can I add cherry shrimp to a tank with a betta?</q></p>
-        </div>
-        <div class="pz-card">
-          <h3>Finds its way around the app</h3>
-          <p>Questions like where to log a water test are answered from the app's own guide, instantly, without counting against your hourly questions.</p>
-          <p class="pz-eg">For example: <q>Where do I add a new fish?</q></p>
-        </div>
       </div>
+      <p class="pz-voice">You can also ask by voice and have answers read aloud, in browsers that support it.</p>
       <div class="pz-open">
-        <p>Open the app, then tap the Poseidon button in the corner of any screen. Sign in and set up a tank so it has your records to work with.</p>
-        <a class="btn btn-primary" href="/app/tanks">Open Poseidon in the app</a>
+        <p>Open the app and tap Echo in the corner of any screen. Sign in and set up a tank so she has your records to work with.</p>
+        <a class="btn btn-primary" href="/app/tanks">Open Echo in the app</a>
       </div>
     </section>
   </main>
   <footer id="site-footer"></footer>
-<script>
-(function () {
-  // Real answers from the same gateway the in-app PoseidonGlobalWidget uses
-  // (frontend/api/ai.js handlePoseidon). It is rate limited server-side at 30
-  // questions per hour per IP; the counter below mirrors the in-app hook
-  // (src/hooks/usePoseidon.js) and shares its localStorage key, so the page and
-  // the app draw on one budget and the number shown here is not a lie.
-  var API_URL = '/api/ai?action=poseidon';
-  var MAX_PER_HOUR = 30;
-  var WINDOW_MS = 60 * 60 * 1000;
-  var RATE_KEY = 'aquadex_poseidon_rate_limit';
-  var CHAT_KEY = 'aquadex_poseidon_public_page';
-  var EXAMPLES = [
+<script src="/js/echo-behaviour.js"></script>
+<script src="/js/echo-ambient.js"></script>
+<script type="module">
+  // Answer cards: the same pure engine the app's chat uses, and the same card
+  // styles, so a card here matches a card in the app.
+  import { compatForQuestion, looksLikeCompatibilityQuestion } from '/src/services/echoMatch.js';
+  import '/src/components/EchoChat.css';
+
+  // Real answers from the same gateway the in-app chat uses (frontend/api/ai.js
+  // handlePoseidon). It is rate limited server-side at 30 questions per hour per
+  // IP; the counter below mirrors the in-app hook (src/hooks/usePoseidon.js) and
+  // shares its localStorage key, so the page and the app draw on one budget and
+  // the number shown here is not a lie.
+  const API_URL = '/api/ai?action=poseidon';
+  const MAX_PER_HOUR = 30;
+  const WINDOW_MS = 60 * 60 * 1000;
+  const RATE_KEY = 'aquadex_poseidon_rate_limit';
+  const CHAT_KEY = 'aquadex_poseidon_public_page';
+  const EXAMPLES = [
+    'Can a betta live with neon tetras?',
+    'Can German blue rams live with cardinal tetras?',
     'What temperature and pH do neon tetras need?',
-    'Can a betta live with cherry shrimp?',
-    'My ammonia reads 0.5 ppm. What should I do?',
-    'How many harlequin rasboras for a 20 gallon?'
+    'My ammonia reads 0.5 ppm. What could cause that?'
   ];
 
-  var log = document.getElementById('pzLog');
-  var empty = document.getElementById('pzEmpty');
-  var chips = document.getElementById('pzChips');
-  var form = document.getElementById('pzForm');
-  var input = document.getElementById('pzInput');
-  var send = document.getElementById('pzSend');
-  var clearBtn = document.getElementById('pzClear');
-  var budget = document.getElementById('pzBudget');
-  var messages = loadChat();
-  var busy = false;
+  const log = document.getElementById('pzLog');
+  const empty = document.getElementById('pzEmpty');
+  const chips = document.getElementById('pzChips');
+  const form = document.getElementById('pzForm');
+  const input = document.getElementById('pzInput');
+  const send = document.getElementById('pzSend');
+  const mic = document.getElementById('pzMic');
+  const clearBtn = document.getElementById('pzClear');
+  const budget = document.getElementById('pzBudget');
+  const hello = document.getElementById('pzHello');
+  let messages = loadChat();
+  let busy = false;
+
+  // ─── Echo's reactions (same events as the app; /js/echo-ambient.js listens) ──
+  const fire = {
+    thinkingStart: () => window.dispatchEvent(new CustomEvent('echo:thinking-start')),
+    thinkingEnd: () => window.dispatchEvent(new CustomEvent('echo:thinking-end')),
+    speaking: (ms) => window.dispatchEvent(new CustomEvent('echo:speaking', { detail: { durationMs: ms } })),
+    react: (mood, extra) => window.dispatchEvent(new CustomEvent('poseidon:echo-reaction', { detail: Object.assign({}, extra || {}, { mood }) })),
+  };
+
+  // Tapping her on this page means "talk to me": focus the question box.
+  window.addEventListener('echo:toggle', (e) => {
+    e.preventDefault();
+    input.focus();
+    fire.react('happy', { durationMs: 900 });
+  });
+
+  // ─── The catalog, loaded only when a card needs it ─────────────────────────
+  let catalogPromise = null;
+  function catalog() {
+    if (!catalogPromise) {
+      catalogPromise = fetch('/fishbase_master.json?v=2')
+        .then((r) => (r.ok ? r.json() : []))
+        .then((rows) => (Array.isArray(rows) ? rows.filter((r) => r && !r.duplicateOf) : []))
+        .catch(() => []);
+    }
+    return catalogPromise;
+  }
 
   function loadChat() {
     try {
-      var raw = sessionStorage.getItem(CHAT_KEY);
-      var arr = raw ? JSON.parse(raw) : [];
+      const arr = JSON.parse(sessionStorage.getItem(CHAT_KEY) || '[]');
       return Array.isArray(arr) ? arr.slice(-20) : [];
     } catch (e) { return []; }
   }
@@ -187,66 +274,197 @@
   }
   function stamps() {
     try {
-      var arr = JSON.parse(localStorage.getItem(RATE_KEY) || '[]');
-      var now = Date.now();
-      return Array.isArray(arr) ? arr.filter(function (t) { return now - t < WINDOW_MS; }) : [];
+      const arr = JSON.parse(localStorage.getItem(RATE_KEY) || '[]');
+      const now = Date.now();
+      return Array.isArray(arr) ? arr.filter((t) => now - t < WINDOW_MS) : [];
     } catch (e) { return []; }
   }
   function recordUse() {
-    var s = stamps(); s.push(Date.now());
+    const s = stamps(); s.push(Date.now());
     try { localStorage.setItem(RATE_KEY, JSON.stringify(s)); } catch (e) { /* storage unavailable */ }
   }
   function updateBudget() {
-    var left = Math.max(0, MAX_PER_HOUR - stamps().length);
+    const left = Math.max(0, MAX_PER_HOUR - stamps().length);
     budget.textContent = left + ' of ' + MAX_PER_HOUR + ' questions left this hour';
   }
 
   // Model text is untrusted: build nodes with textContent, and only turn
   // **bold** and *italic* into <strong>/<em>. white-space: pre-wrap keeps its line breaks.
   function richText(el, text) {
-    String(text).split(/(\*\*[^*]+\*\*|\*[^*\s][^*\n]*\*)/g).forEach(function (part) {
+    String(text).split(/(\*\*[^*]+\*\*|\*[^*\s][^*\n]*\*)/g).forEach((part) => {
       if (/^\*\*[^*]+\*\*$/.test(part)) {
-        var b = document.createElement('strong'); b.textContent = part.slice(2, -2); el.appendChild(b);
+        const b = document.createElement('strong'); b.textContent = part.slice(2, -2); el.appendChild(b);
       } else if (/^\*[^*\s][^*\n]*\*$/.test(part)) {
-        var i = document.createElement('em'); i.textContent = part.slice(1, -1); el.appendChild(i);
+        const i = document.createElement('em'); i.textContent = part.slice(1, -1); el.appendChild(i);
       } else if (part) {
         el.appendChild(document.createTextNode(part));
       }
     });
   }
-  function bubble(m) {
-    var div = document.createElement('div');
-    if (m.role === 'note') {
-      div.className = 'pz-msg pz-msg-note';
-      div.textContent = m.text;
-      return div;
-    }
-    div.className = 'pz-msg ' + (m.role === 'user' ? 'pz-msg-user' : 'pz-msg-ai');
-    var who = document.createElement('span');
-    who.className = 'pz-who';
-    who.textContent = m.role === 'user' ? 'You' : 'Poseidon';
-    div.appendChild(who);
-    richText(div, m.text);
-    return div;
+
+  function el(tag, cls, text) {
+    const n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text != null) n.textContent = text;
+    return n;
   }
+
+  // The card, built from catalog facts (echoMatch.checkGroup). Same markup and
+  // classes as src/components/EchoCards.jsx CompatCard.
+  const GLYPH = { good: '✓', care: '!', bad: '✕', unknown: '?' };
+  const WORD = { good: 'OK', care: 'Watch', bad: 'Problem', unknown: 'Not recorded' };
+  function compatCard(r) {
+    const card = el('section', 'echo-card echo-card--' + r.verdict);
+    card.setAttribute('aria-label', 'Compatibility: ' + r.title + '. ' + r.headline + '.');
+    const head = el('div', 'echo-card__head');
+    const members = Array.isArray(r.members) ? r.members : [];
+    if (members.length) {
+      const faces = el('div', 'echo-card__faces');
+      faces.setAttribute('aria-hidden', 'true');
+      members.slice(0, 4).forEach((m) => {
+        if (m.photo) { const img = el('img'); img.src = m.photo; img.alt = ''; img.loading = 'lazy'; faces.appendChild(img); }
+        else faces.appendChild(el('span', 'echo-card__noface', '🐟'));
+      });
+      head.appendChild(faces);
+    }
+    const heading = el('div', 'echo-card__heading');
+    const verdict = el('p', 'echo-card__verdict');
+    const g = el('span', 'echo-card__glyph', GLYPH[r.verdict]); g.setAttribute('aria-hidden', 'true');
+    verdict.appendChild(g); verdict.appendChild(document.createTextNode(r.headline));
+    heading.appendChild(verdict);
+    heading.appendChild(el('h3', 'echo-card__title', r.title));
+    head.appendChild(heading);
+    card.appendChild(head);
+    if (r.rows.length) {
+      const ul = el('ul', 'echo-card__rows');
+      r.rows.forEach((row) => {
+        const li = el('li', 'echo-card__row echo-card__row--' + row.status);
+        const dot = el('span', 'echo-card__dot', GLYPH[row.status]); dot.setAttribute('aria-hidden', 'true');
+        const txt = el('div', 'echo-card__rowtext');
+        const strong = el('strong');
+        strong.appendChild(el('span', 'echo-sr', WORD[row.status] + ': '));
+        strong.appendChild(document.createTextNode(row.label));
+        txt.appendChild(strong);
+        txt.appendChild(el('span', null, row.detail));
+        li.appendChild(dot); li.appendChild(txt);
+        ul.appendChild(li);
+      });
+      card.appendChild(ul);
+    }
+    const foot = el('div', 'echo-card__foot');
+    foot.appendChild(el('span', null, 'From the Aquacellum species guide'));
+    members.filter((m) => m.specCode != null).slice(0, 3).forEach((m) => {
+      const a = el('a', null, m.name); a.href = '/species.html?specCode=' + encodeURIComponent(m.specCode); foot.appendChild(a);
+    });
+    card.appendChild(foot);
+    return card;
+  }
+
+  // ─── Voice ─────────────────────────────────────────────────────────────────
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition || null;
+  const canSpeak = 'speechSynthesis' in window && typeof window.SpeechSynthesisUtterance === 'function';
+  let speakingIndex = -1;
+  function speak(index) {
+    if (!canSpeak) return;
+    const m = messages[index];
+    if (!m) return;
+    window.speechSynthesis.cancel();
+    if (speakingIndex === index) { speakingIndex = -1; render(); return; }
+    const text = String(m.text).replace(/\p{Extended_Pictographic}/gu, '').replace(/[*_#`]/g, '').replace(/\s+/g, ' ').trim();
+    if (!text) return;
+    const u = new SpeechSynthesisUtterance(text);
+    u.rate = 1.02; u.pitch = 1.1;
+    u.onend = u.onerror = () => { if (speakingIndex === index) { speakingIndex = -1; render(); } };
+    speakingIndex = index;
+    fire.speaking(Math.min(20000, 800 + text.length * 70));
+    window.speechSynthesis.speak(u);
+    render();
+  }
+
+  if (SR) {
+    mic.hidden = false;
+    let rec = null;
+    let heard = '';
+    mic.addEventListener('click', () => {
+      if (rec) { try { rec.stop(); } catch (e) { /* already stopped */ } return; }
+      try { rec = new SR(); } catch (e) { rec = null; return; }
+      rec.lang = navigator.language || 'en-US';
+      rec.interimResults = true;
+      heard = '';
+      rec.onresult = (ev) => {
+        heard = '';
+        for (let i = 0; i < ev.results.length; i += 1) heard += ev.results[i][0].transcript;
+        input.value = heard; autosize();
+      };
+      rec.onend = () => {
+        rec = null;
+        mic.setAttribute('aria-pressed', 'false');
+        mic.setAttribute('aria-label', 'Ask by voice');
+        input.placeholder = 'Ask about a species or your water';
+        if (heard.trim()) ask(heard, { viaVoice: true });
+      };
+      try {
+        rec.start();
+        mic.setAttribute('aria-pressed', 'true');
+        mic.setAttribute('aria-label', 'Stop listening');
+        input.placeholder = 'Listening…';
+      } catch (e) { rec = null; }
+    });
+  }
+
+  function bubble(m, index) {
+    if (m.role === 'note') return el('div', 'pz-msg pz-msg-note', m.text);
+    const row = el('div', 'pz-row' + (m.role === 'user' ? ' pz-row-user' : ''));
+    if (m.role === 'user') {
+      const div = el('div', 'pz-msg pz-msg-user');
+      div.appendChild(el('span', 'sr-only', 'You: '));
+      richText(div, m.text);
+      row.appendChild(div);
+      return row;
+    }
+    const face = el('img', 'pz-mini'); face.src = '/echo/face.webp'; face.alt = '';
+    row.appendChild(face);
+    const stack = el('div', 'pz-stack');
+    const div = el('div', 'pz-msg pz-msg-ai');
+    div.appendChild(el('span', 'sr-only', 'Echo: '));
+    richText(div, m.text);
+    stack.appendChild(div);
+    if (canSpeak) {
+      const b = el('button', 'pz-listen', speakingIndex === index ? '■ Stop' : '🔊 Listen');
+      b.type = 'button';
+      b.setAttribute('aria-pressed', String(speakingIndex === index));
+      b.setAttribute('aria-label', speakingIndex === index ? 'Stop reading' : 'Read this aloud');
+      b.addEventListener('click', () => speak(index));
+      stack.appendChild(b);
+    }
+    if (m.card) stack.appendChild(compatCard(m.card));
+    row.appendChild(stack);
+    return row;
+  }
+
   function render() {
-    Array.prototype.slice.call(log.querySelectorAll('.pz-msg')).forEach(function (n) { n.remove(); });
+    Array.prototype.slice.call(log.querySelectorAll('.pz-row, .pz-msg-note')).forEach((n) => n.remove());
     empty.hidden = messages.length > 0;
     clearBtn.hidden = messages.length === 0;
-    messages.forEach(function (m) { log.appendChild(bubble(m)); });
+    messages.forEach((m, i) => log.appendChild(bubble(m, i)));
+    const t = document.getElementById('pzTyping');
+    if (t) log.appendChild(t);
     log.scrollTop = log.scrollHeight;
     updateBudget();
   }
+
   function setBusy(v) {
     busy = v;
     send.disabled = v;
-    var t = document.getElementById('pzTyping');
+    let t = document.getElementById('pzTyping');
     if (v && !t) {
-      t = document.createElement('div');
+      t = el('div', 'pz-row');
       t.id = 'pzTyping';
-      t.className = 'pz-msg pz-msg-ai';
-      t.setAttribute('aria-label', 'Poseidon is writing');
-      t.innerHTML = '<span class="pz-typing"><span></span><span></span><span></span></span>';
+      t.setAttribute('aria-label', 'Echo is thinking');
+      const face = el('img', 'pz-mini'); face.src = '/echo/face.webp'; face.alt = '';
+      const b = el('div', 'pz-msg pz-msg-ai');
+      b.innerHTML = '<span class="pz-typing"><span></span><span></span><span></span></span>';
+      t.appendChild(face); t.appendChild(b);
       log.appendChild(t);
       log.scrollTop = log.scrollHeight;
     } else if (!v && t) {
@@ -254,52 +472,78 @@
     }
   }
 
-  function ask(text) {
-    text = String(text || '').trim().slice(0, 1000);
+  function note(text, mood) {
+    messages.push({ role: 'note', text });
+    if (mood) fire.react(mood);
+  }
+
+  async function ask(raw, opts) {
+    const text = String(raw || '').trim().slice(0, 1000);
     if (!text || busy) return;
+    if (hello) hello.hidden = true;
     if (stamps().length >= MAX_PER_HOUR) {
-      messages.push({ role: 'note', text: 'You have used all 30 questions for this hour. Try again a little later.' });
+      note('You have used all 30 questions for this hour. Try again a little later.', 'confused');
       render(); saveChat();
       return;
     }
     // History goes in the shape the gateway expects (sender: user | poseidon).
-    var history = messages.filter(function (m) { return m.role !== 'note'; }).slice(-6).map(function (m) {
-      return { sender: m.role === 'user' ? 'user' : 'poseidon', text: String(m.text).slice(0, 2000) };
-    });
-    messages.push({ role: 'user', text: text });
+    const history = messages.filter((m) => m.role !== 'note').slice(-6).map((m) => ({
+      sender: m.role === 'user' ? 'user' : 'poseidon', text: String(m.text).slice(0, 2000)
+    }));
+    messages.push({ role: 'user', text });
     input.value = '';
     autosize();
     render(); saveChat();
     setBusy(true);
+    fire.thinkingStart();
+    // Start loading the catalog now if a card looks likely, so it is ready with the answer.
+    const cardLikely = looksLikeCompatibilityQuestion(text);
+    if (cardLikely) catalog();
 
-    fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: text, mode: 'casual', conversationHistory: history })
-    }).then(function (res) {
-      return res.json().catch(function () { return null; }).then(function (data) { return { res: res, data: data }; });
-    }).then(function (r) {
-      var data = r.data;
-      if (r.res.status === 429 || (data && data.rateLimited)) {
-        messages.push({ role: 'note', text: 'Poseidon has hit the hourly limit for this connection. Try again a little later.' });
-      } else if (r.res.status === 413) {
-        messages.push({ role: 'note', text: 'That question is too long. Please keep it under 1000 characters.' });
-      } else if (!r.res.ok || !data || typeof data.message !== 'string') {
-        messages.push({ role: 'note', text: 'Poseidon could not be reached just now. Please try again in a moment.' });
-      } else if (data.offline || data.error) {
-        messages.push({ role: 'note', text: 'Poseidon is unavailable right now. Please try again shortly.' });
-      } else {
-        recordUse();
-        var answer = salvage(data.message);
-        messages.push({ role: 'ai', text: answer.text });
-        if (answer.cut || data.truncated) messages.push({ role: 'note', text: 'That answer was cut off. Asking a narrower question usually helps.' });
+    let data = null;
+    let res = null;
+    try {
+      res = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text, mode: 'casual', conversationHistory: history })
+      });
+      data = await res.json().catch(() => null);
+    } catch (e) {
+      res = null;
+    }
+    fire.thinkingEnd();
+
+    if (!res) {
+      note('I could not reach Poseidon. Check your connection and try again.', 'confused');
+    } else if (res.status === 429 || (data && data.rateLimited)) {
+      note('That is the hourly limit for this connection. Try again a little later.', 'confused');
+    } else if (res.status === 413) {
+      note('That question is too long. Please keep it under 1000 characters.', 'confused');
+    } else if (!res.ok || !data || typeof data.message !== 'string') {
+      note('I could not reach Poseidon just now. Please try again in a moment.', 'confused');
+    } else if (data.offline || data.error) {
+      note('My answers are unavailable right now. Please try again shortly.', 'confused');
+    } else {
+      recordUse();
+      const answer = salvage(data.message);
+      const force = /compat/i.test(String(data.intent || '')) || (data.action && data.action.type === 'QUERY_COMPATIBILITY');
+      let card = null;
+      if (cardLikely || force) {
+        const rows = await catalog();
+        card = compatForQuestion({ text, catalog: rows, force });
       }
-    }).catch(function () {
-      messages.push({ role: 'note', text: 'Poseidon could not be reached. Check your connection and try again.' });
-    }).then(function () {
-      setBusy(false);
-      render(); saveChat();
-    });
+      const msg = { role: 'ai', text: answer.text };
+      if (card) msg.card = card;
+      messages.push(msg);
+      if (answer.cut || data.truncated) messages.push({ role: 'note', text: 'That answer was cut off. Asking a narrower question usually helps.' });
+      fire.speaking(Math.min(6000, 1200 + answer.text.length * 20));
+      const mood = (card && card.mood) || (data.echoReaction && data.echoReaction.mood) || null;
+      if (mood) fire.react(mood, data.echoReaction);
+      if (opts && opts.viaVoice) { setBusy(false); render(); speak(messages.lastIndexOf(msg)); saveChat(); return; }
+    }
+    setBusy(false);
+    render(); saveChat();
   }
 
   // The gateway now always sends clean text and flags a cut-off answer with
@@ -307,10 +551,10 @@
   // pass cut-off model JSON through as '{ "message": "...' with no end: show the
   // prose inside it rather than raw JSON, and say when it was cut short.
   function salvage(msg) {
-    var m = /^\s*\{\s*"message"\s*:\s*"((?:[^"\\]|\\.)*)("?)/.exec(msg);
+    const m = /^\s*\{\s*"message"\s*:\s*"((?:[^"\\]|\\.)*)("?)/.exec(msg);
     if (!m) return { text: msg, cut: false };
-    var body = m[1].replace(/\\u[0-9a-fA-F]{0,3}$|\\$/, '');
-    var text;
+    const body = m[1].replace(/\\u[0-9a-fA-F]{0,3}$|\\$/, '');
+    let text;
     try { text = JSON.parse('"' + body + '"'); } catch (e) { text = body.replace(/\\n/g, '\n').replace(/\\"/g, '"'); }
     return { text: text.trim() || msg, cut: m[2] !== '"' };
   }
@@ -320,24 +564,38 @@
     input.style.height = Math.min(input.scrollHeight, 140) + 'px';
   }
 
-  EXAMPLES.forEach(function (q) {
-    var b = document.createElement('button');
+  EXAMPLES.forEach((q) => {
+    const b = el('button', 'pz-chip', q);
     b.type = 'button';
-    b.className = 'pz-chip';
-    b.textContent = q;
-    b.addEventListener('click', function () { ask(q); });
+    b.addEventListener('click', () => ask(q));
     chips.appendChild(b);
   });
-  form.addEventListener('submit', function (e) { e.preventDefault(); ask(input.value); });
-  input.addEventListener('keydown', function (e) {
+  form.addEventListener('submit', (e) => { e.preventDefault(); ask(input.value); });
+  input.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); ask(input.value); }
   });
   input.addEventListener('input', autosize);
-  clearBtn.addEventListener('click', function () {
+  // She looks at the question box while you type.
+  input.addEventListener('focus', () => window.AquadexEcho && window.AquadexEcho.attend(input));
+  input.addEventListener('blur', () => window.AquadexEcho && window.AquadexEcho.release());
+  clearBtn.addEventListener('click', () => {
+    if (canSpeak) window.speechSynthesis.cancel();
+    speakingIndex = -1;
     messages = []; saveChat(); render(); input.focus();
   });
+  if (messages.length && hello) hello.hidden = true;
   render();
-})();
+
+  // "Ask Echo about it" from the species database arrives as ?ask=. The
+  // question is put in the box, not sent: a link should not spend someone's
+  // questions for them.
+  const preset = new URLSearchParams(window.location.search).get('ask');
+  if (preset) {
+    input.value = preset.slice(0, 1000);
+    autosize();
+    input.focus();
+    history.replaceState(null, '', window.location.pathname);
+  }
 </script>
 <script src="/js/nav.js"></script>
 <script src="/js/footer.js"></script>

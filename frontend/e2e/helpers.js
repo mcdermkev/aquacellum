@@ -19,11 +19,11 @@ export const E2E_STUB_ACCOUNT = "0xe2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2";
  *     ...
  *
  * NOTE (review finding, not fixed here): running B4 on `mobile-chromium`
- * surfaced that the floating Poseidon chat FAB (`.poseidon-global-fab`)
- * overlaps the Inhabitants bulk-select checkbox at some scroll positions on a
- * narrow viewport, blocking the click. Worth a UX pass (raise the FAB's
- * z-index scope or reserve safe-area padding at the bottom of scrollable
- * panels) — flagging for the Opus review gate rather than patching UI here.
+ * surfaced that the floating Poseidon chat FAB overlapped the Inhabitants
+ * bulk-select checkbox at some scroll positions on a narrow viewport. That FAB
+ * is gone (2026-09-30: Echo is the chat button now, `.echo-ambient__button`,
+ * and only her body takes clicks), but the journey has not been re-run on
+ * mobile since.
  */
 export const DESKTOP_ONLY_REASON = "Phase B desktop-only for this journey (see e2e/helpers.js DESKTOP_ONLY_REASON)";
 
@@ -40,7 +40,7 @@ export async function gotoDashboard(page, { casual = true } = {}) {
     // onboarding-tour "beta welcome" one-time popups — neither is under test
     // here and both intercept clicks with a fullscreen backdrop.
     // Keep in step with CURRENT_VERSION in WhatsNewModal.jsx.
-    window.localStorage.setItem("aquadex_last_seen_version", "0.10.0");
+    window.localStorage.setItem("aquadex_last_seen_version", "0.11.0");
   }, casual);
   await page.goto("/app/tanks?e2e=1");
   await page.waitForFunction(() => typeof window.__seedForE2E === "function");

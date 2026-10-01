@@ -408,7 +408,7 @@
           <a class="fd-tool" href="/app/tanks"><span class="fd-tool__icon" aria-hidden="true">📓</span><span class="fd-tool__text"><span class="fd-tool__title">Log your tanks</span><span class="fd-tool__desc">Water tests, feedings and maintenance, with alerts when something drifts.</span></span><span class="fd-tool__go" aria-hidden="true">Open →</span></a>
           <a class="fd-tool" href="/app/gallery"><span class="fd-tool__icon" aria-hidden="true">✅</span><span class="fd-tool__text"><span class="fd-tool__title">Will it fit my tank?</span><span class="fd-tool__desc">Check a species against your tank size, temperature and pH.</span></span><span class="fd-tool__go" aria-hidden="true">Open →</span></a>
           <a class="fd-tool" href="/compare.html"><span class="fd-tool__icon" aria-hidden="true">⚖️</span><span class="fd-tool__text"><span class="fd-tool__title">Compare species</span><span class="fd-tool__desc">Side-by-side care ranges before you buy.</span></span><span class="fd-tool__go" aria-hidden="true">Open →</span></a>
-          <a class="fd-tool" href="/poseidon.html"><span class="fd-tool__icon" aria-hidden="true">💬</span><span class="fd-tool__text"><span class="fd-tool__title">Ask Poseidon</span><span class="fd-tool__desc">Care questions answered from the species data.</span></span><span class="fd-tool__go" aria-hidden="true">Open →</span></a>
+          <a class="fd-tool" href="/poseidon.html"><span class="fd-tool__icon" aria-hidden="true">💬</span><span class="fd-tool__text"><span class="fd-tool__title">Ask Echo</span><span class="fd-tool__desc">Care questions answered from the species data.</span></span><span class="fd-tool__go" aria-hidden="true">Open →</span></a>
           <a class="fd-tool" href="/breeders.html"><span class="fd-tool__icon" aria-hidden="true">📍</span><span class="fd-tool__text"><span class="fd-tool__title">Find breeders</span><span class="fd-tool__desc">Independent breeders and their shops.</span></span><span class="fd-tool__go" aria-hidden="true">Open →</span></a>
           <a class="fd-tool" href="/marketplace.html#wanted"><span class="fd-tool__icon" aria-hidden="true">🔎</span><span class="fd-tool__text"><span class="fd-tool__title">Wanted requests</span><span class="fd-tool__desc">See what keepers are looking for, or post your own.</span></span><span class="fd-tool__go" aria-hidden="true">Open →</span></a>
           <a class="fd-tool" href="/app/directory"><span class="fd-tool__icon" aria-hidden="true">🏷️</span><span class="fd-tool__text"><span class="fd-tool__title">Sell fish, frags or plants</span><span class="fd-tool__desc">List a pack, a fry batch or coral frags. Cash sales are free.</span></span><span class="fd-tool__go" aria-hidden="true">Open →</span></a>
@@ -701,7 +701,7 @@
       if (!total) {
         meta.textContent = q ? `No species match “${q}”.` : "No species in this filter yet.";
         list.append(emptyState("🔍", q ? "Nothing by that name yet" : "Nothing here yet",
-          "Try a common name, a genus, or a family. Missing something?", [["/poseidon.html", "Ask Poseidon"], ["/database.html", "Browse the full database"]]));
+          "Try a common name, a genus, or a family. Missing something?", [["/poseidon.html", "Ask Echo"], ["/database.html", "Browse the full database"]]));
       } else {
         const shown = Math.min(total, limit);
         meta.textContent = q

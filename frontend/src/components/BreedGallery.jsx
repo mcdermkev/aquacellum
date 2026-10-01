@@ -2375,7 +2375,7 @@ export function BreedGallery({
               color: "rgba(103, 232, 249, 0.85)",
               width: "fit-content"
             }}>
-              <img src="/poseidon-avatar.jpg" alt="" style={{ width: "16px", height: "16px", borderRadius: "50%", objectFit: "cover" }} />
+              <img src="/echo/face.webp" alt="" style={{ width: "18px", height: "18px", borderRadius: "50%", objectFit: "cover" }} />
               <span>{nlExplanation}</span>
               <button
                 onClick={() => { resetFilters(); clearParsed(); setSearchTerm(""); }}

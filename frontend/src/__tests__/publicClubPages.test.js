@@ -207,10 +207,11 @@ describe("routing and site chrome", () => {
     expect(rewrites).toContainEqual({ source: "/clubs/:slug", destination: "/club.html" });
   });
 
-  it("nav lists Clubs between The Reef and Poseidon AI", () => {
+  it("nav lists Clubs between The Reef and Ask Echo", () => {
     const reef = NAV.indexOf("{ href: '/app/reef', label: 'The Reef' }");
     const clubs = NAV.indexOf("{ href: '/clubs', label: 'Clubs' }");
-    const poseidon = NAV.indexOf("{ href: '/poseidon.html', label: 'Poseidon AI' }");
+    // Echo's page (Echo, powered by Poseidon) still lives at /poseidon.html.
+    const poseidon = NAV.indexOf("{ href: '/poseidon.html', label: 'Ask Echo' }");
     expect(reef).toBeGreaterThan(-1);
     expect(clubs).toBeGreaterThan(reef);
     expect(poseidon).toBeGreaterThan(clubs);

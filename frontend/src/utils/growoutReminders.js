@@ -22,13 +22,13 @@ const STORAGE_KEY_DISMISSED = "aquadex_growout_reminder_dismissed";
 const STORAGE_KEY_ENABLED = "aquadex_growout_reminders_enabled";
 
 /**
- * Poseidon nudge messages — varied to feel natural.
+ * Echo's grow-out nudge messages, varied to feel natural.
  */
 const NUDGE_MESSAGES = [
   "It's been {days} days since your last checkpoint on Spawn #{id}. How are the fry doing?",
   "Spawn #{id} hasn't been logged in {days} days. A quick fry count keeps your survival data sharp.",
   "Your {species} fry (Spawn #{id}) are {days} days without an update. Drop a checkpoint when you get a chance.",
-  "Poseidon noticed Spawn #{id} is {days} days silent. Even a quick note helps track growth patterns.",
+  "I noticed Spawn #{id} has gone {days} days without a note. Even a quick one helps track growth.",
   "Time for a grow-out check? Spawn #{id} ({species}) hasn't been updated in {days} days.",
 ];
 
@@ -186,9 +186,9 @@ export async function checkGrowoutReminders(force = false) {
  */
 function sendLocalNotification(body, spawnId) {
   try {
-    const notification = new Notification("🌊 Poseidon — Grow-Out Reminder", {
+    const notification = new Notification("Grow-out reminder from Echo", {
       body,
-      icon: "/poseidon-avatar.jpg",
+      icon: "/echo/face.webp",
       badge: "/favicon.svg",
       tag: `growout-reminder-${spawnId}`,
       renotify: false,

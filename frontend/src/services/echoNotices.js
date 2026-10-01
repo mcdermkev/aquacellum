@@ -50,6 +50,142 @@ export const NOTICE_THRESHOLDS = Object.freeze({
   newKeeperXp: 100,
 });
 
+/**
+ * When a change between a tank's last two tests is worth a word. Ammonia and
+ * nitrite have no threshold: any rise above zero is news.
+ */
+export const TREND_THRESHOLDS = Object.freeze({
+  nitrateRisePpm: 10,
+  nitrateHighPpm: 20,
+  nitrateDropPpm: 10,
+  phSwing: 0.5,
+  tempSwingC: 2,
+  // A change between two tests from last spring is not news.
+  freshDays: 14,
+});
+
+/**
+ * The water readings a trend can be about. Logs store fixed-point values
+ * (×100 nitrogen, ×10 pH and temperature); `alt` is the older plain field,
+ * stored in the same ×10 units (see components/logbook/latestReading.js).
+ */
+const TREND_PARAMS = Object.freeze([
+  { key: "ammonia", field: "ammoniaPpmX100", div: 100 },
+  { key: "nitrite", field: "nitritePpmX100", div: 100 },
+  { key: "nitrate", field: "nitratePpmX100", div: 100 },
+  { key: "ph", field: "phX10", alt: "ph", div: 10, positive: true },
+  { key: "temp", field: "tempCelsiusX10", alt: "temp", div: 10, positive: true },
+]);
+
+/**
+ * The last two logged values of each water parameter, per tank. Pure.
+ *
+ * A parameter needs two real readings to have a trend. A missing value is
+ * skipped, never read as zero, so "not tested" can never look like "0 ppm".
+ *
+ * @param {object[]} tanks Dexie tank rows
+ * @returns {Array<{tankId: any, tankName: string, param: string, last: number, prev: number, at: number}>}
+ *   `at` is the newer log's timestamp in seconds.
+ */
+export function readingTrends(tanks = []) {
+  const out = [];
+  for (const tank of Array.isArray(tanks) ? tanks : []) {
+    if (!tank || tank.active === false) continue;
+    const logs = [...(Array.isArray(tank.logs) ? tank.logs : [])]
+      .sort((a, b) => Number(b?.timestamp || 0) - Number(a?.timestamp || 0));
+    for (const p of TREND_PARAMS) {
+      const vals = [];
+      for (const log of logs) {
+        const raw = log?.[p.field] ?? (p.alt ? log?.[p.alt] : undefined);
+        if (raw === null || raw === undefined || raw === "") continue;
+        const n = Number(raw);
+        if (!Number.isFinite(n) || n < 0 || (p.positive && n === 0)) continue;
+        vals.push({ value: n / p.div, at: Number(log.timestamp) || 0 });
+        if (vals.length === 2) break;
+      }
+      if (vals.length === 2) {
+        out.push({
+          tankId: tank.id,
+          tankName: String(tank.name || "your tank").slice(0, 60),
+          param: p.key,
+          last: vals[0].value,
+          prev: vals[1].value,
+          at: vals[0].at,
+        });
+      }
+    }
+  }
+  return out;
+}
+
+const ppm = (v) => (Number.isInteger(v) ? String(v) : v.toFixed(2).replace(/0+$/, "").replace(/\.$/, ""));
+const oneDp = (v) => (Math.round(v * 10) / 10).toFixed(1);
+const cToF = (c) => Math.round((c * 9) / 5 + 32);
+
+/** Notices from the change between a tank's last two tests. */
+function trendNotices(trends, now) {
+  const out = [];
+  for (const t of Array.isArray(trends) ? trends : []) {
+    if (!t || !Number.isFinite(t.last) || !Number.isFinite(t.prev)) continue;
+    if (!Number.isFinite(t.at) || now - t.at * 1000 > TREND_THRESHOLDS.freshDays * MS_PER_DAY) continue;
+    const where = t.tankName || "your tank";
+    const id = `trend-${t.param}-${t.tankId}`;
+
+    if ((t.param === "ammonia" || t.param === "nitrite") && t.last > 0 && t.last > t.prev) {
+      const Label = t.param === "ammonia" ? "Ammonia" : "Nitrite";
+      out.push({
+        id,
+        priority: 5,
+        icon: "⚠️",
+        mood: "concerned",
+        casual: `${Label} in ${where} read ${ppm(t.last)} ppm on the last test, up from ${ppm(t.prev)}.`,
+        pro: `${Label.toUpperCase()} ${where}: ${ppm(t.prev)} → ${ppm(t.last)} ppm.`,
+        seedPrompt: `${Label} in my tank "${where}" read ${ppm(t.last)} ppm on my last test, up from ${ppm(t.prev)}. What could cause that, and what should I check first?`,
+      });
+    } else if (t.param === "nitrate" && t.last - t.prev >= TREND_THRESHOLDS.nitrateRisePpm && t.last >= TREND_THRESHOLDS.nitrateHighPpm) {
+      out.push({
+        id,
+        priority: 4,
+        icon: "📈",
+        mood: "alert",
+        casual: `Nitrate in ${where} went from ${ppm(t.prev)} to ${ppm(t.last)} ppm between the last two tests.`,
+        pro: `NITRATE ${where}: ${ppm(t.prev)} → ${ppm(t.last)} ppm.`,
+        seedPrompt: `Nitrate in my tank "${where}" went from ${ppm(t.prev)} to ${ppm(t.last)} ppm between my last two tests. Why might it be climbing?`,
+      });
+    } else if (t.param === "nitrate" && t.prev - t.last >= TREND_THRESHOLDS.nitrateDropPpm) {
+      out.push({
+        id,
+        priority: 1,
+        icon: "📉",
+        mood: "happy",
+        casual: `Nitrate in ${where} dropped from ${ppm(t.prev)} to ${ppm(t.last)} ppm since the test before.`,
+        pro: `NITRATE ${where}: ${ppm(t.prev)} → ${ppm(t.last)} ppm.`,
+      });
+    } else if (t.param === "ph" && Math.abs(t.last - t.prev) >= TREND_THRESHOLDS.phSwing) {
+      out.push({
+        id,
+        priority: 3,
+        icon: "🧪",
+        mood: "alert",
+        casual: `pH in ${where} moved from ${oneDp(t.prev)} to ${oneDp(t.last)} between the last two tests.`,
+        pro: `PH ${where}: ${oneDp(t.prev)} → ${oneDp(t.last)}.`,
+        seedPrompt: `pH in my tank "${where}" moved from ${oneDp(t.prev)} to ${oneDp(t.last)} between my last two tests. Is a change that size a problem, and what can cause it?`,
+      });
+    } else if (t.param === "temp" && Math.abs(t.last - t.prev) >= TREND_THRESHOLDS.tempSwingC) {
+      out.push({
+        id,
+        priority: 3,
+        icon: "🌡️",
+        mood: "alert",
+        casual: `Temperature in ${where} moved from ${cToF(t.prev)}°F (${oneDp(t.prev)}°C) to ${cToF(t.last)}°F (${oneDp(t.last)}°C) between the last two readings.`,
+        pro: `TEMP ${where}: ${oneDp(t.prev)} → ${oneDp(t.last)}°C.`,
+        seedPrompt: `The temperature in my tank "${where}" moved from ${oneDp(t.prev)}°C to ${oneDp(t.last)}°C between my last two readings. What could cause that?`,
+      });
+    }
+  }
+  return out;
+}
+
 /** Advice-shaped phrasing. If a notice matches any of these, it is not a fact. */
 const ADVICE_PATTERNS = [
   /\byou should\b/i,
@@ -96,17 +232,20 @@ const wholeHoursSince = (iso, now) => {
  * @param {{
  *   userState?: {totalXp?: number, streakDays?: number},
  *   tankData?: {lastWaterChange?: string|null, lastFeeding?: string|null,
- *               lastParams?: string|null, tankCount?: number},
+ *               lastParams?: string|null, tankCount?: number,
+ *               trends?: ReturnType<typeof readingTrends>},
  *   now?: number,
  * }} input
- * @returns {Array<{id: string, priority: number, icon: string,
+ * @returns {Array<{id: string, priority: number, icon: string, mood: string,
  *                  casual: string, pro: string, seedPrompt?: string}>}
+ *   `mood` is Echo's face when she says it (echoBehaviour's mood list).
  */
 export function buildNotices({ userState, tankData, now = Date.now() } = {}) {
   const { totalXp = 0, streakDays = 0 } = userState || {};
-  const { lastWaterChange, lastFeeding, lastParams, tankCount = 0 } = tankData || {};
+  const { lastWaterChange, lastFeeding, lastParams, tankCount = 0, trends = [] } = tankData || {};
 
-  const notices = [];
+  // ─── Changes between the last two tests (readingTrends) ─────────────────
+  const notices = trendNotices(trends, now);
 
   // ─── Care: elapsed time since the keeper's own logs ─────────────────────
   const waterDays = wholeDaysSince(lastWaterChange, now);
@@ -115,6 +254,7 @@ export function buildNotices({ userState, tankData, now = Date.now() } = {}) {
       id: "water-change",
       priority: waterDays >= 7 ? 4 : 3,
       icon: "💧",
+      mood: "alert",
       casual: `It's been ${waterDays} days since a water change was logged.`,
       pro: `WATER CHANGE — last logged ${waterDays}d ago.`,
       seedPrompt: `My last logged water change was ${waterDays} days ago. What should I be looking at?`,
@@ -127,6 +267,7 @@ export function buildNotices({ userState, tankData, now = Date.now() } = {}) {
       id: "feeding",
       priority: 2,
       icon: "🍽️",
+      mood: "alert",
       casual: `No feeding logged in the last ${feedHours} hours.`,
       pro: `FEED — none logged in ${feedHours}h.`,
       seedPrompt: `I haven't logged a feeding in ${feedHours} hours. How often should my fish be fed?`,
@@ -139,6 +280,7 @@ export function buildNotices({ userState, tankData, now = Date.now() } = {}) {
       id: "params",
       priority: 2,
       icon: "🧪",
+      mood: "alert",
       casual: `Water parameters were last tested ${paramDays} days ago.`,
       pro: `PARAMS — last test ${paramDays}d ago.`,
       seedPrompt: `My last water test was ${paramDays} days ago. Which parameters matter most for my tank?`,
@@ -155,6 +297,7 @@ export function buildNotices({ userState, tankData, now = Date.now() } = {}) {
         id: "near-tier",
         priority: 1,
         icon: "🌟",
+        mood: "happy",
         casual: `${remaining} points from ${nextTier?.hobbyistLabel || "the next tier"}.`,
         pro: `${remaining} XP to ${nextTier?.breederLabel || "next tier"}.`,
       });
@@ -167,6 +310,7 @@ export function buildNotices({ userState, tankData, now = Date.now() } = {}) {
       id: "streak-almost-week",
       priority: 3,
       icon: "🔥",
+      mood: "happy",
       casual: "Six days logged in a row. One more makes a week.",
       pro: "STREAK 6d — one from a full week.",
     });
@@ -175,6 +319,7 @@ export function buildNotices({ userState, tankData, now = Date.now() } = {}) {
       id: "streak-week",
       priority: 1,
       icon: "✨",
+      mood: "excited",
       casual: `${streakDays} days of logs in a row.`,
       pro: `STREAK ${streakDays}d.`,
     });
@@ -183,6 +328,7 @@ export function buildNotices({ userState, tankData, now = Date.now() } = {}) {
       id: "streak-building",
       priority: 0,
       icon: "🔥",
+      mood: "happy",
       casual: `${streakDays} days logged in a row.`,
       pro: `STREAK ${streakDays}d.`,
     });
@@ -196,6 +342,7 @@ export function buildNotices({ userState, tankData, now = Date.now() } = {}) {
       id: "no-logs-yet",
       priority: 1,
       icon: "💡",
+      mood: "calm",
       casual: "No care logs on record for your tanks yet.",
       pro: "NO CARE LOGS ON RECORD.",
       seedPrompt: "I'm just getting started. What's worth logging for a new tank?",

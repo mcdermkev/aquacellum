@@ -9,7 +9,7 @@ import { FacilityTreeView } from "./FacilityTreeView";
 import { getProvider } from "../utils/smartAccount";
 import { LoadingSkeleton } from "./LoadingSkeleton";
 import { db } from "../db";
-import { PoseidonChatConsole } from "./PoseidonChatConsole";
+import { openEchoChat } from "../services/echoChatBus";
 import { mapContractError } from "../utils/errorHandler";
 import { TankQRCode } from "./TankQRCode";
 import { useUserTanks } from "../hooks/useUserTanks";
@@ -318,8 +318,6 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
       commonName: onChain.commonName,
     });
   }, [addFishSpeciesId, addFishCatalog, fishbaseData]);
-  const [poseidonChatOpen, setPoseidonChatOpen] = useState(false);
-  const [poseidonSeed, setPoseidonSeed] = useState(null); // grounded question seeded from a contextual "Ask Poseidon" tip
   const [activeTankSchedules, setActiveTankSchedules] = useState([]); // schedules for the open tank, so the hero ambient reflects overdue maintenance
   // Photos for the open tank. Specimen photos come from resolveSpecimenPhoto, the
   // single precedence order (hosted → Dexie → legacy localStorage → none). Writes go
@@ -822,11 +820,11 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
     setLabelDialogTank(tank);
   };
 
-  // Open the Poseidon console pre-seeded with a grounded, contextual question.
-  // The console still routes any proposed write through its confirm-before-write bar.
+  // Open Echo's chat about this tank, optionally with a grounded question already
+  // asked. It is the one app-wide chat (EchoChat); any write it proposes still
+  // waits in its confirm-before-write bar.
   const askPoseidon = (prompt) => {
-    setPoseidonSeed(prompt || null);
-    setPoseidonChatOpen(true);
+    openEchoChat({ seedPrompt: prompt || null, tankId: activeTank?.id ?? null });
   };
 
   const logFeedClick = async () => {
@@ -2547,15 +2545,6 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                   </div>
                 )}
               </div>
-              {poseidonChatOpen && (
-                <PoseidonChatConsole
-                  tankId={activeTank.id}
-                  casualModeActive={casualModeActive}
-                  walletAccount={walletAccount}
-                  seedPrompt={poseidonSeed}
-                  onClose={() => { setPoseidonChatOpen(false); setPoseidonSeed(null); }}
-                />
-              )}
             </div>
 
             {/* Inline Quick-Tap Action Sheet Toolbar */}
@@ -2713,11 +2702,11 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                           <div className="console-grid">
                             <button
                               type="button"
-                              onClick={() => { setPoseidonChatOpen(!poseidonChatOpen); setQuickActionsOpen(false); }}
+                              onClick={() => { askPoseidon(null); setQuickActionsOpen(false); }}
                               className="console-tile tile-system"
                             >
                               <span className="console-tile-icon">💬</span>
-                              <span className="console-tile-label">Ask Poseidon</span>
+                              <span className="console-tile-label">Ask Echo</span>
                               <span className="console-tile-desc">Get advice</span>
                             </button>
                             <button
@@ -2898,7 +2887,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                           <div className="console-grid">
                             <button
                               type="button"
-                              onClick={() => { setPoseidonChatOpen(!poseidonChatOpen); setQuickActionsOpen(false); }}
+                              onClick={() => { askPoseidon(null); setQuickActionsOpen(false); }}
                               className="console-tile tile-system console-span-2"
                             >
                               <span className="console-tile-icon">
@@ -2908,7 +2897,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                                 </svg>
                               </span>
                               <span className="console-tile-text">
-                                <span className="console-tile-label">Ask Poseidon AI</span>
+                                <span className="console-tile-label">Ask Echo</span>
                                 <span className="console-tile-desc">Diagnose anomalies & check parameters</span>
                               </span>
                             </button>

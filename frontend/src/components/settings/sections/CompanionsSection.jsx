@@ -32,21 +32,24 @@ export function CompanionsSection({
       title={{ casual: "AI Companions", pro: "Intelligence Layer" }}
       description={{
         casual:
-          "Control whether Poseidon (your fish expert) and Echo (your companion) are active. You can turn either one off if you prefer a quieter experience.",
+          "Echo is your fish guide, powered by Poseidon. Choose whether she answers questions and whether she sits in the corner of the screen.",
         pro:
-          "Toggle the Poseidon intelligence layer and the Echo companion independently. Disabling Poseidon stops all API calls to the AI gateway. Disabling Echo hides the companion everywhere it appears — ambient presence, whispers, the dashboard card, and rare moments.",
+          "Echo, powered by Poseidon. The two switches are independent: one stops all AI gateway calls, the other hides her on screen.",
       }}
       casualModeActive={casualModeActive}
     >
+      {/* One character since 2026-09-30: Echo, powered by Poseidon. These two
+          switches are the two halves of her, the answers (Poseidon) and the
+          character on screen (Echo). The stored keys are unchanged. */}
       <AiCompanionToggle
-        name="Poseidon"
+        name="Echo's answers (Poseidon)"
         description={
           casualModeActive
-            ? "Freshwater fish expert & data assistant"
-            : "Taxonomic intelligence • Species RAG • Spawn narration"
+            ? "Chat, photo ID and answer cards"
+            : "AI gateway • species-grounded answers • photo ID"
         }
-        avatarSrc="/poseidon-avatar.jpg"
-        accentRgb="6, 182, 212"
+        avatarSrc="/echo/face.webp"
+        accentRgb="13, 148, 136"
         enabled={poseidonEnabled}
         onChange={setPoseidonEnabled}
         note={
@@ -56,25 +59,19 @@ export function CompanionsSection({
         }
       />
 
-      {/* Copy corrected with the Echo rework: she is no longer a gamification
-          engine or an "evolving" companion — the needs, moods, tiers and
-          per-wallet forms are gone. She is Poseidon's presence in the interface. */}
       <AiCompanionToggle
-        name="Echo"
-        description={casualModeActive ? "Your guide around the app" : "Companion presence • Poseidon's visual layer"}
-        avatarSrc="/echo-evolved.jpg"
-        accentRgb="139, 92, 246"
+        name="Echo on screen"
+        description={casualModeActive ? "She sits in the corner, notices things in your logs, and opens the chat when tapped" : "Corner presence • log notices"}
+        avatarSrc="/echo/face.webp"
+        accentRgb="3, 105, 161"
         enabled={echoEnabled}
         onChange={setEchoEnabled}
       />
 
       <div style={{ fontSize: "0.72rem", color: "var(--text-muted)", marginTop: "0.5rem", lineHeight: "1.4" }}>
-        {/* Both strings previously described progress, streaks, evolution and
-            rare-moment checks. None of those exist any more, so the copy said
-            things the app no longer does. */}
         {casualModeActive
-          ? "Both are enabled by default. Changes take effect immediately — no reload needed. Turning Echo off hides her; nothing is lost."
-          : "Preferences stored locally and applied without a reload. Disabling Poseidon halts all Edge Function calls. Disabling Echo suppresses companion rendering; she holds no per-account state."}
+          ? "Both are on by default and changes apply straight away. With Echo off screen, a small Ask Echo button opens the chat instead. Nothing is lost either way."
+          : "Stored locally, applied without a reload. Answers off halts all gateway calls. Off screen hides her and her notices; she holds no per-account state."}
       </div>
     </SettingsSection>
   );

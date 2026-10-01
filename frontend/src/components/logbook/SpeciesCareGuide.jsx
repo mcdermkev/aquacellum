@@ -70,7 +70,7 @@ export function SpeciesCareGuide({ tank, fishbaseData = [], contractSpecies = []
                 className="cg-ask"
                 onClick={() => onAskPoseidon(buildSpeciesCarePrompt(c.commonName, tank))}
               >
-                💬 Ask Poseidon about {c.commonName}
+                💬 Ask Echo about {c.commonName}
               </button>
             )}
           </div>

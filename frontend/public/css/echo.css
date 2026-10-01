@@ -1,52 +1,82 @@
 /**
  * echo.css — Echo's one stylesheet.
  *
- * Linked by BOTH app.html and database.html, the same way /css/shared.css is
- * shared across the static pages. Spec §8 says do not build a second renderer;
- * two copies of a stylesheet is the same failure wearing different clothes, so
- * there is one file and both consumers link it.
+ * Linked by app.html and the static pages alike, so there is one Echo. Anything
+ * derived from behaviour state (reaction scale, brightness, drift, settle time)
+ * is set inline by whichever mount is running, from `wrapperVisuals()` in the
+ * behaviour core. This file holds only what is static: position, the sprite
+ * stack, keyframes and the reduced-motion escape.
  *
- * WHAT IS NOT IN HERE. Anything derived from behaviour state — the reaction scale,
- * the brightness, the drift translate, the settle duration — is set inline by
- * whichever renderer is mounted, from `wrapperVisuals()` in the behaviour core.
- * A CSS class can only express one size, and rule 4 requires the response to be
- * proportional to the news. So this file holds only what is genuinely static:
- * position, keyframes, and the reduced-motion escape.
+ * 2026-09-30: Echo is the one character, powered by Poseidon. She is the button
+ * that opens the chat (she replaced the separate Poseidon button), and her face
+ * is one of seven painted poses in /echo/, crossfaded by class.
  */
 
 .echo-ambient {
   position: fixed;
+  /* Bottom-left: the corner the old Poseidon button used, now hers. Feedback
+     sits bottom-right. */
+  bottom: 1rem;
+  left: 1rem;
+  z-index: 950;
 
-  /* Bottom-LEFT deliberately. Poseidon's launcher is a draggable FAB on the
-     right and the mobile Quick Log FAB is also bottom-right, so the left corner
-     is the one place she cannot end up on top of a control. */
-  bottom: 1.25rem;
-  left: 1.25rem;
-
-  /* Above page content, below every interactive overlay — the species popup, the
-     Poseidon console, modals, toasts. She is never the thing on top. */
-  z-index: 40;
-
-  /* Spec §3: she must never intercept a click she does not own or take a tab
-     stop. Enforced here AND on the art below, because this is the rule that
-     turns a companion into a bug report. */
+  /* The wrapper drifts and scales; it never takes clicks. Only the button
+     inside it does, and only over her own body. */
   pointer-events: none;
 
-  /* Rule 5 — she eases, never snaps. `transition-duration` arrives inline from
-     TIMING.settleMs so the core owns the number. */
   transition-property: transform, opacity, scale, filter;
   transition-timing-function: cubic-bezier(0.34, 1.4, 0.64, 1);
   will-change: transform, opacity, scale, filter;
 }
 
-/* Examining: she holds and sharpens rather than drifting off mid-look. */
-.echo-ambient--examining {
-  filter: brightness(1.06) saturate(1.08);
+/* On a stage (a page element marked data-echo-stage) she sits in the flow,
+   bigger, and does not wander. The corner offsets below must not apply. */
+.echo-ambient.echo-ambient--stage {
+  position: relative;
+  inset: auto;
+  z-index: auto;
+  display: inline-block;
 }
 
-/* Speaking: a touch brighter, as if leaning into the delivery. */
-.echo-ambient--speaking {
-  filter: brightness(1.04);
+/* The tap target. Big enough to hit (her art is ~57x74 at the default size),
+   no chrome of its own: the fish is the button. */
+.echo-ambient__button {
+  pointer-events: auto;
+  display: block;
+  padding: 4px;
+  margin: 0;
+  border: 0;
+  border-radius: 20px;
+  background: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+.echo-ambient__button:focus-visible {
+  outline: 3px solid rgba(13, 148, 136, 0.55);
+  outline-offset: 2px;
+}
+.echo-ambient__button:hover .echo-art,
+.echo-ambient__button:focus-visible .echo-art {
+  filter: drop-shadow(0 6px 14px rgba(15, 118, 110, 0.35));
+}
+
+/* A small "tap me" label the first few times, and while a chat is open. */
+.echo-ambient__label {
+  position: absolute;
+  left: 100%;
+  bottom: 14px;
+  margin-left: 2px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #fff;
+  border: 1px solid #d7e5e9;
+  box-shadow: 0 4px 14px rgba(11, 37, 48, 0.12);
+  color: #0f766e;
+  font: 700 12px/1.2 Inter, system-ui, sans-serif;
+  white-space: nowrap;
+  pointer-events: none;
+  animation: echo-label-in 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .echo-renderer {
@@ -55,31 +85,33 @@
   user-select: none;
 }
 
-/* The element carrying the facing flip and the gaze tilt. Was an <img>; it is now
-   a plain div with the vector injected into it, so `object-fit` is gone. */
+/* Carries the facing flip and gaze tilt (inline, from `artTransform()`). */
 .echo-art {
-  display: block;
+  position: relative;
   width: 100%;
   height: 100%;
-  /* The facing flip and gaze tilt are transforms set inline from
-     `artTransform()`; this eases them so a turn is a turn and not a teleport. */
-  transition: transform 900ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 900ms cubic-bezier(0.4, 0, 0.2, 1), filter 200ms ease;
   will-change: transform;
 }
 
-.echo-svg {
-  display: block;
+/* Seven faces stacked; the current one is opaque. */
+.echo-face {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
+  object-fit: contain;
+  opacity: 0;
+  transition: opacity 160ms ease;
+  -webkit-user-drag: none;
+}
+.echo-face--on {
+  opacity: 1;
 }
 
 /**
- * Idle motion.
- *
- * Two keyframes at non-multiple durations rather than one combined loop. A single
- * cycle re-synchronises on every repeat, which is exactly the mechanical tell
- * rule 2 is about; 4.3s against 7.1s means the bob and the sway drift in and out
- * of phase instead of marching together.
+ * Idle motion. Two keyframes at non-multiple durations so the bob and the sway
+ * drift in and out of phase instead of marching together (rule 2).
  */
 .echo-art--animated {
   animation:
@@ -88,257 +120,62 @@
 }
 
 @keyframes echo-bob {
-  0%,
-  100% {
-    translate: 0 0;
-  }
-  50% {
-    translate: 0 -6%;
-  }
+  0%, 100% { translate: 0 0; }
+  50% { translate: 0 -6%; }
 }
 
 @keyframes echo-sway {
-  0%,
-  100% {
-    rotate: -1.2deg;
-  }
-  50% {
-    rotate: 1.2deg;
-  }
+  0%, 100% { rotate: -2deg; }
+  50% { rotate: 2deg; }
 }
 
-/* ─── Expressions ──────────────────────────────────────────────────────────────
+/* Speaking and thinking get a quicker, smaller bob: she is busy. */
+.echo-ambient--speaking .echo-art--animated {
+  animation-duration: 1.6s, 5.2s;
+}
+.echo-ambient--examining .echo-art--animated {
+  animation-duration: 2.4s, 9s;
+}
+/* A reaction is a hop. */
+.echo-ambient--reacting .echo-art--animated {
+  animation: echo-hop 0.7s cubic-bezier(0.3, 1.6, 0.5, 1) 1, echo-sway 7.1s ease-in-out infinite;
+}
+
+@keyframes echo-hop {
+  0% { translate: 0 0; }
+  40% { translate: 0 -16%; }
+  100% { translate: 0 0; }
+}
+
+@keyframes echo-label-in {
+  0% { opacity: 0; transform: translateX(-6px); }
+  100% { opacity: 1; transform: none; }
+}
+
+/* ─── Whispers ────────────────────────────────────────────────────────────────
  *
- * Her face, one rule set per behaviour state.
- *
- * This is why the art is inline SVG and not an <img>: the parts are reachable, so
- * six states cost six rules instead of six image files. Neither mount is involved
- * — both already put `echo-ambient--{state}` on the wrapper, so adding a state to
- * the machine later needs a rule here and nothing else.
- *
- * TWO GROUPS, AND THEY MUST NOT OVERLAP. Parts with a running keyframe animation
- * (tail, pectoral fin) can only have their SPEED changed per state, because a
- * running animation beats a declared `transform` and the posture would be silently
- * ignored. Everything postured per state — eye, lid, mouth, dorsal fin, aura — has
- * no animation on it. Keep it that way, or expressions will half-apply.
- */
-
-.echo-svg .echo-eye,
-.echo-svg .echo-eye-iris,
-.echo-svg .echo-eye-pupil,
-.echo-svg .echo-eye-glint,
-.echo-svg .echo-eye-lid,
-.echo-svg .echo-mouth,
-.echo-svg .echo-fin-dorsal,
-.echo-svg .echo-fin-pectoral,
-.echo-svg .echo-tail,
-.echo-svg .echo-aura,
-.echo-svg .echo-spots {
-  /* Without fill-box, transform origins resolve against the whole SVG viewport and
-     every rotation swings from the wrong pivot. */
-  transform-box: fill-box;
-  transform-origin: center;
-  transition:
-    transform 380ms cubic-bezier(0.34, 1.4, 0.64, 1),
-    opacity 380ms ease;
-}
-
-/* Pivots where a part attaches to the body, so fins hinge instead of sliding. */
-.echo-svg .echo-tail {
-  transform-origin: right center;
-}
-.echo-svg .echo-fin-dorsal {
-  transform-origin: bottom center;
-}
-.echo-svg .echo-fin-pectoral {
-  transform-origin: top center;
-}
-/**
- * The lid is a skin-coloured disc the size of the eye, collapsed to nothing and
- * anchored at the brow, so scaling it down the Y axis slides it over the eye the
- * way a real lid closes.
- *
- * It was a dark crescent path first, which rendered as a floating navy dome — it
- * read as headwear, not as an eye shutting. Two things fixed it: matching her skin
- * rather than contrasting with it, and never closing quite all the way, so the
- * sliver of dark eye left underneath becomes the lash line that sells it.
- */
-.echo-svg .echo-eye-lid {
-  transform-origin: top center;
-  transform: scaleY(0);
-}
-
-/* Continuous motion. Speed is the only thing states change here. */
-.echo-svg .echo-tail {
-  animation: echo-tail-sway 2.6s ease-in-out infinite;
-}
-.echo-svg .echo-fin-pectoral {
-  animation: echo-fin-flutter 1.9s ease-in-out infinite;
-}
-
-@keyframes echo-tail-sway {
-  0%,
-  100% {
-    transform: rotate(-7deg);
-  }
-  50% {
-    transform: rotate(7deg);
-  }
-}
-
-@keyframes echo-fin-flutter {
-  0%,
-  100% {
-    transform: rotate(-4deg);
-  }
-  50% {
-    transform: rotate(6deg);
-  }
-}
-
-/* ATTENDING — locked on. Eye opens, pupil slides toward what she is looking at,
-   dorsal fin lifts. She is already turned to face the target by `artTransform()`. */
-.echo-ambient--attending .echo-eye {
-  transform: scale(1.1);
-}
-.echo-ambient--attending .echo-eye-iris {
-  transform: translateX(0.8px);
-}
-.echo-ambient--attending .echo-eye-pupil {
-  transform: translateX(1.5px);
-}
-.echo-ambient--attending .echo-fin-dorsal {
-  transform: rotate(-9deg);
-}
-
-/* SPEAKING — Poseidon is talking, so this is her LISTENING face, not a talking one.
-   He is the brain and has the words; she carries the reaction. Tail picks up. */
-.echo-ambient--speaking .echo-eye-pupil {
-  transform: translateX(0.8px);
-}
-.echo-ambient--speaking .echo-mouth {
-  /* The mouth is a stroked arc, so deepening it on the Y axis opens it. */
-  opacity: 0.85;
-  transform: translateY(0.8px) scale(1.05, 2.4);
-}
-.echo-ambient--speaking .echo-tail {
-  animation-duration: 1.5s;
-}
-.echo-ambient--speaking .echo-fin-pectoral {
-  animation-duration: 1.2s;
-}
-
-/* EXAMINING — vision is running. A squint: lid down a little, pupil dilated,
-   glint sharp, tail almost still. She is concentrating, not performing. */
-.echo-ambient--examining .echo-eye-lid {
-  transform: scaleY(0.4);
-}
-.echo-ambient--examining .echo-eye-pupil {
-  transform: scale(1.28);
-}
-.echo-ambient--examining .echo-eye-glint {
-  opacity: 1;
-}
-.echo-ambient--examining .echo-mouth {
-  opacity: 0.3;
-  transform: scaleX(0.85);
-}
-.echo-ambient--examining .echo-tail {
-  animation-duration: 3.8s;
-}
-
-/* REACTING — the brief startle. Eye wide, pupil contracted, fins flared, spots lit.
-   Duration and scale are the core's job (rule 4); this is only the face. */
-.echo-ambient--reacting .echo-eye {
-  transform: scale(1.18);
-}
-.echo-ambient--reacting .echo-eye-pupil {
-  transform: scale(0.68);
-}
-.echo-ambient--reacting .echo-eye-glint {
-  opacity: 1;
-  transform: scale(1.3);
-}
-.echo-ambient--reacting .echo-mouth {
-  opacity: 0.9;
-  transform: translateY(1.2px) scale(1.1, 2.8);
-}
-.echo-ambient--reacting .echo-fin-dorsal {
-  transform: rotate(-15deg) scale(1.07);
-}
-.echo-ambient--reacting .echo-aura {
-  transform: scale(1.1);
-}
-.echo-ambient--reacting .echo-spots {
-  opacity: 1;
-}
-.echo-ambient--reacting .echo-tail {
-  animation-duration: 1s;
-}
-
-/* RESTING — two minutes idle. Asleep: lid shut, glint gone, fins drooped, aura and
-   markings dimmed, tail barely moving. The one state that should read as absence. */
-.echo-ambient--resting .echo-eye-lid {
-  /* Not 1. The last sliver of dark eye below the lid is the closed-eye line. */
-  transform: scaleY(0.92);
-}
-.echo-ambient--resting .echo-eye-glint {
-  opacity: 0;
-}
-.echo-ambient--resting .echo-mouth {
-  opacity: 0.3;
-  transform: scaleX(0.9);
-}
-.echo-ambient--resting .echo-fin-dorsal {
-  transform: rotate(7deg) scaleY(0.9);
-}
-.echo-ambient--resting .echo-aura {
-  opacity: 0.6;
-  transform: scale(0.94);
-}
-.echo-ambient--resting .echo-spots {
-  opacity: 0.5;
-}
-.echo-ambient--resting .echo-tail {
-  animation-duration: 6.2s;
-}
-
-/* ─── Whispers ─────────────────────────────────────────────────────────────────
- *
- * The bubble Echo speaks from — one observation drawn from the keeper's own logs.
- * Content and wording come from `services/echoNotices.js`; this is only where it
- * sits and how it arrives.
- *
- * It lives HERE, beside `.echo-ambient`, rather than as inline styles in the
- * component, because the two have to agree about a moving target: she is 56 px at
- * `bottom: 1.25rem` on desktop and lifts to `5.5rem` on mobile to clear the bottom
- * nav. A bubble positioned independently was going to end up on top of her at one
- * breakpoint or the other. Both offsets are now in one file, three rules apart.
+ * The bubble Echo speaks from: one fact from the keeper's own logs. Content and
+ * wording come from services/echoNotices.js; this is only where it sits.
+ * Kept beside .echo-ambient because the two have to agree on a moving target.
  */
 .echo-whisper {
   position: fixed;
-
-  /* Clears the 56 px fish plus her 1.25rem inset, so the bubble sits above her
-     rather than over her. */
-  bottom: 6rem;
-  left: 1.25rem;
-  max-width: min(20rem, calc(100vw - 2.5rem));
-
-  /* Above her, below every interactive overlay — same ceiling she has, since a
-     notice must never cover the console it offers to open. */
-  z-index: 41;
+  bottom: 6.75rem;
+  left: 1rem;
+  max-width: min(20rem, calc(100vw - 2rem));
+  z-index: 951;
 
   display: flex;
   align-items: flex-start;
   gap: 0.5rem;
-  padding: 0.6rem 0.5rem 0.6rem 0.75rem;
+  padding: 0.7rem 0.55rem 0.7rem 0.85rem;
 
   /* Tail on the bottom-left corner, pointing back at her. */
-  border-radius: 12px 12px 12px 4px;
-  background: rgba(10, 15, 30, 0.92);
-  border: 1px solid rgba(94, 234, 212, 0.18);
-  backdrop-filter: blur(12px);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  border-radius: 16px 16px 16px 4px;
+  background: #fff;
+  border: 1px solid #d7e5e9;
+  box-shadow: 0 10px 28px rgba(11, 37, 48, 0.16);
+  color: #0b2530;
 
   animation: echo-whisper-in 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   transition: opacity 300ms ease, transform 300ms ease;
@@ -349,40 +186,31 @@
   transform: translateY(8px) scale(0.96);
 }
 
-.echo-whisper--pro {
-  border-radius: 0;
-  border-color: rgba(167, 139, 250, 0.25);
-  font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
-}
-
 .echo-whisper__icon {
   flex-shrink: 0;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   line-height: 1.4;
 }
 
 .echo-whisper__body {
   display: flex;
   flex-direction: column;
-  gap: 0.15rem;
+  gap: 0.2rem;
   min-width: 0;
 }
 
 .echo-whisper__text {
-  font-size: 0.74rem;
+  font-size: 0.84rem;
   line-height: 1.45;
-  color: #fff;
+  color: #0b2530;
 }
 
 .echo-whisper__hint {
-  font-size: 0.58rem;
-  letter-spacing: 0.04em;
-  color: #5eead4;
-  opacity: 0.75;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #0f766e;
 }
 
-/* The actionable form. A button only when there is genuinely something to open —
-   a control that merely dismisses itself misrepresents what it does. */
 .echo-whisper__action,
 .echo-whisper__static {
   display: flex;
@@ -404,104 +232,78 @@
 
 .echo-whisper__action:hover .echo-whisper__hint,
 .echo-whisper__action:focus-visible .echo-whisper__hint {
-  opacity: 1;
   text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .echo-whisper__close {
   flex-shrink: 0;
-  width: 1.25rem;
-  height: 1.25rem;
+  width: 28px;
+  height: 28px;
   padding: 0;
   border: none;
-  border-radius: 4px;
+  border-radius: 8px;
   background: none;
-  color: rgba(255, 255, 255, 0.5);
-  font-size: 0.95rem;
+  color: #5b7482;
+  font-size: 1.05rem;
   line-height: 1;
   cursor: pointer;
 }
 
 .echo-whisper__close:hover,
 .echo-whisper__close:focus-visible {
-  color: #fff;
-  background: rgba(255, 255, 255, 0.08);
+  color: #0b2530;
+  background: #f1f7f8;
 }
 
 @keyframes echo-whisper-in {
-  0% {
-    opacity: 0;
-    transform: translateY(16px) scale(0.9);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+  0% { opacity: 0; transform: translateY(16px) scale(0.9); }
+  100% { opacity: 1; transform: none; }
 }
 
-/* Below the mobile breakpoint the bottom-left corner is contested by the casual
-   bottom nav, so she lifts clear of it. */
+/* Phones: lift clear of the page bottom and the casual bottom nav. */
 @media (max-width: 768px) {
   .echo-ambient {
-    bottom: 5.5rem;
-    left: 0.75rem;
+    bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+    left: 0.5rem;
   }
-  /* Tracks her up. Kept adjacent to the rule above on purpose — these two numbers
-     are one decision, and separating them is how the bubble ends up over the fish. */
   .echo-whisper {
-    bottom: 10.25rem;
+    bottom: calc(6rem + env(safe-area-inset-bottom, 0px));
     left: 0.75rem;
   }
-  /* With the casual bottom nav, the Poseidon button lifts to 90px (48px tall),
-     which would sit on her at 5.5rem. She goes above it, bubble with her. */
   body:has(.casual-bottom-nav) .echo-ambient {
-    bottom: calc(150px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(76px + env(safe-area-inset-bottom, 0px));
   }
   body:has(.casual-bottom-nav) .echo-whisper {
-    bottom: calc(226px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(160px + env(safe-area-inset-bottom, 0px));
+  }
+  .echo-ambient__label {
+    display: none;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .echo-ambient {
-    /* Drift and scale go; the brightness change survives because it conveys the
-       reaction without motion. */
     transition-property: opacity, filter;
     transform: none !important;
     scale: 1 !important;
   }
-  .echo-art--animated {
+  .echo-art--animated,
+  .echo-ambient--reacting .echo-art--animated {
     animation: none;
   }
   .echo-art {
     transition: none;
   }
-
-  /* The looping tail and fin motion goes. The EXPRESSIONS stay — a closed eye or a
-     dilated pupil is a still pose, not motion, and it is how a user who has asked
-     for less movement can still tell resting from reacting. They just snap into
-     place instead of easing. */
-  .echo-svg .echo-tail,
-  .echo-svg .echo-fin-pectoral {
-    animation: none;
-  }
-  .echo-svg .echo-eye,
-  .echo-svg .echo-eye-iris,
-  .echo-svg .echo-eye-pupil,
-  .echo-svg .echo-eye-glint,
-  .echo-svg .echo-eye-lid,
-  .echo-svg .echo-mouth,
-  .echo-svg .echo-fin-dorsal,
-  .echo-svg .echo-fin-pectoral,
-  .echo-svg .echo-tail,
-  .echo-svg .echo-aura,
-  .echo-svg .echo-spots {
+  /* Faces still change: an expression is a still pose, not motion. */
+  .echo-face {
     transition: none;
   }
-
-  /* The bubble still appears and still leaves; it just does not slide in. */
-  .echo-whisper {
+  .echo-whisper,
+  .echo-ambient__label {
     animation: none;
+  }
+  .echo-whisper {
     transition: opacity 300ms ease;
   }
   .echo-whisper--leaving {

@@ -23,7 +23,7 @@
     { href: '/app/auctions', label: 'Auctions' },
     { href: '/app/reef', label: 'The Reef' },
     { href: '/clubs', label: 'Clubs' },
-    { href: '/poseidon.html', label: 'Poseidon AI' },
+    { href: '/poseidon.html', label: 'Ask Echo' },
   ];
 
   const SECONDARY_LINKS = [

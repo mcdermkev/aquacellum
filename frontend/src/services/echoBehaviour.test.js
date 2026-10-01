@@ -10,7 +10,7 @@
  * loads. Echo is a character; one who behaves differently on the public page than
  * in the app is two characters, and this project has already shipped five.
  */
-import { readFileSync } from "node:fs";
+import { readFileSync, existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, it, expect } from "vitest";
 import {
@@ -27,7 +27,12 @@ import {
   reactionIntensity,
   gazeFromOffset,
   describe as describeEcho,
-  ECHO_SVG,
+  ECHO_ART,
+  ECHO_EXPRESSION,
+  ECHO_FACE,
+  ECHO_ASPECT,
+  expressionFor,
+  normalizeMood,
   artTransform,
   wrapperVisuals,
   nextGlanceDelay,
@@ -377,59 +382,64 @@ describe("appearance is decided once, for both renderers", () => {
   // so the enforceable version is that NEITHER renderer decides anything: both
   // apply these two functions verbatim. If appearance logic reappears in a
   // component, the two surfaces can drift into two characters again.
-  it("holds one piece of art for every surface", () => {
-    // A single well-formed SVG, not a URL to a picture, so both mounts inject the
-    // same bytes and nobody can point one surface at a different file.
-    expect(ECHO_SVG.startsWith('<svg class="echo-svg"')).toBe(true);
-    expect(ECHO_SVG.endsWith("</svg>")).toBe(true);
-    expect(ECHO_SVG).not.toContain("<script");
-    // No leftover of the placeholder PNG era.
-    expect(ECHO_SVG).not.toContain("echo-stages");
-  });
-
-  it("is well-formed, because a stray tag renders as nothing at all", () => {
-    // She is injected as raw markup, so a hand edit that drops a closing tag fails
-    // silently — an empty corner, no console error, nothing to grep. Tests run in
-    // the node environment here, so there is no DOMParser; balancing the tags is
-    // the cheap check that catches the realistic mistake.
-    const stack = [];
-    for (const [, closing, name, , selfClosing] of ECHO_SVG.matchAll(
-      /<(\/?)([a-zA-Z][\w-]*)([^>]*?)(\/?)>/g,
-    )) {
-      if (selfClosing) continue;
-      if (closing) expect(stack.pop(), `unbalanced </${name}>`).toBe(name);
-      else stack.push(name);
+  it("holds one set of faces for every surface, and every file exists", () => {
+    // Seven painted poses (2026-09-30), one per expression, all in public/echo/.
+    // Both mounts read the paths from here, so nobody can point one surface at
+    // a different picture.
+    expect(Object.keys(ECHO_ART).sort()).toEqual(Object.values(ECHO_EXPRESSION).sort());
+    for (const [face, path] of Object.entries(ECHO_ART)) {
+      expect(path, face).toBe(`/echo/${face}.webp`);
+      expect(existsSync(fileURLToPath(new URL(`../../public${path}`, import.meta.url))), `${path} missing`).toBe(true);
     }
-    expect(stack, "unclosed tags").toEqual([]);
+    expect(existsSync(fileURLToPath(new URL(`../../public${ECHO_FACE}`, import.meta.url)))).toBe(true);
+    // Portrait art; width follows from this.
+    expect(ECHO_ASPECT).toBeGreaterThan(0.5);
+    expect(ECHO_ASPECT).toBeLessThan(1);
   });
 
-  it("keeps the parts CSS needs to build an expression out of", () => {
-    // Expressions live in echo.css and hook onto these class names. Renaming a part
-    // silently turns six faces back into one, and nothing else would catch it.
-    for (const part of [
-      "echo-eye",
-      "echo-eye-iris",
-      "echo-eye-pupil",
-      "echo-eye-glint",
-      "echo-eye-lid",
-      "echo-mouth",
-      "echo-fin-dorsal",
-      "echo-fin-pectoral",
-      "echo-tail",
-      "echo-aura",
-      "echo-spots",
-    ]) {
-      expect(ECHO_SVG, `missing part: ${part}`).toContain(`class="${part}"`);
-    }
+  it("keeps every face the same size, so swapping expressions never moves her", () => {
+    // WebP VP8/VP8L/VP8X headers carry the canvas size; read it without a decoder.
+    const size = (file) => {
+      const b = readFileSync(fileURLToPath(new URL(`../../public${file}`, import.meta.url)));
+      const kind = b.toString("ascii", 12, 16);
+      if (kind === "VP8X") return [1 + b.readUIntLE(24, 3), 1 + b.readUIntLE(27, 3)];
+      if (kind === "VP8L") {
+        const bits = b.readUInt32LE(21);
+        return [1 + (bits & 0x3fff), 1 + ((bits >> 14) & 0x3fff)];
+      }
+      return [b.readUInt16LE(26) & 0x3fff, b.readUInt16LE(28) & 0x3fff];
+    };
+    const sizes = new Set(Object.values(ECHO_ART).map((p) => size(p).join("x")));
+    expect([...sizes]).toHaveLength(1);
   });
 
-  it("draws her facing right, which is what artTransform() assumes", () => {
-    // `artTransform()` mirrors with scaleX(-1) to make her face left. That is only
-    // correct if the source art faces right; if the art were flipped, every gaze
-    // would point away from the target and the tilt would lean the wrong way.
-    const eye = /class="echo-eye-white" cx="([\d.]+)"/.exec(ECHO_SVG);
-    expect(eye).not.toBeNull();
-    expect(Number(eye[1])).toBeGreaterThan(50); // eye in the right half of a 100-wide box
+  it("picks a face for every state, with the reaction following Poseidon's mood", () => {
+    expect(expressionFor(ECHO_STATE.IDLE)).toBe("idle");
+    expect(expressionFor(ECHO_STATE.ATTENDING)).toBe("idle");
+    expect(expressionFor(ECHO_STATE.SPEAKING)).toBe("talking");
+    expect(expressionFor(ECHO_STATE.EXAMINING)).toBe("thinking");
+    expect(expressionFor(ECHO_STATE.RESTING)).toBe("sleepy");
+    expect(expressionFor(ECHO_STATE.REACTING)).toBe("surprised");
+    expect(expressionFor(ECHO_STATE.REACTING, "happy")).toBe("happy");
+    expect(expressionFor(ECHO_STATE.REACTING, "excited")).toBe("happy");
+    expect(expressionFor(ECHO_STATE.REACTING, "confused")).toBe("concerned");
+    expect(expressionFor(ECHO_STATE.REACTING, "alert")).toBe("surprised");
+    expect(normalizeMood(" Happy ")).toBe("happy");
+    expect(normalizeMood("furious")).toBeNull();
+  });
+
+  it("thinks while Poseidon works on an answer, then shows his mood", () => {
+    const thinking = run([{ type: ECHO_EVENT.THINKING_START, now: 0 }]);
+    expect(describeEcho(thinking, 10).expression).toBe("thinking");
+    const answered = reduce(
+      reduce(thinking, { type: ECHO_EVENT.THINKING_END, now: 1000 }),
+      { type: ECHO_EVENT.POSEIDON_REACTION, now: 1000, mood: "concerned", durationMs: 1500 },
+    );
+    expect(describeEcho(answered, 1000).expression).toBe("idle");
+    expect(describeEcho(answered, 1000 + TIMING.reactDelayMs + 1).expression).toBe("concerned");
+    // A stray end with nothing pending changes nothing.
+    const s = createEchoState(0);
+    expect(reduce(s, { type: ECHO_EVENT.THINKING_END, now: 5 })).toBe(s);
   });
 
   it("mirrors before tilting, so a lean reads as toward the target", () => {
@@ -530,6 +540,12 @@ describe("public browser mirror stays in lockstep", () => {
     [{ type: ECHO_EVENT.POSEIDON_REACTION, now: 0 }],
     [{ type: ECHO_EVENT.VISION_START, now: 0 }],
     [{ type: ECHO_EVENT.VISION_START, now: 0 }, { type: ECHO_EVENT.VISION_END, now: 500 }],
+    [{ type: ECHO_EVENT.THINKING_START, now: 0 }],
+    [{ type: ECHO_EVENT.THINKING_START, now: 0 }, { type: ECHO_EVENT.THINKING_END, now: 700 }],
+    [{ type: ECHO_EVENT.THINKING_END, now: 3 }],
+    [{ type: ECHO_EVENT.POSEIDON_REACTION, now: 0, mood: "happy", durationMs: 1800 }],
+    [{ type: ECHO_EVENT.POSEIDON_REACTION, now: 0, mood: "confused" }],
+    [{ type: ECHO_EVENT.POSEIDON_REACTION, now: 0, mood: "not-a-mood", swimSpeedMultiplier: 1.3 }],
     [{ type: ECHO_EVENT.ATTEND, now: 0, dx: -250, dy: -80 }],
     [{ type: ECHO_EVENT.ATTEND, now: 0, dx: 250, dy: 300 }],
     [{ type: ECHO_EVENT.ATTEND, now: 0, dx: 0, dy: 0 }],
@@ -602,9 +618,16 @@ describe("public browser mirror stays in lockstep", () => {
     // React spreads `wrapperVisuals()` into a style prop; the vanilla mount
     // assigns the same keys onto `element.style`. If these ever disagree, the app
     // and database.html are showing different Echos.
-    // Byte-for-byte. Both mounts inject this string as markup, so a one-character
-    // difference here is literally two different Echos on the two surfaces.
-    expect(mirror.ECHO_SVG).toBe(ECHO_SVG);
+    // Same faces, same files, same crop. A difference here is two Echos.
+    expect(mirror.ECHO_ART).toEqual({ ...ECHO_ART });
+    expect(mirror.ECHO_EXPRESSION).toEqual({ ...ECHO_EXPRESSION });
+    expect(mirror.ECHO_FACE).toBe(ECHO_FACE);
+    expect(mirror.ECHO_ASPECT).toBe(ECHO_ASPECT);
+    for (const state of Object.values(ECHO_STATE)) {
+      for (const mood of [null, "happy", "excited", "calm", "confused", "alert", "concerned", "celebrate", "nope"]) {
+        expect(mirror.expressionFor(state, mirror.normalizeMood(mood))).toBe(expressionFor(state, normalizeMood(mood)));
+      }
+    }
     for (const seq of SEQUENCES) {
       const mine = seq.reduce((s, e) => reduce(s, e), createEchoState(0));
       const theirs = seq.reduce((s, e) => mirror.reduce(s, e), mirror.createEchoState(0));

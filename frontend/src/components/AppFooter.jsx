@@ -17,7 +17,7 @@ const COLUMNS = [
       { href: "/breeds.html", label: "Breed Gallery" },
       { href: "/compare.html", label: "Compare Species" },
       { href: "/breeders.html", label: "Find Breeders" },
-      { href: "/poseidon.html", label: "Poseidon AI" },
+      { href: "/poseidon.html", label: "Ask Echo" },
       { href: "/app", label: "Open the App" },
     ],
   },

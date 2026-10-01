@@ -284,7 +284,7 @@ export function usePoseidon({ tankId, mode = 'casual', walletAddress, persistKey
         sender: 'poseidon',
         text: mode === 'pro'
           ? '[POSEIDON DISABLED] Intelligence layer deactivated via settings.'
-          : '🌊 I\'m turned off right now. You can re-enable me in Settings.',
+          : 'My answers are switched off right now. You can turn them back on in Settings, under AI Companions.',
         timestamp: Date.now(),
         intent: 'disabled',
         action: { type: 'NONE', payload: {} },
@@ -352,7 +352,7 @@ export function usePoseidon({ tankId, mode = 'casual', walletAddress, persistKey
         sender: 'poseidon',
         text: mode === 'pro'
           ? `[RATE LIMIT] Query quota exceeded (${MAX_REQUESTS_PER_HOUR}/hr). Retry after cooldown.`
-          : `🌊 I need a breather. You've hit the hourly limit (${MAX_REQUESTS_PER_HOUR} questions). Try again in a bit.`,
+          : `I need a breather. That's the hourly limit (${MAX_REQUESTS_PER_HOUR} questions). Try again in a bit.`,
         timestamp: Date.now(),
         intent: 'rate_limited',
         action: { type: 'NONE', payload: {} },
@@ -458,7 +458,7 @@ export function usePoseidon({ tankId, mode = 'casual', walletAddress, persistKey
         sender: 'poseidon',
         text: mode === 'pro'
           ? '[POSEIDON OFFLINE] Network unreachable. Retry when your connection is back.'
-          : '🌊 I can\'t reach my knowledge base right now — check your connection and try again in a moment.',
+          : 'I can\'t reach Poseidon right now. Check your connection and try again in a moment.',
         timestamp: Date.now(),
         intent: 'fallback_unknown',
         action: { type: 'NONE', payload: {} },
@@ -487,9 +487,10 @@ export function usePoseidon({ tankId, mode = 'casual', walletAddress, persistKey
     const greeting = {
       id: 'init',
       sender: 'poseidon',
+      // Echo is the one character; Poseidon is what she runs on.
       text: mode === 'pro'
-        ? '[POSEIDON CORE ONLINE] Ecological intelligence layer active. Ready for telemetry inputs, compatibility queries, or system initialization.'
-        : '👋 Hey there! I\'m Poseidon, your freshwater fish expert. Ask me about species compatibility, water parameters, tank setup, breeding tips, or just log your daily care tasks.',
+        ? 'Echo, powered by Poseidon. Ask about compatibility, water parameters or species data, log care, or send a photo to identify.'
+        : 'Hi, I\'m Echo. Ask me what can live together, what your water test means, or how to set up a tank. You can also send me a photo of a fish.',
       timestamp: Date.now(),
       intent: 'init',
     };

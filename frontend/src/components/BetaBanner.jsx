@@ -93,7 +93,7 @@ export function BetaBanner() {
         <li>
           <span aria-hidden="true">🤖</span>
           <span>
-            <strong>Poseidon is smart but not perfect.</strong> AI advice is grounded in our species database,
+            <strong>Echo is smart but not perfect.</strong> Her answers are grounded in our species database,
             but always cross-reference with your own experience for sensitive species.
           </span>
         </li>

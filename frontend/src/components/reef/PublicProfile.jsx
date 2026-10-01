@@ -30,6 +30,8 @@ import { useAuth } from "../../contexts/AuthContext";
 import { getFollowerCount, getFollowingCount } from "../../services/reefApi";
 import { db } from "../../db";
 import { EchoRenderer } from "../EchoRenderer";
+import { useEchoFace } from "../../hooks/useEchoFace";
+import { openEchoChat } from "../../services/echoChatBus";
 import { RewardCreditsCard } from "../RewardCreditsCard";
 import { getTierInfo, getPointsSuffix } from "../../utils/xp";
 
@@ -282,6 +284,8 @@ function ConnectionButton({ targetWallet, casualModeActive }) {
 export function PublicProfile({ walletAddress, onBack, onNavigateProfile, casualModeActive = false }) {
   const { data: profile, isLoading, refetch } = useProfile(walletAddress);
   const { data: tankmates } = useTankmates(walletAddress);
+  // She thinks, talks and reacts with the corner Echo (same events, same core).
+  const echoFace = useEchoFace(true);
   const userCurrents = useUserCurrents(walletAddress);
   const currents = userCurrents.data?.pages?.flatMap((p) => p.data) || [];
   const [editing, setEditing] = useState(false);
@@ -501,23 +505,19 @@ export function PublicProfile({ walletAddress, onBack, onNavigateProfile, casual
           pointerEvents: "none",
         }} />
 
-        {/* Echo in the profile header. Decorative only — she is the same character
-            for every keeper now, so she no longer advertises a stage or a DNA the
-            viewer could read as this person's achievement. */}
-        <div
-          style={{
-            position: "absolute",
-            top: "1rem",
-            right: "1rem",
-            width: "100px",
-            height: "60px",
-            pointerEvents: "none",
-            opacity: 0.85,
-            zIndex: 1,
-          }}
+        {/* Echo in the profile header. The same character for every keeper, so
+            she advertises no stage or DNA the viewer could read as this person's
+            achievement. She mirrors the corner Echo's face (useEchoFace) and
+            tapping her opens the chat. */}
+        <button
+          type="button"
+          className="reef-profile-echo"
+          onClick={() => openEchoChat()}
+          aria-label="Ask Echo"
+          title="Ask Echo"
         >
-          <EchoRenderer size={100} animated />
-        </div>
+          <EchoRenderer size={92} expression={echoFace} animated />
+        </button>
         {/* Avatar + Name row */}
         <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1rem" }} className="reef-profile-header-row">
           <div

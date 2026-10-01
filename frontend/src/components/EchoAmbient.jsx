@@ -40,7 +40,17 @@ import { attachGazeTracking } from "../services/echoGaze";
  * background tab costs zero timers.
  */
 
-const AMBIENT_SIZE = 56;
+const AMBIENT_SIZE = 74;
+const TAPPED_KEY = "aquadex_echo_tapped";
+
+/**
+ * Tapping her opens the chat. She is the one character now (Echo, powered by
+ * Poseidon), so there is no separate Poseidon button: `EchoChat` listens for
+ * `echo:toggle`.
+ */
+function toggleChat() {
+  window.dispatchEvent(new CustomEvent("echo:toggle"));
+}
 
 export function EchoAmbient({ visible = true, calm = false }) {
   // `useReducer` with the pure core as the reducer. React's contract (same state
@@ -56,6 +66,13 @@ export function EchoAmbient({ visible = true, calm = false }) {
   const send = useCallback((type, extra) => {
     dispatch({ type, now: Date.now(), ...extra });
   }, []);
+
+  // Whether the chat is open (EchoChat announces it), and whether she has ever
+  // been tapped, which decides the small "Ask me" label.
+  const [chatOpen, setChatOpen] = useState(false);
+  const [tappedBefore, setTappedBefore] = useState(() => {
+    try { return localStorage.getItem(TAPPED_KEY) === "1"; } catch { return true; }
+  });
 
   // ─── Advance the clock exactly when something can change ───────────────────
   const wakeTimer = useRef(null);
@@ -79,10 +96,8 @@ export function EchoAmbient({ visible = true, calm = false }) {
 
   // ─── Poseidon ─────────────────────────────────────────────────────────────
   //
-  // `poseidon:echo-reaction` is dispatched from five places — the chat console,
-  // the global widget, and three easter eggs. Its only listener used to be
-  // `CompanionFishEntity`, a CSS fish in the tank detail panel most users never
-  // opened, so Poseidon was talking to something nobody could see.
+  // `poseidon:echo-reaction` is dispatched by the chat after every answer (with
+  // Poseidon's mood, which picks her face), by notices, and by a few easter eggs.
   useEffect(() => {
     if (!visible) return;
 
@@ -91,12 +106,37 @@ export function EchoAmbient({ visible = true, calm = false }) {
       send(ECHO_EVENT.POSEIDON_REACTION, {
         durationMs: d.durationMs,
         swimSpeedMultiplier: d.swimSpeedMultiplier,
+        mood: d.mood,
       });
     };
+    // The chat brackets every question with these, so she thinks while
+    // Poseidon works and talks while the answer lands.
+    const onThinkStart = () => send(ECHO_EVENT.THINKING_START);
+    const onThinkEnd = () => send(ECHO_EVENT.THINKING_END);
+    const onSpeaking = (e) => send(ECHO_EVENT.POSEIDON_SPEAKING, { durationMs: e?.detail?.durationMs });
+    const onChatState = (e) => setChatOpen(!!e?.detail?.open);
 
     window.addEventListener("poseidon:echo-reaction", onReaction);
-    return () => window.removeEventListener("poseidon:echo-reaction", onReaction);
+    window.addEventListener("echo:thinking-start", onThinkStart);
+    window.addEventListener("echo:thinking-end", onThinkEnd);
+    window.addEventListener("echo:speaking", onSpeaking);
+    window.addEventListener("echo:chat-state", onChatState);
+    return () => {
+      window.removeEventListener("poseidon:echo-reaction", onReaction);
+      window.removeEventListener("echo:thinking-start", onThinkStart);
+      window.removeEventListener("echo:thinking-end", onThinkEnd);
+      window.removeEventListener("echo:speaking", onSpeaking);
+      window.removeEventListener("echo:chat-state", onChatState);
+    };
   }, [visible, send]);
+
+  const onTap = () => {
+    toggleChat();
+    if (!tappedBefore) {
+      setTappedBefore(true);
+      try { localStorage.setItem(TAPPED_KEY, "1"); } catch { /* storage unavailable */ }
+    }
+  };
 
   // ─── Vision (spec §6) ─────────────────────────────────────────────────────
   //
@@ -221,16 +261,26 @@ export function EchoAmbient({ visible = true, calm = false }) {
       // (rule 5). The vanilla mount assigns the identical object onto
       // `element.style`, which is what keeps the two renderers one character.
       style={wrapperVisuals(view)}
-      // Decorative and inert. Spec §3: she must never intercept a click she does
-      // not own or take a tab stop.
-      aria-hidden="true"
     >
-      <EchoRenderer
-        size={AMBIENT_SIZE}
-        animated={view.animate}
-        facingLeft={view.facingLeft}
-        tiltDeg={view.tiltDeg}
-      />
+      {/* She owns exactly one click: her own body opens the chat. The wrapper
+          stays pointer-events: none, so she never blocks what is behind her. */}
+      <button
+        type="button"
+        className="echo-ambient__button"
+        onClick={onTap}
+        aria-label={chatOpen ? "Close chat with Echo" : "Ask Echo"}
+        aria-expanded={chatOpen}
+        title={chatOpen ? "Close chat" : "Ask Echo"}
+      >
+        <EchoRenderer
+          size={AMBIENT_SIZE}
+          expression={view.expression}
+          animated={view.animate}
+          facingLeft={view.facingLeft}
+          tiltDeg={view.tiltDeg}
+        />
+      </button>
+      {!tappedBefore && !chatOpen && <span className="echo-ambient__label" aria-hidden="true">Ask me</span>}
     </div>
   );
 }

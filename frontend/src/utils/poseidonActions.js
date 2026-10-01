@@ -8,7 +8,7 @@
  *
  *   1. `## AVAILABLE ACTIONS` in POSEIDON_SYSTEM_PROMPT (api/ai.js) — declared 5.
  *   2. `handlePoseidonAction` (poseidonBridge.js) — implemented 2.
- *   3. `formatActionLabel` (PoseidonChatConsole.jsx) — labelled 5.
+ *   3. `formatActionLabel` (the old PoseidonChatConsole.jsx) — labelled 5.
  *
  * The gap between (1) and (2) was a live bug, not a theoretical one: asking
  * Poseidon to record a water test produced a "Poseidon wants to: record water

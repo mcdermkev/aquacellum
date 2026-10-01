@@ -9,7 +9,7 @@ import { getSpeciesCare } from "../logbook/SpeciesCareGuide";
 import { buildSpeciesCarePrompt } from "../../utils/poseidonPrompts";
 import { getPersonality } from "../../utils/personality";
 import { SpeciesInsights } from "../reef/SpeciesInsights";
-import { PoseidonChatConsole } from "../PoseidonChatConsole";
+import { openEchoChat, openEchoPlanner } from "../../services/echoChatBus";
 import { DETAIL_COPY } from "./finderCopy";
 import { useUnitPrefs } from "../../hooks/useUnitPrefs";
 import { formatTemperatureRange } from "../../utils/units";
@@ -130,12 +130,9 @@ export function CasualSpeciesDetail({
     return estimateAddedStocking(selectedTank, breed, { fishbaseData, contractSpecies });
   }, [selectedTank, breed, fishbaseData, contractSpecies]);
 
-  // ── Ask Poseidon (exact TankList pattern: local seed state + console) ────
-  const [poseidonSeed, setPoseidonSeed] = useState(null);
-  const [poseidonOpen, setPoseidonOpen] = useState(false);
+  // ── Ask Echo: the one app-wide chat, with the chosen tank in context ──────
   const askPoseidon = (prompt) => {
-    setPoseidonSeed(prompt || null);
-    setPoseidonOpen(true);
+    openEchoChat({ seedPrompt: prompt || null, tankId: selectedTank?.id ?? null });
   };
 
   // ── Acquisition hook (T3/T6 — composed, never re-derived) ─────────────────
@@ -277,13 +274,22 @@ export function CasualSpeciesDetail({
               noise. The species page states the gap explicitly instead. */}
           <SexingGuide record={fullProfile} casual hideWhenUndocumented />
 
-          <button
-            type="button"
-            className="cg-ask"
-            onClick={() => askPoseidon(buildSpeciesCarePrompt(breed.commonName, selectedTank))}
-          >
-            💬 Ask Poseidon about {breed.commonName}
-          </button>
+          <div className="csd-echo-actions">
+            <button
+              type="button"
+              className="cg-ask"
+              onClick={() => askPoseidon(buildSpeciesCarePrompt(breed.commonName, selectedTank))}
+            >
+              💬 Ask Echo about {breed.commonName}
+            </button>
+            <button
+              type="button"
+              className="cg-ask cg-ask--plan"
+              onClick={() => openEchoPlanner({ species: [fullProfile?.scientificName ? fullProfile : breed], tankId: selectedTank?.id ?? null })}
+            >
+              🧪 Plan a tank with it
+            </button>
+          </div>
 
           {/* Casual "Tips" — SpeciesInsights, unchanged component */}
           <div className="csd-tips">
@@ -323,22 +329,6 @@ export function CasualSpeciesDetail({
             View listings →
           </button>
         </div>
-      )}
-
-      {/* The `.csd-poseidon-dock` wrapper that used to be here is gone.
-          PoseidonChatConsole now portals itself to document.body and docks to the
-          viewport, so it no longer needs a positioned ancestor to size against.
-          Removing the wrapper matters rather than being tidy-up: it was
-          `position: fixed; height: 100vh` and `width: 100%` under 640px, so once
-          the console portalled out of it, the empty div would have sat invisibly
-          over the whole phone screen swallowing every tap. */}
-      {poseidonOpen && (
-        <PoseidonChatConsole
-          casualModeActive={true}
-          walletAccount={walletAccount}
-          seedPrompt={poseidonSeed}
-          onClose={() => { setPoseidonOpen(false); setPoseidonSeed(null); }}
-        />
       )}
     </div>
   );

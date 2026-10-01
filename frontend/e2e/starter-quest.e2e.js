@@ -117,7 +117,7 @@ test.describe("Header user menu", () => {
   });
 });
 
-test.describe("Poseidon console", () => {
+test.describe("Echo chat", () => {
   // Regression: in Casual, My Tanks > Log Care / Actions > Ask Poseidon opened the
   // console INSIDE the narrow tank-detail side panel. It was `position: absolute;
   // height: 100%` so it sized to that panel's short hero banner — a tiny clipped
@@ -125,7 +125,7 @@ test.describe("Poseidon console", () => {
   // the viewport.
   //
   // Asserts the SYMPTOM: the rendered box has to be big enough to actually use.
-  test("Q7. Ask Poseidon opens a usable, viewport-docked console in Casual", async ({ page }, testInfo) => {
+  test("Q7. Ask Echo opens a usable, viewport-docked chat in Casual", async ({ page }, testInfo) => {
     test.skip(testInfo.project.name === "mobile-chromium", DESKTOP_ONLY_REASON);
     await gotoDashboard(page, { casual: true });
     await seed(page, {
@@ -133,14 +133,15 @@ test.describe("Poseidon console", () => {
     });
     await reloadDashboard(page);
 
-    // Open the tank, then the quick-actions menu, then Ask Poseidon.
+    // Open the tank, then the quick-actions menu, then Ask Echo. It opens the one
+    // app-wide chat (EchoChat) with this tank in context.
     await page.getByTestId("tank-card").first().click();
     await page.getByRole("button", { name: "⚡ Log Care / Actions" }).click();
-    // Three "Ask Poseidon" affordances exist on this screen (the quick-actions
-    // tile, the flag-explainer link, and the care-guide link) — target the tile.
-    await page.getByRole("button", { name: "💬 Ask Poseidon Get advice" }).click();
+    // Several "Ask" affordances exist on this screen (the quick-actions tile, the
+    // flag-explainer link, and the care-guide link); target the tile.
+    await page.getByRole("button", { name: "💬 Ask Echo Get advice" }).click();
 
-    const panel = page.locator(".poseidon-chat-panel");
+    const panel = page.locator(".echo-chat");
     await expect(panel).toBeVisible();
 
     // THE SYMPTOM, asserted first: it must be big enough to actually use. The old
@@ -153,13 +154,16 @@ test.describe("Poseidon console", () => {
     await expect(panel.evaluate((el) => el.parentElement === document.body)).resolves.toBe(true);
 
     // The input is reachable and typable, which is what "you can't see it" broke.
-    const input = panel.getByPlaceholder(/Ask Poseidon/i);
+    const input = panel.getByPlaceholder(/Ask Echo/i);
     await expect(input).toBeVisible();
     await input.fill("are my fish compatible?");
     await expect(input).toHaveValue("are my fish compatible?");
 
+    // It knows which tank it was opened from.
+    await expect(panel.getByText("Primary Unit")).toBeVisible();
+
     // And it closes again.
-    await panel.getByRole("button", { name: /Close chat panel/i }).click();
+    await panel.getByRole("button", { name: /^Close chat$/i }).click();
     await expect(panel).toHaveCount(0);
   });
 });

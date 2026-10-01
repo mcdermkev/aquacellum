@@ -58,7 +58,7 @@
             <a href="/breeds.html">Breed Gallery</a>
             <a href="/compare.html">Compare Species</a>
             <a href="/breeders.html">Find Breeders</a>
-            <a href="/poseidon.html">Poseidon AI</a>
+            <a href="/poseidon.html">Ask Echo</a>
             <a href="/app">Open the App</a>
           </div>
 

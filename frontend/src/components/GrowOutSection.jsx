@@ -138,10 +138,10 @@ export function GrowOutSection({ walletAccount, casualModeActive }) {
           background: "rgba(251, 191, 36, 0.05)", border: "1px solid rgba(251, 191, 36, 0.15)",
           display: "flex", alignItems: "flex-start", gap: "0.6rem",
         }}>
-          <img src="/poseidon-avatar.jpg" alt="" style={{ width: "24px", height: "24px", borderRadius: "50%", objectFit: "cover", flexShrink: 0, marginTop: "1px" }} />
+          <img src="/echo/face.webp" alt="" style={{ width: "24px", height: "24px", borderRadius: "50%", objectFit: "cover", flexShrink: 0, marginTop: "1px" }} />
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: "0.75rem", fontWeight: "600", color: "var(--accent-amber)", marginBottom: "3px" }}>
-              Poseidon nudge: {overdueSpawns.length} spawn{overdueSpawns.length > 1 ? "s" : ""} overdue
+              Echo noticed: {overdueSpawns.length} spawn{overdueSpawns.length > 1 ? "s" : ""} overdue
             </div>
             <div style={{ fontSize: "0.7rem", color: "var(--text-muted)", lineHeight: "1.4" }}>
               {overdueSpawns.slice(0, 3).map(s => `${s.speciesName} (#${formatLocalRecordRef(s.spawnId)}), ${s.daysSince}d`).join(" · ")}

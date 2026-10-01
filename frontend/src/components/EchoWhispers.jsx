@@ -38,6 +38,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { buildNotices, pickNotice, noticeText } from "../services/echoNotices";
+import { openEchoChat } from "../services/echoChatBus";
 
 const DISPLAY_MS = 9000; // long enough to read and reach for
 const COOLDOWN_MS = 120000; // at most one every two minutes
@@ -84,6 +85,14 @@ export function EchoWhispers({ casualModeActive = true, userState, tankData }) {
     setNotice(next);
     setLeaving(false);
 
+    // Her face goes with what she is saying: pleased about a streak, worried
+    // about an ammonia reading. The mood comes with the notice.
+    window.dispatchEvent(
+      new CustomEvent("poseidon:echo-reaction", {
+        detail: { mood: next.mood, durationMs: 1800 },
+      }),
+    );
+
     if (dismissTimerRef.current) clearTimeout(dismissTimerRef.current);
     dismissTimerRef.current = setTimeout(dismiss, DISPLAY_MS);
   }, [dismiss]);
@@ -122,11 +131,9 @@ export function EchoWhispers({ casualModeActive = true, userState, tankData }) {
   const actionable = Boolean(notice.seedPrompt);
 
   const ask = () => {
-    // The widget listens for this and opens with the question already asked. A DOM
-    // event because the FAB owns its own open state and lives elsewhere in the tree.
-    window.dispatchEvent(
-      new CustomEvent("poseidon:open", { detail: { seedPrompt: notice.seedPrompt } }),
-    );
+    // EchoChat opens with the question already asked. It owns its own open state
+    // and lives elsewhere in the tree, hence the event (services/echoChatBus.js).
+    openEchoChat({ seedPrompt: notice.seedPrompt });
     dismiss();
   };
 
@@ -138,7 +145,7 @@ export function EchoWhispers({ casualModeActive = true, userState, tankData }) {
       <span className="echo-whisper__body">
         <span className="echo-whisper__text">{text}</span>
         <span className="echo-whisper__hint">
-          {actionable ? (pro ? "Query Poseidon" : "Ask Poseidon about it") : "Echo noticed"}
+          {actionable ? (pro ? "Ask Echo" : "Ask me about it") : "Echo noticed"}
         </span>
       </span>
     </>
