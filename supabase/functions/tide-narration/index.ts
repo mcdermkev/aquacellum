@@ -1,68 +1,63 @@
 /**
  * tide-narration Edge Function
- * 
- * Tide narration and recaps (Task 51).
+ *
+ * Tide narration and recaps (Task 51). Service-role callers only
+ * (_shared/callerRole.ts): it posts system messages into a tide's chat, so an
+ * open endpoint let anyone post as "system" into any event.
+ *
  * Two modes:
- * 1. Live narration: called every 15 min during a live tide to post a system message summarizing activity
- * 2. Post-event recap: called after tide ends to generate structured recap JSON
- * 
- * Expects body:
- * {
- *   tide_id: UUID,
- *   mode: "narrate" | "recap"
- * }
+ * 1. narrate: a short live update in the tide chat from the last 15 minutes of
+ *    activity. Echo writes it (Gemini on Vertex, _shared/vertex.ts); without the
+ *    model it is the numbers in a plain sentence.
+ * 2. recap: rebuilds the recap with the `build_tide_recap` database function,
+ *    the one writer of tides.recap_content. This used to write its own recap with
+ *    a different stats shape and an XP figure computed from a formula rather than
+ *    from XP actually awarded.
+ *
+ * Expects body: { tide_id: UUID, mode: "narrate" | "recap" }
+ * `?dry=1` returns the narration without posting it.
  */
 
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { generateText, tidyGenerated } from "../_shared/vertex.ts";
+import { isDryRun, requireServiceRole } from "../_shared/callerRole.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY") || "";
+
+const json = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
 
 serve(async (req) => {
+  const denied = requireServiceRole(req);
+  if (denied) return denied;
+
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
   try {
     const { tide_id, mode } = await req.json();
+    if (!tide_id || !mode) return json({ error: "tide_id and mode required" }, 400);
 
-    if (!tide_id || !mode) {
-      return new Response(JSON.stringify({ error: "tide_id and mode required" }), {
-        status: 400, headers: { "Content-Type": "application/json" },
-      });
-    }
-
-    // Get tide details
     const { data: tide, error: tideError } = await supabase
       .from("tides")
-      .select("*")
+      .select("id, title, tide_type, status")
       .eq("id", tide_id)
       .single();
+    if (tideError || !tide) return json({ error: "Tide not found" }, 404);
 
-    if (tideError || !tide) {
-      return new Response(JSON.stringify({ error: "Tide not found" }), {
-        status: 404, headers: { "Content-Type": "application/json" },
-      });
-    }
-
-    if (mode === "narrate") {
-      return await handleNarration(supabase, tide);
-    } else if (mode === "recap") {
-      return await handleRecap(supabase, tide);
-    }
-
-    return new Response(JSON.stringify({ error: "Invalid mode" }), {
-      status: 400, headers: { "Content-Type": "application/json" },
-    });
+    if (mode === "narrate") return await handleNarration(supabase, tide, isDryRun(req));
+    if (mode === "recap") return await handleRecap(supabase, tide);
+    return json({ error: "Invalid mode" }, 400);
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), {
-      status: 500, headers: { "Content-Type": "application/json" },
-    });
+    return json({ error: (err as Error).message }, 500);
   }
 });
 
-async function handleNarration(supabase: any, tide: any) {
-  // Get recent activity (last 15 min)
+const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+
+// deno-lint-ignore no-explicit-any
+async function handleNarration(supabase: any, tide: any, dry: boolean) {
   const fifteenMinAgo = new Date(Date.now() - 15 * 60 * 1000).toISOString();
 
   const { count: recentMessages } = await supabase
@@ -76,7 +71,6 @@ async function handleNarration(supabase: any, tide: any) {
     .from("tide_attendees")
     .select("*", { count: "exact", head: true })
     .eq("tide_id", tide.id)
-    .eq("rsvp_status", "checked_in")
     .gte("checked_in_at", fifteenMinAgo);
 
   const { count: totalAttendees } = await supabase
@@ -84,132 +78,52 @@ async function handleNarration(supabase: any, tide: any) {
     .select("*", { count: "exact", head: true })
     .eq("tide_id", tide.id);
 
-  // Generate narration
-  let narration = "";
-  if (GEMINI_API_KEY) {
-    const prompt = `You are Poseidon, a live event narrator for an aquarium community. Write ONE short, energetic narration message (max 100 chars) for a live event update.
+  const attendees = totalAttendees || 0;
+  const checkins = recentCheckins || 0;
+  const messages = recentMessages || 0;
 
-Event: "${tide.title}" (${tide.tide_type})
-Stats: ${totalAttendees} attendees, ${recentCheckins} new check-ins, ${recentMessages} messages in last 15 min.
+  // The numbers, plainly. Also what is posted when the model is unavailable.
+  const facts = [
+    `${plural(attendees, "keeper", "keepers")} in ${tide.title}.`,
+    checkins > 0 ? `${checkins} just checked in.` : null,
+    messages > 0 ? `${plural(messages, "message", "messages")} in the last 15 minutes.` : null,
+  ].filter(Boolean).join(" ");
 
-Be concise, use 1 emoji max. Example: "🌊 12 breeders active, 3 just checked in. The current is strong!"`;
+  // Only facts worth saying, already worded with the right plurals.
+  const lines = [
+    `${plural(attendees, "keeper has", "keepers have")} RSVP'd.`,
+    checkins > 0 ? `${plural(checkins, "keeper", "keepers")} checked in in the last 15 minutes.` : null,
+    messages > 0 ? `${plural(messages, "chat message", "chat messages")} in the last 15 minutes.` : null,
+  ].filter(Boolean);
 
-    try {
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: { maxOutputTokens: 60, temperature: 0.8 },
-          }),
-        }
-      );
-      const data = await response.json();
-      narration = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "";
-    } catch {}
+  const prompt = `You are Echo, the fish guide for an aquarium community. Write one short live update for the chat of a live event called "${tide.title}" (a ${tide.tide_type}).
+
+Facts (use only these):
+${lines.map((l) => `- ${l}`).join("\n")}
+
+Example of the style: "12 keepers here so far, and 3 just checked in. 🐟"
+
+Rules: one sentence, under 90 characters, correct grammar for each number. Friendly and plain. No greeting. No exclamation points, no em dashes, at most one emoji.`;
+
+  const ai = await generateText(prompt, { maxOutputTokens: 60, temperature: 0.6 });
+  const narration = (tidyGenerated(ai.text) || facts).slice(0, 300);
+  const source = ai.text ? ai.model : `facts (${ai.reason || "empty"})`;
+
+  if (!dry) {
+    await supabase.from("tide_chat").insert({
+      tide_id: tide.id,
+      author_wallet: "system",
+      body: narration,
+      is_system_message: true,
+    });
   }
 
-  if (!narration) {
-    narration = `🌊 ${totalAttendees} in the tide. ${recentCheckins > 0 ? `${recentCheckins} just checked in!` : "Activity flowing."}`;
-  }
-
-  // Post as system message
-  await supabase.from("tide_chat").insert({
-    tide_id: tide.id,
-    author_wallet: "system",
-    body: narration.slice(0, 300),
-    is_system_message: true,
-  });
-
-  return new Response(JSON.stringify({ success: true, narration }), {
-    headers: { "Content-Type": "application/json" },
-  });
+  return json({ success: true, dry, narration, source });
 }
 
+// deno-lint-ignore no-explicit-any
 async function handleRecap(supabase: any, tide: any) {
-  // Gather recap stats
-  const { count: totalAttendees } = await supabase
-    .from("tide_attendees")
-    .select("*", { count: "exact", head: true })
-    .eq("tide_id", tide.id);
-
-  const { count: checkedIn } = await supabase
-    .from("tide_attendees")
-    .select("*", { count: "exact", head: true })
-    .eq("tide_id", tide.id)
-    .eq("rsvp_status", "checked_in");
-
-  const { count: chatMessages } = await supabase
-    .from("tide_chat")
-    .select("*", { count: "exact", head: true })
-    .eq("tide_id", tide.id)
-    .eq("is_system_message", false);
-
-  const { count: bidsPlaced } = await supabase
-    .from("auction_bids")
-    .select("*", { count: "exact", head: true })
-    .eq("tide_id", tide.id);
-
-  // Get species from swap sheet
-  const { data: swapData } = await supabase
-    .from("tide_attendees")
-    .select("bringing_species")
-    .eq("tide_id", tide.id)
-    .not("bringing_species", "eq", "[]");
-
-  const allSpecies = new Set<string>();
-  for (const row of (swapData || [])) {
-    for (const s of (row.bringing_species || [])) {
-      allSpecies.add(s.commonName || s.specCode);
-    }
-  }
-
-  const stats = {
-    total_attendees: totalAttendees || 0,
-    checked_in: checkedIn || 0,
-    chat_messages: chatMessages || 0,
-    bids_placed: bidsPlaced || 0,
-    species_traded: allSpecies.size,
-    xp_awarded: (checkedIn || 0) * 100 + ((totalAttendees || 0) - (checkedIn || 0)) * 50,
-  };
-
-  // Generate AI summary
-  let summary = "";
-  if (GEMINI_API_KEY) {
-    const prompt = `Write a 2-sentence event recap for "${tide.title}" (${tide.tide_type} event). Stats: ${stats.total_attendees} attendees, ${stats.checked_in} checked in, ${stats.chat_messages} chat messages, ${stats.species_traded} species involved. Warm, concise, no emojis.`;
-
-    try {
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: { maxOutputTokens: 100, temperature: 0.5 },
-          }),
-        }
-      );
-      const data = await response.json();
-      summary = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "";
-    } catch {}
-  }
-
-  if (!summary) {
-    summary = `${tide.title} wrapped up with ${stats.total_attendees} attendees and ${stats.chat_messages} messages exchanged.`;
-  }
-
-  const recapContent = { summary, stats, generated_at: new Date().toISOString() };
-
-  // Save recap to tide
-  await supabase
-    .from("tides")
-    .update({ recap_content: recapContent })
-    .eq("id", tide.id);
-
-  return new Response(JSON.stringify({ success: true, recap: recapContent }), {
-    headers: { "Content-Type": "application/json" },
-  });
+  const { data, error } = await supabase.rpc("build_tide_recap", { target_tide: tide.id });
+  if (error) return json({ error: error.message }, 500);
+  return json({ success: true, recap: data });
 }

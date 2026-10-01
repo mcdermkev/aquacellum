@@ -77,6 +77,9 @@ export function StarterQuestCard({ onNavigate, compact = false }) {
           ? "linear-gradient(135deg, rgba(56,189,248,0.14), rgba(16,185,129,0.08))"
           : "rgba(var(--ink-rgb), 0.02)",
       }}
+      // A named region, so screen readers can jump to it and tests can find it
+      // without depending on the heading copy (which has changed before).
+      role="region"
       aria-label="Getting started checklist"
     >
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.75rem" }}>

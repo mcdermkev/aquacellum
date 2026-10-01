@@ -1,7 +1,8 @@
 /**
  * mentor-match Edge Function
  * 
- * Poseidon mentor matching (Task 53).
+ * Mentor matching (Task 53). Gemini on Vertex via _shared/vertex.ts, with a
+ * heuristic fallback when the model is unavailable.
  * Analyzes user's species/struggles and matches with available mentors.
  * Returns top 3 suggested mentors with explanations.
  * 
@@ -15,10 +16,10 @@
 
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { aiConfigured, generateText, parseJson, tidyGenerated } from "../_shared/vertex.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY") || "";
 
 serve(async (req) => {
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
@@ -45,7 +46,7 @@ serve(async (req) => {
     if (!mentors || mentors.length === 0) {
       return new Response(JSON.stringify({
         matches: [],
-        message: "No mentors are currently accepting mentees. Check back soon!",
+        message: "No mentors are accepting mentees right now. Check back soon.",
       }), { headers: { "Content-Type": "application/json" } });
     }
 
@@ -85,7 +86,7 @@ serve(async (req) => {
     // Step 3: Score and rank mentors
     let matches;
 
-    if (GEMINI_API_KEY && species_focus?.length > 0) {
+    if (aiConfigured() && species_focus?.length > 0) {
       matches = await aiMatchMentors(mentorProfiles, species_focus, struggles);
     } else {
       matches = heuristicMatchMentors(mentorProfiles, species_focus || []);
@@ -139,62 +140,58 @@ function heuristicMatchMentors(mentors: any[], userSpecies: string[]) {
 }
 
 /**
- * AI-powered matching via Gemini.
+ * AI-powered matching (Gemini on Vertex, _shared/vertex.ts). The model picks
+ * from a numbered list; the pick is a string enum, not a free number, so it
+ * cannot name a mentor who is not on the list.
  */
 async function aiMatchMentors(mentors: any[], userSpecies: string[], struggles?: string) {
-  const mentorList = mentors.slice(0, 10).map((m, i) => (
-    `${i + 1}. ${m.display_name || m.wallet_address.slice(0, 10)} — ${m.companion_tier}, Depth: ${m.depth_score}, Species expertise: [${m.expertise_species.join(",")}], Audits: ${m.audits_given}, Current mentees: ${m.active_mentees}`
+  const shortlist = mentors.slice(0, 10);
+  const mentorList = shortlist.map((m, i) => (
+    `${i + 1}. ${m.display_name || m.wallet_address.slice(0, 10)}: ${m.companion_tier}, depth score ${m.depth_score}, species expertise [${m.expertise_species.join(", ")}], audits given ${m.audits_given}, current mentees ${m.active_mentees}`
   )).join("\n");
 
-  const prompt = `You are Poseidon, matching a fishkeeper with mentors. The user keeps: [${userSpecies.join(", ")}].${struggles ? ` They're struggling with: "${struggles}"` : ""}
+  const prompt = `You are Echo, the fish guide in Aquacellum, matching a fishkeeper with mentors. The keeper keeps: [${userSpecies.join(", ")}].${struggles ? ` They want help with: "${String(struggles).slice(0, 300)}"` : ""}
 
-Available mentors:
+Mentors:
 ${mentorList}
 
-Pick the top 3 best matches. For each, respond with a JSON array:
-[{"index": 1, "reason": "one sentence why this is a good match"}]
+Pick the best 3 (fewer if fewer fit). For each give its number and one plain sentence on why, based only on the facts listed. Consider species overlap, experience, and availability (fewer current mentees is better). No exclamation points, no em dashes.`;
 
-Consider: species overlap, experience level, availability (fewer current mentees = better).`;
+  const schema = {
+    type: "array",
+    items: {
+      type: "object",
+      properties: {
+        pick: { type: "string", enum: shortlist.map((_, i) => String(i + 1)) },
+        reason: { type: "string" },
+      },
+      required: ["pick", "reason"],
+    },
+  };
 
-  try {
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { maxOutputTokens: 200, temperature: 0.4 },
-        }),
-      }
-    );
-
-    const data = await response.json();
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-
-    // Parse JSON from response
-    const jsonMatch = text.match(/\[[\s\S]*\]/);
-    if (jsonMatch) {
-      const aiResults = JSON.parse(jsonMatch[0]);
-      return aiResults.map((r: any) => {
-        const mentor = mentors[r.index - 1];
-        if (!mentor) return null;
-        return {
-          wallet_address: mentor.wallet_address,
-          display_name: mentor.display_name,
-          avatar_url: mentor.avatar_url,
-          companion_tier: mentor.companion_tier,
-          depth_tier: mentor.depth_tier,
-          depth_score: mentor.depth_score,
-          match_score: 100 - (r.index * 10),
-          reason: r.reason,
-        };
-      }).filter(Boolean);
-    }
-  } catch (err) {
-    console.error("AI matching failed:", err);
+  const res = await generateText(prompt, { schema, maxOutputTokens: 300, temperature: 0.3 });
+  const picks = parseJson<Array<{ pick: string; reason: string }>>(res.text);
+  if (Array.isArray(picks) && picks.length > 0) {
+    const seen = new Set<number>();
+    const matches = picks.map((r, rank) => {
+      const i = Number(r?.pick) - 1;
+      const mentor = shortlist[i];
+      if (!mentor || seen.has(i)) return null;
+      seen.add(i);
+      return {
+        wallet_address: mentor.wallet_address,
+        display_name: mentor.display_name,
+        avatar_url: mentor.avatar_url,
+        companion_tier: mentor.companion_tier,
+        depth_tier: mentor.depth_tier,
+        depth_score: mentor.depth_score,
+        // Rank order from the model, not a score it computed.
+        match_score: 100 - rank * 10,
+        reason: tidyGenerated(r.reason) || "Good fit for the species you keep.",
+      };
+    }).filter(Boolean);
+    if (matches.length > 0) return matches;
   }
 
-  // Fallback to heuristic
   return heuristicMatchMentors(mentors, userSpecies);
 }

@@ -10,15 +10,20 @@ test.describe("Starter Quest", () => {
     await gotoDashboard(page, { casual: true });
     await page.goto("/app/profile?e2e=1");
 
-    await expect(page.getByText(/Starter Quest/i)).toBeVisible();
-    await expect(page.getByText("0/5")).toBeVisible();
+    // Found by its landmark, not its heading. The heading was "Starter Quest"
+    // and is now "New here? Start with these" (8548a85); copy is allowed to
+    // change, the checklist is not allowed to disappear.
+    const quest = page.getByRole("region", { name: "Getting started checklist" });
+    await expect(quest).toBeVisible();
+    await expect(quest.getByText(/New here\? Start with these/i)).toBeVisible();
+    await expect(quest.getByText("0/5")).toBeVisible();
 
     // All five steps are listed.
-    await expect(page.getByText(/Set up your first aquarium/i)).toBeVisible();
-    await expect(page.getByText(/Log a water test/i)).toBeVisible();
-    await expect(page.getByText(/Add your first fish/i)).toBeVisible();
-    await expect(page.getByText(/Post to The Reef/i)).toBeVisible();
-    await expect(page.getByText(/Browse the marketplace/i)).toBeVisible();
+    await expect(quest.getByText(/Set up your first aquarium/i)).toBeVisible();
+    await expect(quest.getByText(/Log a water test/i)).toBeVisible();
+    await expect(quest.getByText(/Add your first fish/i)).toBeVisible();
+    await expect(quest.getByText(/Post to The Reef/i)).toBeVisible();
+    await expect(quest.getByText(/Browse the marketplace/i)).toBeVisible();
   });
 
   test("Q2. seeds tank+fish for a returning keeper and ticks the marketplace visit", async ({ page }, testInfo) => {

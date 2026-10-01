@@ -2,8 +2,11 @@
  * breeder-summary Edge Function
  * 
  * Weekly Breeder Summary generation (Task 49).
- * For each active profile, generates a 2-sentence AI summary.
- * Stores in profiles.poseidon_summary.
+ * For each active profile, Echo writes a 2-sentence summary from the profile's
+ * real counts (Gemini on Vertex, _shared/vertex.ts). If the model is
+ * unavailable the summary is the facts themselves; with no facts it is null.
+ * Stores in profiles.poseidon_summary. Service-role callers only.
+ * `?dry=1` returns sample summaries and writes nothing.
  * 
  * Schedule via pg_cron (weekly, e.g. Monday 3am UTC):
  *   SELECT cron.schedule('breeder-summary', '0 3 * * 1', ...)
@@ -11,14 +14,22 @@
 
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { generateText, tidyGenerated } from "../_shared/vertex.ts";
+import { isDryRun, requireServiceRole } from "../_shared/callerRole.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY") || "";
 
 serve(async (req) => {
+  // Cron only. Without this anyone could rewrite every keeper's public summary.
+  const denied = requireServiceRole(req);
+  if (denied) return denied;
+
+  const dry = isDryRun(req);
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
   let updated = 0;
+  let aiWritten = 0;
+  const samples: Array<{ text: string | null; source: string }> = [];
 
   try {
     // Get profiles with any activity
@@ -37,10 +48,18 @@ serve(async (req) => {
       try {
         const context = await gatherProfileContext(supabase, profile.wallet_address);
         const summary = await generateSummary(profile, context);
+        if (!summary.source.startsWith("facts") && summary.source !== "none") aiWritten++;
 
+        if (dry) {
+          if (samples.length < 3) samples.push(summary);
+          continue;
+        }
+
+        // null when there is nothing true to say, which also clears the stock
+        // "Active community member." line the broken AI call used to leave.
         await supabase
           .from("profiles")
-          .update({ poseidon_summary: summary })
+          .update({ poseidon_summary: summary.text })
           .eq("wallet_address", profile.wallet_address);
 
         updated++;
@@ -49,7 +68,7 @@ serve(async (req) => {
       }
     }
 
-    return new Response(JSON.stringify({ success: true, updated }), {
+    return new Response(JSON.stringify({ success: true, dry, updated, aiWritten, ...(dry ? { samples } : {}) }), {
       headers: { "Content-Type": "application/json" },
     });
   } catch (err) {
@@ -114,47 +133,38 @@ function extractTopSpecies(currents: any[]): string[] {
     .map(([name]) => name);
 }
 
-async function generateSummary(profile: any, context: any): Promise<string> {
-  if (!GEMINI_API_KEY) {
-    // Fallback
-    const parts = [];
-    if (context.speciesFocus.length > 0) parts.push(`Focuses on ${context.speciesFocus.join(", ")}.`);
-    if (context.auditsGiven > 0) parts.push(`Has given ${context.auditsGiven} Expert Audits.`);
-    if (context.insights > 0) parts.push(`Contributed ${context.insights} Species Insights.`);
-    if (parts.length === 0) parts.push("Active community member.");
-    return parts.slice(0, 2).join(" ");
-  }
+const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 
-  const prompt = `You are Poseidon. Write exactly 2 sentences summarizing this aquarium breeder's profile for public display. Be factual and concise.
+/** The facts worth a sentence, from real counts. Empty when there are none. */
+function profileFacts(profile: any, context: any): string[] {
+  const facts: string[] = [];
+  if (context.speciesFocus.length > 0) facts.push(`Posts most about ${context.speciesFocus.join(", ")}.`);
+  if (Number(profile.tank_count) > 0) facts.push(`Keeps ${plural(Number(profile.tank_count), "tank", "tanks")}.`);
+  if (Number(profile.species_count) > 0) facts.push(`Has logged ${plural(Number(profile.species_count), "species", "species")}.`);
+  if (context.recentPosts > 0) facts.push(`Shared ${plural(context.recentPosts, "post", "posts")} in the last 30 days.`);
+  if (context.insights > 0) facts.push(`Wrote ${plural(context.insights, "species insight", "species insights")}.`);
+  if (context.auditsGiven > 0) facts.push(`Gave ${plural(context.auditsGiven, "expert audit", "expert audits")}.`);
+  if (context.schools > 0) facts.push(`Member of ${plural(context.schools, "club", "clubs")}.`);
+  return facts;
+}
 
-Profile:
-- Name: ${profile.display_name || "Anonymous Breeder"}
-- Tier: ${profile.companion_tier}, Depth: ${profile.depth_tier}
-- Tanks: ${profile.tank_count}, Species: ${profile.species_count}
-- Recent posts (30d): ${context.recentPosts}
-- Species Insights shared: ${context.insights}
-- Expert Audits given: ${context.auditsGiven}
-- Schools: ${context.schools}
-- Focus species: ${context.speciesFocus.join(", ") || "varied"}
+/**
+ * Two sentences for the profile, from the facts above. `text: null` when there
+ * is nothing true to say: an empty summary is better than a stock line.
+ */
+async function generateSummary(profile: any, context: any): Promise<{ text: string | null; source: string }> {
+  const facts = profileFacts(profile, context);
+  if (facts.length === 0) return { text: null, source: "none" };
 
-Write 2 short sentences. No emojis. Professional but warm tone.`;
+  const prompt = `You are Echo, the fish guide in Aquacellum, an app for aquarium keepers and breeders. Write a two-sentence public summary of this keeper's profile, in the third person.
 
-  try {
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { maxOutputTokens: 100, temperature: 0.4 },
-        }),
-      }
-    );
+Facts (use only these; do not add any other claim, number or species):
+${facts.map((f) => `- ${f}`).join("\n")}
 
-    const data = await response.json();
-    return data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "Active community member.";
-  } catch {
-    return "Active community member.";
-  }
+Rules: two short sentences, under 45 words. Plain and warm. Add nothing that is not in the facts: no places, rooms, feelings, skill or descriptions of the tanks. No exclamation points, no em dashes, no emoji, no markdown. Do not mention tiers, scores or the app itself.`;
+
+  const ai = await generateText(prompt, { maxOutputTokens: 120, temperature: 0.2 });
+  const text = tidyGenerated(ai.text);
+  if (text) return { text, source: ai.model || "ai" };
+  return { text: facts.slice(0, 2).join(" "), source: `facts (${ai.reason || "empty"})` };
 }
