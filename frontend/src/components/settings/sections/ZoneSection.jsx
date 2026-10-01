@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { CheckCircle, MapPin } from "@phosphor-icons/react";
 import { SettingsSection } from "../SettingsSection";
 import { ZoneAssignmentFlow } from "../../ZoneAssignmentFlow";
 import { useAuth } from "../../../contexts/AuthContext";
@@ -47,41 +48,34 @@ export function ZoneSection({ casualModeActive }) {
   return (
     <SettingsSection
       id="zone"
-      icon="📍"
+      icon={<MapPin size={20} />}
       title={{ casual: "Zone & Location", pro: "Regional Zone Assignment" }}
       description={{
         casual:
-          "Enable location to join your regional zone leaderboard and compete with nearby keepers. Your exact coordinates are never stored — only your city-level zone.",
+          "Share your location once to join your regional leaderboard with nearby keepers. Only your city-level zone is stored, never your exact location.",
         pro:
-          "Assign your operator profile to a geographic zone for regional leaderboard rankings. Location is bucketed to a 15–30 mile zone — precise coordinates are discarded after hashing.",
+          "Assign your profile to a regional zone for leaderboard rankings. Location is rounded to a 15–30 mile zone; exact coordinates are discarded.",
       }}
       casualModeActive={casualModeActive}
     >
+      {/*
+        No `onSkip` here: Settings has nothing to skip to, and the old no-op
+        handler rendered "Skip for now" / "Skip" buttons that did nothing.
+      */}
       <ZoneAssignmentFlow
         onComplete={(zone) => {
           setJoinedMessage(`Joined zone: ${zone.displayName}`);
           setZoneAssigned(true);
         }}
-        onSkip={() => {}}
         isTransfer={zoneAssigned}
         casualModeActive={casualModeActive}
       />
 
       {joinedMessage && (
-        <div
-          style={{
-            marginTop: "1rem",
-            padding: "0.75rem 1rem",
-            borderRadius: "var(--radius-sm)",
-            fontSize: "0.8rem",
-            fontWeight: 500,
-            backgroundColor: "rgba(52, 211, 153, 0.08)",
-            border: "1px solid rgba(52, 211, 153, 0.25)",
-            color: "var(--accent-green)",
-          }}
-        >
-          {joinedMessage}
-        </div>
+        <p className="st-note st-note--success" style={{ marginTop: "1rem" }}>
+          <CheckCircle size={18} aria-hidden="true" />
+          <span>{joinedMessage}</span>
+        </p>
       )}
     </SettingsSection>
   );

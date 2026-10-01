@@ -1,6 +1,8 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
+import { ArrowCounterClockwise, Check, Eye } from "@phosphor-icons/react";
 import { useFontSettings } from "../hooks/useFontSettings";
 import { announce } from "../utils/a11y";
+import { nextRadioIndex } from "./settings/radioKeys";
 
 /**
  * FontSizeSettings — Font scale controls for the Settings → Accessibility
@@ -30,6 +32,9 @@ export function FontSizeSettings() {
 
   const [previewMode, setPreviewMode] = useState(false);
   const [tempScale, setTempScale] = useState(currentScale);
+  // Index of the option that has focus, or null when focus is outside the group.
+  const [focusedIndex, setFocusedIndex] = useState(null);
+  const optionRefs = useRef([]);
 
   const handlePreviewStart = (scale) => {
     setPreviewMode(true);
@@ -62,79 +67,93 @@ export function FontSizeSettings() {
   };
 
   if (!ready) {
-    return <p style={{ color: "var(--text-muted)", fontSize: 13 }}>Loading font settings…</p>;
+    return <p className="st-empty">Loading font settings…</p>;
   }
+
+  const scaleEntries = Object.entries(availableScales);
+  const currentIndex = scaleEntries.findIndex(([scale]) => scale === currentScale);
+  // While focus is inside the group the focused option is the Tab stop, so Tab
+  // and Shift+Tab leave the group even after arrowing away from the stored
+  // size. Once focus leaves, the stored size is the Tab stop again.
+  const tabStop = focusedIndex ?? (currentIndex >= 0 ? currentIndex : 0);
+
+  // Keyboard: the group is one Tab stop. Arrow keys and Home/End move focus
+  // between sizes, and focus previews each one through the existing onFocus
+  // handler, the keyboard version of sweeping the mouse down the list. Enter or
+  // Space keeps the focused size (the native button click). Moving focus does
+  // not apply a size, so this stays preview-then-apply.
+  const handleOptionKeyDown = (event, index) => {
+    const next = nextRadioIndex(event.key, index, scaleEntries.length);
+    if (next === null) return;
+    event.preventDefault();
+    optionRefs.current[next]?.focus();
+  };
+
+  const handleGroupFocus = (event) => {
+    const index = optionRefs.current.indexOf(event.target);
+    if (index >= 0) setFocusedIndex(index);
+  };
+
+  const handleGroupBlur = (event) => {
+    if (!event.currentTarget.contains(event.relatedTarget)) setFocusedIndex(null);
+  };
 
   return (
     <div>
       {/* Preview banner */}
       {previewMode && (
-        <div style={{
-          background: "rgba(251, 191, 36, 0.08)",
-          border: "1px solid rgba(251, 191, 36, 0.25)",
-          borderRadius: 8,
-          padding: "8px 12px",
-          marginBottom: 12,
-          fontSize: 11,
-          color: "var(--accent-amber)"
-        }}>
-          📝 Preview mode - click Apply to keep changes or select another size
+        <div className="st-callout st-callout--amber" style={{ marginBottom: "0.75rem" }}>
+          <Eye size={20} aria-hidden="true" />
+          <p>Previewing this size. Select it to keep it.</p>
         </div>
       )}
 
       {/* Font scale options */}
-      <div style={cardStyle}>
-        <div id="font-scale-label" style={{ fontSize: 12, fontWeight: 600, color: "var(--text-primary)", marginBottom: 12 }}>
-          Font Scale
-        </div>
+      <p id="font-scale-label" className="st-label" style={{ margin: "0 0 0.5rem" }}>
+        Choose a size
+      </p>
 
-        <div role="radiogroup" aria-labelledby="font-scale-label">
-          {Object.entries(availableScales).map(([scale, config]) => (
-            <FontScaleOption
-              key={scale}
-              config={config}
-              isActive={currentScale === scale && !previewMode}
-              isPreviewing={previewMode && tempScale === scale}
-              isSelected={currentScale === scale}
-              onPreview={() => handlePreviewStart(scale)}
-              onApply={() => handleApplyScale(scale)}
-              onPreviewEnd={handlePreviewEnd}
-            />
-          ))}
-        </div>
+      <div
+        role="radiogroup"
+        aria-labelledby="font-scale-label"
+        className="st-choices"
+        onFocus={handleGroupFocus}
+        onBlur={handleGroupBlur}
+      >
+        {scaleEntries.map(([scale, config], index) => (
+          <FontScaleOption
+            key={scale}
+            buttonRef={(el) => {
+              optionRefs.current[index] = el;
+            }}
+            tabIndex={index === tabStop ? 0 : -1}
+            onKeyDown={(event) => handleOptionKeyDown(event, index)}
+            config={config}
+            isActive={currentScale === scale && !previewMode}
+            isPreviewing={previewMode && tempScale === scale}
+            isSelected={currentScale === scale}
+            onPreview={() => handlePreviewStart(scale)}
+            onApply={() => handleApplyScale(scale)}
+            onPreviewEnd={handlePreviewEnd}
+          />
+        ))}
       </div>
 
       {/* Sample text */}
-      <div style={cardStyle}>
-        <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-primary)", marginBottom: 8 }}>
-          Sample Text
-        </div>
-        <div style={{ fontSize: "var(--font-size-lg)", fontWeight: 600, color: "var(--accent-blue)", marginBottom: 4 }}>
-          Aquadex
-        </div>
-        <div style={{ fontSize: "var(--font-size-base)", color: "var(--text-primary)", marginBottom: 4 }}>
-          Your freshwater aquarium companion for species tracking and care logging.
-        </div>
-        <div style={{ fontSize: "var(--font-size-sm)", color: "var(--text-muted)" }}>
+      <div className="st-well" style={{ marginTop: "0.9rem" }}>
+        <p className="st-label" style={{ margin: "0 0 0.4rem" }}>Preview</p>
+        <p className="st-sample-title">Aquacellum</p>
+        <p className="st-sample-body">Track your tanks, fish and care logs in one place.</p>
+        <p className="st-sample-meta">
           Tank parameters: pH 7.2 • Temp 24.5°C • 40L planted community tank
-        </div>
+        </p>
       </div>
 
-      {/* Reset button */}
-      <div style={{ marginTop: 16, textAlign: "center" }}>
-        <button
-          onClick={handleReset}
-          style={{
-            padding: "6px 14px",
-            fontSize: 11,
-            background: "rgba(239, 68, 68, 0.08)",
-            border: "1px solid rgba(239, 68, 68, 0.3)",
-            borderRadius: 6,
-            color: "var(--accent-red)",
-            cursor: "pointer",
-          }}
-        >
-          Reset to Default
+      {/* Reset: harmless, so a neutral button rather than a red one */}
+      <div className="st-actions" style={{ marginTop: "0.9rem" }}>
+        <button type="button" className="st-btn" onClick={handleReset}>
+          <ArrowCounterClockwise size={18} aria-hidden="true" />
+          Reset to default size
         </button>
       </div>
     </div>
@@ -151,10 +170,15 @@ export function FontSizeSettings() {
  * larger font could not reach it. `HighContrastToggle` immediately below already
  * did this correctly; this now matches it.
  *
- * The preview fires on focus as well as hover, so tabbing through the options
- * previews each one — the keyboard equivalent of sweeping the mouse down the list.
+ * The preview fires on focus as well as hover, so moving through the options
+ * with the arrow keys previews each one — the keyboard equivalent of sweeping
+ * the mouse down the list. Styled by `.st-choice*` (SettingsDaylight.css): the
+ * stored size reads as selected, a size being previewed reads amber.
  */
 function FontScaleOption({
+  buttonRef,
+  tabIndex,
+  onKeyDown,
   config,
   isActive,
   isPreviewing,
@@ -163,80 +187,34 @@ function FontScaleOption({
   onApply,
   onPreviewEnd
 }) {
-  const borderColor = isActive 
-    ? "#0284c7" 
-    : isPreviewing 
-    ? "#f59e0b" 
-    : "rgba(var(--ink-rgb), 0.13)";
-    
-  const backgroundColor = isActive
-    ? "rgba(56, 189, 248, 0.08)"
-    : isPreviewing
-    ? "rgba(251, 191, 36, 0.08)"
-    : "rgba(var(--ink-rgb), 0.02)";
-
   return (
     <button
+      ref={buttonRef}
       type="button"
       role="radio"
       aria-checked={isSelected}
-      aria-label={`${config.label} — ${config.description}`}
+      aria-label={`${config.label}, ${config.description}`}
+      tabIndex={tabIndex}
+      onKeyDown={onKeyDown}
       onMouseEnter={!isActive ? onPreview : undefined}
       onMouseLeave={!isActive ? onPreviewEnd : undefined}
       onFocus={!isActive ? onPreview : undefined}
       onBlur={!isActive ? onPreviewEnd : undefined}
       onClick={() => !isActive && onApply()}
-      style={{
-        display: "block",
-        width: "100%",
-        minHeight: 44,
-        textAlign: "left",
-        font: "inherit",
-        color: "inherit",
-        border: `1px solid ${borderColor}`,
-        borderRadius: 8,
-        padding: "10px 12px",
-        marginBottom: 8,
-        background: backgroundColor,
-        cursor: isActive ? "default" : "pointer",
-        transition: "all 0.2s ease"
-      }}
+      className={`st-choice${isPreviewing && !isSelected ? " st-choice--preview" : ""}`}
     >
-      <span style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <span>
-          <span style={{
-            display: "block",
-            fontSize: 12,
-            fontWeight: 600,
-            color: isActive ? "var(--accent-blue)" : isPreviewing ? "var(--accent-amber)" : "var(--text-primary)"
-          }}>
-            {config.label}
-            {isActive && <span aria-hidden="true" style={{ marginLeft: 6 }}>✓</span>}
-          </span>
-          <span style={{ display: "block", fontSize: 10, color: "var(--text-muted)", marginTop: 2 }}>
-            {config.description}
-          </span>
+      <span className="st-choice-main">
+        <span className="st-choice-mark" aria-hidden="true">
+          {isSelected && <Check size={13} weight="bold" />}
         </span>
-        <span aria-hidden="true" style={{
-          fontSize: 11,
-          color: "var(--text-muted)",
-          fontFamily: "monospace"
-        }}>
-          {config.value}×
+        <span className="st-choice-text">
+          <span className="st-choice-label">{config.label}</span>
+          <span className="st-choice-desc">{config.description}</span>
         </span>
+      </span>
+      <span className="st-choice-sample" aria-hidden="true">
+        {config.value}×
       </span>
     </button>
   );
 }
-
-// --- Styles ---
-// No outer panel/close-button styles here anymore — the enclosing
-// SettingsSection card owns that chrome now (AC-2).
-
-const cardStyle = {
-  background: "var(--bg-secondary)",
-  border: "1px solid rgba(var(--ink-rgb), 0.13)",
-  borderRadius: 10,
-  padding: "12px 14px",
-  marginBottom: 12,
-};

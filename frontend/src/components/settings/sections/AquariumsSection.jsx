@@ -1,7 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import { ArrowsClockwise, Check, CheckCircle, Fish, WarningCircle } from "@phosphor-icons/react";
 import { SettingsSection } from "../SettingsSection";
 import { SettingsToggle } from "../SettingsToggle";
 import { SettingsSubsectionLabel as SubsectionLabel } from "../SettingsSubsectionLabel";
+import { nextRadioIndex } from "../radioKeys";
 import { announce } from "../../../utils/a11y";
 import { areRemindersEnabled, setRemindersEnabled } from "../../../utils/growoutReminders";
 import { useUserTanks } from "../../../hooks/useUserTanks";
@@ -60,6 +62,7 @@ export function AquariumsSection({
   const { data: tanks = [], isLoading: tanksLoading } = useUserTanks(contractAddress, walletAccount);
   const [remindersOn, setRemindersOn] = useState(() => areRemindersEnabled());
   const [lastSynced, setLastSynced] = useState(null);
+  const tankRefs = useRef([]);
 
   useEffect(() => {
     try {
@@ -87,97 +90,120 @@ export function AquariumsSection({
 
   const activeTankId = displayTank?.id ?? null;
 
+  // Roving tabindex over the tank list (one Tab stop, arrows move and select),
+  // the same radio-group keyboard pattern as SettingsRadioGroup. Selection still
+  // goes through handleSelectTank, so what is stored is unchanged.
+  const selectedTankIndex = tanks.findIndex(
+    (tank) => activeTankId != null && Number(tank.id) === Number(activeTankId)
+  );
+  const tankTabStop = selectedTankIndex >= 0 ? selectedTankIndex : 0;
+  const handleTankKeyDown = (event, index) => {
+    const next = nextRadioIndex(event.key, index, tanks.length);
+    if (next === null) return;
+    event.preventDefault();
+    tankRefs.current[next]?.focus();
+    handleSelectTank(tanks[next]);
+  };
+
   return (
     <SettingsSection
       id="aquariums"
-      icon="🐠"
+      icon={<Fish size={20} />}
       title={{ casual: "Aquariums & Logbook", pro: "Facility & Logbook" }}
       description={{
         casual:
           "Pick which tank the app treats as your main one, control grow-out reminders, and see when your data last synced.",
         pro:
-          "Active-tank binding for compatibility checks and cart context, grow-out checkpoint reminder scheduling, and cloud sync status.",
+          "Which tank compatibility checks and your cart use, grow-out reminders, and cloud sync status.",
       }}
       casualModeActive={casualModeActive}
     >
-      <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+      <div className="st-stack">
         {/* ─── Active tank ─── */}
         <div>
           <SubsectionLabel>{casualModeActive ? "Main tank" : "Active tank"}</SubsectionLabel>
-          <p style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 12, lineHeight: 1.4 }}>
+          <p className="st-hint">
             {casualModeActive
               ? "Used to check whether a fish you're looking at would suit your tank, and shown in your cart at checkout."
-              : "Binds compatibility evaluation and cart buyer-context to this tank."}
+              : "Compatibility checks and your cart use this tank."}
           </p>
 
           {tanksLoading ? (
-            <p style={{ fontSize: 12, color: "var(--text-muted)" }}>Loading tanks…</p>
+            <p className="st-empty">Loading tanks…</p>
           ) : !walletAccount ? (
             /*
               `useUserTanks` is owner-scoped and disabled without an account, so an
               empty list here means "not signed in", NOT "no tanks". Saying the
               latter would tell someone their tanks are gone.
             */
-            <p style={{ fontSize: 12, color: "var(--text-muted)", fontStyle: "italic" }}>
+            <p className="st-empty">
               Sign in to choose which tank the app checks against.
             </p>
           ) : tanks.length === 0 ? (
-            <p style={{ fontSize: 12, color: "var(--text-muted)", fontStyle: "italic" }}>
+            <p className="st-empty">
               {casualModeActive
                 ? "No tanks yet. Once you add one, you can pick it here."
                 : "No active tanks registered to this account."}
             </p>
           ) : (
-            <div
-              role="radiogroup"
-              aria-label={casualModeActive ? "Main tank" : "Active tank"}
-              style={{ display: "flex", flexDirection: "column", gap: 8 }}
-            >
-              {tanks.map((tank) => {
-                // Null-guarded because `Number(null)` is 0, which would mark a
-                // tank with id 0 as selected whenever nothing is selected.
-                const selected = activeTankId != null && Number(tank.id) === Number(activeTankId);
-                // Same conversion as the stored value, so the label can't disagree
-                // with what compatibility is scored against. (`tank.volumeGallons`
-                // is not a field — reading it rendered nothing at all.)
-                const gallons = tankFitInputs(tank).volume;
-                return (
-                  <button
-                    key={tank.id}
-                    type="button"
-                    role="radio"
-                    aria-checked={selected}
-                    onClick={() => handleSelectTank(tank)}
-                    style={optionStyle(selected)}
-                  >
-                    <span>
-                      <span style={optionTitleStyle(selected)}>
-                        {tank.name || `Tank ${String(tank.id).slice(0, 6)}`}
-                        {selected && (
-                          <span aria-hidden="true" style={{ marginLeft: 6 }}>
-                            ✓
+            <>
+              <div
+                role="radiogroup"
+                aria-label={casualModeActive ? "Main tank" : "Active tank"}
+                className="st-choices"
+              >
+                {tanks.map((tank, index) => {
+                  // Null-guarded because `Number(null)` is 0, which would mark a
+                  // tank with id 0 as selected whenever nothing is selected.
+                  const selected = activeTankId != null && Number(tank.id) === Number(activeTankId);
+                  // Same conversion as the stored value, so the label can't disagree
+                  // with what compatibility is scored against. (`tank.volumeGallons`
+                  // is not a field — reading it rendered nothing at all.)
+                  const gallons = tankFitInputs(tank).volume;
+                  return (
+                    <button
+                      key={tank.id}
+                      ref={(el) => {
+                        tankRefs.current[index] = el;
+                      }}
+                      type="button"
+                      role="radio"
+                      aria-checked={selected}
+                      tabIndex={index === tankTabStop ? 0 : -1}
+                      onClick={() => handleSelectTank(tank)}
+                      onKeyDown={(event) => handleTankKeyDown(event, index)}
+                      className="st-choice"
+                    >
+                      <span className="st-choice-main">
+                        <span className="st-choice-mark" aria-hidden="true">
+                          {selected && <Check size={13} weight="bold" />}
+                        </span>
+                        <span className="st-choice-text">
+                          <span className="st-choice-label">
+                            {tank.name || `Tank ${String(tank.id).slice(0, 6)}`}
                           </span>
-                        )}
+                          {gallons > 0 ? (
+                            <span className="st-choice-desc">{gallons} gal</span>
+                          ) : null}
+                        </span>
                       </span>
-                      {gallons > 0 ? (
-                        <span style={optionDescStyle}>{gallons} gal</span>
-                      ) : null}
-                    </span>
-                  </button>
-                );
-              })}
+                    </button>
+                  );
+                })}
+              </div>
 
               {activeTankId && (
-                <button
-                  type="button"
-                  className="btn-secondary"
-                  onClick={() => handleSelectTank(null)}
-                  style={{ alignSelf: "flex-start", padding: "0.5rem 1rem", fontSize: "0.75rem", minHeight: 36 }}
-                >
-                  Clear selection
-                </button>
+                <div className="st-actions" style={{ marginTop: "0.6rem" }}>
+                  <button
+                    type="button"
+                    className="st-btn"
+                    onClick={() => handleSelectTank(null)}
+                  >
+                    Clear selection
+                  </button>
+                </div>
               )}
-            </div>
+            </>
           )}
         </div>
 
@@ -189,7 +215,7 @@ export function AquariumsSection({
             hint={
               casualModeActive
                 ? "A nudge from Poseidon when a batch of fry hasn't been logged in 5 days. Checked every 6 hours while the app is open."
-                : "Local notification when a spawn has no checkpoint activity for 5+ days. Polled every 6 hours; deduplicated to one nudge per spawn per 24h."
+                : "A device notification when a spawn has no checkpoint for 5 days or more. Checked every 6 hours, at most one per spawn per day."
             }
             enabled={remindersOn}
             onChange={handleReminders}
@@ -201,17 +227,7 @@ export function AquariumsSection({
         {/* ─── Sync status + manual sync ─── */}
         <div>
           <SubsectionLabel>{casualModeActive ? "Backup status" : "Cloud sync"}</SubsectionLabel>
-          <div
-            style={{
-              padding: "0.75rem 1rem",
-              borderRadius: 10,
-              background: "rgba(var(--ink-rgb), 0.02)",
-              border: "1px solid rgba(var(--ink-rgb), 0.08)",
-              fontSize: 12,
-              color: "var(--text-muted)",
-              lineHeight: 1.5,
-            }}
-          >
+          <div className="st-well">
             {/*
               Prefer the live timestamp from App.jsx over the one read from
               localStorage on mount, so the readout updates the moment a sync
@@ -220,12 +236,12 @@ export function AquariumsSection({
             {(lastSyncedAt || lastSynced) ? (
               <>
                 {casualModeActive ? "Last backed up " : "Last synced "}
-                <strong style={{ color: "var(--text-primary)" }}>
+                <strong>
                   {(lastSyncedAt || lastSynced).toLocaleString()}
                 </strong>
               </>
             ) : (
-              <span style={{ fontStyle: "italic" }}>
+              <span>
                 {casualModeActive
                   ? "Nothing has synced on this device yet."
                   : "No sync timestamp recorded on this device."}
@@ -241,30 +257,34 @@ export function AquariumsSection({
             silently does nothing.
           */}
           {onSyncNow ? (
-            <div style={{ marginTop: "0.75rem", display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap" }}>
+            <div className="st-actions" style={{ marginTop: "0.75rem" }}>
               <button
                 type="button"
-                className="btn-secondary"
+                className="st-btn"
                 onClick={() => {
                   announce("Syncing now");
                   onSyncNow();
                 }}
                 disabled={syncStatus === "syncing"}
-                style={{ padding: "0.5rem 1rem", fontSize: "0.78rem", minHeight: 40 }}
               >
+                <ArrowsClockwise size={18} aria-hidden="true" />
                 {syncStatus === "syncing" ? "Syncing…" : casualModeActive ? "Back up now" : "Sync now"}
               </button>
               {syncStatus === "success" && (
-                <span style={{ fontSize: "0.72rem", color: "var(--accent-green)" }}>✓ Up to date</span>
+                <span className="st-status st-status--success" style={{ margin: 0 }}>
+                  <CheckCircle size={18} aria-hidden="true" />
+                  <span>Up to date</span>
+                </span>
               )}
               {syncStatus === "failed" && (
-                <span style={{ fontSize: "0.72rem", color: "var(--accent-red)" }}>
-                  ⚠️ Sync failed — check your connection and try again.
+                <span className="st-status st-status--error" style={{ margin: 0 }}>
+                  <WarningCircle size={18} aria-hidden="true" />
+                  <span>Sync failed. Check your connection and try again.</span>
                 </span>
               )}
             </div>
           ) : (
-            <p style={{ margin: "0.6rem 0 0", fontSize: 11, color: "var(--text-muted)", lineHeight: 1.4 }}>
+            <p className="st-hint" style={{ margin: "0.6rem 0 0" }}>
               Sign in to back up and restore across devices.
             </p>
           )}
@@ -273,39 +293,5 @@ export function AquariumsSection({
     </SettingsSection>
   );
 }
-
-function optionStyle(selected) {
-  return {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    width: "100%",
-    minHeight: 44,
-    textAlign: "left",
-    font: "inherit",
-    color: "inherit",
-    border: `1px solid ${selected ? "var(--accent-blue)" : "rgba(var(--ink-rgb), 0.08)"}`,
-    borderRadius: 8,
-    padding: "10px 12px",
-    background: selected ? "rgba(56, 189, 248, 0.08)" : "rgba(var(--ink-rgb), 0.02)",
-    cursor: selected ? "default" : "pointer",
-  };
-}
-
-function optionTitleStyle(selected) {
-  return {
-    display: "block",
-    fontSize: 13,
-    fontWeight: 600,
-    color: selected ? "var(--accent-blue)" : "var(--text-primary)",
-  };
-}
-
-const optionDescStyle = {
-  display: "block",
-  fontSize: 11,
-  color: "var(--text-muted)",
-  marginTop: 2,
-};
 
 export default AquariumsSection;

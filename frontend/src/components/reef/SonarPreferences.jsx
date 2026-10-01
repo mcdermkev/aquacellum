@@ -42,6 +42,7 @@
  */
 
 import { useState, useEffect, useCallback } from "react";
+import { CalendarBlank, ChatCircleDots, Fish, Trophy, UsersThree, X } from "@phosphor-icons/react";
 import {
   supabase,
   getCurrentWallet,
@@ -64,31 +65,31 @@ const CATEGORIES = [
   {
     key: "activity",
     label: "Activity",
-    icon: "🐟",
+    Icon: Fish,
     desc: "Tankmate posts, watched tank updates, species insights",
   },
   {
     key: "social",
     label: "Social",
-    icon: "🤝",
+    Icon: UsersThree,
     desc: "Tankmate requests, mentor requests, audit received, replies",
   },
   {
     key: "event",
     label: "Events",
-    icon: "🌊",
+    Icon: CalendarBlank,
     desc: "Tide starting, RSVP reminders, challenge updates, auction outbid",
   },
   {
     key: "milestone",
     label: "Milestones",
-    icon: "🏆",
-    desc: "Badge unlocked, tier promoted, companion evolved",
+    Icon: Trophy,
+    desc: "Badge unlocked, tier promoted",
   },
   {
     key: "poseidon",
     label: "Poseidon",
-    icon: "🐙",
+    Icon: ChatCircleDots,
     desc: "Weekly Reef Digest, suggested tankmates, content recommendations",
   },
 ];
@@ -234,7 +235,7 @@ export function SonarPreferences({ onClose, casualModeActive = false, poseidonAi
     if (!wallet || !isSupabaseConfigured()) {
       setSaveError(
         !isSupabaseConfigured()
-          ? "Can't save — the cloud connection isn't configured on this build."
+          ? "Can't save. The cloud connection isn't set up on this build."
           : "Sign in to save your notification preferences."
       );
       return;
@@ -369,7 +370,7 @@ export function SonarPreferences({ onClose, casualModeActive = false, poseidonAi
       {!embedded && (
         <header className="sonar-prefs__header">
           <div>
-            <h2>🔔 Notification Preferences</h2>
+            <h2>Notification preferences</h2>
             <p className="sonar-prefs__subtitle">
               {casualModeActive
                 ? "Choose what Aquacellum tells you about, and how."
@@ -377,7 +378,7 @@ export function SonarPreferences({ onClose, casualModeActive = false, poseidonAi
             </p>
           </div>
           {onClose && (
-            <button className="btn btn--ghost" onClick={onClose} aria-label="Close">✕</button>
+            <button className="btn btn--ghost" onClick={onClose} aria-label="Close"><X size={18} aria-hidden="true" /></button>
           )}
         </header>
       )}
@@ -457,7 +458,7 @@ export function SonarPreferences({ onClose, casualModeActive = false, poseidonAi
         {pushConfigurable && !pushActive && (
           <p className="text-muted text-sm" style={{ marginTop: 0 }}>
             These apply to every device on your account. This one isn't receiving
-            push yet — turn it on above.
+            push yet. Turn it on above.
           </p>
         )}
         {CATEGORIES.map((cat) => {
@@ -473,7 +474,7 @@ export function SonarPreferences({ onClose, casualModeActive = false, poseidonAi
           return (
             <div key={cat.key} className="sonar-prefs__category">
               <div className="sonar-prefs__category-info">
-                <span className="sonar-prefs__category-icon">{cat.icon}</span>
+                <span className="sonar-prefs__category-icon" aria-hidden="true"><cat.Icon size={22} /></span>
                 <div>
                   <strong>{cat.label}</strong>
                   <p className="text-muted text-sm">{cat.desc}</p>
@@ -522,7 +523,7 @@ export function SonarPreferences({ onClose, casualModeActive = false, poseidonAi
 
       {/* Quiet Hours */}
       <div className="sonar-prefs__quiet-hours">
-        <h3>Quiet Hours</h3>
+        <h3>Quiet hours</h3>
         <label className="toggle-switch toggle-switch--wide">
           <input
             type="checkbox"
@@ -530,7 +531,7 @@ export function SonarPreferences({ onClose, casualModeActive = false, poseidonAi
             onChange={(e) => updateQuietHours("enabled", e.target.checked)}
           />
           <span className="toggle-switch__track"><span className="toggle-switch__thumb" /></span>
-          <span className="toggle-switch__label">Enable quiet hours (no push notifications during this time)</span>
+          <span className="toggle-switch__label">Quiet hours on (no push notifications during this time)</span>
         </label>
         {prefs.quietHours.enabled && (
           <>
@@ -603,7 +604,7 @@ export function SonarPreferences({ onClose, casualModeActive = false, poseidonAi
 
         <h4 style={{ marginTop: "1rem" }}>Digest</h4>
         <p className="text-muted text-sm">
-          Poseidon curates a summary of what you missed and emails it on Sundays. You will always
+          Poseidon writes a summary of what you missed and emails it on Sundays. You will always
           see it in your notifications either way.
         </p>
         <div className="sonar-prefs__email-options" role="radiogroup" aria-label="Email digest frequency">
@@ -635,7 +636,7 @@ export function SonarPreferences({ onClose, casualModeActive = false, poseidonAi
           onClick={handleSave}
           disabled={saving}
         >
-          {saving ? "Saving…" : saved ? "✓ Saved" : "Save Preferences"}
+          {saving ? "Saving…" : saved ? "Saved" : "Save notification settings"}
         </button>
         {saveError && (
           <p role="alert" className="sonar-prefs__note sonar-prefs__note--error">{saveError}</p>
@@ -691,8 +692,8 @@ function PushStatusBanner({ status, diverged, casualModeActive }) {
     return (
       <p className="sonar-prefs__note sonar-prefs__note--error">
         Notifications are <strong>blocked</strong> for this site. The app can't ask again
-        once blocked — you'll need to allow notifications in your browser's site settings
-        (the icon next to the address bar), then reload.
+        once blocked. Allow notifications in your browser's site settings (the icon next
+        to the address bar), then reload.
       </p>
     );
   }
@@ -700,7 +701,7 @@ function PushStatusBanner({ status, diverged, casualModeActive }) {
   if (!status.bridgeActive) {
     return (
       <p className="sonar-prefs__note sonar-prefs__note--warning">
-        Sign in to enable notifications — we need a verified session to register this
+        Sign in to turn on notifications. We need a verified session to register this
         device to your account.
       </p>
     );

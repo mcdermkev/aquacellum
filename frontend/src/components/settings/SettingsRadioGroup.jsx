@@ -1,5 +1,7 @@
-import React from "react";
+import React, { useRef } from "react";
+import { Check } from "@phosphor-icons/react";
 import { announce } from "../../utils/a11y";
+import { nextRadioIndex } from "./radioKeys";
 
 /**
  * SettingsRadioGroup — the one "pick exactly one option" control for Settings.
@@ -15,7 +17,8 @@ import { announce } from "../../utils/a11y";
  * and no key handler — an a11y defect inside the accessibility panel (AC-5). Here
  * every option is a real `<button role="radio">` inside a labelled `radiogroup`,
  * so Enter/Space work natively, and the selection is `announce()`d because the
- * visible result of a units change may be off-screen in another tab.
+ * visible result of a units change may be off-screen in another tab. The group
+ * is a single Tab stop with arrow/Home/End movement (`radioKeys.js`).
  *
  * @param {object} props
  * @param {string} props.label - accessible name for the group.
@@ -34,6 +37,8 @@ export function SettingsRadioGroup({
   hint,
   announceAs,
 }) {
+  const optionRefs = useRef([]);
+
   const handleSelect = (next) => {
     if (next === value) return;
     onChange(next);
@@ -41,84 +46,54 @@ export function SettingsRadioGroup({
     announce(`${announceAs || label} set to ${selectedLabel}`);
   };
 
+  // Roving tabindex: the group is one Tab stop (the selected option, or the
+  // first when nothing is selected) and the arrow keys move between options,
+  // selecting as they go, per the WAI-ARIA radio group pattern.
+  const selectedIndex = options.findIndex((o) => o.value === value);
+  const tabStop = selectedIndex >= 0 ? selectedIndex : 0;
+
+  const handleKeyDown = (event, index) => {
+    const next = nextRadioIndex(event.key, index, options.length);
+    if (next === null) return;
+    event.preventDefault();
+    optionRefs.current[next]?.focus();
+    handleSelect(options[next].value);
+  };
+
   return (
     <div>
-      {hint && (
-        <p style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 12, lineHeight: 1.4 }}>
-          {hint}
-        </p>
-      )}
+      {hint && <p className="st-hint">{hint}</p>}
 
-      <div
-        role="radiogroup"
-        aria-label={label}
-        style={{ display: "flex", flexDirection: "column", gap: 8 }}
-      >
-        {options.map((option) => {
+      <div role="radiogroup" aria-label={label} className="st-choices">
+        {options.map((option, index) => {
           const selected = value === option.value;
           return (
             <button
               key={option.value}
+              ref={(el) => {
+                optionRefs.current[index] = el;
+              }}
               type="button"
               role="radio"
               aria-checked={selected}
+              tabIndex={index === tabStop ? 0 : -1}
               onClick={() => handleSelect(option.value)}
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                width: "100%",
-                minHeight: 44,
-                textAlign: "left",
-                font: "inherit",
-                color: "inherit",
-                border: `1px solid ${selected ? "var(--accent-blue)" : "rgba(var(--ink-rgb), 0.08)"}`,
-                borderRadius: 8,
-                padding: "10px 12px",
-                background: selected ? "rgba(56, 189, 248, 0.08)" : "rgba(var(--ink-rgb), 0.02)",
-                cursor: selected ? "default" : "pointer",
-              }}
+              onKeyDown={(event) => handleKeyDown(event, index)}
+              className="st-choice"
             >
-              <span>
-                <span
-                  style={{
-                    display: "block",
-                    fontSize: 13,
-                    fontWeight: 600,
-                    color: selected ? "var(--accent-blue)" : "var(--text-primary)",
-                  }}
-                >
-                  {option.label}
-                  {selected && (
-                    <span aria-hidden="true" style={{ marginLeft: 6 }}>
-                      ✓
-                    </span>
+              <span className="st-choice-main">
+                <span className="st-choice-mark" aria-hidden="true">
+                  {selected && <Check size={13} weight="bold" />}
+                </span>
+                <span className="st-choice-text">
+                  <span className="st-choice-label">{option.label}</span>
+                  {option.description && (
+                    <span className="st-choice-desc">{option.description}</span>
                   )}
                 </span>
-                {option.description && (
-                  <span
-                    style={{
-                      display: "block",
-                      fontSize: 11,
-                      color: "var(--text-muted)",
-                      marginTop: 2,
-                    }}
-                  >
-                    {option.description}
-                  </span>
-                )}
               </span>
               {option.sample && (
-                <span
-                  aria-hidden="true"
-                  style={{
-                    fontSize: 11,
-                    color: "var(--text-muted)",
-                    fontFamily: "monospace",
-                    whiteSpace: "nowrap",
-                    marginLeft: 12,
-                  }}
-                >
+                <span className="st-choice-sample" aria-hidden="true">
                   {option.sample}
                 </span>
               )}

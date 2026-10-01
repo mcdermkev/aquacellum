@@ -1,4 +1,5 @@
 import React from "react";
+import { Bell } from "@phosphor-icons/react";
 import { SettingsSection } from "../SettingsSection";
 import { SonarPreferences } from "../../reef/SonarPreferences";
 
@@ -17,7 +18,7 @@ export function NotificationsSection({ casualModeActive, poseidonAiDisabled }) {
   return (
     <SettingsSection
       id="notifications"
-      icon="🔔"
+      icon={<Bell size={20} />}
       title={{ casual: "Notifications", pro: "Sonar & Alerts" }}
       casualModeActive={casualModeActive}
     >

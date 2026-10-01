@@ -16,9 +16,15 @@
  *   - onSkip() - Called if user declines location
  *   - isTransfer {boolean} - True if this is a zone transfer (shows cooldown info)
  *   - casualModeActive {boolean} - Label styling
+ *
+ * Styled by the `st-zone*` classes in settings/SettingsDaylight.css (imported
+ * here so the flow renders the same wherever it is mounted). The Skip buttons
+ * only render when a caller passes `onSkip`; Settings does not.
  */
 
 import React, { useState, useCallback } from "react";
+import { CheckCircle, Clock, Lock, MapPin, MapTrifold, WarningCircle } from "@phosphor-icons/react";
+import "./settings/SettingsDaylight.css";
 import { detectUserZone, calculateZoneHash } from "../utils/zoneHash";
 import { assignUserToZone, registerZone } from "../services/zoneLeaderboardApi";
 import { useAssignZone } from "../hooks/useZoneLeaderboard";
@@ -122,86 +128,45 @@ export function ZoneAssignmentFlow({
   // ─────────────────────────────────────────────────────────────────────────
 
   return (
-    <div style={{
-      padding: "1.5rem",
-      borderRadius: "16px",
-      background: "#ffffff",
-      border: "1px solid rgba(139, 92, 246, 0.12)",
-      backdropFilter: "blur(12px)",
-      maxWidth: "420px",
-      margin: "0 auto",
-    }}>
+    <div className="st-zone">
 
       {/* ─── INTRO ──────────────────────────────────────────────────────── */}
       {step === STEP.INTRO && (
         <>
-          <div style={{ textAlign: "center", marginBottom: "1.25rem" }}>
-            <span style={{ fontSize: "2rem", display: "block", marginBottom: "0.5rem" }}>📍</span>
-            <h3 style={{
-              margin: "0 0 0.4rem",
-              fontSize: "1.1rem",
-              fontWeight: "800",
-              color: "var(--text-primary)",
-              fontFamily: "'Outfit', sans-serif",
-            }}>
-              {isTransfer ? "Transfer Your Zone" : "Join Your Regional Zone"}
-            </h3>
-            <p style={{ fontSize: "0.82rem", color: "var(--text-secondary)", lineHeight: "1.6", margin: 0 }}>
-              {isTransfer
-                ? "Move to a new regional zone based on your current location. You can only transfer once every 90 days."
-                : "Compete with nearby keepers on your regional leaderboard. Your approximate location determines your zone — we never store precise coordinates."
-              }
-            </p>
+          <div className="st-zone-hero">
+            <span className="st-zone-icon" aria-hidden="true">
+              <MapPin size={24} />
+            </span>
+            <div>
+              <h4 className="st-zone-title">
+                {isTransfer ? "Move to a new zone" : "Join your regional zone"}
+              </h4>
+              <p className="st-zone-text">
+                {isTransfer
+                  ? "Move to a new regional zone based on your current location. You can only transfer once every 90 days."
+                  : "Compete with nearby keepers on your regional leaderboard. Your approximate location sets your zone. We never store your exact location."
+                }
+              </p>
+            </div>
           </div>
 
           {/* Privacy note */}
-          <div style={{
-            padding: "0.6rem 0.8rem",
-            borderRadius: "8px",
-            background: "rgba(56, 189, 248, 0.04)",
-            border: "1px solid rgba(56, 189, 248, 0.1)",
-            marginBottom: "1.25rem",
-            fontSize: "0.7rem",
-            color: "var(--text-muted)",
-            lineHeight: "1.5",
-          }}>
-            🔒 <strong style={{ color: "var(--text-secondary)" }}>Privacy:</strong> We only use your city-level location to assign a zone (15–30 mile radius). Your exact coordinates are never stored or shared.
+          <div className="st-callout">
+            <Lock size={20} aria-hidden="true" />
+            <p>
+              <strong>Privacy:</strong> We only use your city-level location to assign a zone (15–30 mile radius). Your exact coordinates are never stored or shared.
+            </p>
           </div>
 
           {/* Actions */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
-            <button
-              onClick={handleEnableLocation}
-              style={{
-                width: "100%",
-                padding: "0.75rem 1rem",
-                borderRadius: "10px",
-                background: "linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(56, 189, 248, 0.15))",
-                border: "1px solid rgba(139, 92, 246, 0.3)",
-                color: "var(--text-primary)",
-                fontSize: "0.85rem",
-                fontWeight: "700",
-                cursor: "pointer",
-                transition: "all 0.2s ease",
-              }}
-            >
-              📍 Enable Location
+          <div className="st-zone-actions">
+            <button type="button" className="st-btn st-btn--primary" onClick={handleEnableLocation}>
+              <MapPin size={18} aria-hidden="true" />
+              Use my location
             </button>
 
             {onSkip && (
-              <button
-                onClick={onSkip}
-                style={{
-                  width: "100%",
-                  padding: "0.6rem 1rem",
-                  borderRadius: "10px",
-                  background: "transparent",
-                  border: "1px solid rgba(var(--ink-rgb), 0.13)",
-                  color: "var(--text-muted)",
-                  fontSize: "0.78rem",
-                  cursor: "pointer",
-                }}
-              >
+              <button type="button" className="st-btn" onClick={onSkip}>
                 Skip for now
               </button>
             )}
@@ -211,106 +176,45 @@ export function ZoneAssignmentFlow({
 
       {/* ─── DETECTING ──────────────────────────────────────────────────── */}
       {step === STEP.DETECTING && (
-        <div style={{ textAlign: "center", padding: "2rem 0" }}>
-          <div style={{
-            width: "48px",
-            height: "48px",
-            borderRadius: "50%",
-            border: "3px solid rgba(139, 92, 246, 0.3)",
-            borderTopColor: "#a855f7",
-            margin: "0 auto 1rem",
-            animation: "spin 1s linear infinite",
-          }} />
-          <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)", margin: 0 }}>
-            Detecting your zone...
-          </p>
-          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        <div className="st-zone-busy" role="status">
+          <span className="st-spinner" aria-hidden="true" />
+          <p>Finding your zone…</p>
         </div>
       )}
 
       {/* ─── CONFIRM ────────────────────────────────────────────────────── */}
       {step === STEP.CONFIRM && zoneData && (
         <>
-          <div style={{ textAlign: "center", marginBottom: "1rem" }}>
-            <span style={{ fontSize: "1.8rem", display: "block", marginBottom: "0.4rem" }}>🏆</span>
-            <h3 style={{ margin: "0 0 0.3rem", fontSize: "1rem", fontWeight: "800", color: "var(--text-primary)" }}>
-              Zone Found!
-            </h3>
-          </div>
+          <h4 className="st-zone-title" style={{ marginBottom: "0.6rem" }}>Your zone</h4>
 
           {/* Zone card */}
-          <div style={{
-            padding: "1rem",
-            borderRadius: "12px",
-            background: "rgba(251, 191, 36, 0.04)",
-            border: "1px solid rgba(251, 191, 36, 0.15)",
-            marginBottom: "1rem",
-          }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "0.6rem" }}>
-              <div style={{
-                width: "36px",
-                height: "36px",
-                borderRadius: "8px",
-                background: "rgba(251, 191, 36, 0.1)",
-                border: "1px solid rgba(251, 191, 36, 0.2)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: "1.1rem",
-              }}>
-                🗺️
+          <div className="st-zone-card">
+            <span className="st-zone-icon st-zone-icon--amber" aria-hidden="true">
+              <MapTrifold size={24} />
+            </span>
+            <div style={{ minWidth: 0 }}>
+              <div className="st-zone-name">{zoneData.displayName}</div>
+              <div className="st-zone-meta">
+                {/* Radius honours Settings → Units & Formatting. This line is
+                    what gives `aquadex_distance_unit` its first reachable
+                    reader — it previously hardcoded "mi" while the only other
+                    consumer, LocalBreederMap, is retired and never imported. */}
+                {zoneData.zoneHash.slice(0, 10)}… · {formatDistance(zoneData.radiusMiles, distanceUnit, { precision: 0 })} radius · {zoneData.populationTier}
               </div>
-              <div>
-                <div style={{ fontSize: "0.88rem", fontWeight: "700", color: "var(--text-primary)" }}>
-                  {zoneData.displayName}
-                </div>
-                <div style={{ fontSize: "0.65rem", color: "var(--text-muted)" }}>
-                  {/* Radius honours Settings → Units & Formatting. This line is
-                      what gives `aquadex_distance_unit` its first reachable
-                      reader — it previously hardcoded "mi" while the only other
-                      consumer, LocalBreederMap, is retired and never imported. */}
-                  {zoneData.zoneHash.slice(0, 10)}... · {formatDistance(zoneData.radiusMiles, distanceUnit, { precision: 0 })} radius · {zoneData.populationTier}
-                </div>
-              </div>
-            </div>
-
-            <div style={{ fontSize: "0.72rem", color: "var(--text-secondary)", lineHeight: "1.5" }}>
-              You'll compete against other {casualModeActive ? "keepers" : "operators"} in this zone for the regional leaderboard. Only one God-Tier champion per zone.
             </div>
           </div>
 
+          <p className="st-zone-text">
+            You'll be ranked with other {casualModeActive ? "keepers" : "breeders"} in this zone on the regional leaderboard.
+          </p>
+
           {/* Actions */}
-          <div style={{ display: "flex", gap: "0.5rem" }}>
-            <button
-              onClick={handleRetry}
-              style={{
-                flex: 1,
-                padding: "0.65rem",
-                borderRadius: "8px",
-                background: "transparent",
-                border: "1px solid rgba(var(--ink-rgb), 0.15)",
-                color: "var(--text-muted)",
-                fontSize: "0.78rem",
-                cursor: "pointer",
-              }}
-            >
-              Try Again
+          <div className="st-zone-actions">
+            <button type="button" className="st-btn st-btn--primary" onClick={handleConfirmZone}>
+              Confirm zone
             </button>
-            <button
-              onClick={handleConfirmZone}
-              style={{
-                flex: 2,
-                padding: "0.65rem",
-                borderRadius: "8px",
-                background: "linear-gradient(135deg, rgba(251, 191, 36, 0.15), rgba(139, 92, 246, 0.12))",
-                border: "1px solid rgba(251, 191, 36, 0.25)",
-                color: "var(--text-primary)",
-                fontSize: "0.82rem",
-                fontWeight: "700",
-                cursor: "pointer",
-              }}
-            >
-              Confirm Zone
+            <button type="button" className="st-btn" onClick={handleRetry}>
+              Try again
             </button>
           </div>
         </>
@@ -318,96 +222,58 @@ export function ZoneAssignmentFlow({
 
       {/* ─── ASSIGNING ──────────────────────────────────────────────────── */}
       {step === STEP.ASSIGNING && (
-        <div style={{ textAlign: "center", padding: "2rem 0" }}>
-          <div style={{
-            width: "48px",
-            height: "48px",
-            borderRadius: "50%",
-            border: "3px solid rgba(251, 191, 36, 0.3)",
-            borderTopColor: "#fbbf24",
-            margin: "0 auto 1rem",
-            animation: "spin 1s linear infinite",
-          }} />
-          <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)", margin: 0 }}>
-            Joining your zone...
-          </p>
+        <div className="st-zone-busy" role="status">
+          <span className="st-spinner" aria-hidden="true" />
+          <p>Joining your zone…</p>
         </div>
       )}
 
       {/* ─── SUCCESS ────────────────────────────────────────────────────── */}
       {step === STEP.SUCCESS && zoneData && (
-        <div style={{ textAlign: "center", padding: "1rem 0" }}>
-          <span style={{ fontSize: "2.5rem", display: "block", marginBottom: "0.6rem" }}>🎉</span>
-          <h3 style={{ margin: "0 0 0.4rem", fontSize: "1.05rem", fontWeight: "800", color: "var(--text-primary)" }}>
-            Welcome to {zoneData.displayName}!
-          </h3>
-          <p style={{ fontSize: "0.8rem", color: "var(--text-secondary)", lineHeight: "1.5", margin: "0 0 1rem" }}>
-            You're now competing on the regional leaderboard. Earn {casualModeActive ? "Loyalty Points" : "XP"} to climb the ranks and claim God-Tier champion status.
-          </p>
+        <>
+          <div className="st-zone-hero">
+            <span className="st-zone-icon" aria-hidden="true">
+              <CheckCircle size={24} />
+            </span>
+            <div>
+              <h4 className="st-zone-title">You joined {zoneData.displayName}</h4>
+              <p className="st-zone-text">
+                You're on the regional leaderboard. Earn {casualModeActive ? "points" : "XP"} to move up.
+              </p>
+            </div>
+          </div>
 
           {isTransfer && (
-            <div style={{
-              padding: "0.5rem 0.75rem",
-              borderRadius: "6px",
-              background: "rgba(251, 191, 36, 0.05)",
-              border: "1px solid rgba(251, 191, 36, 0.12)",
-              fontSize: "0.65rem",
-              color: "var(--text-muted)",
-              marginBottom: "0.75rem",
-            }}>
-              ⏱ Next zone transfer available in 90 days
-            </div>
+            <p className="st-status" style={{ color: "var(--text-secondary)" }}>
+              <Clock size={18} aria-hidden="true" />
+              <span>You can move zones again in 90 days.</span>
+            </p>
           )}
-        </div>
+        </>
       )}
 
       {/* ─── ERROR ──────────────────────────────────────────────────────── */}
       {step === STEP.ERROR && (
         <>
-          <div style={{ textAlign: "center", marginBottom: "1rem" }}>
-            <span style={{ fontSize: "1.8rem", display: "block", marginBottom: "0.4rem" }}>⚠️</span>
-            <h3 style={{ margin: "0 0 0.3rem", fontSize: "1rem", fontWeight: "700", color: "var(--text-primary)" }}>
-              Zone Assignment Failed
-            </h3>
-            <p style={{ fontSize: "0.78rem", color: "var(--accent-red, #f87171)", lineHeight: "1.5", margin: 0 }}>
-              {error}
-            </p>
+          <div className="st-zone-hero">
+            <span className="st-zone-icon st-zone-icon--danger" aria-hidden="true">
+              <WarningCircle size={24} />
+            </span>
+            <div>
+              <h4 className="st-zone-title">Couldn't join a zone</h4>
+              <p className="st-zone-error">{error}</p>
+            </div>
           </div>
 
-          <div style={{ display: "flex", gap: "0.5rem" }}>
+          <div className="st-zone-actions">
+            <button type="button" className="st-btn st-btn--primary" onClick={handleRetry}>
+              Try again
+            </button>
             {onSkip && (
-              <button
-                onClick={onSkip}
-                style={{
-                  flex: 1,
-                  padding: "0.65rem",
-                  borderRadius: "8px",
-                  background: "transparent",
-                  border: "1px solid rgba(var(--ink-rgb), 0.15)",
-                  color: "var(--text-muted)",
-                  fontSize: "0.78rem",
-                  cursor: "pointer",
-                }}
-              >
+              <button type="button" className="st-btn" onClick={onSkip}>
                 Skip
               </button>
             )}
-            <button
-              onClick={handleRetry}
-              style={{
-                flex: 2,
-                padding: "0.65rem",
-                borderRadius: "8px",
-                background: "rgba(56, 189, 248, 0.1)",
-                border: "1px solid rgba(56, 189, 248, 0.2)",
-                color: "var(--text-primary)",
-                fontSize: "0.82rem",
-                fontWeight: "600",
-                cursor: "pointer",
-              }}
-            >
-              Try Again
-            </button>
           </div>
         </>
       )}

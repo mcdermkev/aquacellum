@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { DownloadSimple, Export, Info } from "@phosphor-icons/react";
 import { SettingsSubsectionLabel as SubsectionLabel } from "./SettingsSubsectionLabel";
 
 /**
@@ -61,89 +62,56 @@ export function InstallAppPanel({ casualModeActive }) {
 
   return (
     <div>
-      <SubsectionLabel>{casualModeActive ? "Install App" : "Install Progressive Web App"}</SubsectionLabel>
+      <SubsectionLabel>{casualModeActive ? "Install App" : "Install the app (PWA)"}</SubsectionLabel>
 
-      <p style={{ fontSize: "0.8rem", color: "var(--text-muted)", lineHeight: "1.5", marginBottom: "1rem" }}>
+      <p className="st-hint">
         {installed
           ? casualModeActive
-            ? "Aquadex is already installed on this device. You're getting the full app experience!"
+            ? "Aquacellum is installed on this device."
             : "PWA is installed and running in standalone display mode."
           : casualModeActive
-            ? "Install Aquadex to your home screen for a full-screen, app-like experience with faster loading and offline access."
-            : "Install the PWA for standalone display mode, offline shell caching, and native-like navigation without browser chrome."}
+            ? "Add Aquacellum to your home screen. It opens full screen and loads faster."
+            : "Install the PWA for standalone display and offline shell caching."}
       </p>
 
       {!installed && (
         <>
           {installEvent && (
-            <button
-              className="btn-primary"
-              onClick={handleInstall}
-              style={{ padding: "0.75rem 1.5rem", fontSize: "0.875rem", minHeight: "44px" }}
-            >
-              Install Aquadex
+            <button type="button" className="st-btn st-btn--primary" onClick={handleInstall}>
+              <DownloadSimple size={18} aria-hidden="true" />
+              Install Aquacellum
             </button>
           )}
 
           {isIos && !installEvent && (
             <div>
               <button
-                className="btn-primary"
+                type="button"
+                className="st-btn st-btn--primary"
                 onClick={() => setShowIosSteps((v) => !v)}
-                style={{ padding: "0.75rem 1.5rem", fontSize: "0.875rem", minHeight: "44px" }}
+                aria-expanded={showIosSteps}
               >
-                {showIosSteps ? "Hide Instructions" : "How to Install"}
+                {showIosSteps ? "Hide steps" : "How to install"}
               </button>
 
               {showIosSteps && (
-                <div
-                  style={{
-                    marginTop: "1.25rem",
-                    padding: "1.25rem",
-                    background: "rgba(56, 189, 248, 0.04)",
-                    border: "1px solid rgba(56, 189, 248, 0.15)",
-                    borderRadius: "var(--radius-sm)",
-                  }}
-                >
-                  <p style={{ fontSize: "0.8rem", color: "var(--text-primary)", fontWeight: "600", marginBottom: "1rem" }}>
-                    Follow these steps in Safari:
-                  </p>
-                  <ol
-                    style={{
-                      fontSize: "0.8rem",
-                      color: "var(--text-muted)",
-                      lineHeight: "2",
-                      paddingLeft: "1.25rem",
-                      margin: 0,
-                    }}
-                  >
+                <div className="st-well" style={{ marginTop: "0.9rem" }}>
+                  <p className="st-label" style={{ margin: 0 }}>Follow these steps in Safari:</p>
+                  <ol className="st-steps">
                     <li>
-                      Tap the <strong style={{ color: "var(--accent-blue)" }}>Share</strong> button{" "}
-                      <span style={{ fontSize: "1rem" }}>&#x2B06;&#xFE0F;</span> (the square with an arrow at the bottom of Safari)
+                      Tap the <strong>Share</strong> button{" "}
+                      <Export size={18} aria-hidden="true" /> (the square with an arrow at the bottom of Safari)
                     </li>
                     <li>
-                      Scroll down and tap <strong style={{ color: "var(--accent-blue)" }}>Add to Home Screen</strong>
+                      Scroll down and tap <strong>Add to Home Screen</strong>
                     </li>
                     <li>
-                      Tap <strong style={{ color: "var(--accent-blue)" }}>Add</strong> in the top-right corner
+                      Tap <strong>Add</strong> in the top-right corner
                     </li>
                   </ol>
-                  <div
-                    style={{
-                      marginTop: "1rem",
-                      padding: "0.6rem 0.85rem",
-                      background: "rgba(251, 191, 36, 0.06)",
-                      border: "1px solid rgba(251, 191, 36, 0.2)",
-                      borderRadius: "6px",
-                      display: "flex",
-                      gap: "0.5rem",
-                      alignItems: "flex-start",
-                    }}
-                  >
-                    <span style={{ fontSize: "0.8rem" }}>💡</span>
-                    <span style={{ fontSize: "0.72rem", color: "var(--accent-amber)", lineHeight: "1.4" }}>
-                      This must be done in Safari. Other browsers on iPhone (Chrome, Firefox) don't support installing PWAs.
-                    </span>
+                  <div className="st-callout st-callout--amber" style={{ marginTop: "0.75rem" }}>
+                    <Info size={20} aria-hidden="true" />
+                    <p>Use Safari for this. Other iPhone browsers can't install web apps.</p>
                   </div>
                 </div>
               )}
@@ -151,7 +119,7 @@ export function InstallAppPanel({ casualModeActive }) {
           )}
 
           {!isIos && !installEvent && (
-            <p style={{ fontSize: "0.8rem", color: "var(--text-muted)", fontStyle: "italic" }}>
+            <p className="st-empty">
               {casualModeActive
                 ? "Your browser will show an install option in the address bar, or try visiting this page in Chrome or Edge."
                 : "The install prompt will appear when browser installability criteria are met. Ensure you're using a Chromium-based browser with a valid service worker."}

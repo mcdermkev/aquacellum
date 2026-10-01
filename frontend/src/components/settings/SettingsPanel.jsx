@@ -16,6 +16,7 @@ import { AppSupportSection } from "./sections/AppSupportSection";
 import { SmartWalletSection } from "./sections/SmartWalletSection";
 import { ResetSection } from "./sections/ResetSection";
 import { PrivacySection } from "./sections/PrivacySection";
+import "./SettingsDaylight.css";
 
 /**
  * SettingsPanel — the single child of `App.jsx`'s `case "settings"`
@@ -37,6 +38,10 @@ import { PrivacySection } from "./sections/PrivacySection";
  * Group headings are visual only — Settings is one scrolling page, not
  * sub-tabs (§6: "Sections are individually collapsible… Settings is a page
  * you scan, and sub-tabs hide the thing you are hunting for").
+ *
+ * Daylight (SettingsDaylight.css, `st-*` classes under the `.st` root): a page
+ * header with the only <h2>, group labels as plain text (not headings, so the
+ * outline stays h2 page > h3 section > h4 subsection), then white section cards.
  */
 export function SettingsPanel({
   casualModeActive,
@@ -71,15 +76,25 @@ export function SettingsPanel({
   }, []);
 
   return (
-    <div className="settings-panel">
-      <div className="settings-panel__group-heading">You</div>
+    <div className="st">
+      <header className="st-head">
+        <p className="st-kicker">Your account and app</p>
+        <h2 className="st-title">Settings</h2>
+        <p className="st-subtitle">
+          {casualModeActive
+            ? "How the app looks, what it tells you, and your account."
+            : "Display, notifications, account and data controls."}
+        </p>
+      </header>
+
+      <p className="st-group">You</p>
       <ExperienceModeSection casualModeActive={casualModeActive} onToggleMode={onToggleMode} />
       <AccountSection casualModeActive={casualModeActive} />
 
-      <div className="settings-panel__group-heading">Alerts</div>
+      <p className="st-group">Alerts</p>
       <NotificationsSection casualModeActive={casualModeActive} poseidonAiDisabled={!poseidonEnabled} />
 
-      <div className="settings-panel__group-heading">Interface</div>
+      <p className="st-group">Interface</p>
       <AccessibilitySection casualModeActive={casualModeActive} highContrast={highContrast} />
       <UnitsSection casualModeActive={casualModeActive} />
       <CompanionsSection
@@ -90,7 +105,7 @@ export function SettingsPanel({
         setEchoEnabled={setEchoEnabled}
       />
 
-      <div className="settings-panel__group-heading">Your Fishroom</div>
+      <p className="st-group">Your Fishroom</p>
       <AquariumsSection
         casualModeActive={casualModeActive}
         contractAddress={contractAddress}
@@ -105,7 +120,7 @@ export function SettingsPanel({
       <SellerSection casualModeActive={casualModeActive} />
       <ZoneSection casualModeActive={casualModeActive} />
 
-      <div className="settings-panel__group-heading">App</div>
+      <p className="st-group">App</p>
       <BackupSection casualModeActive={casualModeActive} />
       <AppSupportSection casualModeActive={casualModeActive} />
       <SmartWalletSection casualModeActive={casualModeActive} />

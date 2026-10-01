@@ -1,4 +1,5 @@
 import React from "react";
+import { Ruler } from "@phosphor-icons/react";
 import { SettingsSection } from "../SettingsSection";
 import { SettingsRadioGroup } from "../SettingsRadioGroup";
 import { SettingsSubsectionLabel } from "../SettingsSubsectionLabel";
@@ -76,17 +77,17 @@ export function UnitsSection({ casualModeActive }) {
   return (
     <SettingsSection
       id="units"
-      icon="📐"
+      icon={<Ruler size={20} />}
       title="Units & Formatting"
       description={{
         casual:
-          "Choose how tank sizes, temperatures and distances are shown. This changes the display only — your saved logs keep the exact values you entered.",
+          "Choose how tank sizes, temperatures and distances are shown. This only changes how values are shown. Your saved logs keep the exact values you entered.",
         pro:
-          "Display-unit preferences. Conversion is applied at render time only; stored values remain canonical (litres for volume, °C at tenth precision, distances in miles).",
+          "Display units only. Stored values do not change (litres for volume, °C to one decimal, miles for distance).",
       }}
       casualModeActive={casualModeActive}
     >
-      <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+      <div className="st-stack">
         <div>
           <SettingsSubsectionLabel>Temperature</SettingsSubsectionLabel>
           <SettingsRadioGroup
@@ -95,7 +96,7 @@ export function UnitsSection({ casualModeActive }) {
             hint={
               casualModeActive
                 ? "Water temperature in your logbook and tank readouts. Both is the default."
-                : "Applies to the logbook activity feed and the tank telemetry tile."
+                : "Applies to the logbook activity feed and the tank readings tile."
             }
             options={tempOptions}
             value={tempUnit}
@@ -110,8 +111,8 @@ export function UnitsSection({ casualModeActive }) {
             announceAs="Tank volume unit"
             hint={
               casualModeActive
-                ? "How tank sizes are shown. You always ENTER sizes in gallons — this only changes how they're displayed back to you."
-                : "Applies to tank cards, the tank selector, facility tree and reef HUD. Stored canonically in litres; entry remains in gallons."
+                ? "How tank sizes are shown. You still enter sizes in gallons; this only changes how they are shown back to you."
+                : "Applies to tank cards, the tank picker and the facility tree. Stored in litres; you still enter gallons."
             }
             options={volumeOptions}
             value={volumeUnit}
@@ -127,7 +128,7 @@ export function UnitsSection({ casualModeActive }) {
             hint={
               casualModeActive
                 ? "Used for your regional zone radius."
-                : "Applies to zone radius reporting. Stored distances remain in miles."
+                : "Applies to the zone radius. Stored distances stay in miles."
             }
             options={distanceOptions}
             value={distanceUnit}
