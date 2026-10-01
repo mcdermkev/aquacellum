@@ -112,5 +112,134 @@ describe("SpeciesCardPremium: Daylight card", () => {
   });
 });
 
-// List view assertions: added by FEAT-002.
+const GALLERY_RAW = read("../components/BreedGallery.jsx");
+const GALLERY = stripComments(GALLERY_RAW);
+const GALLERY_CSS = read("../components/BreedGalleryDaylight.css");
+
+// The list view is everything after the Pro detail return.
+const LIST = GALLERY.slice(GALLERY.indexOf("const viewTabs = proMode"));
+
+describe("BreedGallery list: Daylight header, tabs, filters and states", () => {
+  it("imports its scoped stylesheet, the tab-key helper and Phosphor icons", () => {
+    expect(GALLERY).toContain('import "./BreedGalleryDaylight.css";');
+    expect(GALLERY).toContain('import { nextTabIndex } from "./breedGalleryTabs";');
+    expect(GALLERY).toMatch(/import \{[^}]*\bSlidersHorizontal\b[^}]*\} from "@phosphor-icons\/react"/);
+  });
+
+  it("wraps the list and the early error state in the .bgal root", () => {
+    expect(LIST).toContain('<div className="bgal">');
+    expect(GALLERY).toMatch(/if \(error\) \{\s*return \(\s*<div className="bgal">\s*<div className="bgal-state bgal-state--error" role="alert">/);
+  });
+
+  it("shows the Breed Gallery header in Pro only", () => {
+    expect(LIST).toMatch(/\{proMode && \(\s*<header className="bgal-head">/);
+    expect(LIST).toContain('<h2 className="bgal-title">Breed Gallery</h2>');
+  });
+
+  it("renders the view modes as one ARIA tablist with a tabpanel", () => {
+    expect((GALLERY.match(/role="tablist"/g) || []).length).toBeGreaterThanOrEqual(1);
+    expect(LIST).toContain('role="tab"');
+    expect(LIST).toContain("aria-selected={selected}");
+    expect(LIST).toContain('aria-controls="bgal-view-panel"');
+    expect(LIST).toContain("tabIndex={index === activeViewIndex ? 0 : -1}");
+    expect(LIST).toContain('role="tabpanel" id="bgal-view-panel"');
+    expect(LIST).toContain("nextTabIndex(e.key, activeViewIndex, viewTabs.length)");
+    expect(LIST).toContain("viewTabs[next].activate();");
+  });
+
+  it("uses the plain tab labels", () => {
+    for (const label of ['"In my tanks"', '"Registered breeds"', '"All species"', '"My collection"', '"Review queue"']) {
+      expect(LIST, label).toContain(label);
+    }
+  });
+
+  it("makes the filter options aria-pressed chip buttons", () => {
+    expect(LIST).toContain("aria-pressed={isActive}");
+    expect(LIST).not.toContain('className={isActive ? "btn-primary" : "btn-secondary"}');
+    expect(LIST).toContain('aria-expanded={filtersOpen}');
+    expect(LIST).toContain('aria-controls="bgal-filter-panel"');
+    expect(LIST).toContain('role="group"');
+  });
+
+  it("keeps the phone bottom-sheet classes and the pinned option arrays", () => {
+    expect(GALLERY).toContain("breed-filter-panel");
+    expect(GALLERY).toContain("breed-filter-backdrop");
+    expect(GALLERY).toContain('className="breed-filter-apply-btn bgal-btn bgal-btn--primary"');
+    expect(GALLERY_RAW).toContain('{ val: "Coral", label: "Corals" }');
+    expect(LIST).toContain("Show {filteredSpecies.length} results");
+  });
+
+  it("gives tabs and chips at least a 44px target", () => {
+    expect(GALLERY_CSS).toMatch(/\.bgal-tab\s*\{[^}]*min-height:\s*4[4-9]px/);
+    expect(GALLERY_CSS).toMatch(/\.bgal-chip\s*\{[^}]*min-height:\s*44px/);
+    expect(GALLERY_CSS).toMatch(/\.bgal-btn\s*\{[^}]*min-height:\s*44px/);
+  });
+
+  it("strips the sky-blue gradients, dead Tailwind text and emoji labels", () => {
+    expect(GALLERY).not.toContain("rgba(56, 189, 248, 0.15) 0%, rgba(14, 165, 233, 0.25)");
+    // The detail's dead Tailwind classes go in FEAT-003; the list has none.
+    expect(LIST).not.toContain("bg-white/[");
+    expect(GALLERY).not.toContain("⚡ Suggest Species");
+    expect(GALLERY).not.toContain("Register First Specimen 🐠");
+    expect(LIST).not.toContain("WebkitTextFillColor");
+    for (const old of ["🐠 My Tank Species", "🌐 All Catalog Breeds", "🌍 Global Database", "🛠️ Curation Queue", "🎛️", "📷", "🔱", "CURATION QUEUE", "Filters & Refinement", "Apply Filters ("]) {
+      expect(LIST, old).not.toContain(old);
+    }
+  });
+
+  it("uses no em dashes or exclamation points in list copy outside the easter eggs", () => {
+    // The lore dialog and evolving overlay keep their easter-egg copy (D10).
+    const listCopy = LIST.slice(0, LIST.indexOf("{activeLoreEgg && ("));
+    expect(listCopy).not.toContain("—");
+    // JSX text nodes only (skip runs of JS between tags such as `&& !x ? (`).
+    const jsxText = (listCopy.match(/>[^<>{}]*</g) || []).filter((t) => !/[=&|?()]/.test(t));
+    expect(jsxText.length).toBeGreaterThan(10);
+    for (const t of jsxText) expect(t, t).not.toContain("!");
+  });
+
+  it("labels the icon-only buttons", () => {
+    expect(LIST).toContain('aria-label="Search species"');
+    expect(LIST).toContain('aria-label="Clear search"');
+    expect(LIST).toContain('aria-label="Clear this search"');
+    expect(LIST).toContain('aria-label="Remove photo"');
+  });
+
+  it("gives the lore dialog a dialog role, Escape to close and a focused Close button", () => {
+    expect(LIST).toContain('role="dialog"');
+    expect(LIST).toContain('aria-modal="true"');
+    expect(LIST).toContain('aria-labelledby="bgal-egg-title"');
+    expect(LIST).toMatch(/if \(e\.key === "Escape"\) \{\s*setActiveLoreEgg\(null\);\s*setEvolutionError\(""\);/);
+    expect(LIST).toMatch(/className="bgal-btn"\s*autoFocus/);
+  });
+
+  it("shows the suggestion notification as a status message", () => {
+    expect(LIST).toContain('<div className="bgal-toast" role="status">');
+    expect(LIST).toContain("<strong>Suggestion sent</strong>");
+    expect(LIST).toContain("to the review queue.");
+  });
+
+  it("keeps the grid scroller ref and starry toggle on the new class", () => {
+    expect(LIST).toContain("ref={parentRefCallback}");
+    expect(LIST).toContain('className={"bgal-grid-scroller" + (starryBgActive ? " starry-grid-overlay" : "")}');
+    expect(LIST).toContain("ref={rowVirtualizer.measureElement}");
+  });
+
+  it("insets the filter card inside the phone bottom sheet", () => {
+    expect(GALLERY_CSS).toMatch(/\.breed-filter-panel \.bgal-filters\s*\{\s*border:\s*none;\s*background:\s*none;\s*padding:\s*0;\s*box-shadow:\s*none;?\s*\}/);
+  });
+});
+
+describe("BreedGallery: Casual hand-off stays untouched", () => {
+  it("still returns CasualSpeciesDetail before any bgal markup", () => {
+    const start = GALLERY_RAW.indexOf("if (casualModeActive) {");
+    const end = GALLERY_RAW.indexOf("onBack={() => setSelectedBreed(null)}", start);
+    expect(start).toBeGreaterThan(-1);
+    expect(end).toBeGreaterThan(start);
+    expect(GALLERY_RAW.slice(start, end)).toContain("<CasualSpeciesDetail");
+    const selectedStart = GALLERY_RAW.lastIndexOf("if (selectedBreed) {", start);
+    expect(selectedStart).toBeGreaterThan(-1);
+    expect(GALLERY_RAW.slice(selectedStart, end)).not.toContain('className="bgal');
+  });
+});
+
 // Species detail assertions: added by FEAT-003.
