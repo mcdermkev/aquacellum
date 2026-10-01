@@ -3,7 +3,7 @@ import { getReducedMotionOverride, setReducedMotionOverride } from "../../utils/
 import { SettingsRadioGroup } from "./SettingsRadioGroup";
 
 const OPTIONS = [
-  { value: "auto", label: "Match device", description: "Use your OS/browser setting" },
+  { value: "auto", label: "Match device", description: "Follow your device setting" },
   { value: "on", label: "Reduced", description: "Minimize animation everywhere in the app" },
   { value: "off", label: "Full motion", description: "Never reduce, even if your OS asks for it" },
 ];
@@ -33,7 +33,7 @@ export function ReducedMotionOverride() {
     <SettingsRadioGroup
       label="Motion preference"
       announceAs="Motion preference"
-      hint="Controls animation throughout the app — Echo's movements, transitions, and map flythroughs."
+      hint="Controls animation across the app, including Echo, page transitions and map movement."
       options={OPTIONS}
       value={value}
       onChange={handleChange}

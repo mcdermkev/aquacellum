@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { CheckCircle, SignOut, UserCircle, WarningCircle } from "@phosphor-icons/react";
 import { SettingsSection } from "../SettingsSection";
 import { SettingsSubsectionLabel as SubsectionLabel } from "../SettingsSubsectionLabel";
 import { announce } from "../../../utils/a11y";
@@ -87,13 +88,11 @@ export function AccountSection({ casualModeActive }) {
     return (
       <SettingsSection
         id="account"
-        icon="👤"
+        icon={<UserCircle size={20} />}
         title={{ casual: "Your Account", pro: "Account & Identity" }}
         casualModeActive={casualModeActive}
       >
-        <p style={{ fontSize: 12, color: "var(--text-muted)" }}>
-          Sign in to see your account details.
-        </p>
+        <p className="st-empty">Sign in to see your account details.</p>
       </SettingsSection>
     );
   }
@@ -101,65 +100,56 @@ export function AccountSection({ casualModeActive }) {
   return (
     <SettingsSection
       id="account"
-      icon="👤"
+      icon={<UserCircle size={20} />}
       title={{ casual: "Your Account", pro: "Account & Identity" }}
       description={{
         casual: "How you sign in, what other keepers see, and how to sign out.",
-        pro: "Identity, sign-in method, and session control.",
+        pro: "Your name, how you sign in, and sign out.",
       }}
       casualModeActive={casualModeActive}
     >
-      <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+      <div className="st-stack">
         {/* ─── Display name ─── */}
         <div>
-          <SubsectionLabel>{casualModeActive ? "Your name" : "Display name"}</SubsectionLabel>
-          <p style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 10, lineHeight: 1.4 }}>
+          {/* The visible subsection heading is the input's label. */}
+          <SubsectionLabel>
+            <label htmlFor="st-display-name">{casualModeActive ? "Your name" : "Display name"}</label>
+          </SubsectionLabel>
+          <p className="st-hint" id="st-display-name-hint">
             {casualModeActive
               ? "Shown on your posts and your profile. You can change it any time."
-              : "Public identifier on social surfaces and storefront attribution."}
+              : "Shown on your posts, profile and storefront."}
           </p>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", alignItems: "center" }}>
+          <div className="st-input-row">
             <input
+              id="st-display-name"
               type="text"
+              className="st-input"
               value={nameInput}
               maxLength={MAX_DISPLAY_NAME}
               onChange={(e) => {
                 setNameInput(e.target.value.slice(0, MAX_DISPLAY_NAME));
                 setStatus(null);
               }}
-              aria-label={casualModeActive ? "Your name" : "Display name"}
-              style={{
-                flex: "1 1 200px",
-                minHeight: 40,
-                padding: "0.5rem 0.7rem",
-                borderRadius: 8,
-                border: "1px solid rgba(var(--ink-rgb), 0.15)",
-                background: "#fff",
-                color: "var(--text-primary)",
-                fontSize: "0.85rem",
-              }}
+              aria-describedby="st-display-name-hint"
             />
             <button
               type="button"
-              className="btn-primary"
+              className="st-btn st-btn--primary"
               onClick={handleSaveName}
               disabled={!dirty || updateProfile.isPending}
-              style={{ padding: "0.5rem 1rem", fontSize: "0.78rem", minHeight: 40 }}
             >
               {updateProfile.isPending ? "Saving…" : "Save"}
             </button>
           </div>
           {status && (
-            <p
-              style={{
-                margin: "0.5rem 0 0",
-                fontSize: "0.72rem",
-                lineHeight: 1.4,
-                color: status.type === "success" ? "var(--accent-green)" : "var(--accent-red)",
-              }}
-            >
-              {status.type === "success" ? "✓ " : "⚠️ "}
-              {status.text}
+            <p className={`st-status ${status.type === "success" ? "st-status--success" : "st-status--error"}`}>
+              {status.type === "success" ? (
+                <CheckCircle size={18} aria-hidden="true" />
+              ) : (
+                <WarningCircle size={18} aria-hidden="true" />
+              )}
+              <span>{status.text}</span>
             </p>
           )}
         </div>
@@ -167,49 +157,47 @@ export function AccountSection({ casualModeActive }) {
         {/* ─── Sign-in identity ─── */}
         <div>
           <SubsectionLabel>{casualModeActive ? "How you sign in" : "Sign-in identity"}</SubsectionLabel>
-          <ReadOnlyRow
-            label="Email"
-            value={profile?.email || "—"}
-            note={
-              profile?.email
-                ? "Verified by your sign-in provider. Change it by signing in with a different address."
-                : "No address on file yet. It is recorded automatically when you sign in with email or Google."
-            }
-          />
-          <ReadOnlyRow
-            label={casualModeActive ? "Signed in with" : "Auth method"}
-            value={loginMethod === "privy" ? "Email or Google" : loginMethod === "metamask" ? "MetaMask" : "—"}
-          />
-          <ReadOnlyRow
-            label="Wallet"
-            value={`${account.slice(0, 6)}…${account.slice(-4)}`}
-            mono
-          />
-          <ReadOnlyRow
-            label="Time zone"
-            value={profile?.notification_preferences?.timezone || "—"}
-            note={
-              profile?.notification_preferences?.timezone
-                ? "Detected from this device. Used for notification quiet hours."
-                : "Recorded automatically the first time you save notification preferences."
-            }
-          />
+          <div className="st-rows">
+            <ReadOnlyRow
+              label="Email"
+              value={profile?.email || "—"}
+              note={
+                profile?.email
+                  ? "Verified by your sign-in provider. Change it by signing in with a different address."
+                  : "No address on file yet. It is recorded automatically when you sign in with email or Google."
+              }
+            />
+            <ReadOnlyRow
+              label={casualModeActive ? "Signed in with" : "Auth method"}
+              value={loginMethod === "privy" ? "Email or Google" : loginMethod === "metamask" ? "MetaMask" : "—"}
+            />
+            <ReadOnlyRow
+              label="Wallet"
+              value={`${account.slice(0, 6)}…${account.slice(-4)}`}
+              mono
+            />
+            <ReadOnlyRow
+              label="Time zone"
+              value={profile?.notification_preferences?.timezone || "—"}
+              note={
+                profile?.notification_preferences?.timezone
+                  ? "Detected from this device. Used for notification quiet hours."
+                  : "Recorded automatically the first time you save notification preferences."
+              }
+            />
+          </div>
         </div>
 
         {/* ─── Sign out ─── */}
         <div>
           <SubsectionLabel>Session</SubsectionLabel>
-          <p style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 10, lineHeight: 1.4 }}>
+          <p className="st-hint">
             {casualModeActive
               ? "Signs you out on this device. Your data stays safe and comes back when you sign in again."
               : "Ends the local session. No data is removed."}
           </p>
-          <button
-            type="button"
-            className="btn-secondary"
-            onClick={handleSignOut}
-            style={{ padding: "0.5rem 1rem", fontSize: "0.78rem", minHeight: 40 }}
-          >
+          <button type="button" className="st-btn" onClick={handleSignOut}>
+            <SignOut size={18} aria-hidden="true" />
             Sign out
           </button>
         </div>
@@ -225,36 +213,12 @@ export function AccountSection({ casualModeActive }) {
  */
 function ReadOnlyRow({ label, value, note, mono = false }) {
   return (
-    <div
-      style={{
-        padding: "0.6rem 0.85rem",
-        marginBottom: "0.5rem",
-        borderRadius: 8,
-        background: "rgba(var(--ink-rgb), 0.02)",
-        border: "1px solid rgba(var(--ink-rgb), 0.06)",
-      }}
-    >
-      <div style={{ display: "flex", justifyContent: "space-between", gap: "1rem", alignItems: "baseline" }}>
-        <span style={{ fontSize: 11, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-          {label}
-        </span>
-        <span
-          style={{
-            fontSize: "0.8rem",
-            color: "var(--text-primary)",
-            fontFamily: mono ? "monospace" : "inherit",
-            wordBreak: "break-all",
-            textAlign: "right",
-          }}
-        >
-          {value}
-        </span>
+    <div className="st-row">
+      <div className="st-row-main">
+        <span className="st-row-label">{label}</span>
+        <span className={`st-row-value${mono ? " st-row-value--mono" : ""}`}>{value}</span>
       </div>
-      {note && (
-        <p style={{ margin: "0.35rem 0 0", fontSize: 11, color: "var(--text-muted)", lineHeight: 1.4 }}>
-          {note}
-        </p>
-      )}
+      {note && <p className="st-row-note">{note}</p>}
     </div>
   );
 }

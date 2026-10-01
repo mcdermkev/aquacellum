@@ -1,4 +1,5 @@
 import React from "react";
+import { DeviceMobile } from "@phosphor-icons/react";
 import { SettingsSection } from "../SettingsSection";
 import { SettingsSubsectionLabel as SubsectionLabel } from "../SettingsSubsectionLabel";
 import { InstallAppPanel } from "../InstallAppPanel";
@@ -13,8 +14,13 @@ import { CURRENT_VERSION } from "../../WhatsNewModal";
  */
 export function AppSupportSection({ casualModeActive }) {
   return (
-    <SettingsSection id="app" icon="📲" title="App & Support" casualModeActive={casualModeActive}>
-      <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+    <SettingsSection
+      id="app"
+      icon={<DeviceMobile size={20} />}
+      title="App & Support"
+      casualModeActive={casualModeActive}
+    >
+      <div className="st-stack">
         <InstallAppPanel casualModeActive={casualModeActive} />
         <VersionSubsection />
       </div>
@@ -26,8 +32,8 @@ function VersionSubsection() {
   return (
     <div>
       <SubsectionLabel>Version</SubsectionLabel>
-      <p style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>
-        Aquadex <span style={{ color: "var(--text-primary)", fontFamily: "monospace" }}>v{CURRENT_VERSION}</span>
+      <p className="st-text" style={{ margin: 0 }}>
+        Aquacellum <span className="st-mono">v{CURRENT_VERSION}</span>
       </p>
     </div>
   );

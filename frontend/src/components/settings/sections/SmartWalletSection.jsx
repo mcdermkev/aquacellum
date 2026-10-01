@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { ArrowSquareOut, ShieldCheck } from "@phosphor-icons/react";
 import { SettingsSection } from "../SettingsSection";
 import { useAuth } from "../../../contexts/AuthContext";
 import { getSmartWalletAddress, hasUserSigner } from "../../../services/smartAccountClient";
@@ -85,7 +86,7 @@ export function SmartWalletSection({ casualModeActive }) {
   const statusLabel = smartWalletLoading
     ? casualModeActive
       ? "Setting up"
-      : "Initializing..."
+      : "Connecting…"
     : smartWalletAddress
       ? casualModeActive
         ? "Saving"
@@ -97,42 +98,27 @@ export function SmartWalletSection({ casualModeActive }) {
   return (
     <SettingsSection
       id="advanced"
-      icon="⛓️"
+      icon={<ShieldCheck size={20} />}
       title={{ casual: "Record Keeping", pro: "Smart Wallet" }}
       description={{
         casual:
-          "Your fish, logs and listings are written to a permanent public record, so your history and lineage can be independently verified. Fees are covered for you — you are never asked to pay.",
+          "Your fish, logs and listings are written to a permanent public record, so your history and lineage can be independently verified. Fees are covered for you. You are never asked to pay.",
         pro:
           "ERC-4337 smart account status. Actions are batched and submitted as gasless UserOperations with gas sponsored by the CDP Paymaster.",
       }}
       casualModeActive={casualModeActive}
       badge={
-        <span
-          style={{
-            fontSize: "0.6rem",
-            padding: "0.15rem 0.5rem",
-            borderRadius: "20px",
-            background: smartWalletAddress ? "rgba(52, 211, 153, 0.15)" : "rgba(251, 191, 36, 0.15)",
-            color: smartWalletAddress ? "var(--accent-green)" : "var(--accent-amber)",
-            border: smartWalletAddress
-              ? "1px solid rgba(52, 211, 153, 0.3)"
-              : "1px solid rgba(251, 191, 36, 0.3)",
-            fontWeight: 700,
-            textTransform: "uppercase",
-            letterSpacing: "0.05em",
-            whiteSpace: "nowrap",
-          }}
-        >
+        <span className={`st-badge ${smartWalletAddress ? "st-badge--ok" : "st-badge--warn"}`}>
           {statusLabel}
         </span>
       }
     >
       {!smartWalletAddress ? (
-        <p style={{ fontSize: "0.8rem", color: "var(--text-muted)", lineHeight: 1.5, margin: 0 }}>
+        <p className="st-text" style={{ margin: 0 }}>
           {smartWalletLoading
             ? casualModeActive
               ? "Getting your record keeping set up…"
-              : "Connecting to Coinbase Smart Wallet..."
+              : "Connecting to the smart wallet…"
             : casualModeActive
               ? // The honest version of a failure: say what has stopped, in terms of
                 // the user's data rather than the subsystem that stalled.
@@ -141,28 +127,16 @@ export function SmartWalletSection({ casualModeActive }) {
         </p>
       ) : casualModeActive ? (
         <>
-          <p style={{ fontSize: "0.8rem", color: "var(--text-muted)", lineHeight: 1.5, margin: "0 0 1rem" }}>
+          <p className="st-text">
             Everything is being recorded normally. You do not need to do anything here.
           </p>
 
-          <details>
-            <summary
-              style={{
-                cursor: "pointer",
-                fontSize: "0.75rem",
-                fontWeight: 600,
-                color: "var(--accent-blue)",
-                minHeight: 32,
-                display: "flex",
-                alignItems: "center",
-              }}
-            >
-              Show technical details
-            </summary>
-            <div style={{ marginTop: "0.85rem" }}>
+          <div className="st-disclosure">
+            <details>
+              <summary>Show technical details</summary>
               <TechnicalReadout address={smartWalletAddress} />
-            </div>
-          </details>
+            </details>
+          </div>
         </>
       ) : (
         <TechnicalReadout address={smartWalletAddress} showFooter />
@@ -179,76 +153,47 @@ export function SmartWalletSection({ casualModeActive }) {
  */
 function TechnicalReadout({ address, showFooter = false }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          padding: "0.6rem 0.85rem",
-          background: "var(--bg-band)",
-          borderRadius: "8px",
-          border: "1px solid var(--glass-border)",
-        }}
-      >
+    <div className="st-readout">
+      <div className="st-readout-row">
         <div>
-          <span
-            style={{
-              display: "block",
-              fontSize: "0.65rem",
-              color: "var(--text-muted)",
-              textTransform: "uppercase",
-              letterSpacing: "0.05em",
-              marginBottom: "0.2rem",
-            }}
-          >
-            Account ID
-          </span>
-          <span style={{ fontSize: "0.8rem", color: "var(--text-primary)", fontFamily: "monospace" }}>
-            {address.slice(0, 6)}...{address.slice(-4)}
+          <span className="st-readout-label">Account ID</span>
+          <span className="st-readout-value st-mono">
+            {address.slice(0, 6)}…{address.slice(-4)}
           </span>
         </div>
         <a
           href={`https://sepolia.basescan.org/address/${address}`}
           target="_blank"
           rel="noopener noreferrer"
-          style={{ fontSize: "0.7rem", color: "var(--accent-blue)", textDecoration: "none", fontWeight: 600 }}
+          className="st-link"
         >
-          View on BaseScan ↗
+          View on BaseScan
+          <ArrowSquareOut size={16} aria-hidden="true" />
+          <span className="st-sr-only">(opens in a new tab)</span>
         </a>
       </div>
 
-      <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
-        <ReadoutTile label="Network" value="Base Sepolia" color="var(--accent-green)" tint="52,211,153" />
-        <ReadoutTile label="Gas Sponsor" value="CDP Paymaster" color="var(--accent-blue)" tint="56,189,248" />
-        <ReadoutTile label="Batching" value="3s Queue" color="var(--accent-violet)" tint="168,85,247" />
+      <div className="st-readout-tiles">
+        <ReadoutTile label="Network" value="Base Sepolia" />
+        <ReadoutTile label="Gas Sponsor" value="CDP Paymaster" />
+        <ReadoutTile label="Batching" value="3s Queue" />
       </div>
 
       {showFooter && (
-        <p style={{ fontSize: "0.72rem", color: "var(--text-muted)", lineHeight: 1.5, margin: "0.25rem 0 0" }}>
+        <p className="st-hint" style={{ margin: "0.25rem 0 0" }}>
           All actions (mints, logs, listings) are batched and submitted as gasless UserOperations. Gas
-          is fully sponsored by the CDP Paymaster — you never pay fees.
+          is fully sponsored by the CDP Paymaster. You never pay fees.
         </p>
       )}
     </div>
   );
 }
 
-function ReadoutTile({ label, value, color, tint }) {
+function ReadoutTile({ label, value }) {
   return (
-    <div
-      style={{
-        flex: "1 1 120px",
-        padding: "0.5rem 0.75rem",
-        background: `rgba(${tint},0.04)`,
-        borderRadius: "6px",
-        border: `1px solid rgba(${tint},0.15)`,
-      }}
-    >
-      <span style={{ display: "block", fontSize: "0.6rem", color: "var(--text-muted)", marginBottom: "0.15rem" }}>
-        {label}
-      </span>
-      <span style={{ fontSize: "0.75rem", color, fontWeight: 600 }}>{value}</span>
+    <div className="st-readout-tile">
+      <span className="st-readout-label">{label}</span>
+      <span className="st-readout-value">{value}</span>
     </div>
   );
 }

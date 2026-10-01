@@ -1,4 +1,5 @@
 import React from "react";
+import { Info, SlidersHorizontal } from "@phosphor-icons/react";
 import { SettingsSection } from "../SettingsSection";
 import { ModeSegmentedControl } from "../../ModeSegmentedControl";
 
@@ -15,51 +16,37 @@ export function ExperienceModeSection({ casualModeActive, onToggleMode }) {
   return (
     <SettingsSection
       id="experience-mode"
-      icon={casualModeActive ? "🐠" : "🧬"}
+      icon={<SlidersHorizontal size={20} />}
       title="Experience Mode"
       description={{
         casual:
-          "You're currently in Casual Hobbyist mode. The interface uses friendly language, gamified progress, and keeps technical blockchain details tucked away.",
+          "You're in Casual mode: everyday words, progress rewards, and the technical record details kept out of the way.",
         pro:
-          "You're currently in Professional Breeder mode. The interface uses operational language, shows lineage data, and exposes protocol-level details.",
+          "You're in Pro mode: breeder terms, lineage data and record details shown up front.",
       }}
       casualModeActive={casualModeActive}
     >
-      <div style={{ marginBottom: "1.25rem" }}>
+      <div style={{ marginBottom: "1.1rem" }}>
         <ModeSegmentedControl
           casualModeActive={casualModeActive}
           onToggle={(newCasualVal) => { if (onToggleMode) onToggleMode(newCasualVal); }}
         />
       </div>
 
-      <div
-        style={{
-          padding: "1rem",
-          background: "rgba(56, 189, 248, 0.05)",
-          border: "1px solid rgba(56, 189, 248, 0.15)",
-          borderRadius: "var(--radius-sm)",
-        }}
-      >
-        <p style={{ fontSize: "0.75rem", color: "var(--text-primary)", fontWeight: 600, margin: "0 0 0.5rem" }}>
-          What changes
-        </p>
-        <ul
-          style={{
-            margin: 0,
-            paddingLeft: "1.1rem",
-            fontSize: "0.75rem",
-            color: "var(--text-muted)",
-            lineHeight: 1.6,
-          }}
-        >
-          <li>Wording throughout — My Aquariums / Aquariums, Fish Finder / Breed Gallery, The Reef / Social, Breeder Store / Marketplace.</li>
-          <li>Casual adds Echo's ambient companion and gamified progress; Pro shows lineage and protocol detail up front.</li>
-          <li>Casual hides the Breeder Tools tab. That is the only tab that differs.</li>
-        </ul>
-        <p style={{ fontSize: "0.75rem", color: "var(--accent-green)", margin: "0.75rem 0 0", lineHeight: 1.5 }}>
-          Nothing is locked either way. Every capability stays available in both modes, and you can
-          switch back at any time.
-        </p>
+      <div className="st-callout st-callout--info">
+        <Info size={20} aria-hidden="true" />
+        <div className="st-callout-body">
+          <p className="st-callout-title">What changes</p>
+          <ul>
+            <li>Tab and page names: My Aquariums or Aquariums, Fish Finder or Breed Gallery, The Reef or Social, Breeder Store or Marketplace.</li>
+            <li>Casual adds Echo and progress rewards. Pro shows lineage and record details up front.</li>
+            <li>Casual hides the Breeder Tools tab. That is the only tab that differs.</li>
+          </ul>
+          <p className="st-callout-note">
+            Nothing is locked either way. Every capability stays available in both modes, and you can
+            switch back at any time.
+          </p>
+        </div>
       </div>
     </SettingsSection>
   );

@@ -53,11 +53,7 @@ export function SettingsToggle({
 
   return (
     <div>
-      {hint && (
-        <p style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 12, lineHeight: 1.4 }}>
-          {hint}
-        </p>
-      )}
+      {hint && <p className="st-hint">{hint}</p>}
 
       <button
         type="button"
@@ -66,62 +62,16 @@ export function SettingsToggle({
         aria-label={label}
         disabled={disabled}
         onClick={handleToggle}
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          width: "100%",
-          minHeight: 44,
-          padding: "10px 14px",
-          borderRadius: 10,
-          border: `1px solid ${enabled && !disabled ? "var(--accent-blue)" : "rgba(var(--ink-rgb), 0.08)"}`,
-          background: enabled && !disabled ? "rgba(56, 189, 248, 0.08)" : "rgba(var(--ink-rgb), 0.02)",
-          color: "var(--text-primary)",
-          fontSize: 13,
-          fontWeight: 600,
-          cursor: disabled ? "not-allowed" : "pointer",
-          opacity: disabled ? 0.55 : 1,
-        }}
+        className="st-switch"
       >
         <span>{enabled ? onLabel : offLabel}</span>
-        <span
-          aria-hidden="true"
-          style={{
-            position: "relative",
-            width: 40,
-            height: 22,
-            borderRadius: 11,
-            background: enabled && !disabled ? "var(--accent-blue)" : "rgba(var(--ink-rgb), 0.15)",
-            transition: "background 0.2s ease",
-            flexShrink: 0,
-          }}
-        >
-          <span
-            style={{
-              position: "absolute",
-              top: 2,
-              left: enabled ? 20 : 2,
-              width: 18,
-              height: 18,
-              borderRadius: "50%",
-              background: "#fff",
-              transition: "left 0.2s ease",
-            }}
-          />
+        <span className="st-switch-track" aria-hidden="true">
+          <span className="st-switch-thumb" />
         </span>
       </button>
 
       {disabled && disabledNote && (
-        <p
-          style={{
-            margin: "0.4rem 0 0",
-            fontSize: 11,
-            color: "var(--accent-amber)",
-            lineHeight: 1.4,
-          }}
-        >
-          {disabledNote}
-        </p>
+        <p className="st-status st-status--warning">{disabledNote}</p>
       )}
     </div>
   );

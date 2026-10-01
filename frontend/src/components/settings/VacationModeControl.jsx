@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { PauseCircle, WarningCircle } from "@phosphor-icons/react";
 import { announce } from "../../utils/a11y";
 import { useAuth } from "../../contexts/AuthContext";
 import {
@@ -101,97 +102,81 @@ export function VacationModeControl({ casualModeActive }) {
   };
 
   if (loading) {
-    return <p style={{ fontSize: 12, color: "var(--text-muted)" }}>Checking your store status…</p>;
+    return <p className="st-empty">Checking your store status…</p>;
   }
 
   if (!account) {
-    return (
-      <p style={{ fontSize: 12, color: "var(--text-muted)" }}>
-        Connect your wallet to manage your store status.
-      </p>
-    );
+    return <p className="st-empty">Sign in to manage your store status.</p>;
   }
 
   return (
     <div>
-      <p style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 12, lineHeight: 1.5 }}>
+      <p className="st-hint">
         {casualModeActive
           ? "Going away, or dealing with a heat wave or a sick tank? Pause your store and buyers can't place new orders until you're back. Orders you already have are unaffected."
           : "Pauses inbound orders at checkout. Existing orders and their fulfillment obligations are unaffected. Auto-resumes on the return date."}
       </p>
 
       {paused ? (
-        <div
-          style={{
-            padding: "0.85rem 1rem",
-            borderRadius: 10,
-            background: "rgba(251, 191, 36, 0.06)",
-            border: "1px solid rgba(251, 191, 36, 0.25)",
-          }}
-        >
-          <p style={{ margin: "0 0 0.5rem", fontSize: "0.8rem", color: "var(--accent-amber)", fontWeight: 600 }}>
-            🌴 Your store is paused
-          </p>
-          <p style={{ margin: "0 0 0.75rem", fontSize: "0.75rem", color: "var(--text-secondary)", lineHeight: 1.5 }}>
-            Buyers can browse your listings but cannot check out. You reopen
-            automatically on{" "}
-            <strong style={{ color: "var(--text-primary)" }}>
-              {new Date(profile.vacation_until).toLocaleDateString(undefined, {
-                weekday: "long",
-                month: "long",
-                day: "numeric",
-              })}
-            </strong>{" "}
-            ({daysLeft} {daysLeft === 1 ? "day" : "days"} away).
-          </p>
-          <button
-            type="button"
-            className="btn-primary"
-            onClick={handleResume}
-            disabled={busy}
-            style={{ padding: "0.5rem 1rem", fontSize: "0.78rem", minHeight: 40 }}
-          >
-            {busy ? "Reopening…" : "Reopen now"}
-          </button>
+        <div className="st-callout st-callout--amber">
+          <PauseCircle size={20} aria-hidden="true" />
+          <div className="st-callout-body">
+            <p className="st-callout-title">Your store is paused</p>
+            <p>
+              Buyers can browse your listings but cannot check out. You reopen
+              automatically on{" "}
+              <strong>
+                {new Date(profile.vacation_until).toLocaleDateString(undefined, {
+                  weekday: "long",
+                  month: "long",
+                  day: "numeric",
+                })}
+              </strong>{" "}
+              ({daysLeft} {daysLeft === 1 ? "day" : "days"} away).
+            </p>
+            <div className="st-actions" style={{ marginTop: "0.75rem" }}>
+              <button
+                type="button"
+                className="st-btn st-btn--primary"
+                onClick={handleResume}
+                disabled={busy}
+              >
+                {busy ? "Reopening…" : "Reopen now"}
+              </button>
+            </div>
+          </div>
         </div>
       ) : (
-        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", gap: "0.75rem" }}>
-          <label style={{ display: "flex", flexDirection: "column", gap: "0.3rem" }}>
-            <span style={{ fontSize: 11, color: "var(--text-muted)" }}>Back on</span>
+        <div className="st-input-row">
+          <label className="st-field">
+            <span className="st-label">Back on</span>
             <input
               type="date"
+              className="st-input"
               value={dateInput || defaultDate}
               min={new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10)}
               max={new Date(Date.now() + MAX_VACATION_DAYS * 24 * 60 * 60 * 1000)
                 .toISOString()
                 .slice(0, 10)}
               onChange={(e) => setDateInput(e.target.value)}
-              style={{
-                padding: "0.5rem 0.65rem",
-                minHeight: 40,
-                borderRadius: 8,
-                border: "1px solid rgba(var(--ink-rgb), 0.15)",
-                background: "#fff",
-                color: "var(--text-primary)",
-                fontSize: "0.8rem",
-              }}
             />
           </label>
           <button
             type="button"
-            className="btn-secondary"
+            className="st-btn"
             onClick={handlePause}
             disabled={busy}
-            style={{ padding: "0.5rem 1rem", fontSize: "0.78rem", minHeight: 40 }}
           >
+            <PauseCircle size={18} aria-hidden="true" />
             {busy ? "Pausing…" : "Pause my store"}
           </button>
         </div>
       )}
 
       {error && (
-        <p style={{ margin: "0.6rem 0 0", fontSize: "0.72rem", color: "var(--accent-red)", lineHeight: 1.4 }}>
-          ⚠️ {error}
+        <p className="st-status st-status--error">
+          <WarningCircle size={18} aria-hidden="true" />
+          <span>{error}</span>
         </p>
       )}
     </div>

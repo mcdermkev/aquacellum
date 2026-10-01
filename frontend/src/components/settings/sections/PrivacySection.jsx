@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { LockSimple } from "@phosphor-icons/react";
 import { SettingsSection } from "../SettingsSection";
 import { DataPrivacySettings } from "../../reef/DataPrivacySettings";
 import { getDeletionStatus } from "../../../services/gdprService";
@@ -59,28 +60,15 @@ export function PrivacySection({ casualModeActive }) {
   }, []);
 
   const pendingBadge = deletionStatus?.pending ? (
-    <span
-      style={{
-        fontSize: "0.6rem",
-        padding: "0.15rem 0.5rem",
-        borderRadius: "20px",
-        background: "rgba(248, 113, 113, 0.15)",
-        color: "var(--accent-red)",
-        border: "1px solid rgba(248, 113, 113, 0.35)",
-        fontWeight: 700,
-        textTransform: "uppercase",
-        letterSpacing: "0.05em",
-        whiteSpace: "nowrap",
-      }}
-    >
-      Deletion in {deletionStatus.daysRemaining}d
+    <span className="st-badge st-badge--danger">
+      Deletion in {deletionStatus.daysRemaining} {deletionStatus.daysRemaining === 1 ? "day" : "days"}
     </span>
   ) : null;
 
   return (
     <SettingsSection
       id="privacy"
-      icon="🔒"
+      icon={<LockSimple size={20} />}
       title={{ casual: "Your Data", pro: "Data & Privacy" }}
       description={{
         casual:

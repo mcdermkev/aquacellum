@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
+import { Lock, MagnifyingGlass } from "@phosphor-icons/react";
 import { SettingsSection } from "../SettingsSection";
 import { SettingsSubsectionLabel as SubsectionLabel } from "../SettingsSubsectionLabel";
 import { useUnlockGate } from "../../reef/UnlockPrompt";
@@ -103,17 +104,17 @@ export function DiscoverySection({ casualModeActive }) {
   return (
     <SettingsSection
       id="discovery"
-      icon="🔍"
+      icon={<MagnifyingGlass size={20} />}
       title={{ casual: "Fish Finder", pro: "Catalog & Alerts" }}
       description={{
         casual:
           "What you're watching and the searches you've saved while browsing.",
         pro:
-          "Watchlist and saved-search state. Both are earned capabilities — see the required depth tier where locked.",
+          "Your watchlist and saved searches. Both unlock with progress; locked items show the tier they need.",
       }}
       casualModeActive={casualModeActive}
     >
-      <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+      <div className="st-stack">
         {/* ─── Watchlist ─── */}
         <div>
           <SubsectionLabel>{casualModeActive ? "Watchlist" : "Species watchlist"}</SubsectionLabel>
@@ -129,7 +130,7 @@ export function DiscoverySection({ casualModeActive }) {
             />
           ) : (
             <>
-              <p style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 12, lineHeight: 1.4 }}>
+              <p className="st-hint">
                 {watchlistCount === 0
                   ? casualModeActive
                     ? "You're not watching anything yet. Tap the heart on a listing to add it."
@@ -137,12 +138,7 @@ export function DiscoverySection({ casualModeActive }) {
                   : `${watchlistCount} ${watchlistCount === 1 ? "listing" : "listings"} on your watchlist.`}
               </p>
               {watchlistCount > 0 && (
-                <button
-                  type="button"
-                  className="btn-secondary"
-                  onClick={clearWatchlist}
-                  style={{ padding: "0.5rem 1rem", fontSize: "0.75rem", minHeight: 36 }}
-                >
+                <button type="button" className="st-btn" onClick={clearWatchlist}>
                   Clear watchlist
                 </button>
               )}
@@ -161,56 +157,40 @@ export function DiscoverySection({ casualModeActive }) {
             />
           ) : (
             <>
-              <p style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 12, lineHeight: 1.4 }}>
+              <p className="st-hint">
                 {savedSearches.length === 0
                   ? casualModeActive
-                    ? "No saved searches yet. Set up filters while browsing, then tap Save This Search."
+                    ? "No saved searches yet. Set filters while browsing, then use Save This Search."
                     : "No saved filter sets. Save one from the marketplace filter bar."
                   : `${savedSearches.length} saved. Run one to jump straight back to those results.`}
               </p>
 
               {savedSearches.length > 0 && (
-                <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 8 }}>
+                <ul className="st-list">
                   {savedSearches.map((entry, index) => (
-                    <li
-                      key={`${entry.savedAt || "s"}-${index}`}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        gap: 12,
-                        padding: "10px 12px",
-                        borderRadius: 8,
-                        border: "1px solid rgba(var(--ink-rgb), 0.08)",
-                        background: "rgba(var(--ink-rgb), 0.02)",
-                      }}
-                    >
-                      <span style={{ minWidth: 0 }}>
-                        <span style={{ display: "block", fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>
-                          {describeSavedSearch(entry)}
-                        </span>
+                    <li key={`${entry.savedAt || "s"}-${index}`} className="st-list-item">
+                      <span className="st-list-text">
+                        <span className="st-list-title">{describeSavedSearch(entry)}</span>
                         {entry.savedAt && (
-                          <span style={{ display: "block", fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>
+                          <span className="st-list-meta">
                             Saved {new Date(entry.savedAt).toLocaleDateString()}
                           </span>
                         )}
                       </span>
-                      <span style={{ display: "flex", gap: "0.4rem", flexShrink: 0 }}>
+                      <span className="st-list-actions">
                         <button
                           type="button"
-                          className="btn-primary"
+                          className="st-btn st-btn--primary"
                           onClick={() => runSavedSearch(entry)}
                           aria-label={`Run saved search: ${describeSavedSearch(entry)}`}
-                          style={{ padding: "0.4rem 0.85rem", fontSize: "0.72rem", minHeight: 36 }}
                         >
                           Run
                         </button>
                         <button
                           type="button"
-                          className="btn-secondary"
+                          className="st-btn"
                           onClick={() => removeSavedSearch(index)}
                           aria-label={`Remove saved search: ${describeSavedSearch(entry)}`}
-                          style={{ padding: "0.4rem 0.75rem", fontSize: "0.72rem", minHeight: 36 }}
                         >
                           Remove
                         </button>
@@ -234,25 +214,12 @@ export function DiscoverySection({ casualModeActive }) {
 function LockedNote({ entitlementKey, what }) {
   const requiredTier = getRequiredTierFor(entitlementKey);
   return (
-    <div
-      style={{
-        display: "flex",
-        gap: "0.6rem",
-        alignItems: "flex-start",
-        padding: "0.75rem 1rem",
-        borderRadius: 8,
-        border: "1px solid rgba(251, 191, 36, 0.2)",
-        background: "rgba(251, 191, 36, 0.05)",
-      }}
-    >
-      <span aria-hidden="true" style={{ fontSize: "0.9rem" }}>
-        🔒
-      </span>
-      <span style={{ fontSize: 12, color: "var(--text-muted)", lineHeight: 1.5 }}>
-        {what} unlocks at the{" "}
-        <strong style={{ color: "var(--accent-amber)" }}>{requiredTier}</strong> tier. Keep
-        logging and it'll open up — nothing to buy.
-      </span>
+    <div className="st-callout st-callout--amber">
+      <Lock size={20} aria-hidden="true" />
+      <p>
+        {what} unlocks at the <strong>{requiredTier}</strong> tier. Keep logging to get
+        there. There is nothing to buy.
+      </p>
     </div>
   );
 }

@@ -1,5 +1,7 @@
 import React from "react";
+import { Wheelchair } from "@phosphor-icons/react";
 import { SettingsSection } from "../SettingsSection";
+import { SettingsSubsectionLabel } from "../SettingsSubsectionLabel";
 import { FontSizeSettings } from "../../FontSizeSettings";
 import { HighContrastToggle } from "../../HighContrastToggle";
 import { HapticsToggle } from "../HapticsToggle";
@@ -24,8 +26,13 @@ import { ReducedMotionOverride } from "../ReducedMotionOverride";
  */
 export function AccessibilitySection({ casualModeActive, highContrast }) {
   return (
-    <SettingsSection id="accessibility" icon="♿" title="Accessibility" casualModeActive={casualModeActive}>
-      <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+    <SettingsSection
+      id="accessibility"
+      icon={<Wheelchair size={20} />}
+      title="Accessibility"
+      casualModeActive={casualModeActive}
+    >
+      <div className="st-stack">
         <AccessibilitySubsection label="Font size">
           <FontSizeSettings />
         </AccessibilitySubsection>
@@ -49,18 +56,7 @@ export function AccessibilitySection({ casualModeActive, highContrast }) {
 function AccessibilitySubsection({ label, children }) {
   return (
     <div>
-      <h4
-        style={{
-          fontSize: "0.72rem",
-          fontWeight: 700,
-          textTransform: "uppercase",
-          letterSpacing: "0.06em",
-          color: "var(--text-muted)",
-          margin: "0 0 0.6rem",
-        }}
-      >
-        {label}
-      </h4>
+      <SettingsSubsectionLabel>{label}</SettingsSubsectionLabel>
       {children}
     </div>
   );

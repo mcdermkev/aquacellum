@@ -1,4 +1,5 @@
 import React from "react";
+import { CaretRight, Storefront } from "@phosphor-icons/react";
 import { SettingsSection } from "../SettingsSection";
 import { SettingsSubsectionLabel as SubsectionLabel } from "../SettingsSubsectionLabel";
 import { VacationModeControl } from "../VacationModeControl";
@@ -63,77 +64,36 @@ export function SellerSection({ casualModeActive }) {
   return (
     <SettingsSection
       id="seller"
-      icon="🧑‍🌾"
+      icon={<Storefront size={20} />}
       title={{ casual: "Seller Hub", pro: "Breeder Store" }}
       description={{
         casual:
           "Your selling setup lives in the Seller Hub, next to your orders. These take you straight there.",
         pro:
-          "Seller configuration is owned by the Breeder Terminal, colocated with fulfillment. These are deep links, not a second place to edit it.",
+          "Store settings live in the Breeder Terminal, next to your orders. These links open them there.",
       }}
       casualModeActive={casualModeActive}
     >
       <SubsectionLabel>{casualModeActive ? "Jump to" : "Seller configuration"}</SubsectionLabel>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      <div className="st-link-cards">
         {destinations.map((destination) => (
           <button
             key={destination.section}
             type="button"
             onClick={() => goToTerminal(destination.section)}
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              gap: 12,
-              width: "100%",
-              minHeight: 44,
-              textAlign: "left",
-              font: "inherit",
-              color: "inherit",
-              border: "1px solid rgba(var(--ink-rgb), 0.08)",
-              borderRadius: 8,
-              padding: "10px 12px",
-              background: "rgba(var(--ink-rgb), 0.02)",
-              cursor: "pointer",
-            }}
+            className="st-link-card"
           >
-            <span style={{ minWidth: 0 }}>
-              <span
-                style={{
-                  display: "block",
-                  fontSize: 13,
-                  fontWeight: 600,
-                  color: "var(--text-primary)",
-                }}
-              >
-                {destination.label}
-              </span>
-              <span
-                style={{
-                  display: "block",
-                  fontSize: 11,
-                  color: "var(--text-muted)",
-                  marginTop: 2,
-                }}
-              >
-                {destination.description}
-              </span>
+            <span className="st-link-card-text">
+              <span className="st-link-card-title">{destination.label}</span>
+              <span className="st-link-card-desc">{destination.description}</span>
             </span>
-            <span aria-hidden="true" style={{ color: "var(--accent-blue)", flexShrink: 0 }}>
-              →
-            </span>
+            <CaretRight className="st-link-card-caret" size={18} weight="bold" aria-hidden="true" />
           </button>
         ))}
       </div>
 
-      <div
-        style={{
-          marginTop: "1.5rem",
-          paddingTop: "1.25rem",
-          borderTop: "1px solid rgba(var(--ink-rgb), 0.06)",
-        }}
-      >
+      <div className="st-divider">
         <SubsectionLabel>{casualModeActive ? "Away mode" : "Vacation mode"}</SubsectionLabel>
         <VacationModeControl casualModeActive={casualModeActive} />
       </div>

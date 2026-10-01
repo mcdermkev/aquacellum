@@ -1,4 +1,13 @@
 import React, { useState } from "react";
+import {
+  CheckCircle,
+  DownloadSimple,
+  FilePdf,
+  FloppyDisk,
+  Info,
+  UploadSimple,
+  WarningCircle,
+} from "@phosphor-icons/react";
 import { SettingsSection } from "../SettingsSection";
 import { exportLocalDatabase, importLocalDatabase, db } from "../../../db";
 import { useQueryClient } from "@tanstack/react-query";
@@ -32,14 +41,14 @@ export function BackupSection({ casualModeActive }) {
       setImportStatus({
         type: "success",
         message: casualModeActive
-          ? "Logbook successfully backed up to your device!"
-          : "Facility registry archives exported successfully.",
+          ? "Backup saved to your device."
+          : "Database exported.",
       });
     } catch (err) {
       setImportStatus({
         type: "error",
         message: casualModeActive
-          ? "Failed to back up logbook. Please try again."
+          ? "Couldn't create the backup. Try again."
           : `Export failed: ${err.message}`,
       });
     } finally {
@@ -68,22 +77,22 @@ export function BackupSection({ casualModeActive }) {
             type: "warning",
             message: casualModeActive
               ? `Logbook restored, but ${result.blobFailures} photos failed to load due to device storage limits.`
-              : `Restoration complete, but ${result.blobFailures} photos failed to load due to device storage limits.`,
+              : `Import complete, but ${result.blobFailures} photos failed to load due to device storage limits.`,
           });
         } else {
           setImportStatus({
             type: "success",
             message: casualModeActive
-              ? "Logbook successfully restored! Dashboard updated."
-              : "Atomic ledger restoration complete. All local registry manifests updated.",
+              ? "Logbook restored."
+              : "Import complete. Local database updated.",
           });
         }
       } catch (err) {
         setImportStatus({
           type: "error",
           message: casualModeActive
-            ? "Invalid logbook file or restoration failed. Existing data preserved."
-            : `Atomic restoration aborted: ${err.message}`,
+            ? "That file couldn't be restored. Your existing data is unchanged."
+            : `Import stopped: ${err.message}. Existing data is unchanged.`,
         });
       } finally {
         setIsImporting(false);
@@ -103,71 +112,55 @@ export function BackupSection({ casualModeActive }) {
   return (
     <SettingsSection
       id="backup"
-      icon="💾"
+      icon={<FloppyDisk size={20} />}
       title={{ casual: "Backup & Restore", pro: "Data Portability" }}
       description={{
         casual:
-          "Take full ownership of your records. Download a complete copy of your local aquariums, species entries, and logs to your device, or restore them at any time.",
+          "Download a copy of the aquariums, fish and logs stored on this device, or restore one later.",
         pro:
-          "Export and import local registry catalogs atomically. Guarantees 100% sovereign record custody and zero platform lock-in. Transactions are processed locally on your client machine.",
+          "Export or import the local database as one JSON file. It all runs in this browser; nothing is uploaded.",
       }}
       casualModeActive={casualModeActive}
     >
-      <div
-        style={{
-          display: "flex",
-          gap: "0.5rem",
-          alignItems: "flex-start",
-          background: "rgba(56, 189, 248, 0.06)",
-          border: "1px solid rgba(56, 189, 248, 0.15)",
-          borderRadius: "var(--radius-sm)",
-          padding: "0.75rem 1rem",
-          marginBottom: "1.5rem",
-        }}
-      >
-        <span style={{ color: "var(--accent-blue)", fontSize: "0.9rem" }}>ℹ️</span>
-        <span style={{ fontSize: "0.75rem", color: "rgba(var(--ink-rgb), 0.8)", lineHeight: "1.4" }}>
-          All database records are stored locally in your browser's offline storage. Backing up regularly ensures your data remains secure even if you clear your browser cache.
-        </span>
+      <div className="st-callout st-callout--info" style={{ marginBottom: "1.1rem" }}>
+        <Info size={20} aria-hidden="true" />
+        <p>
+          Your records are kept in this browser's storage. A backup file keeps a copy safe if that storage is cleared.
+        </p>
       </div>
 
-      <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", marginBottom: "1.5rem" }}>
+      <div className="st-actions" style={{ marginBottom: "1.1rem" }}>
         <button
-          className="btn-primary"
+          type="button"
+          className="st-btn st-btn--primary"
           onClick={handleExport}
           disabled={isExporting || isImporting}
-          style={{ padding: "0.75rem 1.5rem", fontSize: "0.875rem", minHeight: "44px", minWidth: "150px" }}
         >
-          {isExporting ? "Processing..." : casualModeActive ? "Backup My Logbook" : "Export Local Registry Archives"}
+          <DownloadSimple size={18} aria-hidden="true" />
+          {isExporting ? "Exporting…" : casualModeActive ? "Back up my logbook" : "Export database"}
         </button>
 
-        <label
-          className="btn-secondary"
-          style={{
-            padding: "0.75rem 1.5rem",
-            fontSize: "0.875rem",
-            minHeight: "44px",
-            minWidth: "150px",
-            cursor: "pointer",
-            display: "inline-flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "0.5rem",
-          }}
-        >
+        {/*
+          The file input is visually hidden but stays in the tab order (it was
+          display:none, which made restore mouse-only). The label is the visible
+          button and shows the focus ring via :has(input:focus-visible).
+        */}
+        <label className={`st-btn${isExporting || isImporting ? " st-btn--disabled" : ""}`}>
           <input
             type="file"
             accept=".json"
             onChange={handleImport}
             disabled={isExporting || isImporting}
-            style={{ display: "none" }}
+            className="st-sr-only"
           />
-          {isImporting ? "Restoring..." : casualModeActive ? "Restore Logbook File" : "Import Facility Registry Manifest"}
+          <UploadSimple size={18} aria-hidden="true" />
+          {isImporting ? "Restoring…" : casualModeActive ? "Restore from a file" : "Import database"}
         </label>
 
         {!casualModeActive && (
           <button
-            className="btn-secondary"
+            type="button"
+            className="st-btn"
             onClick={async () => {
               try {
                 /*
@@ -215,42 +208,30 @@ export function BackupSection({ casualModeActive }) {
                 setImportStatus({ type: "error", message: `PDF generation failed: ${err.message}` });
               }
             }}
-            style={{ padding: "0.75rem 1.5rem", fontSize: "0.875rem", minHeight: "44px", minWidth: "150px" }}
           >
-            📄 Facility Summary PDF
+            <FilePdf size={18} aria-hidden="true" />
+            Facility summary PDF
           </button>
         )}
       </div>
 
       {importStatus.message && (
-        <div
-          style={{
-            padding: "0.75rem 1rem",
-            borderRadius: "var(--radius-sm)",
-            fontSize: "0.8rem",
-            fontWeight: "500",
-            backgroundColor:
-              importStatus.type === "success"
-                ? "rgba(52, 211, 153, 0.08)"
-                : importStatus.type === "warning"
-                  ? "rgba(251, 191, 36, 0.08)"
-                  : "rgba(248, 113, 113, 0.08)",
-            border:
-              importStatus.type === "success"
-                ? "1px solid rgba(52, 211, 153, 0.25)"
-                : importStatus.type === "warning"
-                  ? "1px solid rgba(251, 191, 36, 0.25)"
-                  : "1px solid rgba(248, 113, 113, 0.25)",
-            color:
-              importStatus.type === "success"
-                ? "var(--accent-green)"
-                : importStatus.type === "warning"
-                  ? "var(--accent-amber)"
-                  : "var(--accent-red)",
-          }}
+        <p
+          className={`st-note ${
+            importStatus.type === "success"
+              ? "st-note--success"
+              : importStatus.type === "warning"
+                ? "st-note--warning"
+                : "st-note--error"
+          }`}
         >
-          {importStatus.message}
-        </div>
+          {importStatus.type === "success" ? (
+            <CheckCircle size={18} aria-hidden="true" />
+          ) : (
+            <WarningCircle size={18} aria-hidden="true" />
+          )}
+          <span>{importStatus.message}</span>
+        </p>
       )}
     </SettingsSection>
   );

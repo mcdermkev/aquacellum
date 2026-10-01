@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { CaretDown } from "@phosphor-icons/react";
 import { announce } from "../../utils/a11y";
 
 /**
@@ -11,7 +12,7 @@ import { announce } from "../../utils/a11y";
  * used a *different* visual language entirely (navy panel, `maxWidth: 640`,
  * 14px radius, `system-ui`), which is why the top of the tab looked like a
  * different product than the bottom. This file is the fix: one primitive,
- * styled from `styles/index.css` under `.settings-section*` (AC-2).
+ * styled from `SettingsDaylight.css` under `.st-section*` (AC-2).
  *
  * `title` / `description` each accept EITHER a plain string (identical copy in
  * both modes — the explicit way to say "this heading is deliberately
@@ -55,8 +56,8 @@ function persistCollapsed(id, collapsed) {
  * @param {object} props
  * @param {string} props.id - stable id; used for the deep-link anchor
  *   (`id="settings-<id>"`), the collapse-persistence key, and by tests.
- * @param {string} [props.icon] - decorative emoji/icon, rendered with
- *   `aria-hidden`.
+ * @param {React.ReactNode} [props.icon] - decorative icon element (a Phosphor
+ *   icon, e.g. `<Bell size={20} />`), rendered in a tile with `aria-hidden`.
  * @param {string|{casual:string, pro:string}} props.title
  * @param {string|{casual:string, pro:string}} [props.description]
  * @param {boolean} props.casualModeActive
@@ -90,43 +91,47 @@ export function SettingsSection({
     announce(`${resolvedTitle} section ${next ? "collapsed" : "expanded"}`);
   };
 
+  // The heading wraps the toggle button (not the other way round): a heading
+  // inside a <button> is flattened to plain text by assistive tech, so the
+  // section would drop out of the heading outline. The badge sits beside the
+  // heading, outside the button, so it is not read as part of the button name.
   return (
     <section
       id={`settings-${id}`}
-      className={`settings-section settings-section--${tone}`}
+      className={`st-section st-section--${tone}`}
       aria-labelledby={headingId}
       data-settings-section={id}
     >
-      <div className="settings-section__header">
-        <button
-          type="button"
-          className="settings-section__toggle"
-          onClick={handleToggleCollapse}
-          aria-expanded={!collapsed}
-          aria-controls={bodyId}
-        >
-          {icon && (
-            <span className="settings-section__icon" aria-hidden="true">
-              {icon}
-            </span>
-          )}
-          <h3 id={headingId} className="settings-section__title">
-            {resolvedTitle}
-          </h3>
-          {badge}
-          <span
-            className={`settings-section__chevron${collapsed ? " settings-section__chevron--collapsed" : ""}`}
-            aria-hidden="true"
+      <div className={`st-section-head${badge ? " st-section-head--badge" : ""}`}>
+        <h3 id={headingId} className="st-section-title">
+          <button
+            type="button"
+            className="st-section-toggle"
+            onClick={handleToggleCollapse}
+            aria-expanded={!collapsed}
+            aria-controls={bodyId}
           >
-            ▾
-          </span>
-        </button>
+            {icon && (
+              <span className="st-section-icon" aria-hidden="true">
+                {icon}
+              </span>
+            )}
+            <span className="st-section-name">{resolvedTitle}</span>
+            <CaretDown
+              className={`st-section-caret${collapsed ? " st-section-caret--collapsed" : ""}`}
+              size={18}
+              weight="bold"
+              aria-hidden="true"
+            />
+          </button>
+        </h3>
+        {badge && <span className="st-section-badge">{badge}</span>}
       </div>
 
       {!collapsed && (
-        <div id={bodyId} className="settings-section__body">
+        <div id={bodyId} className="st-section-body">
           {resolvedDescription && (
-            <p className="settings-section__description">{resolvedDescription}</p>
+            <p className="st-section-desc">{resolvedDescription}</p>
           )}
           {children}
         </div>
