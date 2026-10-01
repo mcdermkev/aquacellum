@@ -163,6 +163,7 @@
     "frontend/supabase/migrations/20261003_seller_ship_from_private.sql",
     "frontend/supabase/migrations/20261003_ai_rate_limit.sql",
     "frontend/supabase/migrations/20261004_storage_owner_policies.sql",
-    "frontend/supabase/migrations/20261005_credit_functions_server_only.sql"
+    "frontend/supabase/migrations/20261005_credit_functions_server_only.sql",
+    "supabase/migrations/20261006120000_ai_edge_wiring.sql"
   ]
 }

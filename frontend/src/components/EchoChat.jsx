@@ -339,28 +339,36 @@ export function EchoChat({ walletAddress, casualModeActive = true, activeTab = "
 
     window.dispatchEvent(new CustomEvent("echo:thinking-start"));
     let reply = null;
+    let card = opts.card || null;
+    let cardArgs = null;
+    let rows = [];
+    let tank = null;
     try {
-      reply = await sendMessage(text);
+      rows = tanksRef.current.length ? tanksRef.current : await refreshTanks();
+      tank = tankFor(text, rows);
+      cardArgs = {
+        text,
+        catalog,
+        tank: tank ? { ...tank, reading: latestReading(tank.logs) } : null,
+        tankRecords: tank && catalog.length ? recordsInTank(tank, catalog) : [],
+      };
+      // The card is worked out BEFORE asking and sent along, so Echo's
+      // sentence agrees with it (api/_lib/poseidonGateway.js compatCardContext).
+      if (!card && catalog.length) card = compatForQuestion(cardArgs);
+      reply = await sendMessage(text, { compatCard: card });
     } finally {
       busyRef.current = false;
       window.dispatchEvent(new CustomEvent("echo:thinking-end"));
     }
     if (!reply) return null;
 
-    const rows = tanksRef.current.length ? tanksRef.current : await refreshTanks();
-    const tank = tankFor(text, rows);
-
-    // The card: from the caller (planner, photo check) or worked out here.
-    let card = opts.card || null;
-    if (!card && catalog.length && !NO_CARD_INTENTS.has(reply.intent)) {
+    if (NO_CARD_INTENTS.has(reply.intent)) {
+      card = null;
+    } else if (!card && catalog.length && cardArgs) {
+      // The question did not read like a compatibility question but the answer
+      // treated it as one: show the card anyway.
       const force = /compat/i.test(String(reply.intent || "")) || reply.action?.type === POSEIDON_ACTION.QUERY_COMPATIBILITY;
-      card = compatForQuestion({
-        text,
-        catalog,
-        tank: tank ? { ...tank, reading: latestReading(tank.logs) } : null,
-        tankRecords: tank ? recordsInTank(tank, catalog) : [],
-        force,
-      });
+      if (force) card = compatForQuestion({ ...cardArgs, force: true });
     }
     if (card) addCard(reply.id, { id: `compat-${reply.id}`, kind: "compat", result: card });
 

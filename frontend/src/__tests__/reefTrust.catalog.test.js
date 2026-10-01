@@ -122,7 +122,10 @@ describe("opening a profile never asks the wallet to sign", () => {
 
   it("loads mentorships and the mentor list only after the keeper asks", () => {
     expect(PANEL).toContain("useMentorships(walletAddress, isOwnProfile && mentorshipsRequested)");
-    expect(PANEL).toContain("useAvailableMentors(isOwnProfile && showMentorList)");
+    // The list also waits for the keeper's species, so it is fetched (and the
+    // wallet asked to sign) once, already ranked.
+    expect(PANEL).toContain("useAvailableMentors(isOwnProfile && showMentorList && keeperSpeciesReady, keeperSpecies)");
+    expect(PANEL).toContain("useKeeperSpecies(isOwnProfile && showMentorList)");
     expect(PANEL).toMatch(/useState\(false\);\s*\n\s*const \{ data: mentorshipsResult/);
   });
 

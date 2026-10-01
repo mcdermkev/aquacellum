@@ -115,8 +115,14 @@ export async function fetchMentorships() {
     : { data: { asMentor: [], asMentee: [] }, error: result.error };
 }
 
-export async function fetchAvailableMentors() {
-  const result = await request("mentors");
+/**
+ * @param {{ species?: Array<{ specCode: number, name: string }> }} [opts]
+ *   what the keeper keeps; when given, the server asks Echo to rank the
+ *   mentors and say why (api/_lib/mentorRanking.js).
+ */
+export async function fetchAvailableMentors({ species = [] } = {}) {
+  const list = (Array.isArray(species) ? species : []).slice(0, 20).map((s) => ({ c: s.specCode, n: s.name }));
+  const result = await request("mentors", list.length ? { params: { species: JSON.stringify(list) } } : {});
   return result.success
     ? { data: result.mentors || [], error: null }
     : { data: [], error: result.error };

@@ -287,7 +287,10 @@ export function toggleAcceptingMentees(accepting) {
   return setAcceptingMenteesOnServer(accepting);
 }
 
-/** Discover opted-in mentors from the server-authoritative keeper-role grants. */
-export function getAvailableMentors() {
-  return fetchAvailableMentors();
+/**
+ * Discover opted-in mentors from the server-authoritative keeper-role grants.
+ * With `species`, the list comes back ranked for this keeper, with reasons.
+ */
+export function getAvailableMentors({ species = [] } = {}) {
+  return fetchAvailableMentors({ species });
 }

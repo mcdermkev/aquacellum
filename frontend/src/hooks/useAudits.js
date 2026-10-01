@@ -168,10 +168,12 @@ export function useMentorships(walletAddress, enabled = true) {
 /**
  * Fetch available mentors.
  */
-export function useAvailableMentors(enabled = true) {
+export function useAvailableMentors(enabled = true, species = []) {
+  const codes = (species || []).map((s) => s.specCode).join(",");
   return useQuery({
-    queryKey: ["mentors", "available"],
-    queryFn: () => getAvailableMentors(),
+    // The species are part of the key: a ranking is for one set of fish.
+    queryKey: ["mentors", "available", codes],
+    queryFn: () => getAvailableMentors({ species }),
     enabled,
     staleTime: 60 * 1000,
   });

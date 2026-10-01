@@ -6,8 +6,8 @@
  * - live → ended (when end_time is reached)
  * - 48h post-end: purge tide_chat messages
  * 
- * On 'live': opens Realtime channels, enables chat, starts XP tracking.
- * On 'ended': closes chat writes, triggers Poseidon recap, distributes attendance XP.
+ * On 'ended': builds the recap (build_tide_recap) and tells checked-in keepers.
+ * Service-role callers only (_shared/callerRole.ts).
  * 
  * Deploy: supabase functions deploy tide-lifecycle
  * Schedule: via Supabase Dashboard → Database → Extensions → pg_cron
@@ -18,14 +18,20 @@
 
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { requireServiceRole } from "../_shared/callerRole.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 serve(async (req) => {
+  // pg_cron only (it sends the service-role key). This was deployed with JWT
+  // verification off, so anyone could run the lifecycle and its XP notices.
+  const denied = requireServiceRole(req);
+  if (denied) return denied;
+
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
   const now = new Date().toISOString();
-  const results = { transitioned_to_live: 0, transitioned_to_ended: 0, chat_purged: 0 };
+  const results = { transitioned_to_live: 0, transitioned_to_ended: 0, chat_purged: 0, recaps_built: 0 };
 
   try {
     // ─── Transition: upcoming → live ───
@@ -56,10 +62,16 @@ serve(async (req) => {
     } else {
       results.transitioned_to_ended = ending?.length || 0;
 
-      // For each ended tide: distribute attendance XP
+      // For each ended tide: build the recap, then tell the keepers who came.
+      // A tide a host ends by hand gets its recap from useEndTide; nothing
+      // built one for a tide that simply ran out of time, so its Recap tab
+      // never appeared.
       if (ending && ending.length > 0) {
         for (const tide of ending) {
-          await distributeAttendanceXP(supabase, tide.id);
+          const { error: recapError } = await supabase.rpc("build_tide_recap", { target_tide: tide.id });
+          if (recapError) console.error(`Recap failed for ${tide.id}:`, recapError.message);
+          else results.recaps_built++;
+          await notifyAttendees(supabase, tide);
         }
       }
     }
@@ -97,39 +109,32 @@ serve(async (req) => {
 });
 
 /**
- * Distribute attendance XP to all checked-in attendees.
- * +50 XP for "going" attendees, +100 XP for "checked_in".
+ * Tell the keepers who checked in that the tide is over and the recap is up.
+ *
+ * This used to "distribute attendance XP": it sent "+50 XP" / "+100 XP"
+ * notices and set tide_attendees.xp_awarded = true, but it never paid any XP.
+ * Check-in XP is paid at check-in, claimed with an UPDATE ... WHERE
+ * xp_awarded = false (20260817140000_tide_xp_awarded_coherence.sql), so
+ * pre-marking a checked-in keeper as paid DENIED them a real claim, and the
+ * notices promised XP nobody received. Now it only says the event ended.
  */
-async function distributeAttendanceXP(supabase: any, tideId: string) {
+// deno-lint-ignore no-explicit-any
+async function notifyAttendees(supabase: any, tide: { id: string; title?: string }) {
   const { data: attendees } = await supabase
     .from("tide_attendees")
-    .select("wallet_address, rsvp_status")
-    .eq("tide_id", tideId)
-    .eq("xp_awarded", false);
+    .select("wallet_address")
+    .eq("tide_id", tide.id)
+    .not("checked_in_at", "is", null);
 
-  if (!attendees || attendees.length === 0) return;
-
-  for (const attendee of attendees) {
-    const xp = attendee.rsvp_status === "checked_in" ? 100 : 50;
-
-    // Create notification
-    await supabase
-      .from("sonar_notifications")
-      .insert({
-        recipient_wallet: attendee.wallet_address,
-        category: "milestone",
-        title: `🌊 Tide Complete! +${xp} XP`,
-        body: "Thanks for participating in the Tide!",
-        icon: "🌊",
-        link_type: "tide",
-        link_id: tideId,
-      });
-
-    // Mark XP as awarded
-    await supabase
-      .from("tide_attendees")
-      .update({ xp_awarded: true })
-      .eq("tide_id", tideId)
-      .eq("wallet_address", attendee.wallet_address);
+  for (const attendee of attendees || []) {
+    await supabase.from("sonar_notifications").insert({
+      recipient_wallet: attendee.wallet_address,
+      category: "milestone",
+      title: `${tide.title || "The tide"} has ended`,
+      body: "Thanks for coming. The recap is up.",
+      icon: "🌊",
+      link_type: "tide",
+      link_id: tide.id,
+    });
   }
 }

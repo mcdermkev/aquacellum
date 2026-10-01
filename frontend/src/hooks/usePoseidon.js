@@ -81,6 +81,19 @@ export function poseidonReplyText(data, mode) {
 }
 
 /**
+ * The part of a compatibility card the gateway reads (api/_lib/poseidonGateway.js
+ * sanitizeCompatCard): verdict, title and rows. Photos and catalog codes stay here.
+ */
+export function cardForRequest(card) {
+  if (!card || typeof card !== 'object') return null;
+  return {
+    verdict: card.verdict,
+    title: card.title,
+    rows: (Array.isArray(card.rows) ? card.rows : []).map((r) => ({ status: r.status, label: r.label, detail: r.detail })),
+  };
+}
+
+/**
  * Load persisted request timestamps from localStorage for rate limiting.
  */
 function loadPersistedRequestTimestamps() {
@@ -274,7 +287,13 @@ export function usePoseidon({ tankId, mode = 'casual', walletAddress, persistKey
    * Send a message to Poseidon.
    * Returns the parsed response or null on failure.
    */
-  const sendMessage = useCallback(async (text) => {
+  /**
+   * @param {string} text
+   * @param {{ compatCard?: object|null }} [extra] a compatibility card the chat
+   *   will show under the answer (services/echoMatch.js checkGroup result). It
+   *   is sent so the model's verdict agrees with the card.
+   */
+  const sendMessage = useCallback(async (text, extra = {}) => {
     if (!text || typeof text !== 'string' || !text.trim()) return null;
 
     // Check if Poseidon is disabled in settings
@@ -391,6 +410,7 @@ export function usePoseidon({ tankId, mode = 'casual', walletAddress, persistKey
           mode: mode === 'pro' ? 'pro' : 'casual',
           sessionData,
           conversationHistory,
+          ...(extra?.compatCard ? { compatCard: cardForRequest(extra.compatCard) } : {}),
         }),
       });
 

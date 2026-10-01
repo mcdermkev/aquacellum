@@ -32,6 +32,7 @@ import {
   shouldRetryPoseidon,
   pickPoseidonOutcome,
   shapePoseidonReply,
+  compatCardContext,
 } from './_lib/poseidonGateway.js';
 import { requireAccount, enforceAccountQuota, AI_QUOTAS } from './_lib/aiAccess.js';
 import { resolveImagePart } from './_lib/imageInput.js';
@@ -530,7 +531,9 @@ Always respond with valid JSON matching this schema:
 - GROUNDING RULE: if the context includes species data, treat those values as ground truth. If it does NOT include data for a species the user asks about, do NOT invent numeric care parameters (temperature, pH, hardness, adult size, diet specifics). Say plainly that you're not certain, give only general guidance, and suggest they verify against a trusted source or add the species so you can ground the answer. Wrong numbers can kill fish — an honest "I'm not sure" is always better than a confident guess.
 - In pro mode, when the user mentions a species, reference its specCode from the provided species database context. In casual mode use its common and scientific name only.
 - Proactively warn about common mistakes: overstocking, pH crashes, ammonia spikes, incompatible tankmates.
-- In casual mode: warm, encouraging, use 1-2 relevant emoji per response. Think "knowledgeable friend at the fish store."
+- In casual mode: warm, encouraging and plain. At most one emoji per reply, and none is fine. Think "knowledgeable friend at the fish store."
+- In both modes: never use exclamation points or em dashes. Calm sentences read as more trustworthy than excited ones.
+- When a "COMPATIBILITY CARD" section is present, your verdict must match the card's.
 - In pro mode: clinical, data-forward, no emoji. Think "facility operations terminal."
 `;
 
@@ -817,7 +820,7 @@ async function handlePoseidon(req, res) {
     return res.status(429).json(poseidonNotice(mode,
       mode === 'pro'
         ? `[RATE LIMITED] ${POSEIDON_RATE.max} queries/hour exceeded. Retry in ${limit.resetIn}s.`
-        : `🌊 You've been asking a lot of great questions! I need a short break. Try again in ${Math.ceil(limit.resetIn / 60)} minutes.`,
+        : `I need a short break. That's the hourly limit for questions. Try again in ${Math.ceil(limit.resetIn / 60)} minutes.`,
       { rateLimited: true, echoReaction: { mood: "calm", glowActive: false, glowColor: "", swimSpeedMultiplier: 0.5, durationMs: 2000 } }));
   }
 
@@ -832,7 +835,7 @@ async function handlePoseidon(req, res) {
     return res.status(200).json(poseidonNotice(mode,
       mode === 'pro'
         ? "[POSEIDON OFFLINE] AI backend not configured (no Vertex credentials or GEMINI_API_KEY in this environment)."
-        : "🌊 Poseidon is taking a quick breather and can't answer right now. Please try again shortly.",
+        : "I can't reach Poseidon right now. Please try again shortly.",
       { offline: true }));
   }
 
@@ -847,8 +850,8 @@ async function handlePoseidon(req, res) {
 
   // Build persona instruction
   const personaInstruction = mode === 'pro'
-    ? "Respond in PROFESSIONAL/PRO mode: terse, clinical, data-forward, no emoji."
-    : "Respond in CASUAL mode: warm, friendly, encouraging, 1-2 emoji max.";
+    ? "Respond in PROFESSIONAL/PRO mode: terse, clinical, data-forward, no emoji. No exclamation points, no em dashes."
+    : "Respond in CASUAL mode: warm, friendly and plain. At most one emoji, and none is fine. Never use exclamation points or em dashes.";
 
   // Build conversation messages for multi-turn context
   const messages = [
@@ -862,11 +865,16 @@ async function handlePoseidon(req, res) {
     messages.push({ role: turn.sender === 'user' ? "user" : "model", parts: [{ text: turn.text }] });
   }
 
+  // The compatibility card the chat will show under this answer, if any, so
+  // the sentence agrees with it (_lib/poseidonGateway.js compatCardContext).
+  const cardContext = compatCardContext(input.compatCard);
+
   // Assemble the current prompt with all RAG context
   const currentPrompt = [
     personaInstruction,
     userContext ? `\n${userContext}` : '',
     speciesContext ? `\n${speciesContext}` : '',
+    cardContext ? `\n${cardContext}` : '',
     `\n## USER MESSAGE\n${cleanMessage}`
   ].filter(Boolean).join('\n');
 
@@ -915,7 +923,7 @@ async function handlePoseidon(req, res) {
       return res.status(200).json(poseidonNotice(mode,
         mode === 'pro'
           ? '[DECLINED] Query blocked by the content filter. Rephrase and retry.'
-          : "🌊 I can't answer that one. Try asking it a different way.",
+          : "I can't answer that one. Try asking it a different way.",
         { blocked: true }));
     }
     throw new Error(`Unusable model reply (finishReason: ${first?.finishReason || retry?.finishReason || 'unknown'})`);
@@ -930,7 +938,7 @@ async function handlePoseidon(req, res) {
     return res.status(200).json(poseidonNotice(mode,
       mode === 'pro'
         ? `[POSEIDON ERROR] Backend intelligence layer unreachable. Retry or use local command mode.${debugHint}`
-        : `🌊 Sorry, I'm having trouble connecting to my knowledge base right now. Try again in a moment.${debugHint}`,
+        : `Sorry, I'm having trouble reaching Poseidon right now. Try again in a moment.${debugHint}`,
       { error: true, echoReaction: { mood: "confused", glowActive: false, glowColor: "", swimSpeedMultiplier: 0.8, durationMs: 2000 } }));
   }
 }

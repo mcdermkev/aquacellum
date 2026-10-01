@@ -26,8 +26,12 @@ import {
   shouldRetryPoseidon,
   pickPoseidonOutcome,
   shapePoseidonReply,
+  sanitizeCompatCard,
+  compatCardContext,
+  plainReplyStyle,
 } from "../../api/_lib/poseidonGateway.js";
-import { readPoseidonText, poseidonReplyText, MAX_QUESTION_CHARS, HISTORY_TURN_CHARS } from "../hooks/usePoseidon.js";
+import { readPoseidonText, poseidonReplyText, cardForRequest, MAX_QUESTION_CHARS, HISTORY_TURN_CHARS } from "../hooks/usePoseidon.js";
+import { checkGroup } from "../services/echoMatch.js";
 
 const result = (text, finishReason = "STOP", extraParts = []) => ({
   candidates: [{ content: { parts: [...extraParts, { text }] }, finishReason }],
@@ -333,5 +337,74 @@ describe("api/ai.js Poseidon wiring", () => {
     expect(publicPart).not.toContain("vertexGenerateContent");
     expect(health).not.toContain("serviceAccountEmail");
     expect(health).not.toMatch(/address:\s*wallet\.address/);
+  });
+});
+
+// ─── The card shown with the answer ─────────────────────────────────────────
+//
+// 2026-10-01, live: the model called rams and cardinals "wonderful tankmates"
+// directly above a card that said "Works with care". The chat now sends the
+// card with the question and the prompt tells the model to agree with it.
+
+describe("compatibility card in the request", () => {
+  const CATALOG = JSON.parse(readFileSync(fileURLToPath(new URL("../../public/fishbase_master.json", import.meta.url)), "utf8"));
+  const by = (n) => CATALOG.find((r) => r.scientificName === n && !r.duplicateOf);
+  const card = checkGroup({ species: [by("Mikrogeophagus ramirezi"), by("Paracheirodon axelrodi")] });
+
+  it("round-trips a real card from the engine through the client trim and the server check", () => {
+    const sent = sanitizeCompatCard(cardForRequest(card));
+    expect(sent.verdict).toBe("care");
+    expect(sent.title).toBe("German Blue Ram + Cardinal Tetra");
+    expect(sent.rows.find((r) => r.label.includes("territorial"))?.status).toBe("care");
+    // The photo URLs and catalog codes the UI uses never reach the model.
+    expect(JSON.stringify(cardForRequest(card))).not.toMatch(/masterPhotoUrl|specCode|https?:/);
+  });
+
+  it("tells the model the verdict and that it must agree", () => {
+    const ctx = compatCardContext(sanitizeCompatCard(cardForRequest(card)));
+    expect(ctx).toContain('Verdict: "Works with care" for German Blue Ram + Cardinal Tetra');
+    expect(ctx).toMatch(/must agree with this verdict/);
+    expect(ctx).toContain("[Watch] German Blue Ram can be territorial");
+  });
+
+  it("refuses unknown verdicts and trims oversized fields", () => {
+    expect(sanitizeCompatCard({ verdict: "amazing", rows: [] })).toBeNull();
+    expect(sanitizeCompatCard("care")).toBeNull();
+    const big = sanitizeCompatCard({ verdict: "bad", title: "x".repeat(900), rows: Array.from({ length: 30 }, () => ({ status: "evil", label: "y".repeat(900), detail: "z" })) });
+    expect(big.title.length).toBe(200);
+    expect(big.rows).toHaveLength(10);
+    expect(big.rows[0]).toMatchObject({ status: "unknown" });
+    expect(big.rows[0].label.length).toBe(160);
+    expect(compatCardContext(null)).toBe("");
+  });
+
+  it("is carried out of validatePoseidonRequest, and absent when not sent", () => {
+    expect(validatePoseidonRequest({ message: "hi", compatCard: { verdict: "good", title: "A + B", rows: [] } }).compatCard).toMatchObject({ verdict: "good" });
+    expect(validatePoseidonRequest({ message: "hi" }).compatCard).toBeNull();
+  });
+
+  it("is sent to the model in ai.js", () => {
+    const AI = readFileSync(fileURLToPath(new URL("../../api/ai.js", import.meta.url)), "utf8");
+    expect(AI).toContain("compatCardContext(input.compatCard)");
+    expect(AI).toMatch(/your verdict must match the card's/);
+  });
+});
+
+describe("plainReplyStyle", () => {
+  it("drops exclamation points and em dashes, keeps ranges", () => {
+    expect(plainReplyStyle("Yes! They get along great — just keep it at 24–28°C!")).toBe("Yes. They get along great, just keep it at 24–28°C.");
+  });
+
+  it("keeps one emoji at most", () => {
+    expect(plainReplyStyle("Great tank 🐠 with plants 🌿 and shrimp 🦐.")).toBe("Great tank 🐠 with plants and shrimp.");
+    expect(plainReplyStyle("No emoji here.")).toBe("No emoji here.");
+  });
+
+  it("does not touch code-ish text or ellipses", () => {
+    expect(plainReplyStyle("pH != 7 here…")).toBe("pH != 7 here…");
+  });
+
+  it("is applied to every reply the gateway shapes", () => {
+    expect(shapePoseidonReply({ message: "Wonderful tankmates!" }).message).toBe("Wonderful tankmates.");
   });
 });

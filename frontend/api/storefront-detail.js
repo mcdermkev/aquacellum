@@ -123,6 +123,7 @@ import {
   MAX_CODE_LENGTH,
 } from "../src/services/promotionEngine.js";
 import { buildCustomerSegments } from "../src/services/customerSegments.js";
+import { parseMentorSpecies, mergeMentorRanking } from "./_lib/mentorRanking.js";
 import {
   normalizePickupLocation,
   validatePickupLocationDraft,
@@ -1207,7 +1208,38 @@ async function handleAvailableMentors(req, res) {
     .order("xp_total", { ascending: false })
     .limit(20);
   if (error) return res.status(500).json({ error: "Could not load available mentors" });
-  return res.status(200).json({ mentors: data || [] });
+
+  // Suggestions: when the keeper says what they keep, Echo ranks THIS list
+  // (the mentor-match edge function) and says why. Who is a mentor is still
+  // decided above; the ranking only reorders and annotates. Any failure
+  // leaves the plain list.
+  const mentors = data || [];
+  const species = parseMentorSpecies(req.query?.species);
+  const ranked = species.length && mentors.length > 1 ? await rankMentors(wallet, mentors, species) : null;
+  return res.status(200).json({ mentors: ranked ? mergeMentorRanking(mentors, ranked) : mentors });
+}
+
+async function rankMentors(wallet, mentors, species) {
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_KEY;
+  if (!url || !key) return null;
+  try {
+    const response = await fetch(`${url}/functions/v1/mentor-match`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+      body: JSON.stringify({ wallet_address: wallet, mentor_wallets: mentors.map((m) => m.wallet_address), species }),
+      signal: AbortSignal.timeout(7000),
+    });
+    if (!response.ok) {
+      console.warn("[mentors] mentor-match returned", response.status);
+      return null;
+    }
+    const body = await response.json().catch(() => null);
+    return Array.isArray(body?.matches) && body.matches.length ? body.matches : null;
+  } catch (err) {
+    console.warn("[mentors] mentor-match failed:", err?.message || err);
+    return null;
+  }
 }
 
 async function handleMentorships(req, res) {

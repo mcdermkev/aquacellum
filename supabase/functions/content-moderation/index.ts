@@ -2,9 +2,13 @@
  * content-moderation Edge Function
  *
  * Content moderation pipeline (Task 52).
- * Meant to be called by a database webhook on new content, with the
- * service-role key. Service-role callers only (_shared/callerRole.ts): it can
- * hide content, so an open endpoint let anyone hide any post.
+ * Called for every new Reef post and comment by the queue_content_moderation
+ * trigger (20261006120000_ai_edge_wiring.sql), with the service-role key.
+ * Service-role callers only (_shared/callerRole.ts): it can hide content, so an
+ * open endpoint let anyone hide any post.
+ *
+ * It flags for the curator queue. It hides on its own only when the model is
+ * highly confident; a spam pattern alone only flags.
  *
  * Text: a spam pattern check, then Gemini on Vertex (_shared/vertex.ts).
  * Images: fetched (https only, images only, up to 5 MB) and sent to the same
@@ -72,14 +76,17 @@ serve(async (req) => {
     const ai = aiConfigured();
     let verdict: Verdict = CLEAN;
 
-    // Step 1: spam patterns on the text.
-    if (typeof text === "string" && SPAM_PATTERNS.some((p) => p.test(text))) {
-      verdict = { flagged: true, reason: "spam", confidence: 0.9, source: "pattern" };
-    }
+    // Step 1: spam patterns on the text. A pattern alone only flags for a
+    // curator ("I'll buy now before they sell out" is a fishkeeper, not spam);
+    // the model decides whether it is bad enough to hide.
+    const patternHit = typeof text === "string" && SPAM_PATTERNS.some((p) => p.test(text));
 
     // Step 2: AI text check.
-    if (!verdict.flagged && ai && typeof text === "string" && text.length > 10) {
+    if (ai && typeof text === "string" && text.length > 10) {
       verdict = await moderateText(text);
+    }
+    if (!verdict.flagged && patternHit) {
+      verdict = { flagged: true, reason: "spam", confidence: CONFIDENCE.medium, source: "pattern" };
     }
 
     // Step 3: AI image check.
@@ -93,27 +100,46 @@ serve(async (req) => {
       }
     }
 
-    // Step 4: hide the content and record a flag for a curator.
+    // Step 4: flag for a curator; hide straight away only when the model is
+    // highly confident. A curator who dismisses the flag un-hides it
+    // (moderate_reef_flag, 20261006120000_ai_edge_wiring.sql).
+    const hide = verdict.flagged && verdict.confidence >= CONFIDENCE.high && (type === "current" || type === "comment");
+    let skipped: string | null = null;
     if (verdict.flagged && !dry) {
       const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
-      if (type === "current") {
-        await supabase.from("currents").update({ is_hidden: true }).eq("id", id);
-      } else if (type === "comment") {
-        await supabase.from("comments").update({ is_hidden: true }).eq("id", id);
-      }
 
-      await supabase.from("moderation_flags").insert({
-        target_type: type,
-        target_id: id,
-        reason: verdict.reason,
-        auto_flagged: true,
-        ai_confidence: verdict.confidence,
-        details: `Auto-flagged by content moderation (${verdict.source}). Reason: ${verdict.reason}`,
-      });
+      // One auto flag per item: a retried webhook must not stack them.
+      const { count } = await supabase
+        .from("moderation_flags")
+        .select("id", { count: "exact", head: true })
+        .eq("target_type", type)
+        .eq("target_id", id)
+        .eq("auto_flagged", true);
+      if ((count || 0) > 0) {
+        skipped = "already_flagged";
+      } else {
+        if (hide && type === "current") {
+          await supabase.from("currents").update({ is_hidden: true }).eq("id", id);
+        } else if (hide && type === "comment") {
+          await supabase.from("comments").update({ is_hidden: true }).eq("id", id);
+        }
+
+        await supabase.from("moderation_flags").insert({
+          target_type: type,
+          target_id: id,
+          reason: verdict.reason,
+          auto_flagged: true,
+          auto_hidden: hide,
+          ai_confidence: verdict.confidence,
+          details: hide
+            ? `Hidden by the automatic check until reviewed (${verdict.source}, ${verdict.reason}). Dismiss to show it again.`
+            : `Flagged by the automatic check (${verdict.source}, ${verdict.reason}). Still visible.`,
+        });
+      }
     }
 
     return new Response(
-      JSON.stringify({ moderated: true, dry, ai, flagged: verdict.flagged, reason: verdict.reason, confidence: verdict.confidence, source: verdict.source }),
+      JSON.stringify({ moderated: true, dry, ai, flagged: verdict.flagged, hidden: hide && !dry && !skipped, skipped, reason: verdict.reason, confidence: verdict.confidence, source: verdict.source }),
       { headers: { "Content-Type": "application/json" } }
     );
   } catch (err) {
@@ -129,8 +155,8 @@ function toVerdict(raw: unknown, source: string): Verdict {
   if (!r || typeof r.flagged !== "boolean") return { ...CLEAN, source };
   const reason = ["spam", "inappropriate", "harassment"].includes(r.reason) ? r.reason : "none";
   const confidence = CONFIDENCE[r.confidence as keyof typeof CONFIDENCE] ?? CONFIDENCE.low;
-  // Only act on a flag the model is at least moderately sure of. A wrongly
-  // hidden post is worse here than one a curator catches later.
+  // Only flag what the model is at least moderately sure of; only "high" hides
+  // (see Step 4). A wrongly hidden post is worse than one a curator catches later.
   const flagged = r.flagged === true && reason !== "none" && confidence >= CONFIDENCE.medium;
   return { flagged, reason: flagged ? reason : "none", confidence: flagged ? confidence : 0, source };
 }

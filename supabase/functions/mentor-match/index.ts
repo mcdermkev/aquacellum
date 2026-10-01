@@ -1,161 +1,152 @@
 /**
  * mentor-match Edge Function
- * 
- * Mentor matching (Task 53). Gemini on Vertex via _shared/vertex.ts, with a
- * heuristic fallback when the model is unavailable.
- * Analyzes user's species/struggles and matches with available mentors.
- * Returns top 3 suggested mentors with explanations.
- * 
+ *
+ * Mentor matching (Task 53): ranks the available mentors for one keeper and
+ * says why, in a sentence each.
+ *
+ * WHO IS A MENTOR IS NOT DECIDED HERE. The app's server already owns that list
+ * (api/storefront-detail.js handleAvailableMentors: an active founder or
+ * steward role, and accepting mentees). It calls this with those wallets and
+ * the keeper's species, and shows the ranking. This used to pick its own
+ * mentors by companion tier (Master / God-Tier), which is exactly what the app
+ * says does NOT make someone a mentor ("XP and Depth do not unlock it").
+ *
+ * Service-role callers only (_shared/callerRole.ts).
+ *
  * Expects body:
  * {
- *   wallet_address: string,
- *   species_focus?: string[],   // species the user keeps
- *   struggles?: string          // optional free-text about what they need help with
+ *   wallet_address: string,                         // the keeper asking
+ *   mentor_wallets: string[],                       // authoritative list from the caller
+ *   species: Array<{ specCode: number, name: string }>, // what the keeper keeps
+ *   struggles?: string
  * }
+ * Returns { matches: [{ wallet_address, reason, match_score, shared_species }] }, best first.
+ *
+ * Gemini on Vertex (_shared/vertex.ts), with a heuristic fallback.
  */
 
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { aiConfigured, generateText, parseJson, tidyGenerated } from "../_shared/vertex.ts";
+import { requireServiceRole } from "../_shared/callerRole.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
+const json = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
+
+type KeeperSpecies = { specCode: number; name: string };
+type Mentor = {
+  wallet_address: string;
+  display_name: string | null;
+  audits_given: number;
+  active_mentees: number;
+  insight_codes: number[];
+  shared: KeeperSpecies[];
+};
+
 serve(async (req) => {
-  const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+  const denied = requireServiceRole(req);
+  if (denied) return denied;
 
   try {
-    const { wallet_address, species_focus, struggles } = await req.json();
+    const body = await req.json();
+    const keeper = String(body?.wallet_address || "").toLowerCase();
+    const wallets = (Array.isArray(body?.mentor_wallets) ? body.mentor_wallets : [])
+      .map((w: unknown) => String(w || "").toLowerCase())
+      .filter((w: string) => /^0x[0-9a-f]{40}$/.test(w) && w !== keeper)
+      .slice(0, 20);
+    const species: KeeperSpecies[] = (Array.isArray(body?.species) ? body.species : [])
+      .map((s: any) => ({ specCode: Number(s?.specCode), name: String(s?.name || "").slice(0, 80) }))
+      .filter((s: KeeperSpecies) => Number.isFinite(s.specCode) && s.name)
+      .slice(0, 20);
+    const struggles = typeof body?.struggles === "string" ? body.struggles.slice(0, 300) : "";
 
-    if (!wallet_address) {
-      return new Response(JSON.stringify({ error: "wallet_address required" }), {
-        status: 400, headers: { "Content-Type": "application/json" },
-      });
-    }
+    if (!keeper || wallets.length === 0) return json({ matches: [] });
 
-    // Step 1: Get available mentors (Master+ tier, accepting mentees)
-    const { data: mentors } = await supabase
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+    const { data: profiles } = await supabase
       .from("profiles")
-      .select("wallet_address, display_name, avatar_url, companion_tier, depth_score, depth_tier, poseidon_summary")
-      .eq("accepting_mentees", true)
-      .in("companion_tier", ["Master", "God-Tier"])
-      .neq("wallet_address", wallet_address)
-      .order("depth_score", { ascending: false })
-      .limit(20);
+      .select("wallet_address, display_name")
+      .in("wallet_address", wallets)
+      .eq("accepting_mentees", true);
+    if (!profiles || profiles.length === 0) return json({ matches: [] });
 
-    if (!mentors || mentors.length === 0) {
-      return new Response(JSON.stringify({
-        matches: [],
-        message: "No mentors are accepting mentees right now. Check back soon.",
-      }), { headers: { "Content-Type": "application/json" } });
-    }
-
-    // Step 2: Gather mentor context (their species expertise from insights + audits)
-    const mentorProfiles = await Promise.all(
-      mentors.map(async (mentor) => {
-        // Get their top insight species
-        const { data: insights } = await supabase
-          .from("species_insights")
-          .select("spec_code")
-          .eq("author_wallet", mentor.wallet_address)
-          .order("upvotes", { ascending: false })
-          .limit(5);
-
-        // Get audits given count
-        const { count: auditsGiven } = await supabase
-          .from("expert_audits")
-          .select("*", { count: "exact", head: true })
-          .eq("auditor_wallet", mentor.wallet_address);
-
-        // Get active mentee count
-        const { count: activeMentees } = await supabase
-          .from("mentorships")
-          .select("*", { count: "exact", head: true })
-          .eq("mentor_wallet", mentor.wallet_address)
-          .eq("status", "active");
-
+    const keeperCodes = new Set(species.map((s) => s.specCode));
+    const mentors: Mentor[] = await Promise.all(
+      profiles.map(async (p: any) => {
+        const [{ data: insights }, { count: audits }, { count: mentees }] = await Promise.all([
+          supabase.from("species_insights").select("spec_code").eq("author_wallet", p.wallet_address).limit(50),
+          supabase.from("expert_audits").select("*", { count: "exact", head: true }).eq("auditor_wallet", p.wallet_address),
+          supabase.from("mentorships").select("*", { count: "exact", head: true }).eq("mentor_wallet", p.wallet_address).eq("status", "active"),
+        ]);
+        const codes = [...new Set((insights || []).map((i: any) => Number(i.spec_code)).filter(Number.isFinite))];
         return {
-          ...mentor,
-          expertise_species: (insights || []).map((i: any) => i.spec_code),
-          audits_given: auditsGiven || 0,
-          active_mentees: activeMentees || 0,
+          wallet_address: p.wallet_address,
+          display_name: p.display_name,
+          audits_given: audits || 0,
+          active_mentees: mentees || 0,
+          insight_codes: codes,
+          shared: species.filter((s) => codes.includes(s.specCode)),
         };
-      })
+      }),
     );
 
-    // Step 3: Score and rank mentors
-    let matches;
-
-    if (aiConfigured() && species_focus?.length > 0) {
-      matches = await aiMatchMentors(mentorProfiles, species_focus, struggles);
-    } else {
-      matches = heuristicMatchMentors(mentorProfiles, species_focus || []);
-    }
-
-    return new Response(JSON.stringify({ matches: matches.slice(0, 3) }), {
-      headers: { "Content-Type": "application/json" },
-    });
+    const ranked = aiConfigured() && species.length > 0 && mentors.length > 1
+      ? await aiRank(mentors, species, struggles)
+      : null;
+    const matches = (ranked || heuristicRank(mentors)).slice(0, 3);
+    return json({ matches, source: ranked ? "ai" : "heuristic", keeperSpecies: keeperCodes.size });
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), {
-      status: 500, headers: { "Content-Type": "application/json" },
-    });
+    return json({ error: (err as Error).message }, 500);
   }
 });
 
-/**
- * Heuristic matching: score by species overlap + depth score + availability.
- */
-function heuristicMatchMentors(mentors: any[], userSpecies: string[]) {
+const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+
+function factReason(m: Mentor): string {
+  if (m.shared.length > 0) {
+    return `Has written about ${m.shared.slice(0, 2).map((s) => s.name).join(" and ")}, which you keep.`;
+  }
+  if (m.audits_given > 0) return `Has given ${plural(m.audits_given, "expert audit", "expert audits")}.`;
+  return m.active_mentees === 0 ? "Has room for a new mentee." : "Available as a mentor.";
+}
+
+/** Species overlap first, then experience, then availability. */
+function heuristicRank(mentors: Mentor[]) {
   return mentors
-    .map((mentor) => {
-      let score = 0;
-
-      // Species overlap
-      const overlap = mentor.expertise_species.filter((s: string) => userSpecies.includes(s));
-      score += overlap.length * 30;
-
-      // Depth score bonus
-      score += Math.min(mentor.depth_score / 100, 20);
-
-      // Audits given (experience)
-      score += Math.min(mentor.audits_given * 5, 25);
-
-      // Penalize if already has many mentees
-      score -= mentor.active_mentees * 10;
-
-      return {
-        wallet_address: mentor.wallet_address,
-        display_name: mentor.display_name,
-        avatar_url: mentor.avatar_url,
-        companion_tier: mentor.companion_tier,
-        depth_tier: mentor.depth_tier,
-        depth_score: mentor.depth_score,
-        match_score: Math.max(score, 0),
-        reason: overlap.length > 0
-          ? `Expertise in ${overlap.length} of your species. ${mentor.audits_given} audits given.`
-          : `Experienced breeder (${mentor.companion_tier} tier) with ${mentor.audits_given} audits.`,
-      };
-    })
-    .sort((a, b) => b.match_score - a.match_score);
+    .map((m) => ({
+      m,
+      score: m.shared.length * 30 + Math.min(m.audits_given * 5, 25) - m.active_mentees * 10,
+    }))
+    .sort((a, b) => b.score - a.score)
+    .map(({ m }, rank) => ({
+      wallet_address: m.wallet_address,
+      reason: factReason(m),
+      match_score: Math.max(10, 100 - rank * 10),
+      shared_species: m.shared.map((s) => s.name),
+    }));
 }
 
 /**
- * AI-powered matching (Gemini on Vertex, _shared/vertex.ts). The model picks
- * from a numbered list; the pick is a string enum, not a free number, so it
- * cannot name a mentor who is not on the list.
+ * The model picks from a numbered list; the pick is a string enum, not a free
+ * number, so it cannot name a mentor who is not on the list.
  */
-async function aiMatchMentors(mentors: any[], userSpecies: string[], struggles?: string) {
+async function aiRank(mentors: Mentor[], species: KeeperSpecies[], struggles: string) {
   const shortlist = mentors.slice(0, 10);
-  const mentorList = shortlist.map((m, i) => (
-    `${i + 1}. ${m.display_name || m.wallet_address.slice(0, 10)}: ${m.companion_tier}, depth score ${m.depth_score}, species expertise [${m.expertise_species.join(", ")}], audits given ${m.audits_given}, current mentees ${m.active_mentees}`
-  )).join("\n");
+  const list = shortlist.map((m, i) => {
+    const shared = m.shared.length ? `writes about ${m.shared.map((s) => s.name).join(", ")}` : "no shared species";
+    return `${i + 1}. ${shared}; expert audits given: ${m.audits_given}; current mentees: ${m.active_mentees}`;
+  }).join("\n");
 
-  const prompt = `You are Echo, the fish guide in Aquacellum, matching a fishkeeper with mentors. The keeper keeps: [${userSpecies.join(", ")}].${struggles ? ` They want help with: "${String(struggles).slice(0, 300)}"` : ""}
+  const prompt = `You are Echo, the fish guide in an aquarium community, suggesting mentors for a keeper.
+The keeper keeps: ${species.map((s) => s.name).join(", ")}.${struggles ? ` They want help with: "${struggles}"` : ""}
 
-Mentors:
-${mentorList}
+Mentors (by number):
+${list}
 
-Pick the best 3 (fewer if fewer fit). For each give its number and one plain sentence on why, based only on the facts listed. Consider species overlap, experience, and availability (fewer current mentees is better). No exclamation points, no em dashes.`;
+Pick up to 3, best first. For each give its number and one short plain sentence on why, using only the facts listed. Speak to the keeper ("you"). Do not use names. No exclamation points, no em dashes.`;
 
   const schema = {
     type: "array",
@@ -169,29 +160,24 @@ Pick the best 3 (fewer if fewer fit). For each give its number and one plain sen
     },
   };
 
-  const res = await generateText(prompt, { schema, maxOutputTokens: 300, temperature: 0.3 });
+  const res = await generateText(prompt, { schema, maxOutputTokens: 300, temperature: 0.2 });
   const picks = parseJson<Array<{ pick: string; reason: string }>>(res.text);
-  if (Array.isArray(picks) && picks.length > 0) {
-    const seen = new Set<number>();
-    const matches = picks.map((r, rank) => {
-      const i = Number(r?.pick) - 1;
-      const mentor = shortlist[i];
-      if (!mentor || seen.has(i)) return null;
-      seen.add(i);
-      return {
-        wallet_address: mentor.wallet_address,
-        display_name: mentor.display_name,
-        avatar_url: mentor.avatar_url,
-        companion_tier: mentor.companion_tier,
-        depth_tier: mentor.depth_tier,
-        depth_score: mentor.depth_score,
-        // Rank order from the model, not a score it computed.
-        match_score: 100 - rank * 10,
-        reason: tidyGenerated(r.reason) || "Good fit for the species you keep.",
-      };
-    }).filter(Boolean);
-    if (matches.length > 0) return matches;
-  }
+  if (!Array.isArray(picks) || picks.length === 0) return null;
 
-  return heuristicMatchMentors(mentors, userSpecies);
+  const seen = new Set<number>();
+  const out = [];
+  for (const r of picks) {
+    const i = Number(r?.pick) - 1;
+    const m = shortlist[i];
+    if (!m || seen.has(i)) continue;
+    seen.add(i);
+    out.push({
+      wallet_address: m.wallet_address,
+      reason: tidyGenerated(r.reason) || factReason(m),
+      // Rank order from the model, not a score it computed.
+      match_score: 100 - out.length * 10,
+      shared_species: m.shared.map((s) => s.name),
+    });
+  }
+  return out.length ? out : null;
 }

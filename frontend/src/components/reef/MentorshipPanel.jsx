@@ -21,6 +21,7 @@ import { GraduationCap } from "@phosphor-icons/react";
 import { getCurrentWallet } from "../../services/supabaseClient";
 import { sameWallet } from "../../utils/wallet";
 import { UnlockPrompt, useUnlockGate } from "./UnlockPrompt";
+import { useKeeperSpecies } from "../../hooks/useKeeperSpecies";
 import "./ProfileDaylight.css";
 
 function PersonButton({ profile, meta, onViewProfile }) {
@@ -61,7 +62,12 @@ export function MentorshipPanel({ walletAddress, acceptingMentees = false, onVie
 
   const { data: mentorshipsResult, isFetching: mentorshipsLoading } =
     useMentorships(walletAddress, isOwnProfile && mentorshipsRequested);
-  const { data: mentorsResult } = useAvailableMentors(isOwnProfile && showMentorList);
+  // What you keep, so the list comes back ranked with Echo's reasons
+  // (mentor-match, via api/storefront-detail.js). Read only once the list is
+  // open, and the list waits for it: one signed request, so one wallet prompt.
+  const { species: keeperSpecies, ready: keeperSpeciesReady } = useKeeperSpecies(isOwnProfile && showMentorList);
+  const { data: mentorsResult, isFetching: mentorsLoading } =
+    useAvailableMentors(isOwnProfile && showMentorList && keeperSpeciesReady, keeperSpecies);
   
   const requestMentorshipMutation = useRequestMentorship();
   const acceptMentorshipMutation = useAcceptMentorship();
@@ -310,18 +316,31 @@ export function MentorshipPanel({ walletAddress, acceptingMentees = false, onVie
 
           {showMentorList && (
             <div className="pf-stack">
-              {availableMentors.length === 0 ? (
+              {(mentorsLoading || !keeperSpeciesReady) && !mentorsResult ? (
+                <p role="status" className="pf-muted" style={{ textAlign: "center", padding: "0.75rem" }}>
+                  {keeperSpecies.length ? "Echo is finding mentors who know your fish…" : "Loading mentors…"}
+                </p>
+              ) : availableMentors.length === 0 ? (
                 <p className="pf-muted" style={{ textAlign: "center", padding: "0.75rem" }}>
                   No mentors are taking mentees right now. Check back later.
                 </p>
               ) : (
                 availableMentors.map((mentor) => (
-                  <div key={mentor.wallet_address} className="pf-row">
-                    <PersonButton
-                      profile={mentor}
-                      meta={`${mentor.companion_tier} · ${mentor.xp_total} XP`}
-                      onViewProfile={onViewProfile}
-                    />
+                  <div key={mentor.wallet_address} className="pf-row pf-row--mentor">
+                    <div className="pf-mentor-main">
+                      <PersonButton
+                        profile={mentor}
+                        meta={`${mentor.companion_tier} · ${mentor.xp_total} XP`}
+                        onViewProfile={onViewProfile}
+                      />
+                      {/* Echo's reason, when the list was ranked for this keeper. */}
+                      {mentor.match_reason && (
+                        <p className="pf-mentor-why">
+                          <img src="/echo/face.webp" alt="" aria-hidden="true" />
+                          <span><span className="pf-sr-only">Why Echo suggests this mentor: </span>{mentor.match_reason}</span>
+                        </p>
+                      )}
+                    </div>
                     <button
                       type="button"
                       onClick={(e) => openRequestDialog(mentor.wallet_address, e.currentTarget)}

@@ -496,9 +496,15 @@
     render(); saveChat();
     setBusy(true);
     fire.thinkingStart();
-    // Start loading the catalog now if a card looks likely, so it is ready with the answer.
-    const cardLikely = looksLikeCompatibilityQuestion(text);
-    if (cardLikely) catalog();
+    // The card is worked out BEFORE asking and sent along, so Echo's sentence
+    // agrees with it (api/_lib/poseidonGateway.js compatCardContext).
+    let card = null;
+    if (looksLikeCompatibilityQuestion(text)) {
+      card = compatForQuestion({ text, catalog: await catalog() });
+    }
+    const compatCard = card
+      ? { verdict: card.verdict, title: card.title, rows: card.rows.map((r) => ({ status: r.status, label: r.label, detail: r.detail })) }
+      : null;
 
     let data = null;
     let res = null;
@@ -506,7 +512,7 @@
       res = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text, mode: 'casual', conversationHistory: history })
+        body: JSON.stringify({ message: text, mode: 'casual', conversationHistory: history, ...(compatCard ? { compatCard } : {}) })
       });
       data = await res.json().catch(() => null);
     } catch (e) {
@@ -528,11 +534,7 @@
       recordUse();
       const answer = salvage(data.message);
       const force = /compat/i.test(String(data.intent || '')) || (data.action && data.action.type === 'QUERY_COMPATIBILITY');
-      let card = null;
-      if (cardLikely || force) {
-        const rows = await catalog();
-        card = compatForQuestion({ text, catalog: rows, force });
-      }
+      if (!card && force) card = compatForQuestion({ text, catalog: await catalog(), force: true });
       const msg = { role: 'ai', text: answer.text };
       if (card) msg.card = card;
       messages.push(msg);

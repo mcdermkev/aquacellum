@@ -109,7 +109,82 @@ export function validatePoseidonRequest(body, limits = POSEIDON_LIMITS) {
     session = sessionData;
   }
 
-  return { ok: true, message: trimmed, history, sessionData: session };
+  return { ok: true, message: trimmed, history, sessionData: session, compatCard: sanitizeCompatCard(body?.compatCard) };
+}
+
+// ─── The compatibility card shown with the answer ───────────────────────────
+//
+// The chat (EchoChat, poseidon.html) works out a compatibility card from the
+// catalog (src/services/echoMatch.js) before it asks, and sends it along. The
+// model is told what the card says so the sentence agrees with it: on
+// 2026-10-01 it called rams and cardinals "wonderful tankmates" directly above
+// a card that said "Works with care".
+//
+// It comes from the client, so it is treated like the message: untrusted
+// text, cut to size, verdicts limited to the four the engine produces.
+
+const CARD_VERDICTS = Object.freeze({
+  good: 'Good match',
+  care: 'Works with care',
+  bad: 'Not a good match',
+  unknown: 'Not enough data',
+});
+const CARD_STATUS_WORD = Object.freeze({ good: 'OK', care: 'Watch', bad: 'Problem', unknown: 'Not recorded' });
+
+const cardText = (v, max) => (typeof v === 'string' ? v.replace(/[\r\n]+/g, ' ').trim().slice(0, max) : '');
+
+/** A card from the request body in a known shape, or null. */
+export function sanitizeCompatCard(raw) {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+  const verdict = typeof raw.verdict === 'string' && CARD_VERDICTS[raw.verdict] ? raw.verdict : null;
+  if (!verdict) return null;
+  const rows = (Array.isArray(raw.rows) ? raw.rows : [])
+    .slice(0, 10)
+    .map((r) => ({
+      status: CARD_STATUS_WORD[r?.status] ? r.status : 'unknown',
+      label: cardText(r?.label, 160),
+      detail: cardText(r?.detail, 300),
+    }))
+    .filter((r) => r.label);
+  return { verdict, title: cardText(raw.title, 200), rows };
+}
+
+/** The prompt section for a card, or '' when there is none. */
+export function compatCardContext(card) {
+  if (!card) return '';
+  const lines = [
+    '## COMPATIBILITY CARD SHOWN WITH YOUR ANSWER',
+    `The app shows the user this card under your reply, worked out from the species guide. Verdict: "${CARD_VERDICTS[card.verdict]}"${card.title ? ` for ${card.title}` : ''}.`,
+    ...card.rows.map((r) => `- [${CARD_STATUS_WORD[r.status]}] ${r.label}${r.detail ? `: ${r.detail}` : ''}`),
+    'Your answer must agree with this verdict. Do not call the match better or worse than the card does. Give the verdict in plain words and the main reason in a sentence or two; the card already lists the numbers, so do not repeat them all.',
+  ];
+  return lines.join('\n');
+}
+
+// ─── House style for replies ────────────────────────────────────────────────
+
+const PICTO = /\p{Extended_Pictographic}(?:\uFE0F|\u200D\p{Extended_Pictographic}\uFE0F?)*/gu;
+
+/**
+ * Echo's replies follow the same copy rules as the rest of the app: no
+ * exclamation points, no em dashes, and at most one emoji. The prompt asks for
+ * this; this is the backstop. En dashes stay: "24–28°C" is a range.
+ */
+export function plainReplyStyle(text) {
+  if (typeof text !== 'string' || !text) return text || '';
+  let seenEmoji = false;
+  return text
+    .replace(PICTO, (m) => {
+      if (seenEmoji) return '';
+      seenEmoji = true;
+      return m;
+    })
+    .replace(/\s*—\s*/g, ', ')
+    .replace(/!+(?=[\s"')\]]|$)/g, '.')
+    .replace(/\.{2,}(?!\.)/g, '.')
+    .replace(/ {2,}/g, ' ')
+    .replace(/ +([.,])/g, '$1')
+    .trim();
 }
 
 // ─── Model call settings ─────────────────────────────────────────────────────
@@ -321,7 +396,7 @@ export function shapePoseidonReply(fields, { truncated = false } = {}) {
     ? CONFIDENCE_LEVELS[rawConfidence]
     : Number(rawConfidence);
   return {
-    message: String(fields?.message || ''),
+    message: plainReplyStyle(String(fields?.message || '')),
     intent: typeof fields?.intent === 'string' && fields.intent.length <= 60 ? fields.intent : 'general_knowledge',
     action: truncated ? { type: 'NONE', payload: {} } : cleanAction(fields?.action),
     echoReaction: cleanEcho(fields?.echoReaction),
