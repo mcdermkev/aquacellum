@@ -33,7 +33,7 @@ export function ExperienceModeSection({ casualModeActive, onToggleMode }) {
         />
       </div>
 
-      <div className="st-callout st-callout--info">
+      <div className="st-callout">
         <Info size={20} aria-hidden="true" />
         <div className="st-callout-body">
           <p className="st-callout-title">What changes</p>

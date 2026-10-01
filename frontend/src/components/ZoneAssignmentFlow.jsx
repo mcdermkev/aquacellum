@@ -151,7 +151,7 @@ export function ZoneAssignmentFlow({
           </div>
 
           {/* Privacy note */}
-          <div className="st-callout st-callout--info">
+          <div className="st-callout">
             <Lock size={20} aria-hidden="true" />
             <p>
               <strong>Privacy:</strong> We only use your city-level location to assign a zone (15–30 mile radius). Your exact coordinates are never stored or shared.

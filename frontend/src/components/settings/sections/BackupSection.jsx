@@ -122,7 +122,7 @@ export function BackupSection({ casualModeActive }) {
       }}
       casualModeActive={casualModeActive}
     >
-      <div className="st-callout st-callout--info" style={{ marginBottom: "1.1rem" }}>
+      <div className="st-callout" style={{ marginBottom: "1.1rem" }}>
         <Info size={20} aria-hidden="true" />
         <p>
           Your records are kept in this browser's storage. A backup file keeps a copy safe if that storage is cleared.

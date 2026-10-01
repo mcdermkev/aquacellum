@@ -135,6 +135,31 @@ describe("control semantics survive the restyle", () => {
     }
   });
 
+  it("moves the font-size Tab stop with focus, since arrows there only preview", () => {
+    const code = readCode("components/FontSizeSettings.jsx");
+    expect(code).toContain("const tabStop = focusedIndex ?? (currentIndex >= 0 ? currentIndex : 0);");
+    expect(code).toContain("onFocus={handleGroupFocus}");
+    expect(code).toContain("onBlur={handleGroupBlur}");
+    expect(code).toContain("event.currentTarget.contains(event.relatedTarget)");
+  });
+
+  it("keeps a selected choice's description at AA contrast on the teal tint", () => {
+    const css = read("components/settings/SettingsDaylight.css");
+    expect(css).toMatch(
+      /\.st-choice\[aria-checked="true"\] \.st-choice-desc\s*\{\s*color:\s*var\(--text-secondary\);/
+    );
+  });
+
+  it("uses only callout modifiers the stylesheet defines", () => {
+    const css = read("components/settings/SettingsDaylight.css");
+    for (const file of COVERED) {
+      const used = readCode(file).match(/st-callout--[a-z-]+/g) || [];
+      for (const modifier of used) {
+        expect(css.includes(`.${modifier}`), `${file} uses undefined ${modifier}`).toBe(true);
+      }
+    }
+  });
+
   it("nests the collapse button inside the section heading", () => {
     const code = readCode("components/settings/SettingsSection.jsx");
     const h3At = code.indexOf("<h3");

@@ -32,6 +32,8 @@ export function FontSizeSettings() {
 
   const [previewMode, setPreviewMode] = useState(false);
   const [tempScale, setTempScale] = useState(currentScale);
+  // Index of the option that has focus, or null when focus is outside the group.
+  const [focusedIndex, setFocusedIndex] = useState(null);
   const optionRefs = useRef([]);
 
   const handlePreviewStart = (scale) => {
@@ -70,18 +72,30 @@ export function FontSizeSettings() {
 
   const scaleEntries = Object.entries(availableScales);
   const currentIndex = scaleEntries.findIndex(([scale]) => scale === currentScale);
-  const tabStop = currentIndex >= 0 ? currentIndex : 0;
+  // While focus is inside the group the focused option is the Tab stop, so Tab
+  // and Shift+Tab leave the group even after arrowing away from the stored
+  // size. Once focus leaves, the stored size is the Tab stop again.
+  const tabStop = focusedIndex ?? (currentIndex >= 0 ? currentIndex : 0);
 
-  // Keyboard: the group is one Tab stop (the current size). Arrow keys and
-  // Home/End move focus between sizes, and focus previews each one through the
-  // existing onFocus handler, the keyboard version of sweeping the mouse down
-  // the list. Enter or Space keeps the focused size (the native button click).
-  // Moving focus does not apply a size, so this stays preview-then-apply.
+  // Keyboard: the group is one Tab stop. Arrow keys and Home/End move focus
+  // between sizes, and focus previews each one through the existing onFocus
+  // handler, the keyboard version of sweeping the mouse down the list. Enter or
+  // Space keeps the focused size (the native button click). Moving focus does
+  // not apply a size, so this stays preview-then-apply.
   const handleOptionKeyDown = (event, index) => {
     const next = nextRadioIndex(event.key, index, scaleEntries.length);
     if (next === null) return;
     event.preventDefault();
     optionRefs.current[next]?.focus();
+  };
+
+  const handleGroupFocus = (event) => {
+    const index = optionRefs.current.indexOf(event.target);
+    if (index >= 0) setFocusedIndex(index);
+  };
+
+  const handleGroupBlur = (event) => {
+    if (!event.currentTarget.contains(event.relatedTarget)) setFocusedIndex(null);
   };
 
   return (
@@ -99,7 +113,13 @@ export function FontSizeSettings() {
         Choose a size
       </p>
 
-      <div role="radiogroup" aria-labelledby="font-scale-label" className="st-choices">
+      <div
+        role="radiogroup"
+        aria-labelledby="font-scale-label"
+        className="st-choices"
+        onFocus={handleGroupFocus}
+        onBlur={handleGroupBlur}
+      >
         {scaleEntries.map(([scale, config], index) => (
           <FontScaleOption
             key={scale}

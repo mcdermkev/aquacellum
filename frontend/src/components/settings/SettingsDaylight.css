@@ -289,6 +289,8 @@
 .st-choice-text { display: flex; flex-direction: column; min-width: 0; }
 .st-choice-label { font-size: 0.94rem; font-weight: 600; line-height: 1.3; }
 .st-choice-desc { margin-top: 0.1rem; font-size: 0.84rem; line-height: 1.4; color: var(--text-muted); }
+/* Muted text is 4.4:1 on the selected tint, under AA; secondary is about 7:1. */
+.st-choice[aria-checked="true"] .st-choice-desc { color: var(--text-secondary); }
 .st-choice-sample {
   flex-shrink: 0;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
