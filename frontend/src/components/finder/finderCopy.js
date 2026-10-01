@@ -60,13 +60,20 @@ export function usesOffVocabulary(text) {
 // ─── Fish Finder surface ────────────────────────────────────────────────────
 
 export const FINDER_COPY = Object.freeze({
-  // Aquarium context bar (FishFinder)
+  // Page header (Daylight)
+  header: Object.freeze({
+    kicker: "Find fish",
+    title: "Fish Finder",
+    subtitle: "Check which fish suit your tank's size and water, then see who is selling them.",
+  }),
+
+  // Aquarium context bar (FishFinder). The picker's accessible name is its
+  // visible <label> ("Matching against"), so there is no separate aria string.
   contextBar: Object.freeze({
     label: "Matching against",
-    pickerAria: "Choose a tank to match against",
     loadingAria: "Loading your tanks",
     emptyText: "Add a tank to get fish picked for your water.",
-    emptyCta: "Add a tank →",
+    emptyCta: "Add a tank",
     unnamed: "Unnamed tank",
   }),
 
@@ -76,17 +83,19 @@ export const FINDER_COPY = Object.freeze({
     emptyHint: "Every species you keep gets logged here. Add a fish to start your Dex.",
     keptLabel: "species kept",
     /** @param {number} n */
-    wishlistCount: (n) => `${n} wishlisted`,
+    wishlistCount: (n) => `${n} on your wishlist`,
     /** @param {number} percent */
     catalogShare: (percent) => `${percent}% of the catalog`,
     progressAria: "Dex completion",
   }),
 
-  // Guided discovery (FishFinder, T7)
+  // Guided discovery (FishFinder, T7). The two chip groups are named by their
+  // visible labels (waterLabel, intentLabel) via aria-labelledby.
   discovery: Object.freeze({
     title: "Find my next fish",
-    chipsAria: "Discovery filters",
-    searchPlaceholder: "Search by name…",
+    waterLabel: "Water",
+    intentLabel: "Looking for",
+    searchPlaceholder: "Search by name",
     searchAria: "Search species by name",
     clear: "Clear",
     clearFilters: "Clear filters",
@@ -96,6 +105,8 @@ export const FINDER_COPY = Object.freeze({
   results: Object.freeze({
     title: "Results",
     loadingAria: "Finding species",
+    /** Screen-reader count, announced when the results change. @param {number} n */
+    countAria: (n) => `${n} species shown`,
     // Names the cause (the active filter/search, not the catalog) and leaves
     // the clear affordance to do the work.
     empty: "Nothing matched that. Try a different filter, or clear your search.",
@@ -115,7 +126,7 @@ export const FINDER_COPY = Object.freeze({
     // Honest dead end: state both plausible causes without asserting either,
     // then hand the keeper somewhere to go.
     empty:
-      "No matches to show for this tank yet — the species we checked either " +
+      "No matches to show for this tank yet. The species we checked either " +
       "already live here or need different water. Browse all species below to keep looking.",
   }),
 
@@ -127,28 +138,40 @@ export const FINDER_COPY = Object.freeze({
   // can never drift from the number granted.
   toast: Object.freeze({
     /** @param {string} commonName @param {number} points */
-    dexAddedOne: (commonName, points) => `🎉 ${commonName} added to your Dex! +${points} pts`,
+    dexAddedOne: (commonName, points) => `${commonName} added to your Dex. +${points} points`,
     /** @param {number} count @param {number} points */
-    dexAddedMany: (count, points) => `🎉 ${count} new species added to your Dex! +${points} pts`,
+    dexAddedMany: (count, points) => `${count} new species added to your Dex. +${points} points`,
   }),
 });
 
 // ─── Casual species detail surface ──────────────────────────────────────────
 
 export const DETAIL_COPY = Object.freeze({
+  back: "Back to Fish Finder",
   fitTitle: "Does it fit your tank?",
   careTitle: "Care needs",
   stockingTitle: "Stocking impact",
 
+  // The picker's accessible name is its visible <label> (pickerLabel).
   contextBar: Object.freeze({
     pickerLabel: "Matching against",
-    pickerAria: "Choose a tank to match against",
     unnamed: "Unnamed tank",
   }),
 
   /** @param {string} subjectWord — e.g. "this fish" / the species' name */
   emptyFit: (subjectWord) => `Add a tank to check whether ${subjectWord} fits your water.`,
-  emptyFitCta: "Add a tank →",
+  emptyFitCta: "Add a tank",
+
+  biotopeLabel: "Biotope",
+  socialLabel: "Social behavior",
+
+  /**
+   * The assistant is named here only, so a rename is one edit.
+   * @param {string} commonName
+   */
+  askEcho: (commonName) => `Ask Echo about ${commonName}`,
+  planTank: "Plan a tank with it",
+  viewListings: "View listings",
 
   /**
    * Full stocking sentence, so the whole claim lives in one place rather than
@@ -157,8 +180,8 @@ export const DETAIL_COPY = Object.freeze({
    * @param {number} afterPercent @param {number} beforePercent
    */
   stockingImpact: (subjectWord, tankName, afterPercent, beforePercent) =>
-    `Adding ${subjectWord} would bring ${tankName} to ~${afterPercent}% ` +
-    `of its stocking guideline (from ~${beforePercent}%).`,
-  stockingUnknown: "We can't estimate the bioload — adult size unknown for this species.",
+    `Adding ${subjectWord} would bring ${tankName} to about ${afterPercent}% ` +
+    `of its stocking guideline. It is at about ${beforePercent}% now.`,
+  stockingUnknown: "We can't estimate the bioload because this species' adult size isn't recorded.",
   fallbackName: "your tank",
 });

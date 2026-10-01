@@ -32,9 +32,12 @@ function allCopyStrings() {
   const c = FINDER_COPY;
   const d = DETAIL_COPY;
   return [
+    // Header
+    c.header.kicker,
+    c.header.title,
+    c.header.subtitle,
     // Context bar
     c.contextBar.label,
-    c.contextBar.pickerAria,
     c.contextBar.loadingAria,
     c.contextBar.emptyText,
     c.contextBar.emptyCta,
@@ -48,7 +51,8 @@ function allCopyStrings() {
     c.dex.progressAria,
     // Discovery
     c.discovery.title,
-    c.discovery.chipsAria,
+    c.discovery.waterLabel,
+    c.discovery.intentLabel,
     c.discovery.searchPlaceholder,
     c.discovery.searchAria,
     c.discovery.clear,
@@ -56,6 +60,7 @@ function allCopyStrings() {
     // Results
     c.results.title,
     c.results.loadingAria,
+    c.results.countAria(7),
     c.results.empty,
     // Home
     c.home.title("The Living Room"),
@@ -71,14 +76,19 @@ function allCopyStrings() {
     c.toast.dexAddedOne("Neon Tetra", 15),
     c.toast.dexAddedMany(3, 45),
     // Detail
+    d.back,
     d.fitTitle,
     d.careTitle,
     d.stockingTitle,
     d.contextBar.pickerLabel,
-    d.contextBar.pickerAria,
     d.contextBar.unnamed,
     d.emptyFit("this fish"),
     d.emptyFitCta,
+    d.biotopeLabel,
+    d.socialLabel,
+    d.askEcho("Neon Tetra"),
+    d.planTank,
+    d.viewListings,
     d.stockingImpact("this fish", "The Living Room", 68, 41),
     d.stockingUnknown,
     d.fallbackName,
@@ -100,6 +110,34 @@ describe("Fish Finder copy — Web2 language invariant", () => {
       expect(typeof text).toBe("string");
       expect(text.length).toBeGreaterThan(0);
       expect(text).toBe(text.trim());
+    }
+  });
+});
+
+describe("Fish Finder copy — Daylight copy rules", () => {
+  // Plain copy: icons carry direction and tone, so the words don't need
+  // arrows, emoji, em dashes or exclamation points.
+  it("no string uses an em dash", () => {
+    for (const text of allCopyStrings()) {
+      expect(text.includes("—"), `string: "${text}"`).toBe(false);
+    }
+  });
+
+  it("no string uses an exclamation point", () => {
+    for (const text of allCopyStrings()) {
+      expect(text.includes("!"), `string: "${text}"`).toBe(false);
+    }
+  });
+
+  it("no string uses an arrow", () => {
+    for (const text of allCopyStrings()) {
+      expect(/[→←]/.test(text), `string: "${text}"`).toBe(false);
+    }
+  });
+
+  it("no string contains an emoji", () => {
+    for (const text of allCopyStrings()) {
+      expect(/\p{Extended_Pictographic}/u.test(text), `string: "${text}"`).toBe(false);
     }
   });
 });
@@ -193,7 +231,17 @@ describe("Fish Finder copy — components consume this module", () => {
   it("no finder surface still renders a hardcoded container-noun literal", () => {
     // These must come from finderCopy, not be inlined — that's how the two
     // nouns diverged in the first place.
-    const RETIRED = ['"Add a tank →"', '"Unnamed Tank"', '"Does it fit your tank?"', "Add an aquarium"];
+    const RETIRED = [
+      '"Add a tank →"',
+      '"Unnamed Tank"',
+      '"Does it fit your tank?"',
+      "Add an aquarium",
+      // Inlined detail strings moved into DETAIL_COPY in the Daylight pass
+      // (they were JSX text, so they are matched without quotes).
+      "← Back",
+      "View listings →",
+      "💬",
+    ];
     for (const [name, src] of Object.entries(SURFACES)) {
       for (const literal of RETIRED) {
         expect(src.includes(literal), `${name} still contains: ${literal}`).toBe(false);
