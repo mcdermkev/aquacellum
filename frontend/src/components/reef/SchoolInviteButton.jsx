@@ -5,7 +5,7 @@
  * invite a user to one of their schools.
  */
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Check, UsersThree } from "@phosphor-icons/react";
 import { getMySchools, inviteToSchool, getMySchoolRole } from "../../services/schoolsApi";
 import "./ProfileDaylight.css";
@@ -19,6 +19,7 @@ export function SchoolInviteButton({ targetWallet }) {
   const [sending, setSending] = useState(null);
   const [sent, setSent] = useState({});
   const [error, setError] = useState(null);
+  const triggerRef = useRef(null);
   const { account } = useAuth();
   const currentWallet = account || getCurrentWallet();
 
@@ -66,13 +67,21 @@ export function SchoolInviteButton({ targetWallet }) {
   return (
     <div
       className="pf-invite"
-      onKeyDown={(e) => { if (e.key === "Escape" && showDropdown) setShowDropdown(false); }}
+      onKeyDown={(e) => {
+        // Escape closes the list and puts focus back on the trigger, so it is
+        // not lost when focus was on one of the club buttons.
+        if (e.key === "Escape" && showDropdown) {
+          setShowDropdown(false);
+          triggerRef.current?.focus();
+        }
+      }}
     >
+      {/* A disclosure, not a menu: the list is plain buttons, so no aria-haspopup. */}
       <button
+        ref={triggerRef}
         type="button"
         className="reef-btn"
         onClick={() => setShowDropdown(!showDropdown)}
-        aria-haspopup="true"
         aria-expanded={showDropdown}
       >
         <UsersThree size={18} weight="bold" aria-hidden="true" />

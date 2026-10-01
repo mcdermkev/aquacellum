@@ -438,7 +438,8 @@
 .pf-score-label { display: inline-flex; align-items: center; gap: 0.4rem; min-width: 0; }
 .pf-score-label svg { color: var(--pf-teal); flex-shrink: 0; }
 .pf-stars { display: inline-flex; gap: 1px; color: var(--pf-amber); flex-shrink: 0; }
-.pf-stars .pf-star--off { color: #8ba3ad; }
+/* Empty stars: #6b8590 is about 3.75:1 on the #f8fbfb score tile (WCAG 1.4.11). */
+.pf-stars .pf-star--off { color: #6b8590; }
 .pf-quote {
   margin: 0;
   padding: 0.7rem 0.9rem;

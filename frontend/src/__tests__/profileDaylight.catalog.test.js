@@ -106,6 +106,38 @@ describe("Daylight styling", () => {
   });
 });
 
+describe("profile controls announce themselves correctly", () => {
+  it("the full-size Follow button says its state in its label, without aria-pressed", () => {
+    // The full-size variant is the last return; the compact one (feed cards,
+    // not part of this restyle) keeps its aria-pressed.
+    const compactAt = FOLLOW.indexOf("if (compact)");
+    const fullSize = FOLLOW.slice(FOLLOW.lastIndexOf("return ("));
+    expect(compactAt).toBeGreaterThan(0);
+    expect(FOLLOW.lastIndexOf("return (")).toBeGreaterThan(compactAt);
+    expect(fullSize).toContain('{following ? "Following" : "Follow"}');
+    expect(fullSize).not.toContain("aria-pressed");
+  });
+
+  it("the club invite list is a disclosure that hands focus back on Escape", () => {
+    expect(INVITE).not.toContain("aria-haspopup");
+    expect(INVITE).toContain("aria-expanded={showDropdown}");
+    expect(INVITE).toContain("ref={triggerRef}");
+    expect(INVITE).toMatch(/"Escape"[\s\S]{0,120}triggerRef\.current\?\.focus\(\)/);
+  });
+
+  it("the mentorship dialog keeps focus inside and returns it on close", () => {
+    expect(PANEL).toContain('aria-modal="true"');
+    expect(PANEL).toContain("onKeyDown={handleDialogKeyDown}");
+    expect(PANEL).toMatch(/e\.key !== "Tab"/);
+    expect(PANEL).toContain("openRequestDialog(mentor.wallet_address, e.currentTarget)");
+    expect(PANEL).toMatch(/opener\?\.isConnected\) opener\.focus\(\)/);
+  });
+
+  it("empty rating stars meet 3:1 on the score tile", () => {
+    expect(PROFILE_CSS).toMatch(/\.pf-star--off\s*\{\s*color:\s*#6b8590/);
+  });
+});
+
 describe("account menu keeps its roles and works from the keyboard", () => {
   it("keeps the portal, roles and actions", () => {
     expect(CONNECT).toContain('role="menu"');

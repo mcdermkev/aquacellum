@@ -7,7 +7,7 @@
  * - Server-authorized relationship transitions and active pairing display
  */
 
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import {
   useMentorships,
   useAvailableMentors,
@@ -50,6 +50,8 @@ export function MentorshipPanel({ walletAddress, acceptingMentees = false, onVie
   const [requestingMentor, setRequestingMentor] = useState(null);
   const [requestMessage, setRequestMessage] = useState("");
   const [showMentorList, setShowMentorList] = useState(false);
+  // The "Request" button that opened the dialog, so focus goes back to it.
+  const requestOpenerRef = useRef(null);
   // Both reads below are Reef trust requests, and every Reef trust request
   // carries a fresh wallet signature (reefTrustApi.js). Firing them on mount
   // meant simply opening your own profile asked the wallet to sign twice,
@@ -75,6 +77,43 @@ export function MentorshipPanel({ walletAddress, acceptingMentees = false, onVie
   const activeMenteePairings = mentorships.asMentee.filter((m) => m.status === "active");
   const pendingMenteeRequests = mentorships.asMentee.filter((m) => m.status === "pending");
 
+  const openRequestDialog = (mentorWallet, opener) => {
+    requestOpenerRef.current = opener;
+    setRequestingMentor(mentorWallet);
+  };
+
+  // Closes the dialog the way Cancel always has, then returns focus to the
+  // button that opened it (when it is still on the page).
+  const closeRequestDialog = () => {
+    setRequestingMentor(null);
+    setRequestMessage("");
+    const opener = requestOpenerRef.current;
+    requestOpenerRef.current = null;
+    if (opener?.isConnected) opener.focus();
+  };
+
+  // Keeps Tab and Shift+Tab inside the dialog; Escape closes it like Cancel.
+  const handleDialogKeyDown = (e) => {
+    if (e.key === "Escape") {
+      closeRequestDialog();
+      return;
+    }
+    if (e.key !== "Tab") return;
+    const focusable = e.currentTarget.querySelectorAll("textarea:not([disabled]), button:not([disabled])");
+    if (focusable.length === 0) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    const active = document.activeElement;
+    const onItem = active !== e.currentTarget && e.currentTarget.contains(active);
+    if (e.shiftKey && (active === first || !onItem)) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && (active === last || !onItem)) {
+      e.preventDefault();
+      first.focus();
+    }
+  };
+
   const handleRequestMentorship = async () => {
     if (!requestingMentor) return;
     try {
@@ -82,8 +121,7 @@ export function MentorshipPanel({ walletAddress, acceptingMentees = false, onVie
         mentorWallet: requestingMentor,
         message: requestMessage,
       });
-      setRequestingMentor(null);
-      setRequestMessage("");
+      closeRequestDialog();
     } catch {
       // React Query retains the error; the panel renders it below.
     }
@@ -286,7 +324,7 @@ export function MentorshipPanel({ walletAddress, acceptingMentees = false, onVie
                     />
                     <button
                       type="button"
-                      onClick={() => setRequestingMentor(mentor.wallet_address)}
+                      onClick={(e) => openRequestDialog(mentor.wallet_address, e.currentTarget)}
                       className="reef-btn reef-btn--primary"
                     >
                       Request
@@ -299,20 +337,20 @@ export function MentorshipPanel({ walletAddress, acceptingMentees = false, onVie
         </div>
       )}
 
-      {/* Request dialog. Escape closes it the same way Cancel does. */}
+      {/* Request dialog. Escape closes it the same way Cancel does; Tab stays
+          inside it, and a click on the backdrop does not move focus out. */}
       {requestingMentor && (
-        <div className="pf-modal-backdrop">
+        <div
+          className="pf-modal-backdrop"
+          onMouseDown={(e) => { if (e.target === e.currentTarget) e.preventDefault(); }}
+        >
           <div
             className="pf-modal"
             role="dialog"
             aria-modal="true"
             aria-labelledby="pf-mentor-request-title"
-            onKeyDown={(e) => {
-              if (e.key === "Escape") {
-                setRequestingMentor(null);
-                setRequestMessage("");
-              }
-            }}
+            tabIndex={-1}
+            onKeyDown={handleDialogKeyDown}
           >
             <h3 id="pf-mentor-request-title">Request mentorship</h3>
             <textarea
@@ -329,7 +367,7 @@ export function MentorshipPanel({ walletAddress, acceptingMentees = false, onVie
               {requestMessage.length}/300
             </span>
             <div className="pf-modal-actions">
-              <button type="button" onClick={() => { setRequestingMentor(null); setRequestMessage(""); }} className="reef-btn">
+              <button type="button" onClick={closeRequestDialog} className="reef-btn">
                 Cancel
               </button>
               <button

@@ -76,14 +76,15 @@ export function FollowButton({ targetWallet, compact = false, onFollowChange }) 
     );
   }
 
-  // Full-size variant on the profile header (reef-btn, ReefDaylight.css).
+  // Full-size variant on the profile header (reef-btn, ReefDaylight.css). The
+  // visible label already says the state, so no aria-pressed here; with it,
+  // screen readers would announce "Following, pressed".
   return (
     <button
       type="button"
       className={following ? "reef-btn" : "reef-btn reef-btn--primary"}
       onClick={handleToggle}
       disabled={loading}
-      aria-pressed={following}
       title={following ? "You follow this keeper. Tap to unfollow." : "Follow to see their posts in your feed"}
     >
       {following

@@ -125,6 +125,13 @@
 .acct-item--danger:hover { background: #fef2f2; color: var(--accent-red); }
 .acct-item--danger:hover svg { color: var(--accent-red); }
 
+/* 561-640px: the top bar is already wider than the screen here (on master
+   too), so the chip must not get any wider than the old one. */
+@media (max-width: 640px) {
+  .acct-chip { gap: 0.4rem; padding-right: 0.5rem; }
+  .acct-name { max-width: 96px; font-size: 0.78rem; }
+}
+
 @media (max-width: 560px) {
   .acct-menu { right: 0.75rem; }
 }
