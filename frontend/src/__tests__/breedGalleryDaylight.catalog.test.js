@@ -137,7 +137,8 @@ describe("BreedGallery list: Daylight header, tabs, filters and states", () => {
   });
 
   it("renders the view modes as one ARIA tablist with a tabpanel", () => {
-    expect((GALLERY.match(/role="tablist"/g) || []).length).toBeGreaterThanOrEqual(1);
+    // View modes, detail records and care guide.
+    expect((GALLERY.match(/role="tablist"/g) || []).length).toBeGreaterThanOrEqual(3);
     expect(LIST).toContain('role="tab"');
     expect(LIST).toContain("aria-selected={selected}");
     expect(LIST).toContain('aria-controls="bgal-view-panel"');
@@ -177,8 +178,7 @@ describe("BreedGallery list: Daylight header, tabs, filters and states", () => {
 
   it("strips the sky-blue gradients, dead Tailwind text and emoji labels", () => {
     expect(GALLERY).not.toContain("rgba(56, 189, 248, 0.15) 0%, rgba(14, 165, 233, 0.25)");
-    // The detail's dead Tailwind classes go in FEAT-003; the list has none.
-    expect(LIST).not.toContain("bg-white/[");
+    expect(GALLERY).not.toContain("bg-white/[");
     expect(GALLERY).not.toContain("⚡ Suggest Species");
     expect(GALLERY).not.toContain("Register First Specimen 🐠");
     expect(LIST).not.toContain("WebkitTextFillColor");
@@ -242,4 +242,171 @@ describe("BreedGallery: Casual hand-off stays untouched", () => {
   });
 });
 
-// Species detail assertions: added by FEAT-003.
+// The Pro species detail: after the Casual hand-off, before the list view.
+const DETAIL = GALLERY.slice(
+  GALLERY.indexOf("const { score, color, text, minVol, verdict, reasons } = compatibility;"),
+  GALLERY.indexOf("const viewTabs = proMode")
+);
+
+describe("BreedGallery species detail: Daylight layout, tabs and plain copy", () => {
+  it("finds the Pro detail block", () => {
+    expect(DETAIL.length).toBeGreaterThan(1000);
+    expect(DETAIL).toContain('<div className="bgal bgal-detail">');
+  });
+
+  it("drops the dark hero overlay, inline Outfit font and emoji labels", () => {
+    expect(GALLERY).not.toContain("linear-gradient(to top, rgba(10,15,30,0.95)");
+    expect(GALLERY).not.toContain("fontFamily: \"'Outfit', sans-serif\"");
+    expect(GALLERY).not.toContain("🐠 View Details");
+    for (const glyph of ["🎮", "📋", "🛡️", "🟢", "🔴", "⚪", "⚠️", "🌿", "✅", "👍", "🚫", "—"]) {
+      expect(DETAIL, `unexpected ${glyph}`).not.toContain(glyph);
+    }
+    expect(GALLERY).not.toContain("species-detail__tabs");
+  });
+
+  it("puts a white caption strip with a readable photo credit under the hero", () => {
+    expect(DETAIL).toContain('<figure className="bgal-hero">');
+    expect(DETAIL).toContain('<figcaption className="bgal-hero-caption">');
+    expect(DETAIL).toContain('<span className="bgal-hero-badge">Catalog photo</span>');
+    expect(DETAIL).toContain('style={{ color: "var(--text-muted)", textAlign: "right" }}');
+  });
+
+  it("keeps the verdict colours unchanged on the ring and uses text-safe colours for text", () => {
+    for (const hsl of ['ok: "hsl(140, 70%, 45%)"', 'caution: "hsl(42, 92%, 52%)"', 'blocked: "hsl(0, 78%, 55%)"', 'no_tank: "hsl(210, 10%, 55%)"']) {
+      expect(GALLERY, hsl).toContain(hsl);
+    }
+    expect(DETAIL).toContain("stroke={color}");
+    expect(GALLERY).toContain('const VERDICT_TEXT = Object.freeze({');
+    expect(GALLERY).toContain('ok: "var(--accent-green)"');
+    expect(DETAIL).toContain('<span className="bgal-ring-value" style={{ color: verdictText }}>');
+    expect(DETAIL).toContain('<strong className="bgal-sim-verdict" style={{ color: verdictText }}>');
+    expect(DETAIL).not.toContain("textShadow");
+    expect(DETAIL).not.toContain("${color}30");
+  });
+
+  it("orders the care guide before the two columns in the DOM (no flex order hacks)", () => {
+    const guide = DETAIL.indexOf('<section className="bgal-guide"');
+    const main = DETAIL.indexOf('<div className="bgal-main">');
+    const side = DETAIL.indexOf('<aside className="bgal-side"');
+    expect(guide).toBeGreaterThan(DETAIL.indexOf('<div className="bgal-detail-grid">'));
+    expect(main).toBeGreaterThan(guide);
+    expect(side).toBeGreaterThan(main);
+    expect(DETAIL).not.toMatch(/order:\s*\d/);
+  });
+
+  it("renders the records sub-tabs as an ARIA tablist with a tabpanel", () => {
+    expect(DETAIL).toContain('aria-label="Species records"');
+    expect(DETAIL).toContain("id={`bgal-sub-tab-${id}`}");
+    expect(DETAIL).toContain('aria-controls="bgal-sub-panel"');
+    expect(DETAIL).toContain("tabIndex={index === activeSubIndex ? 0 : -1}");
+    expect(DETAIL).toContain('role="tabpanel"\n              id="bgal-sub-panel"');
+    expect(DETAIL).toContain("nextTabIndex(e.key, activeSubIndex, subTabs.length)");
+    expect(DETAIL).toContain("setSelectedSubTab(subTabs[next].id);");
+  });
+
+  it("renders the care guide tabs as an ARIA tablist with a tabpanel", () => {
+    expect(DETAIL).toContain('aria-label="Care guide sections"');
+    expect(DETAIL).toContain("id={`bgal-guide-tab-${id}`}");
+    expect(DETAIL).toContain('aria-controls="bgal-guide-panel"');
+    expect(DETAIL).toContain('id="bgal-guide-panel"');
+    expect(DETAIL).toContain("nextTabIndex(e.key, activeGuideIndex, guideTabs.length)");
+    expect(DETAIL).toContain("setActiveInfoTab(guideTabs[next].id);");
+  });
+
+  it("makes 'Only my fish' one aria-pressed toggle", () => {
+    expect(DETAIL).toContain("aria-pressed={showMyFishOnly}");
+    expect(DETAIL).toContain("Only my fish");
+    expect(DETAIL).not.toContain("Show My Fish Only");
+  });
+
+  it("opens certificate cards from a stretched title button with no handler of its own", () => {
+    expect(DETAIL).toContain('<button type="button" className="bgal-cert-open">');
+    const open = DETAIL.slice(DETAIL.indexOf('className="bgal-cert-open"'), DETAIL.indexOf('className="bgal-cert-open"') + 200);
+    expect(open).not.toContain("onClick");
+    expect(DETAIL).toContain("onClick={() => onSelectSpecimen && onSelectSpecimen(spec.specimenId)}");
+    expect(GALLERY_CSS).toMatch(/\.bgal-cert-open::after\s*\{[^}]*position:\s*absolute;[^}]*inset:\s*0/);
+  });
+
+  it("keeps the specimen photo line and labels the species photo honestly", () => {
+    expect(GALLERY_RAW).toContain("const finalImgSrc = customPhoto || masterPhotoUrl");
+    expect(DETAIL).toContain("{!customPhoto && masterPhotoUrl && (");
+    expect(DETAIL).toContain("Species photo");
+    expect(DETAIL).not.toContain("Breeder-Verified Master Stock");
+    expect(DETAIL).not.toContain("Verified Master Photo");
+    expect(DETAIL).toContain('"Not recorded"');
+    expect(DETAIL).not.toContain("Wild-Caught / Unknown");
+  });
+
+  it("makes the stock tag controls labelled buttons that do not open the card", () => {
+    expect(DETAIL).toContain('aria-label="Stock tag"');
+    expect(DETAIL).toContain('className="bgal-tag"');
+    expect(DETAIL).toContain("aria-label={`Edit stock tag ${spec.breederStockTag}`}");
+    expect(DETAIL).toContain('className="bgal-tag-add"');
+    expect(DETAIL).toContain("Add tag");
+    expect(DETAIL).toMatch(/className="bgal-tag-edit"\s*onClick=\{\(e\) => e\.stopPropagation\(\)\}/);
+    expect(GALLERY_CSS).toMatch(/\.bgal-tag-edit\s*\{[^}]*z-index:\s*2/);
+  });
+
+  it("keeps the family tree action from opening the card", () => {
+    expect(DETAIL).toMatch(/e\.stopPropagation\(\);\s*onViewLineage\(spec\.specimenId\);/);
+    expect(DETAIL).toContain("View family tree");
+    expect(GALLERY_CSS).toMatch(/\.bgal-cert-actions \.bgal-btn\s*\{[^}]*z-index:\s*2/);
+  });
+
+  it("labels the range inputs and gives them a value text", () => {
+    for (const id of ["volume", "ph", "temp"]) {
+      expect(DETAIL).toContain(`<label htmlFor="bgal-sim-${id}">`);
+      expect(DETAIL).toContain(`id="bgal-sim-${id}"`);
+    }
+    expect((DETAIL.match(/aria-valuetext=/g) || []).length).toBe(3);
+    expect(DETAIL).not.toContain("premium-slider");
+    expect(GALLERY_CSS).toMatch(/\.bgal-range\s*\{[^}]*height:\s*44px/);
+  });
+
+  it("uses Phosphor icons hidden from assistive tech for the parameter check", () => {
+    expect(DETAIL).toContain('<CheckCircle size={18} weight="fill" className="bgal-check-icon" aria-hidden="true" />');
+    expect(DETAIL).toContain('<XCircle size={18} weight="fill" className="bgal-check-icon" aria-hidden="true" />');
+    expect(DETAIL).toContain('<MinusCircle size={18} className="bgal-check-icon" aria-hidden="true" />');
+    expect(DETAIL).toContain("className={`bgal-check bgal-check--${volumeCheck}`}");
+  });
+
+  it("moves the tankmates row styling onto ScrollFade's className", () => {
+    expect(DETAIL).toContain('className="bgal-mates-row"');
+    expect(DETAIL).toContain('aria-label="Compatible tankmates"');
+  });
+
+  it("uses the plain detail copy", () => {
+    for (const s of [
+      "Back to species",
+      "Suggest for the catalog",
+      "Minimum tank",
+      "Spawning records",
+      "Listings for this species",
+      "Check your tank",
+      "Fit score",
+      '"Good fit"',
+      '"Not a fit"',
+      "Parameter check",
+      "Tank is big enough (",
+      "Tankmates that match",
+      "No species with recorded ranges match these settings.",
+      "Care guide",
+      "Natural habitat",
+      "Temperament and tankmates",
+      "How to feed",
+      "Spawning setup",
+      "Breeding notes",
+    ]) {
+      expect(DETAIL, s).toContain(s);
+    }
+    for (const old of ["Back to Species List", "Propose Breed to Active Catalog", "Cert. Serial No.", "Trace Ancestry Family Tree", "Simulate My Tank", "Compatibility Score", "Verified Safe Companions", "Species Care Guide", "Care Blueprint", "Biotope Origin", "+ Tag"]) {
+      expect(DETAIL, old).not.toContain(old);
+    }
+  });
+
+  it("gives the detail panels white cards and the 900px one-column collapse", () => {
+    expect(GALLERY_CSS).toMatch(/\.bgal-detail-grid\s*\{[^}]*grid-template-areas:/);
+    expect(GALLERY_CSS).toMatch(/@media \(max-width: 900px\)\s*\{\s*\.bgal-detail-grid/);
+    expect(GALLERY_CSS).toMatch(/\.bgal \.badge\s*\{\s*font-size:\s*0?\.8rem;\s*padding:\s*0?\.35rem 0?\.75rem;?\s*\}/);
+  });
+});
