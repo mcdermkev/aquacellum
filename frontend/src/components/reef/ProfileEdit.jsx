@@ -6,9 +6,11 @@
  */
 
 import React, { useState, useRef } from "react";
+import { Camera, PencilSimple, WarningCircle } from "@phosphor-icons/react";
 import { useUpdateProfile } from "../../hooks/useReefProfile";
 import { uploadImage, createPreviewUrl, revokePreviewUrl } from "../../services/mediaUpload";
 import { getCurrentWallet } from "../../services/supabaseClient";
+import "./ProfileDaylight.css";
 // DataPrivacySettings is intentionally NOT imported here any more — Settings →
 // Privacy & Data is its single home (docs/SETTINGS_SPEC.md D-S-1).
 
@@ -98,63 +100,23 @@ export function ProfileEdit({ profile, onSave, onCancel, casualModeActive = fals
   };
 
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: "1rem",
-        padding: "1.25rem",
-        borderRadius: "12px",
-        background: "rgba(var(--ink-rgb), 0.03)",
-        border: "1px solid rgba(56, 189, 248, 0.12)",
-      }}
-    >
-      <h3 style={{ margin: 0, fontSize: "0.9rem", fontWeight: 600, color: "var(--text-primary)" }}>
-        {casualModeActive ? "✏️ Edit Your Profile" : "Edit Profile"}
-      </h3>
+    <div className="pf-edit">
+      <h3>Edit profile</h3>
 
       {/* Avatar */}
-      <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-        <div
+      <div className="pf-edit-avatar-row">
+        <button
+          type="button"
+          className="pf-edit-avatar"
           onClick={() => fileInputRef.current?.click()}
-          style={{
-            width: "56px",
-            height: "56px",
-            borderRadius: "50%",
-            background: avatarPreview
-              ? `url(${avatarPreview}) center/cover`
-              : "linear-gradient(135deg, #374151, #1f2937)",
-            border: "2px solid rgba(56, 189, 248, 0.3)",
-            cursor: "pointer",
-            flexShrink: 0,
-            position: "relative",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-          title="Click to change avatar"
+          aria-label="Change profile photo"
+          style={avatarPreview ? { backgroundImage: `url(${avatarPreview})` } : undefined}
         >
-          {!avatarPreview && (
-            <span style={{ fontSize: "1.2rem" }}>📷</span>
-          )}
-          <div style={{
-            position: "absolute",
-            bottom: "-2px",
-            right: "-2px",
-            width: "18px",
-            height: "18px",
-            borderRadius: "50%",
-            background: "var(--accent-blue)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: "0.5rem",
-            color: "var(--text-primary)",
-            fontWeight: 700,
-          }}>
-            ✎
-          </div>
-        </div>
+          {!avatarPreview && <Camera size={24} weight="duotone" aria-hidden="true" />}
+          <span className="pf-edit-avatar-badge" aria-hidden="true">
+            <PencilSimple size={12} weight="bold" />
+          </span>
+        </button>
         <input
           ref={fileInputRef}
           type="file"
@@ -162,109 +124,60 @@ export function ProfileEdit({ profile, onSave, onCancel, casualModeActive = fals
           onChange={handleAvatarSelect}
           style={{ display: "none" }}
         />
-        <p style={{ margin: 0, fontSize: "0.65rem", color: "var(--text-muted)" }}>
-          {casualModeActive ? "Tap to upload a photo" : "Click to change avatar"}
+        <p className="pf-muted">
+          {casualModeActive ? "Tap to change your photo" : "Click to change your photo"}
         </p>
       </div>
 
       {/* Display name */}
-      <div>
-        <label style={{ fontSize: "0.7rem", color: "var(--text-secondary)", display: "block", marginBottom: "0.3rem" }}>
-          {casualModeActive ? "Display Name" : "Callsign"}
-        </label>
+      <div className="reef-form-field">
+        <label className="reef-form-label" htmlFor="pf-edit-name">Display name</label>
         <input
+          id="pf-edit-name"
           type="text"
+          className="reef-form-input"
           value={displayName}
           onChange={(e) => setDisplayName(e.target.value.slice(0, 30))}
-          placeholder="Your name..."
+          placeholder="Your name"
           maxLength={30}
-          style={{
-            width: "100%",
-            padding: "0.6rem 0.8rem",
-            borderRadius: "8px",
-            border: "1px solid rgba(var(--ink-rgb), 0.15)",
-            background: "rgba(var(--ink-rgb), 0.03)",
-            color: "var(--text-primary)",
-            fontSize: "0.85rem",
-            outline: "none",
-          }}
-          onFocus={(e) => { e.target.style.borderColor = "rgba(56, 189, 248, 0.3)"; }}
-          onBlur={(e) => { e.target.style.borderColor = "rgba(var(--ink-rgb), 0.15)"; }}
         />
       </div>
 
       {/* Bio */}
-      <div>
-        <label style={{ fontSize: "0.7rem", color: "var(--text-secondary)", display: "block", marginBottom: "0.3rem" }}>
-          Bio
-        </label>
+      <div className="reef-form-field">
+        <label className="reef-form-label" htmlFor="pf-edit-bio">Bio</label>
         <textarea
+          id="pf-edit-bio"
+          className="reef-form-input reef-form-textarea"
           value={bio}
           onChange={(e) => setBio(e.target.value.slice(0, 280))}
-          placeholder={casualModeActive ? "Tell other fishkeepers about yourself..." : "Describe your operation..."}
+          placeholder={casualModeActive ? "Tell other keepers about you and your tanks" : "What you keep and breed"}
           rows={3}
           maxLength={280}
-          style={{
-            width: "100%",
-            padding: "0.6rem 0.8rem",
-            borderRadius: "8px",
-            border: "1px solid rgba(var(--ink-rgb), 0.15)",
-            background: "rgba(var(--ink-rgb), 0.03)",
-            color: "var(--text-primary)",
-            fontSize: "0.8rem",
-            lineHeight: "1.5",
-            resize: "vertical",
-            fontFamily: "inherit",
-            outline: "none",
-            minHeight: "70px",
-          }}
-          onFocus={(e) => { e.target.style.borderColor = "rgba(56, 189, 248, 0.3)"; }}
-          onBlur={(e) => { e.target.style.borderColor = "rgba(var(--ink-rgb), 0.15)"; }}
         />
-        <span style={{ fontSize: "0.6rem", color: "var(--text-muted)", float: "right" }}>
-          {bio.length}/280
-        </span>
+        <span className="pf-edit-count">{bio.length}/280</span>
       </div>
 
       {/* Error */}
       {error && (
-        <p style={{ margin: 0, fontSize: "0.75rem", color: "var(--accent-red)" }}>
-          ⚠️ {error}
+        <p className="pf-error" role="alert">
+          <WarningCircle size={16} weight="bold" aria-hidden="true" />
+          <span>{error}</span>
         </p>
       )}
 
       {/* Actions */}
-      <div style={{ display: "flex", gap: "0.5rem", justifyContent: "flex-end" }}>
-        <button
-          onClick={onCancel}
-          disabled={saving}
-          style={{
-            padding: "0.45rem 1rem",
-            borderRadius: "8px",
-            border: "1px solid rgba(var(--ink-rgb), 0.13)",
-            background: "transparent",
-            color: "var(--text-muted)",
-            fontSize: "0.75rem",
-            cursor: "pointer",
-          }}
-        >
+      <div className="pf-edit-actions">
+        <button type="button" className="reef-btn" onClick={onCancel} disabled={saving}>
           Cancel
         </button>
         <button
+          type="button"
+          className="reef-btn reef-btn--primary"
           onClick={handleSave}
           disabled={saving || !displayName.trim()}
-          style={{
-            padding: "0.45rem 1rem",
-            borderRadius: "8px",
-            border: "none",
-            background: saving ? "rgba(var(--ink-rgb), 0.05)" : "linear-gradient(135deg, #0ea5e9, #0369a1)",
-            color: saving ? "var(--text-muted)" : "#fff",
-            fontSize: "0.75rem",
-            fontWeight: 600,
-            cursor: saving ? "default" : "pointer",
-          }}
         >
-          {saving ? "Saving..." : casualModeActive ? "Save ✨" : "Save Changes"}
+          {saving ? "Saving…" : casualModeActive ? "Save" : "Save changes"}
         </button>
       </div>
 
@@ -280,16 +193,12 @@ export function ProfileEdit({ profile, onSave, onCancel, casualModeActive = fals
         two live renders of a deletion flow means two places to keep a
         confirmation gate correct.
       */}
-      <div style={{ marginTop: "1rem", paddingTop: "1rem", borderTop: "1px solid rgba(var(--ink-rgb), 0.1)" }}>
-        <h4 style={{ margin: "0 0 0.25rem", fontSize: "0.8rem", color: "var(--text-primary)" }}>
-          {casualModeActive ? "🔒 Your Data" : "Data & Privacy"}
-        </h4>
-        <p style={{ margin: "0 0 0.75rem", fontSize: "0.7rem", color: "var(--text-muted)", lineHeight: 1.5 }}>
-          Data export and account deletion now live in Settings, alongside the rest of your
-          account controls.
-        </p>
+      <div className="pf-edit-data">
+        <h4>{casualModeActive ? "Your data" : "Data and privacy"}</h4>
+        <p>Export your data or delete your account in Settings.</p>
         <button
           type="button"
+          className="reef-btn"
           onClick={() =>
             window.dispatchEvent(
               new CustomEvent("aquadex:navigate-tab", {
@@ -297,19 +206,8 @@ export function ProfileEdit({ profile, onSave, onCancel, casualModeActive = fals
               })
             )
           }
-          style={{
-            padding: "0.45rem 1rem",
-            minHeight: 36,
-            borderRadius: "8px",
-            border: "1px solid rgba(56, 189, 248, 0.2)",
-            background: "rgba(56, 189, 248, 0.08)",
-            color: "var(--accent-blue)",
-            fontSize: "0.75rem",
-            fontWeight: 500,
-            cursor: "pointer",
-          }}
         >
-          Open Settings → {casualModeActive ? "Your Data" : "Data & Privacy"}
+          Open Settings
         </button>
       </div>
     </div>

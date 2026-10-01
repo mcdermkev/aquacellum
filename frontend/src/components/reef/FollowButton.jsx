@@ -6,6 +6,7 @@
  */
 
 import React, { useState, useEffect } from "react";
+import { Check, Plus } from "@phosphor-icons/react";
 import { followUser, unfollowUser, isFollowingUser } from "../../services/reefApi";
 import { getCurrentWallet } from "../../services/supabaseClient";
 import { useAuth } from "../../contexts/AuthContext";
@@ -75,30 +76,21 @@ export function FollowButton({ targetWallet, compact = false, onFollowChange }) 
     );
   }
 
+  // Full-size variant on the profile header (reef-btn, ReefDaylight.css). The
+  // visible label already says the state, so no aria-pressed here; with it,
+  // screen readers would announce "Following, pressed".
   return (
     <button
+      type="button"
+      className={following ? "reef-btn" : "reef-btn reef-btn--primary"}
       onClick={handleToggle}
       disabled={loading}
-      style={{
-        padding: "0.4rem 0.9rem",
-        borderRadius: "50px",
-        border: following
-          ? "1px solid rgba(52, 211, 153, 0.3)"
-          : "none",
-        background: following
-          ? "rgba(52, 211, 153, 0.08)"
-          : "linear-gradient(135deg, #0ea5e9, #0369a1)",
-        color: following ? "var(--accent-green)" : "var(--text-primary)",
-        fontSize: "0.75rem",
-        fontWeight: 600,
-        cursor: loading ? "default" : "pointer",
-        transition: "all 0.15s ease",
-        opacity: loading ? 0.6 : 1,
-        boxShadow: following ? "none" : "0 2px 8px rgba(14, 165, 233, 0.2)",
-      }}
-      aria-label={following ? "Unfollow" : "Follow"}
+      title={following ? "You follow this keeper. Tap to unfollow." : "Follow to see their posts in your feed"}
     >
-      {following ? "✓ Following" : "+ Follow"}
+      {following
+        ? <Check size={18} weight="bold" aria-hidden="true" />
+        : <Plus size={18} weight="bold" aria-hidden="true" />}
+      {following ? "Following" : "Follow"}
     </button>
   );
 }

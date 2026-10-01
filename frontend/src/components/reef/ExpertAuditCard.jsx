@@ -1,19 +1,37 @@
 /**
  * ExpertAuditCard.jsx
  * 
- * Gold-bordered card displaying an Expert Audit scorecard.
- * Shows: 4 score indicators, auditor ProfileCard, commentary.
+ * Amber-edged card displaying an Expert Audit scorecard.
+ * Shows: 4 score rows, the auditor, and their commentary.
  */
 
 import React from "react";
-import { ProfileCard } from "./ProfileCard";
+import { Drop, FishSimple, House, Palette, Star } from "@phosphor-icons/react";
+import "./ProfileDaylight.css";
 
 const SCORE_LABELS = [
-  { key: "water_quality_score", emoji: "💧", label: "Water" },
-  { key: "stocking_score", emoji: "🐟", label: "Stocking" },
-  { key: "husbandry_score", emoji: "🏠", label: "Husbandry" },
-  { key: "aesthetics_score", emoji: "🎨", label: "Aesthetics" },
+  { key: "water_quality_score", Icon: Drop, label: "Water" },
+  { key: "stocking_score", Icon: FishSimple, label: "Stocking" },
+  { key: "husbandry_score", Icon: House, label: "Husbandry" },
+  { key: "aesthetics_score", Icon: Palette, label: "Aesthetics" },
 ];
+
+function Stars({ score }) {
+  const value = Number(score) || 0;
+  return (
+    <span className="pf-stars" role="img" aria-label={`${value} out of 5`}>
+      {[1, 2, 3, 4, 5].map((s) => (
+        <Star
+          key={s}
+          size={14}
+          weight={s <= value ? "fill" : "regular"}
+          className={s <= value ? undefined : "pf-star--off"}
+          aria-hidden="true"
+        />
+      ))}
+    </span>
+  );
+}
 
 export function ExpertAuditCard({ audit, onViewProfile, compact = false }) {
   if (!audit) return null;
@@ -41,19 +59,19 @@ export function ExpertAuditCard({ audit, onViewProfile, compact = false }) {
     return (
       <div style={{
         padding: "0.6rem 0.8rem",
-        borderRadius: "var(--radius-sm)",
-        border: "1px solid rgba(251, 191, 36, 0.25)",
-        background: "rgba(251, 191, 36, 0.04)",
+        borderRadius: "12px",
+        border: "1px solid rgba(180, 83, 9, 0.28)",
+        background: "#fff8eb",
         display: "flex",
         alignItems: "center",
         gap: "0.75rem",
       }}>
-        <span style={{ fontSize: "1.2rem" }}>⭐</span>
+        <Star size={20} weight="fill" color="#b45309" aria-hidden="true" />
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: "0.7rem", color: "var(--text-primary)" }}>
-            Expert Audit — <span style={{ color: "var(--accent-amber)", fontWeight: "600" }}>{overallScore}/5.0</span>
+          <div style={{ fontSize: "0.86rem", color: "var(--text-primary)" }}>
+            Expert audit: <span style={{ color: "var(--accent-amber)", fontWeight: "600" }}>{overallScore}/5.0</span>
           </div>
-          <div style={{ fontSize: "0.6rem", color: "var(--text-muted)" }}>
+          <div style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>
             by {auditor?.display_name || `${audit.auditor_wallet?.slice(0, 6)}...`} · {formatTime(audit.created_at)}
           </div>
         </div>
@@ -61,127 +79,63 @@ export function ExpertAuditCard({ audit, onViewProfile, compact = false }) {
     );
   }
 
-  return (
-    <div
-      className="glass-card expert-audit-card"
-      style={{
-        padding: "1.25rem",
-        borderRadius: "var(--radius-md)",
-        border: "1px solid rgba(251, 191, 36, 0.25)",
-        background: "rgba(251, 191, 36, 0.03)",
-        boxShadow: "0 0 20px rgba(251, 191, 36, 0.05), inset 0 0 20px rgba(251, 191, 36, 0.02)",
-      }}
-    >
-      {/* Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1rem" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
-          {auditor && (
-            <div
-              style={{ cursor: "pointer" }}
-              onClick={() => onViewProfile?.(auditor.wallet_address)}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                <div style={{
-                  width: "32px",
-                  height: "32px",
-                  borderRadius: "50%",
-                  background: auditor.avatar_url
-                    ? `url(${auditor.avatar_url}) center/cover`
-                    : "linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)",
-                  border: "2px solid rgba(251, 191, 36, 0.4)",
-                  flexShrink: 0,
-                }} />
-                <div>
-                  <div style={{ fontSize: "0.8rem", color: "var(--text-primary)", fontWeight: "500" }}>
-                    {auditor.display_name || `${auditor.wallet_address.slice(0, 6)}...${auditor.wallet_address.slice(-4)}`}
-                  </div>
-                  <div style={{ fontSize: "0.6rem", color: "var(--accent-amber)", fontWeight: "600" }}>
-                    ⭐ Verified {auditor.companion_tier || "Master"} Breeder
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
+  const auditorName = auditor
+    ? auditor.display_name || `${auditor.wallet_address.slice(0, 6)}...${auditor.wallet_address.slice(-4)}`
+    : null;
 
-        <div style={{ textAlign: "right" }}>
-          <div style={{ fontSize: "1.4rem", fontWeight: "700", color: "var(--accent-amber)", lineHeight: "1" }}>
-            {overallScore}
-          </div>
-          <div style={{ fontSize: "0.55rem", color: "var(--text-muted)" }}>/ 5.0 overall</div>
+  return (
+    <article className="pf-audit expert-audit-card" aria-label={`Expert audit, ${overallScore} out of 5`}>
+      {/* Header */}
+      <div className="pf-audit-head">
+        {auditor ? (
+          <button
+            type="button"
+            className="pf-person"
+            onClick={() => onViewProfile?.(auditor.wallet_address)}
+          >
+            <span
+              className="pf-person-avatar"
+              aria-hidden="true"
+              style={auditor.avatar_url ? { backgroundImage: `url(${auditor.avatar_url})` } : undefined}
+            />
+            <span className="pf-person-text">
+              <span className="pf-person-name">{auditorName}</span>
+              <span className="pf-person-meta pf-person-meta--amber">Expert auditor</span>
+            </span>
+          </button>
+        ) : (
+          <span />
+        )}
+
+        <div className="pf-audit-overall">
+          <strong>{overallScore}</strong>
+          <span>/ 5.0 overall</span>
         </div>
       </div>
 
       {/* Scorecard */}
-      <div style={{
-        display: "grid",
-        gridTemplateColumns: "1fr 1fr",
-        gap: "0.5rem",
-        marginBottom: "1rem",
-      }}>
-        {SCORE_LABELS.map((cat) => {
-          const score = audit[cat.key];
-          return (
-            <div key={cat.key} style={{
-              padding: "0.5rem 0.75rem",
-              borderRadius: "var(--radius-sm)",
-              background: "rgba(var(--ink-rgb), 0.04)",
-              border: "1px solid rgba(var(--ink-rgb), 0.11)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-            }}>
-              <span style={{ fontSize: "0.7rem", color: "var(--text-secondary)" }}>
-                {cat.emoji} {cat.label}
-              </span>
-              <div style={{ display: "flex", gap: "2px" }}>
-                {[1, 2, 3, 4, 5].map((s) => (
-                  <span
-                    key={s}
-                    style={{
-                      fontSize: "0.6rem",
-                      color: s <= score ? "var(--accent-amber)" : "var(--text-muted)",
-                    }}
-                  >
-                    ★
-                  </span>
-                ))}
-              </div>
-            </div>
-          );
-        })}
-      </div>
+      <ul className="pf-scores">
+        {SCORE_LABELS.map((cat) => (
+          <li key={cat.key} className="pf-score">
+            <span className="pf-score-label">
+              <cat.Icon size={16} weight="bold" aria-hidden="true" />
+              {cat.label}
+            </span>
+            <Stars score={audit[cat.key]} />
+          </li>
+        ))}
+      </ul>
 
       {/* Commentary */}
       {audit.commentary && (
-        <div style={{
-          padding: "0.75rem 1rem",
-          background: "rgba(var(--ink-rgb), 0.04)",
-          borderRadius: "var(--radius-sm)",
-          borderLeft: "3px solid rgba(251, 191, 36, 0.3)",
-          marginBottom: "0.75rem",
-        }}>
-          <p style={{
-            margin: 0,
-            fontSize: "0.8rem",
-            color: "var(--text-secondary)",
-            lineHeight: "1.5",
-            fontStyle: "italic",
-          }}>
-            "{audit.commentary}"
-          </p>
-        </div>
+        <blockquote className="pf-quote">{audit.commentary}</blockquote>
       )}
 
       {/* Footer */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <span style={{ fontSize: "0.6rem", color: "var(--text-muted)" }}>
-          {formatTime(audit.created_at)}
-        </span>
-        <span style={{ fontSize: "0.6rem", color: "rgba(251, 191, 36, 0.6)" }}>
-          ⭐ Expert Audit
-        </span>
+      <div className="pf-audit-foot">
+        <span>{formatTime(audit.created_at)}</span>
+        <span>Expert audit</span>
       </div>
-    </div>
+    </article>
   );
 }

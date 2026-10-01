@@ -1,0 +1,607 @@
+/*
+ * ProfileDaylight.css: the keeper profile (yours and anyone else's) on the
+ * Daylight system, same look as The Reef and Breeder Tools: white cards on the
+ * page tint, teal accents, amber callouts, Inter body and Outfit headings.
+ * Everything is scoped under .pf. The profile renders inside .reef, so the
+ * shared .reef-btn / .reef-form-* / .reef-empty pieces come from
+ * ReefDaylight.css; the Reef tokens are repeated here so .pf also works alone.
+ */
+
+.pf {
+  --pf-teal: #0f766e;
+  --pf-teal-dark: #0d5f58;
+  --pf-tint: #e8f5f3;
+  --pf-tint-line: rgba(15, 118, 110, 0.22);
+  --pf-amber: #b45309;
+  --pf-amber-bg: #fff8eb;
+  --pf-amber-line: rgba(180, 83, 9, 0.28);
+  --pf-shadow: 0 1px 2px rgba(11, 37, 48, 0.05), 0 6px 18px rgba(11, 37, 48, 0.06);
+  --reef-teal: var(--pf-teal);
+  --reef-teal-dark: var(--pf-teal-dark);
+  --reef-tint: var(--pf-tint);
+  --reef-tint-line: var(--pf-tint-line);
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  max-width: 760px;
+  margin: 0 auto;
+  padding-bottom: 2rem;
+  font-family: var(--font-body);
+  color: var(--text-primary);
+}
+.pf > :empty { display: none; }
+.pf *:focus-visible { outline: 2px solid var(--pf-teal); outline-offset: 2px; }
+.pf h2, .pf h3, .pf h4 { font-family: var(--font-display); }
+.pf .reef-back { align-self: flex-start; margin: 0 0 -0.35rem -0.4rem; }
+.pf-sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}
+.pf-muted { margin: 0; font-size: 0.88rem; line-height: 1.5; color: var(--text-secondary); }
+
+/* ── Hero ────────────────────────────────────────────────────────────────── */
+.pf-hero {
+  position: relative;
+  padding: 1.5rem 1.6rem 1.35rem;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  box-shadow: var(--shadow-md);
+}
+/* Echo sits at the top right (.reef-profile-echo in EchoChat.css, about
+   71x92 at desktop, 54x70 at 640px and below). The identity row keeps clear
+   of her so no text runs underneath. */
+.pf-id { display: flex; align-items: center; gap: 1rem; padding-right: 108px; min-height: 76px; }
+.pf-avatar {
+  width: 72px;
+  height: 72px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 3px solid var(--pf-teal);
+  box-shadow: 0 0 0 3px #fff inset;
+  background-color: var(--bg-band);
+  background-position: center;
+  background-size: cover;
+}
+.pf-id-text { display: flex; flex-direction: column; gap: 0.3rem; min-width: 0; }
+.pf-name-row { display: flex; align-items: center; flex-wrap: wrap; gap: 0.35rem 0.6rem; }
+.pf-name {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+.pf-role {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+.pf-role--founder { color: var(--pf-amber); background: var(--pf-amber-bg); border-color: var(--pf-amber-line); }
+.pf-role--steward { color: var(--pf-teal); background: var(--pf-tint); border-color: var(--pf-tint-line); }
+.pf-address { margin: 0; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.8rem; color: var(--text-muted); }
+
+.pf-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin-top: 1.1rem; }
+.pf-actions:empty { display: none; }
+.pf-bio { margin: 1rem 0 0; max-width: 64ch; font-size: 0.95rem; line-height: 1.6; color: var(--text-secondary); overflow-wrap: anywhere; }
+
+/* Connection state chips and the note input */
+.pf-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 44px;
+  padding: 0 1rem;
+  border-radius: 999px;
+  font-size: 0.86rem;
+  font-weight: 600;
+  border: 1px solid transparent;
+}
+.pf-pill--ok { color: #047857; background: #effaf5; border-color: rgba(4, 120, 87, 0.22); }
+.pf-pill--wait { color: var(--pf-amber); background: var(--pf-amber-bg); border-color: var(--pf-amber-line); }
+.pf-note { display: flex; align-items: center; gap: 0.4rem; flex: 1 1 320px; min-width: 0; }
+.pf-note .reef-form-input { flex: 1; min-width: 0; }
+.pf-icon-btn { width: 44px; padding: 0; flex-shrink: 0; }
+
+/* Stats */
+.pf-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.6rem;
+  margin: 1.25rem 0 0;
+}
+.pf-stat {
+  display: flex;
+  flex-direction: column-reverse;
+  justify-content: flex-end;
+  gap: 0.25rem;
+  min-width: 0;
+  padding: 0.85rem 0.9rem;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+.pf-stat dt {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+.pf-stat dt svg { color: var(--pf-teal); flex-shrink: 0; }
+.pf-stat dd {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+/* XP tier progress */
+.pf-progress { margin-top: 1.1rem; }
+.pf-progress-head { display: flex; justify-content: space-between; align-items: baseline; gap: 0.75rem; margin-bottom: 0.4rem; }
+.pf-progress-tier { font-size: 0.86rem; font-weight: 700; color: var(--text-primary); }
+.pf-progress-next { font-size: 0.8rem; color: var(--text-muted); text-align: right; }
+.pf-progress-track { height: 8px; border-radius: 999px; background: #e6eff1; overflow: hidden; }
+.pf-progress-fill { height: 100%; border-radius: 999px; background: var(--pf-teal); transition: width 0.4s ease; }
+
+.pf-follows { display: flex; flex-wrap: wrap; gap: 0.35rem 1.25rem; margin: 0.9rem 0 0; font-size: 0.86rem; color: var(--text-secondary); }
+.pf-follows strong { color: var(--text-primary); font-weight: 700; }
+
+/* ── Section cards ───────────────────────────────────────────────────────── */
+.pf-card {
+  padding: 1.15rem 1.25rem 1.2rem;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: var(--pf-shadow);
+}
+.pf-section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 0.85rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--text-primary);
+}
+.pf-section-title svg { color: var(--pf-teal); flex-shrink: 0; }
+.pf-sub { margin: 0 0 0.5rem; font-size: 0.9rem; font-weight: 700; color: var(--text-primary); }
+.pf-stack { display: flex; flex-direction: column; gap: 0.6rem; }
+.pf-more { margin: 0; font-size: 0.84rem; color: var(--text-muted); text-align: center; }
+.pf-list { display: flex; flex-direction: column; gap: 1rem; }
+.pf-posts .pf-section-title { margin-bottom: 0.7rem; }
+.pf-posts .reef-empty { max-width: none; }
+.pf-tankmates { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+
+/* Badges */
+.pf-badges { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0.45rem; }
+.pf-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 36px;
+  padding: 0.25rem 0.8rem 0.25rem 0.35rem;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  cursor: default;
+}
+.pf-badge-art {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--pf-tint);
+  font-size: 0.95rem;
+  line-height: 1;
+}
+.pf-badge--locked { color: var(--text-muted); background: var(--bg-band); border-style: dashed; }
+.pf-badge--locked .pf-badge-art { background: #fff; color: var(--text-muted); }
+.pf-badges-label { margin: 0.9rem 0 0.45rem; font-size: 0.84rem; font-weight: 700; color: var(--text-secondary); }
+
+/* Toggles for the moderation tools (founders and stewards, own profile) */
+.pf-tool { display: flex; flex-direction: column; gap: 0.75rem; }
+.pf-tool .reef-btn { justify-content: flex-start; }
+.pf-tool .reef-btn svg { color: var(--pf-teal); }
+
+/* Hints and amber callouts */
+.pf-hint { display: flex; align-items: flex-start; gap: 0.4rem; margin: 0.6rem 0 0; font-size: 0.84rem; line-height: 1.5; color: var(--text-secondary); }
+.pf-hint svg { flex-shrink: 0; margin-top: 0.15rem; color: var(--pf-teal); }
+.pf-callout {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+  padding: 1rem 1.1rem;
+  background: var(--pf-amber-bg);
+  border: 1px solid var(--pf-amber-line);
+  border-radius: 14px;
+}
+.pf-callout > svg { flex-shrink: 0; color: var(--pf-amber); margin-top: 0.1rem; }
+.pf-callout-body { flex: 1 1 240px; min-width: 0; }
+.pf-callout-body strong { display: block; font-size: 0.95rem; color: var(--text-primary); }
+.pf-callout-body p { margin: 0.2rem 0 0.75rem; font-size: 0.88rem; line-height: 1.5; color: var(--text-secondary); }
+
+/* People rows (mentors, mentees, auditors) */
+.pf-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 0.6rem 0.75rem;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+.pf-row-actions { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+.pf-person {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 44px;
+  min-width: 0;
+  padding: 0.2rem 0.5rem 0.2rem 0.2rem;
+  margin: 0;
+  border: none;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.pf-person:hover { background: var(--bg-band); }
+.pf-person:disabled { cursor: default; background: transparent; }
+.pf-person-avatar {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #0f766e, #14b8a6);
+  background-position: center;
+  background-size: cover;
+}
+.pf-person-text { display: flex; flex-direction: column; min-width: 0; }
+.pf-person-name { font-size: 0.92rem; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pf-person-meta { font-size: 0.8rem; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 260px; }
+.pf-person-meta--amber { color: var(--pf-amber); font-weight: 600; }
+
+/* Mentorship: accept-mentees switch row. The switch keeps its 52x30 look but
+   the button box is 44px tall so it is an easy target. */
+.pf-switch-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+.pf-switch-text strong { display: block; font-size: 0.95rem; color: var(--text-primary); }
+.pf-switch-text span { display: block; margin-top: 0.15rem; font-size: 0.84rem; line-height: 1.45; color: var(--text-secondary); }
+.pf .pf-switch {
+  box-sizing: content-box;
+  min-height: 0; /* the global 44px button rule would stretch the track */
+  padding: 7px 0;
+  background-clip: content-box;
+}
+.pf .pf-switch span { top: 10px; }
+
+/* Mentorship request dialog */
+.pf-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1001;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(11, 37, 48, 0.45);
+}
+.pf-modal {
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1.4rem 1.4rem 1.25rem;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  box-shadow: var(--shadow-lg);
+  font-family: var(--font-body);
+}
+.pf-modal h3 { margin: 0; font-family: var(--font-display); font-size: 1.15rem; font-weight: 700; color: var(--text-primary); }
+.pf-count { align-self: flex-end; font-size: 0.78rem; color: var(--text-muted); }
+.pf-modal-actions { display: flex; justify-content: flex-end; gap: 0.5rem; flex-wrap: wrap; }
+
+/* ── Depth meter (class names from DepthScoreMeter.jsx) ─────────────────── */
+.pf .depth-meter { margin: 0; }
+.pf .depth-meter__badge {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  min-height: 60px;
+  padding: 0.6rem 0.9rem 0.6rem 0.65rem;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  color: var(--text-primary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.pf .depth-meter__badge:hover { border-color: var(--pf-tint-line); background: #fbfdfd; }
+.pf .depth-meter__badge[aria-expanded="true"] { border-color: var(--pf-tint-line); background: #f6fbfa; }
+.pf .depth-meter__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  background: var(--pf-tint);
+  color: var(--pf-teal);
+  font-size: 1rem;
+}
+.pf .depth-meter__info { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.pf .depth-meter__tier { font-family: var(--font-display); font-size: 1.05rem; font-weight: 700; color: var(--text-primary); }
+.pf .depth-meter__score { font-size: 0.82rem; color: var(--text-muted); }
+.pf .depth-meter__caret { color: var(--text-muted); transition: transform 0.15s ease; }
+.pf .depth-meter__badge[aria-expanded="true"] .depth-meter__caret { transform: rotate(180deg); }
+.pf .depth-meter__progress { margin-top: 0.7rem; }
+.pf .depth-meter__bar { height: 8px; border-radius: 999px; background: #e6eff1; overflow: hidden; }
+.pf .depth-meter__fill { height: 100%; border-radius: 999px; background: var(--pf-teal); transition: width 0.4s ease; }
+.pf .depth-meter__next { display: block; margin-top: 0.35rem; font-size: 0.8rem; color: var(--text-muted); text-align: right; }
+.pf .depth-meter__details {
+  margin-top: 0.9rem;
+  padding: 0.9rem 1rem;
+  background: #f8fbfb;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+.pf .depth-meter__details h4 { margin: 0 0 0.5rem; font-size: 0.95rem; font-weight: 700; }
+.pf .depth-meter__history { display: flex; flex-direction: column; gap: 0; margin-bottom: 0.4rem; }
+.pf .depth-event-row { display: flex; align-items: center; gap: 0.6rem; padding: 0.45rem 0; font-size: 0.86rem; border-bottom: 1px solid var(--line); }
+.pf .depth-event-row:last-child { border-bottom: none; }
+.pf .depth-event-delta { min-width: 40px; font-family: var(--font-display); font-weight: 700; }
+.pf .depth-event-delta--positive { color: #047857; }
+.pf .depth-event-delta--negative { color: var(--accent-red); }
+.pf .depth-event-reason { flex: 1; min-width: 0; color: var(--text-secondary); }
+.pf .depth-event-time { font-size: 0.78rem; color: var(--text-muted); }
+.pf .depth-meter__explainer { margin-top: 0.4rem; font-size: 0.86rem; color: var(--text-secondary); }
+.pf .depth-meter__explainer summary {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--pf-teal);
+  font-weight: 600;
+  cursor: pointer;
+}
+.pf .depth-meter__explainer p { margin: 0.2rem 0 0.6rem; line-height: 1.55; }
+.pf .depth-meter__tiers-list { display: flex; flex-direction: column; gap: 0; margin-top: 0.2rem; }
+.pf .depth-meter__tier-row { display: flex; justify-content: space-between; padding: 0.35rem 0; font-size: 0.84rem; color: var(--text-primary); border-bottom: 1px solid var(--line); }
+.pf .depth-meter__tier-row:last-child { border-bottom: none; }
+.pf .depth-meter__tier-row span:last-child { color: var(--text-muted); }
+
+/* ── Expert audit card ───────────────────────────────────────────────────── */
+.pf-audit {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding: 1rem 1.1rem;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-left: 4px solid #d97706;
+  border-radius: 14px;
+}
+.pf-audit-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.75rem; }
+.pf-audit-overall { text-align: right; flex-shrink: 0; }
+.pf-audit-overall strong { display: block; font-family: var(--font-display); font-size: 1.6rem; font-weight: 700; line-height: 1; color: var(--pf-amber); }
+.pf-audit-overall span { font-size: 0.78rem; color: var(--text-muted); }
+.pf-scores { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.45rem; }
+.pf-score {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-height: 40px;
+  padding: 0.35rem 0.75rem;
+  background: #f8fbfb;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  font-size: 0.86rem;
+  color: var(--text-secondary);
+}
+.pf-score-label { display: inline-flex; align-items: center; gap: 0.4rem; min-width: 0; }
+.pf-score-label svg { color: var(--pf-teal); flex-shrink: 0; }
+.pf-stars { display: inline-flex; gap: 1px; color: var(--pf-amber); flex-shrink: 0; }
+/* Empty stars: #6b8590 is about 3.75:1 on the #f8fbfb score tile (WCAG 1.4.11). */
+.pf-stars .pf-star--off { color: #6b8590; }
+.pf-quote {
+  margin: 0;
+  padding: 0.7rem 0.9rem;
+  background: var(--pf-amber-bg);
+  border-radius: 10px;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+.pf-audit-foot { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; font-size: 0.78rem; color: var(--text-muted); }
+
+/* ── Profile editor ──────────────────────────────────────────────────────── */
+.pf-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 1.1rem;
+  padding: 1.15rem 1.2rem;
+  background: #f8fbfb;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+}
+.pf-edit h3 { margin: 0; font-size: 1.1rem; font-weight: 700; }
+.pf-edit .reef-form-input { background: #fff; }
+.pf-edit-avatar-row { display: flex; align-items: center; gap: 0.9rem; }
+.pf-edit-avatar {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  flex-shrink: 0;
+  padding: 0;
+  border-radius: 50%;
+  border: 2px solid var(--pf-tint-line);
+  background-color: var(--pf-tint);
+  background-position: center;
+  background-size: cover;
+  color: var(--pf-teal);
+  cursor: pointer;
+}
+.pf-edit-avatar-badge {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  background: var(--pf-teal);
+  color: #fff;
+}
+.pf-edit-count { align-self: flex-end; font-size: 0.78rem; color: var(--text-muted); }
+.pf-edit-actions { display: flex; justify-content: flex-end; gap: 0.5rem; flex-wrap: wrap; }
+.pf-edit-data { padding-top: 1rem; border-top: 1px solid var(--line); }
+.pf-edit-data h4 { margin: 0 0 0.25rem; font-size: 0.95rem; font-weight: 700; }
+.pf-edit-data p { margin: 0 0 0.7rem; font-size: 0.86rem; line-height: 1.5; color: var(--text-secondary); }
+.pf-error { display: flex; align-items: flex-start; gap: 0.4rem; margin: 0; padding: 0.6rem 0.8rem; border-radius: 10px; background: #fef2f2; color: #b91c1c; font-size: 0.86rem; }
+.pf-error svg { flex-shrink: 0; margin-top: 0.1rem; }
+
+/* ── Club invite dropdown ────────────────────────────────────────────────── */
+.pf-invite { position: relative; }
+.pf-invite-menu {
+  position: absolute;
+  top: calc(100% + 0.4rem);
+  left: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 240px;
+  max-width: calc(100vw - 2rem);
+  padding: 0.45rem;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: var(--shadow-lg);
+}
+.pf-invite-title { margin: 0; padding: 0.3rem 0.6rem 0.2rem; font-size: 0.78rem; font-weight: 700; color: var(--text-muted); }
+.pf-invite-item {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 44px;
+  padding: 0 0.75rem;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.9rem;
+  text-align: left;
+  cursor: pointer;
+}
+.pf-invite-item:hover:not(:disabled) { background: var(--bg-band); }
+.pf-invite-item:disabled { cursor: default; }
+.pf-invite-item--sent { color: #047857; }
+.pf-invite-error { margin: 0.2rem 0 0; padding: 0 0.6rem; font-size: 0.8rem; color: var(--accent-red); }
+
+/* ── Older shared components rendered inside the profile ─────────────────── */
+/* RewardCreditsCard, ModerationPanel, ReviewModerationPanel and ProfileCard
+   still use .glass-card / .btn-primary / .btn-secondary. Inside .pf those read
+   as Daylight cards and teal pill buttons (same approach as BreederDaylight). */
+.pf .glass-card { background: #fff; border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--pf-shadow); }
+.pf .glass-card:hover { transform: none; }
+.pf .btn-primary {
+  min-height: 44px;
+  background: var(--pf-teal);
+  border-color: var(--pf-teal);
+  color: #fff;
+  border-radius: 999px;
+  font-family: var(--font-body);
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(15, 118, 110, 0.22);
+}
+.pf .btn-primary:hover:not(:disabled) { background: var(--pf-teal-dark); transform: none; }
+.pf .btn-secondary {
+  min-height: 44px;
+  background: #fff;
+  border: 1px solid var(--line);
+  color: var(--text-primary);
+  border-radius: 999px;
+  font-family: var(--font-body);
+  font-weight: 600;
+}
+
+/* ── Phones ──────────────────────────────────────────────────────────────── */
+@media (max-width: 560px) {
+  .pf { gap: 0.9rem; }
+  .pf-hero { padding: 1.15rem 1.05rem 1.1rem; border-radius: 18px; }
+  /* Avatar on its own row beside Echo; the name gets the full width below. */
+  .pf-id { flex-direction: column; align-items: flex-start; gap: 0.75rem; padding-right: 0; }
+  .pf-name { font-size: 1.35rem; }
+  .pf-actions .reef-btn, .pf-actions .pf-pill { flex: 1 1 auto; justify-content: center; }
+  .pf-note { flex-basis: 100%; }
+  /* Club invite: the trigger can land in either half of its row, so the list
+     hangs from the actions block instead and spans the card's width. The
+     trigger is the last action, so the list still opens right under it. */
+  .pf-actions { position: relative; }
+  .pf-invite { position: static; display: flex; flex: 1 1 auto; }
+  .pf-invite-menu { left: 0; right: 0; min-width: 0; max-width: none; }
+  .pf-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .pf-stat { padding: 0.75rem 0.8rem; }
+  .pf-stat dd { font-size: 1.35rem; }
+  .pf-card { padding: 1rem 0.95rem 1.05rem; border-radius: 14px; }
+  .pf-scores { grid-template-columns: 1fr; }
+  .pf-audit { padding: 0.9rem 0.9rem; }
+  .pf-row { padding: 0.5rem 0.6rem; }
+  .pf-row-actions { width: 100%; }
+  .pf-row-actions .reef-btn { flex: 1 1 auto; }
+  .pf-edit { padding: 1rem 0.9rem; }
+  .pf-edit-actions .reef-btn { flex: 1 1 auto; }
+  .pf-person-meta { max-width: 200px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pf-progress-fill,
+  .pf .depth-meter__fill,
+  .pf .depth-meter__badge,
+  .pf .depth-meter__caret { transition: none; }
+}

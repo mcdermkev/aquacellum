@@ -1,14 +1,16 @@
 /**
  * MessageButton.jsx
  * 
- * "💬 Message" button shown on any user's profile.
+ * "Message" button shown on any user's profile.
  * Opens/creates a conversation and navigates to it. Messaging is open to all
  * connected users (not just Tankmates) so buyers, sellers, and new members can
  * reach anyone during beta.
  */
 
 import React, { useState } from "react";
+import { ChatCircle } from "@phosphor-icons/react";
 import { getOrCreateConversation } from "../../services/messagesApi";
+import "./ReefDaylight.css";
 import { getCurrentWallet } from "../../services/supabaseClient";
 import { sameWallet } from "../../utils/wallet";
 import { useAuth } from "../../contexts/AuthContext";
@@ -31,23 +33,9 @@ export function MessageButton({ targetWallet, onOpenConversation }) {
   };
 
   return (
-    <button
-      onClick={handleClick}
-      disabled={loading}
-      style={{
-        padding: "0.4rem 0.8rem",
-        borderRadius: "50px",
-        border: "1px solid rgba(56, 189, 248, 0.25)",
-        background: "rgba(56, 189, 248, 0.06)",
-        color: "var(--accent-blue)",
-        fontSize: "0.7rem",
-        fontWeight: 600,
-        cursor: loading ? "default" : "pointer",
-        transition: "all 0.15s ease",
-        opacity: loading ? 0.6 : 1,
-      }}
-    >
-      {loading ? "Opening…" : "💬 Message"}
+    <button type="button" className="reef-btn" onClick={handleClick} disabled={loading}>
+      <ChatCircle size={18} weight="bold" aria-hidden="true" />
+      {loading ? "Opening…" : "Message"}
     </button>
   );
 }

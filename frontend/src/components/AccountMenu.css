@@ -1,0 +1,141 @@
+/*
+ * AccountMenu.css: the signed-in account chip in the top bar and its dropdown
+ * (View profile / Disconnect), on the Daylight system. The menu is portalled
+ * to document.body (see ConnectWallet.jsx), so nothing here depends on the
+ * header's stacking context.
+ */
+
+.acct-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 44px;
+  padding: 0.3rem 0.75rem 0.3rem 0.3rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.acct-chip:hover { border-color: rgba(var(--ink-rgb), 0.25); background: var(--bg-band); }
+.acct-chip[aria-expanded="true"] { border-color: rgba(15, 118, 110, 0.35); background: #e8f5f3; }
+.acct-chip:focus-visible { outline: 2px solid #0f766e; outline-offset: 2px; }
+
+.acct-avatar-wrap { position: relative; width: 32px; height: 32px; flex-shrink: 0; }
+.acct-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(var(--ink-rgb), 0.12);
+  background-color: #0f766e;
+  background-image: linear-gradient(135deg, #0f766e, #14b8a6);
+  background-position: center;
+  background-size: cover;
+}
+.acct-dot {
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--accent-green-fill);
+  border: 2px solid #fff;
+}
+
+.acct-text { display: flex; flex-direction: column; align-items: flex-start; min-width: 0; line-height: 1.2; }
+.acct-name {
+  max-width: 130px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.acct-tier { font-size: 0.72rem; color: var(--text-muted); }
+.acct-caret { color: var(--text-muted); transition: transform 0.15s ease; }
+.acct-chip[aria-expanded="true"] .acct-caret { transform: rotate(180deg); }
+
+.acct-backdrop { position: fixed; inset: 0; z-index: 9998; }
+
+.acct-menu {
+  position: fixed;
+  top: 70px;
+  right: 2rem;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 232px;
+  max-width: calc(100vw - 1.5rem);
+  padding: 0.4rem;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: var(--shadow-lg);
+  font-family: var(--font-body);
+}
+.acct-head {
+  padding: 0.55rem 0.75rem 0.65rem;
+  margin-bottom: 0.2rem;
+  border-bottom: 1px solid var(--line);
+  min-width: 0;
+}
+.acct-head-name {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.acct-head-address {
+  margin-top: 0.1rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.acct-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 0.75rem;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+}
+.acct-item svg { flex-shrink: 0; color: #0f766e; }
+.acct-item:hover { background: var(--bg-band); }
+.acct-item:focus { outline: none; }
+.acct-item:focus-visible { background: var(--bg-band); box-shadow: inset 0 0 0 2px #0f766e; }
+.acct-item--danger svg { color: var(--text-secondary); }
+.acct-item--danger:hover { background: #fef2f2; color: var(--accent-red); }
+.acct-item--danger:hover svg { color: var(--accent-red); }
+
+/* 561-640px: the top bar is already wider than the screen here (on master
+   too), so the chip must not get any wider than the old one. */
+@media (max-width: 640px) {
+  .acct-chip { gap: 0.4rem; padding-right: 0.5rem; }
+  .acct-name { max-width: 96px; font-size: 0.78rem; }
+}
+
+@media (max-width: 560px) {
+  .acct-menu { right: 0.75rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .acct-chip, .acct-caret { transition: none; }
+}
