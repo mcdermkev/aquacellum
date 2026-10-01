@@ -579,6 +579,12 @@
   .pf-name { font-size: 1.35rem; }
   .pf-actions .reef-btn, .pf-actions .pf-pill { flex: 1 1 auto; justify-content: center; }
   .pf-note { flex-basis: 100%; }
+  /* Club invite: the trigger can land in either half of its row, so the list
+     hangs from the actions block instead and spans the card's width. The
+     trigger is the last action, so the list still opens right under it. */
+  .pf-actions { position: relative; }
+  .pf-invite { position: static; display: flex; flex: 1 1 auto; }
+  .pf-invite-menu { left: 0; right: 0; min-width: 0; max-width: none; }
   .pf-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .pf-stat { padding: 0.75rem 0.8rem; }
   .pf-stat dd { font-size: 1.35rem; }
