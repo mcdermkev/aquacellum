@@ -9,8 +9,10 @@
  */
 
 import { useState } from "react";
+import { Anchor, CaretDown, Info } from "@phosphor-icons/react";
 import { useDepthScore, useDepthScoreHistory } from "../../hooks/useDepthScore";
 import { DEPTH_TIERS } from "../../services/depthScoreApi";
+import "./ProfileDaylight.css";
 
 /**
  * Derive a Depth tier key from a raw reputation score.
@@ -77,41 +79,46 @@ export function DepthScoreMeter({ walletAddress, compact = false, casualModeActi
           : `Depth Score: ${score} (${tier})`
         }
       >
-        {currentTierInfo.icon} {casualModeActive ? (currentTierInfo.hobbyistLabel || tier) : tier}
+        {casualModeActive ? (currentTierInfo.hobbyistLabel || tier) : tier}
       </span>
     );
   }
 
   return (
     <div className="depth-meter" aria-label={`Depth Score: ${score}, Tier: ${tier}`}>
-      {/* Tier badge */}
+      {/* Tier badge: opens the recent Depth changes */}
       <button
+        type="button"
         className="depth-meter__badge"
         onClick={() => setShowDetails(!showDetails)}
-        style={{ borderColor: currentTierInfo.color }}
         aria-expanded={showDetails}
-        aria-label="View depth score details"
+        aria-label={`${tier}, ${score} Depth points. Show Depth details`}
       >
-        <span className="depth-meter__icon">{currentTierInfo.icon}</span>
-        <div className="depth-meter__info">
-          <span className="depth-meter__tier" style={{ color: currentTierInfo.color }}>
-            {tier}
-          </span>
+        <span className="depth-meter__icon" aria-hidden="true">
+          <Anchor size={20} weight="bold" />
+        </span>
+        <span className="depth-meter__info">
+          <span className="depth-meter__tier">{tier}</span>
           <span className="depth-meter__score">{score} pts</span>
-        </div>
+        </span>
+        <CaretDown size={16} weight="bold" className="depth-meter__caret" aria-hidden="true" />
       </button>
 
       {/* Progress bar */}
       <div className="depth-meter__progress">
-        <div className="depth-meter__bar">
-          <div
-            className="depth-meter__fill"
-            style={{ width: `${progress}%`, backgroundColor: currentTierInfo.color }}
-          />
+        <div
+          className="depth-meter__bar"
+          role="progressbar"
+          aria-valuenow={Math.round(progress)}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label={nextTier ? `Depth progress to ${nextTier.label}` : `${tier}, top Depth tier`}
+        >
+          <div className="depth-meter__fill" style={{ width: `${progress}%` }} />
         </div>
         {nextTier && (
           <span className="depth-meter__next">
-            {nextTier.icon} {casualModeActive
+            {casualModeActive
               ? `Next reputation tier: ${nextTier.hobbyistLabel || nextTier.label} at ${nextTier.min} Depth points`
               : `${nextTier.label} at ${nextTier.min}`
             }
@@ -119,24 +126,22 @@ export function DepthScoreMeter({ walletAddress, compact = false, casualModeActi
         )}
       </div>
 
-      {/* Level-up hint */}
-      <p className="depth-meter__hint" style={{
-        margin: "0.4rem 0 0",
-        fontSize: "0.62rem",
-        color: "var(--text-muted)",
-        lineHeight: 1.4,
-      }}>
-        {casualModeActive
-          ? "💡 Depth is community trust, separate from activity points. Verified helpful contributions build it."
-          : "💡 Depth is separate from XP. Verified Expert Audits build community trust."}
+      {/* How Depth differs from XP */}
+      <p className="depth-meter__hint pf-hint">
+        <Info size={16} weight="bold" aria-hidden="true" />
+        <span>
+          {casualModeActive
+            ? "Depth is community trust, separate from your points. Verified helpful contributions raise it."
+            : "Depth is separate from XP. Verified expert audits raise it."}
+        </span>
       </p>
 
       {/* Expandable details */}
       {showDetails && (
         <div className="depth-meter__details">
-          <h4>Recent Score Activity</h4>
+          <h4>Recent Depth changes</h4>
           {history.length === 0 ? (
-            <p className="text-muted text-sm">No score events yet. Contribute to the community to earn Depth!</p>
+            <p className="pf-muted">No Depth changes yet.</p>
           ) : (
             <div className="depth-meter__history">
               {history.map((event) => (
@@ -147,7 +152,7 @@ export function DepthScoreMeter({ walletAddress, compact = false, casualModeActi
 
           {/* Tier explanation */}
           <details className="depth-meter__explainer">
-            <summary>What is Depth Score?</summary>
+            <summary>What is Depth?</summary>
             <p>
               Depth Score measures verified quality and trust in the community.
               It is separate from XP, which tracks activity. Depth currently rewards
@@ -156,7 +161,7 @@ export function DepthScoreMeter({ walletAddress, compact = false, casualModeActi
             <div className="depth-meter__tiers-list">
               {DEPTH_TIERS.map((t) => (
                 <div key={t.key} className="depth-meter__tier-row">
-                  <span style={{ color: t.color }}>{t.icon} {t.label}</span>
+                  <span>{t.label}</span>
                   <span className="text-muted">{t.min}+ pts</span>
                 </div>
               ))}

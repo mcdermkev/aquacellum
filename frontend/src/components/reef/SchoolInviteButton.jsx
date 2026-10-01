@@ -6,7 +6,9 @@
  */
 
 import React, { useState, useEffect } from "react";
+import { Check, UsersThree } from "@phosphor-icons/react";
 import { getMySchools, inviteToSchool, getMySchoolRole } from "../../services/schoolsApi";
+import "./ProfileDaylight.css";
 import { getCurrentWallet } from "../../services/supabaseClient";
 import { sameWallet } from "../../utils/wallet";
 import { useAuth } from "../../contexts/AuthContext";
@@ -62,71 +64,35 @@ export function SchoolInviteButton({ targetWallet }) {
   };
 
   return (
-    <div style={{ position: "relative" }}>
+    <div
+      className="pf-invite"
+      onKeyDown={(e) => { if (e.key === "Escape" && showDropdown) setShowDropdown(false); }}
+    >
       <button
+        type="button"
+        className="reef-btn"
         onClick={() => setShowDropdown(!showDropdown)}
-        style={{
-          padding: "0.4rem 0.8rem",
-          borderRadius: "50px",
-          border: "1px solid rgba(168, 85, 247, 0.25)",
-          background: "rgba(168, 85, 247, 0.06)",
-          color: "var(--accent-violet)",
-          fontSize: "0.7rem",
-          fontWeight: 600,
-          cursor: "pointer",
-          transition: "all 0.15s ease",
-        }}
+        aria-haspopup="true"
+        aria-expanded={showDropdown}
       >
-        🏫 Invite to School
+        <UsersThree size={18} weight="bold" aria-hidden="true" />
+        Invite to a club
       </button>
 
       {showDropdown && (
-        <div
-          style={{
-            position: "absolute",
-            top: "100%",
-            right: 0,
-            marginTop: "0.35rem",
-            minWidth: "220px",
-            background: "var(--bg-secondary)",
-            border: "1px solid rgba(var(--ink-rgb), 0.13)",
-            borderRadius: "10px",
-            boxShadow: "var(--shadow-lg)",
-            padding: "0.5rem",
-            zIndex: 100,
-            display: "flex",
-            flexDirection: "column",
-            gap: "0.25rem",
-          }}
-        >
-          <p style={{ margin: "0 0 0.25rem", padding: "0.25rem 0.5rem", fontSize: "0.65rem", color: "var(--text-muted)", fontWeight: 600 }}>
-            Select a school:
-          </p>
+        <div className="pf-invite-menu">
+          <p className="pf-invite-title">Choose a club</p>
 
           {mySchools.map((school) => (
             <button
+              type="button"
               key={school.id}
+              className={`pf-invite-item${sent[school.id] ? " pf-invite-item--sent" : ""}`}
               onClick={() => handleInvite(school.id)}
               disabled={sending === school.id || sent[school.id]}
-              style={{
-                padding: "0.5rem 0.75rem",
-                borderRadius: "8px",
-                border: "none",
-                background: sent[school.id]
-                  ? "rgba(52, 211, 153, 0.08)"
-                  : "rgba(var(--ink-rgb), 0.03)",
-                color: sent[school.id] ? "var(--accent-green)" : "var(--text-primary)",
-                fontSize: "0.75rem",
-                textAlign: "left",
-                cursor: sent[school.id] ? "default" : "pointer",
-                transition: "background 0.1s ease",
-                display: "flex",
-                alignItems: "center",
-                gap: "0.4rem",
-              }}
             >
               {sent[school.id] ? (
-                <>✓ Invited to {school.name}</>
+                <><Check size={16} weight="bold" aria-hidden="true" />Invited to {school.name}</>
               ) : sending === school.id ? (
                 <>Sending…</>
               ) : (
@@ -136,7 +102,7 @@ export function SchoolInviteButton({ targetWallet }) {
           ))}
 
           {error && (
-            <p style={{ margin: "0.25rem 0 0", padding: "0 0.5rem", fontSize: "0.65rem", color: "var(--accent-red)" }}>
+            <p className="pf-invite-error" role="alert">
               {error}
             </p>
           )}

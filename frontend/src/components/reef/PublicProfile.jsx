@@ -7,6 +7,26 @@
  */
 
 import React, { useState, useEffect } from "react";
+import {
+  Anchor,
+  ArrowLeft,
+  Check,
+  Clock,
+  Crown,
+  Drop,
+  FishSimple,
+  Flag,
+  GraduationCap,
+  Lightning,
+  Newspaper,
+  PencilSimple,
+  ShieldCheck,
+  Star,
+  UserPlus,
+  UsersThree,
+  Waves,
+  X,
+} from "@phosphor-icons/react";
 import { ProfileCard } from "./ProfileCard";
 import { CurrentCard } from "./CurrentCard";
 import { ProfileEdit } from "./ProfileEdit";
@@ -34,12 +54,15 @@ import { useEchoFace } from "../../hooks/useEchoFace";
 import { openEchoChat } from "../../services/echoChatBus";
 import { RewardCreditsCard } from "../RewardCreditsCard";
 import { getTierInfo, getPointsSuffix } from "../../utils/xp";
+import "./ReefDaylight.css";
+import "./ProfileDaylight.css";
 
 // Legacy hobbyist tier names kept for backwards compat with old profile rows,
 // plus the server-only cosmetic champion tiers. Real ladder tiers (Shallow,
 // Coastal, Pelagic, Abyssal, Hadal) intentionally fall through to
-// getTierInfo().colorHex / .icon below so they render their true colors rather
-// than the bronze fallback.
+// getTierInfo().colorHex below so they render their true colors rather than
+// the bronze fallback. The tier color is only used for the avatar ring, which
+// is decorative; tier names are always printed in ink.
 const TIER_COLORS = {
   Bronze: "#cd7f32",
   Silver: "#c0c0c0",
@@ -49,20 +72,11 @@ const TIER_COLORS = {
   "Hadal-Champion": "#f59e0b",
 };
 
-const TIER_ICONS = {
-  Bronze: "🥉",
-  Silver: "🥈",
-  Gold: "🥇",
-  Master: "💎",
-  "God-Tier": "👑",
-  "Hadal-Champion": "👑",
-};
-
-// Keeper-role badges — a badge of honor for granted community authority
-// (founder / steward). Higher priority first; we show the top one held.
+// Keeper-role badges: granted community authority (founder / steward).
+// Higher priority first; we show the top one held.
 const KEEPER_ROLE_BADGES = [
-  { role: "founder", icon: "👑", label: "Founder", color: "#b45309" },
-  { role: "steward", icon: "🛡️", label: "Steward", color: "#0f766e" },
+  { role: "founder", Icon: Crown, label: "Founder" },
+  { role: "steward", Icon: ShieldCheck, label: "Steward" },
 ];
 
 function pickRoleBadge(roles) {
@@ -83,39 +97,24 @@ function TierProgress({ xp, casualModeActive }) {
   const toNext = atMax ? 0 : Math.max(0, info.nextLevelXp - (Number(xp) || 0));
 
   return (
-    <div style={{ marginTop: "1.25rem" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "0.4rem" }}>
-        <span style={{ fontSize: "0.7rem", fontWeight: 700, color: info.colorHex }}>
-          {info.key}
-        </span>
-        <span style={{ fontSize: "0.65rem", color: "var(--text-muted)" }}>
+    <div className="pf-progress">
+      <div className="pf-progress-head">
+        <span className="pf-progress-tier">{info.key}</span>
+        <span className="pf-progress-next">
           {atMax
-            ? "Top tier reached 🎉"
+            ? "Top tier reached"
             : `${toNext.toLocaleString()} ${suffix} to ${nextInfo.key}`}
         </span>
       </div>
       <div
-        style={{
-          height: "8px",
-          borderRadius: "50px",
-          background: "rgba(var(--ink-rgb), 0.06)",
-          overflow: "hidden",
-        }}
+        className="pf-progress-track"
         role="progressbar"
         aria-valuenow={Math.round(info.progressPct)}
         aria-valuemin={0}
         aria-valuemax={100}
         aria-label={atMax ? `${info.key}, top tier` : `${info.key} progress to ${nextInfo.key}`}
       >
-        <div
-          style={{
-            width: `${info.progressPct}%`,
-            height: "100%",
-            borderRadius: "50px",
-            background: `linear-gradient(90deg, ${info.colorHex}88, ${info.colorHex})`,
-            transition: "width 0.4s ease",
-          }}
-        />
+        <div className="pf-progress-fill" style={{ width: `${info.progressPct}%` }} />
       </div>
     </div>
   );
@@ -147,14 +146,14 @@ function FollowerCounts({ walletAddress }) {
   if (followers === null && following === null) return null;
 
   return (
-    <div style={{ display: "flex", gap: "1.25rem", marginTop: "0.75rem", paddingLeft: "0.25rem" }}>
-      <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>
-        <strong style={{ color: "var(--text-primary)", fontWeight: 700 }}>{followers ?? "–"}</strong> Followers
+    <p className="pf-follows">
+      <span>
+        <strong>{followers ?? "–"}</strong> {followers === 1 ? "follower" : "followers"}
       </span>
-      <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>
-        <strong style={{ color: "var(--text-primary)", fontWeight: 700 }}>{following ?? "–"}</strong> Following
+      <span>
+        <strong>{following ?? "–"}</strong> following
       </span>
-    </div>
+    </p>
   );
 }
 
@@ -171,31 +170,18 @@ function ConnectionButton({ targetWallet, casualModeActive }) {
 
   if (status === "tankmate") {
     return (
-      <span style={{
-        padding: "0.4rem 0.8rem",
-        borderRadius: "50px",
-        background: "rgba(52, 211, 153, 0.1)",
-        border: "1px solid rgba(52, 211, 153, 0.3)",
-        color: "var(--accent-green, #34d399)",
-        fontSize: "0.75rem",
-        fontWeight: 600,
-      }}>
-        ✓ {casualModeActive ? "Tankmates" : "Connected"}
+      <span className="pf-pill pf-pill--ok">
+        <Check size={16} weight="bold" aria-hidden="true" />
+        {casualModeActive ? "Tankmates" : "Connected"}
       </span>
     );
   }
 
   if (status === "request_sent") {
     return (
-      <span style={{
-        padding: "0.4rem 0.8rem",
-        borderRadius: "50px",
-        background: "rgba(251, 191, 36, 0.08)",
-        border: "1px solid rgba(251, 191, 36, 0.2)",
-        color: "var(--accent-amber, #fbbf24)",
-        fontSize: "0.75rem",
-      }}>
-        ⏳ Request Pending
+      <span className="pf-pill pf-pill--wait">
+        <Clock size={16} weight="bold" aria-hidden="true" />
+        Request sent
       </span>
     );
   }
@@ -206,77 +192,43 @@ function ConnectionButton({ targetWallet, casualModeActive }) {
     setMessage("");
   };
 
+  if (!showMessageInput) {
+    return (
+      <button
+        type="button"
+        className="reef-btn reef-btn--primary"
+        onClick={() => setShowMessageInput(true)}
+        disabled={sendRequest.isPending}
+      >
+        <UserPlus size={18} weight="bold" aria-hidden="true" />
+        {casualModeActive ? "Add tankmate" : "Connect"}
+      </button>
+    );
+  }
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-      {!showMessageInput ? (
-        <button
-          onClick={() => setShowMessageInput(true)}
-          disabled={sendRequest.isPending}
-          style={{
-            padding: "0.45rem 1rem",
-            borderRadius: "50px",
-            border: "none",
-            background: "linear-gradient(135deg, #0ea5e9, #0369a1)",
-            color: "#fff",
-            fontSize: "0.75rem",
-            fontWeight: 600,
-            cursor: "pointer",
-            transition: "all 0.15s ease",
-          }}
-        >
-          🤝 {casualModeActive ? "Add Tankmate" : "Connect"}
-        </button>
-      ) : (
-        <div style={{ display: "flex", gap: "0.35rem", alignItems: "center" }}>
-          <input
-            type="text"
-            value={message}
-            onChange={(e) => setMessage(e.target.value.slice(0, 200))}
-            placeholder="Say hi! (optional)"
-            style={{
-              flex: 1,
-              padding: "0.4rem 0.6rem",
-              borderRadius: "8px",
-              border: "1px solid rgba(var(--ink-rgb), 0.15)",
-              background: "rgba(var(--ink-rgb), 0.04)",
-              color: "var(--text-primary)",
-              fontSize: "0.7rem",
-              outline: "none",
-            }}
-            onKeyDown={(e) => { if (e.key === "Enter") handleSend(); }}
-            autoFocus
-          />
-          <button
-            onClick={handleSend}
-            style={{
-              padding: "0.4rem 0.7rem",
-              borderRadius: "8px",
-              border: "none",
-              background: "linear-gradient(135deg, #0ea5e9, #0369a1)",
-              color: "#fff",
-              fontSize: "0.7rem",
-              fontWeight: 600,
-              cursor: "pointer",
-            }}
-          >
-            Send
-          </button>
-          <button
-            onClick={() => setShowMessageInput(false)}
-            style={{
-              padding: "0.4rem",
-              borderRadius: "8px",
-              border: "1px solid rgba(var(--ink-rgb), 0.15)",
-              background: "transparent",
-              color: "var(--text-muted)",
-              fontSize: "0.7rem",
-              cursor: "pointer",
-            }}
-          >
-            ✕
-          </button>
-        </div>
-      )}
+    <div className="pf-note">
+      <input
+        type="text"
+        className="reef-form-input"
+        value={message}
+        onChange={(e) => setMessage(e.target.value.slice(0, 200))}
+        placeholder="Add a note (optional)"
+        aria-label="Note to send with your request"
+        onKeyDown={(e) => { if (e.key === "Enter") handleSend(); }}
+        autoFocus
+      />
+      <button type="button" className="reef-btn reef-btn--primary" onClick={handleSend}>
+        Send
+      </button>
+      <button
+        type="button"
+        className="reef-btn reef-btn--ghost pf-icon-btn"
+        onClick={() => setShowMessageInput(false)}
+        aria-label="Cancel"
+      >
+        <X size={18} weight="bold" aria-hidden="true" />
+      </button>
     </div>
   );
 }
@@ -408,11 +360,22 @@ export function PublicProfile({ walletAddress, onBack, onNavigateProfile, casual
 
   if (isLoading) {
     return (
-      <div style={{ maxWidth: "640px", margin: "0 auto", padding: "2rem" }}>
-        <div style={{ height: "200px", borderRadius: "12px", background: "rgba(var(--ink-rgb), 0.03)", animation: "pulse 1.5s infinite" }} />
+      <div className="pf" aria-busy="true">
+        <span className="pf-sr-only" role="status">Loading profile…</span>
+        <div className="reef-skeleton" style={{ height: 260 }} />
+        <div className="reef-skeleton" style={{ height: 140 }} />
       </div>
     );
   }
+
+  const backToReef = onBack ? (
+    <div className="reef-empty-actions">
+      <button type="button" className="reef-btn" onClick={onBack}>
+        <ArrowLeft size={18} weight="bold" aria-hidden="true" />
+        Back to The Reef
+      </button>
+    </div>
+  ) : null;
 
   if (!profile) {
     // If it's the user's own profile, show a brief loading state then fall back gracefully
@@ -420,34 +383,33 @@ export function PublicProfile({ walletAddress, onBack, onNavigateProfile, casual
       // If ensureProfile already ran and returned null (failed), don't stay stuck
       if (ensuredProfile === null && !isLoading) {
         return (
-          <div style={{ maxWidth: "640px", margin: "0 auto", textAlign: "center", padding: "3rem" }}>
-            <p style={{ fontSize: "2rem" }}>🐠</p>
-            <p style={{ color: "var(--text-muted)" }}>Could not load your profile. Try switching to Casual mode and back, or reconnect your wallet.</p>
-            {onBack && (
-              <button onClick={onBack} style={{ marginTop: "1rem", padding: "0.4rem 0.8rem", borderRadius: "8px", border: "1px solid rgba(var(--ink-rgb), 0.15)", background: "transparent", color: "var(--text-primary)", cursor: "pointer", fontSize: "0.8rem" }}>
-                ← Back to feed
-              </button>
-            )}
+          <div className="pf">
+            <div className="reef-empty">
+              <span className="reef-empty-icon"><FishSimple size={26} weight="duotone" aria-hidden="true" /></span>
+              <h2 className="reef-empty-title">We couldn&apos;t load your profile</h2>
+              <p className="reef-empty-lead">Reload the page or sign in again.</p>
+              {backToReef}
+            </div>
           </div>
         );
       }
       return (
-        <div style={{ maxWidth: "640px", margin: "0 auto", textAlign: "center", padding: "3rem" }}>
-          <p style={{ fontSize: "2rem" }}>🌊</p>
-          <p style={{ color: "var(--text-muted)" }}>Setting up your profile...</p>
+        <div className="pf">
+          <div className="reef-empty reef-empty--flat" role="status">
+            <p className="reef-empty-title">Setting up your profile…</p>
+          </div>
         </div>
       );
     }
 
     return (
-      <div style={{ maxWidth: "640px", margin: "0 auto", textAlign: "center", padding: "3rem" }}>
-        <p style={{ fontSize: "2rem" }}>🐠</p>
-        <p style={{ color: "var(--text-muted)" }}>Profile not found</p>
-        {onBack && (
-          <button onClick={onBack} style={{ marginTop: "1rem", padding: "0.4rem 0.8rem", borderRadius: "8px", border: "1px solid rgba(var(--ink-rgb), 0.15)", background: "transparent", color: "var(--text-primary)", cursor: "pointer", fontSize: "0.8rem" }}>
-            ← Back to feed
-          </button>
-        )}
+      <div className="pf">
+        <div className="reef-empty">
+          <span className="reef-empty-icon"><FishSimple size={26} weight="duotone" aria-hidden="true" /></span>
+          <h2 className="reef-empty-title">Profile not found</h2>
+          <p className="reef-empty-lead">We couldn&apos;t find this keeper&apos;s profile.</p>
+          {backToReef}
+        </div>
       </div>
     );
   }
@@ -455,56 +417,19 @@ export function PublicProfile({ walletAddress, onBack, onNavigateProfile, casual
   const displayName = profile.display_name || truncateWallet(walletAddress);
   const headerTierInfo = getTierInfo(profile.xp_total || 0);
   const tierColor = TIER_COLORS[profile.companion_tier] || headerTierInfo.colorHex || "#cd7f32";
-  const tierIcon = TIER_ICONS[profile.companion_tier] || headerTierInfo.icon || "🥉";
+  const roleBadge = pickRoleBadge(profileRoles);
 
   return (
-    <div style={{ maxWidth: "640px", margin: "0 auto" }}>
-      {/* Back button */}
+    <div className="pf">
       {onBack && (
-        <button
-          onClick={onBack}
-          style={{
-            marginBottom: "1rem",
-            padding: "0.35rem 0.7rem",
-            borderRadius: "8px",
-            border: "1px solid rgba(var(--ink-rgb), 0.13)",
-            background: "rgba(var(--ink-rgb), 0.03)",
-            color: "var(--text-muted)",
-            cursor: "pointer",
-            fontSize: "0.75rem",
-          }}
-        >
-          ← {casualModeActive ? "Back to Reef" : "Back"}
+        <button type="button" className="reef-btn reef-btn--ghost reef-back" onClick={onBack}>
+          <ArrowLeft size={18} weight="bold" aria-hidden="true" />
+          {casualModeActive ? "Back to The Reef" : "Back"}
         </button>
       )}
 
-      {/* Profile header card */}
-      <div
-        className="glass-card"
-        style={{
-          padding: "1.75rem",
-          borderRadius: "20px",
-          border: "1px solid rgba(var(--ink-rgb), 0.11)",
-          background: "linear-gradient(180deg, rgba(var(--ink-rgb), 0.03) 0%, rgba(var(--ink-rgb), 0.03) 100%)",
-          marginBottom: "1.5rem",
-          position: "relative",
-          overflow: "hidden",
-          boxShadow: "var(--glass-shadow)",
-        }}
-      >
-        {/* Decorative subtle tier glow in background */}
-        <div style={{
-          position: "absolute",
-          top: "-50px",
-          right: "-50px",
-          width: "150px",
-          height: "150px",
-          borderRadius: "50%",
-          background: `${tierColor}11`,
-          filter: "blur(40px)",
-          pointerEvents: "none",
-        }} />
-
+      {/* Profile header card: identity, actions, stats, XP progress, follows */}
+      <section className="pf-hero" aria-labelledby="pf-name">
         {/* Echo in the profile header. The same character for every keeper, so
             she advertises no stage or DNA the viewer could read as this person's
             achievement. She mirrors the corner Echo's face (useEchoFace) and
@@ -518,59 +443,34 @@ export function PublicProfile({ walletAddress, onBack, onNavigateProfile, casual
         >
           <EchoRenderer size={92} expression={echoFace} animated />
         </button>
-        {/* Avatar + Name row */}
-        <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1rem" }} className="reef-profile-header-row">
+        {/* Avatar + name. Padded on the right so nothing runs under Echo. */}
+        <div className="pf-id">
           <div
+            className="pf-avatar"
+            aria-hidden="true"
             style={{
-              width: "64px",
-              height: "64px",
-              borderRadius: "50%",
-              background: profile.avatar_url
-                ? `url(${profile.avatar_url}) center/cover`
-                : walletGradient(walletAddress),
-              border: `2px solid ${tierColor}`,
-              boxShadow: profile.companion_tier === "God-Tier" ? `0 0 16px ${tierColor}` : `0 0 8px ${tierColor}33`,
-              flexShrink: 0,
+              backgroundImage: profile.avatar_url ? `url(${profile.avatar_url})` : walletGradient(walletAddress),
+              borderColor: tierColor,
             }}
           />
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-              <h2 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 700, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {displayName}
-              </h2>
-              <span title={`${profile.companion_tier} Tier`} style={{ fontSize: "1rem" }}>
-                {tierIcon}
-              </span>
-              {(() => {
-                const badge = pickRoleBadge(profileRoles);
-                if (!badge) return null;
-                return (
-                  <span
-                    title={`${badge.label} — granted community authority`}
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "0.25rem",
-                      padding: "0.15rem 0.5rem",
-                      borderRadius: "50px",
-                      fontSize: "0.6rem",
-                      fontWeight: 700,
-                      letterSpacing: "0.04em",
-                      color: badge.color,
-                      background: `${badge.color}1a`,
-                      border: `1px solid ${badge.color}55`,
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {badge.icon} {badge.label}
-                  </span>
-                );
-              })()}
+          <div className="pf-id-text">
+            <div className="pf-name-row">
+              <h2 id="pf-name" className="pf-name">{displayName}</h2>
+              {roleBadge && (
+                <span
+                  className={`pf-role pf-role--${roleBadge.role}`}
+                  title={`${roleBadge.label}. A community role granted by the Aquacellum team.`}
+                >
+                  <roleBadge.Icon size={14} weight="fill" aria-hidden="true" />
+                  {roleBadge.label}
+                </span>
+              )}
             </div>
-            <p style={{ margin: "0.2rem 0 0", fontSize: "0.7rem", color: "var(--text-muted)", fontFamily: "monospace" }}>
-              {truncateWallet(walletAddress)}
-            </p>
+            <p className="pf-address">{truncateWallet(walletAddress)}</p>
           </div>
+        </div>
+
+        <div className="pf-actions">
           <ConnectionButton targetWallet={walletAddress} casualModeActive={casualModeActive} />
           {!isOwnProfile && (
             <FollowButton targetWallet={walletAddress} />
@@ -585,22 +485,9 @@ export function PublicProfile({ walletAddress, onBack, onNavigateProfile, casual
             <SchoolInviteButton targetWallet={walletAddress} />
           )}
           {isOwnProfile && !editing && (
-            <button
-              onClick={() => setEditing(true)}
-              style={{
-                padding: "0.35rem 0.7rem",
-                borderRadius: "8px",
-                border: "1px solid rgba(var(--ink-rgb), 0.15)",
-                background: "rgba(var(--ink-rgb), 0.03)",
-                color: "var(--text-muted)",
-                fontSize: "0.7rem",
-                cursor: "pointer",
-                transition: "all 0.15s ease",
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.color = "var(--text-primary)"; e.currentTarget.style.borderColor = "rgba(var(--ink-rgb), 0.25)"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)"; e.currentTarget.style.borderColor = "rgba(var(--ink-rgb), 0.15)"; }}
-            >
-              ✏️ Edit
+            <button type="button" className="reef-btn" onClick={() => setEditing(true)}>
+              <PencilSimple size={18} weight="bold" aria-hidden="true" />
+              Edit profile
             </button>
           )}
         </div>
@@ -616,151 +503,67 @@ export function PublicProfile({ walletAddress, onBack, onNavigateProfile, casual
         )}
 
         {/* Bio */}
-        {profile.bio && (
-          <p style={{ margin: "0 0 1rem", fontSize: "0.8rem", color: "var(--text-secondary)", lineHeight: "1.5" }}>
-            {profile.bio}
-          </p>
-        )}
+        {profile.bio && <p className="pf-bio">{profile.bio}</p>}
 
-        {/* Stats row */}
-        <div 
-          style={{ 
-            display: "grid", 
-            gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))", 
-            gap: "0.75rem", 
-            marginTop: "1.25rem" 
-          }} 
-          className="reef-profile-stats"
-        >
-          {/* XP/Points */}
-          <div style={{
-            background: "rgba(var(--ink-rgb), 0.03)",
-            border: "1px solid rgba(var(--ink-rgb), 0.09)",
-            borderRadius: "12px",
-            padding: "0.85rem 0.5rem",
-            textAlign: "center",
-            boxShadow: "inset 0 1px 1px rgba(var(--ink-rgb), 0.06)",
-            transition: "all 0.2s ease",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center"
-          }}>
-            <p style={{ margin: 0, fontSize: "1.25rem", fontWeight: 800, color: "var(--text-primary)", display: "block", marginBottom: "0.2rem" }}>
-              {profile.xp_total || 0}
-            </p>
-            <p style={{ margin: 0, fontSize: "0.65rem", color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em" }}>
-              ⚡ {casualModeActive ? "Points" : "XP"}
-            </p>
+        {/* Stats: label first in the DOM (read as "XP, 1,584"), value shown on top. */}
+        <dl className="pf-stats">
+          <div className="pf-stat">
+            <dt><Lightning size={15} weight="fill" aria-hidden="true" />{casualModeActive ? "Points" : "XP"}</dt>
+            <dd>{(profile.xp_total || 0).toLocaleString()}</dd>
           </div>
-          
-          {/* Tanks */}
-          <div style={{
-            background: "rgba(var(--ink-rgb), 0.03)",
-            border: "1px solid rgba(var(--ink-rgb), 0.09)",
-            borderRadius: "12px",
-            padding: "0.85rem 0.5rem",
-            textAlign: "center",
-            boxShadow: "inset 0 1px 1px rgba(var(--ink-rgb), 0.06)",
-            transition: "all 0.2s ease",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center"
-          }}>
-            <p style={{ margin: 0, fontSize: "1.25rem", fontWeight: 800, color: "var(--text-primary)", display: "block", marginBottom: "0.2rem" }}>
-              {profile.tank_count || 0}
-            </p>
-            <p style={{ margin: 0, fontSize: "0.65rem", color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em" }}>
-              🏠 Tanks
-            </p>
+          <div className="pf-stat">
+            <dt><Drop size={15} weight="fill" aria-hidden="true" />Tanks</dt>
+            <dd>{(profile.tank_count || 0).toLocaleString()}</dd>
           </div>
+          <div className="pf-stat">
+            <dt><FishSimple size={15} weight="fill" aria-hidden="true" />Species</dt>
+            <dd>{(profile.species_count || 0).toLocaleString()}</dd>
+          </div>
+          <div className="pf-stat">
+            <dt><Waves size={15} weight="bold" aria-hidden="true" />XP Tier</dt>
+            <dd>{profile.companion_tier}</dd>
+          </div>
+        </dl>
 
-          {/* Species */}
-          <div style={{
-            background: "rgba(var(--ink-rgb), 0.03)",
-            border: "1px solid rgba(var(--ink-rgb), 0.09)",
-            borderRadius: "12px",
-            padding: "0.85rem 0.5rem",
-            textAlign: "center",
-            boxShadow: "inset 0 1px 1px rgba(var(--ink-rgb), 0.06)",
-            transition: "all 0.2s ease",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center"
-          }}>
-            <p style={{ margin: 0, fontSize: "1.25rem", fontWeight: 800, color: "var(--text-primary)", display: "block", marginBottom: "0.2rem" }}>
-              {profile.species_count || 0}
-            </p>
-            <p style={{ margin: 0, fontSize: "0.65rem", color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em" }}>
-              🐟 Species
-            </p>
-          </div>
-
-          {/* Tier */}
-          <div style={{
-            background: "rgba(var(--ink-rgb), 0.03)",
-            border: `1px solid ${tierColor}33`,
-            borderRadius: "12px",
-            padding: "0.85rem 0.5rem",
-            textAlign: "center",
-            boxShadow: `inset 0 1px 1px ${tierColor}11`,
-            transition: "all 0.2s ease",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center"
-          }}>
-            <p style={{ margin: 0, fontSize: "1.25rem", fontWeight: 800, color: tierColor, display: "block", marginBottom: "0.2rem" }}>
-              {profile.companion_tier}
-            </p>
-            <p style={{ margin: 0, fontSize: "0.65rem", color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em" }}>
-              👑 XP Tier
-            </p>
-          </div>
-        </div>
-
-        {/* Tier progression — where you stand within your tier */}
+        {/* Tier progression: where you stand within your tier */}
         <TierProgress xp={profile.xp_total || 0} casualModeActive={casualModeActive} />
 
         {/* Follower / Following counts */}
         <FollowerCounts walletAddress={walletAddress} />
-      </div>
+      </section>
 
       {/* Reward credits — own profile only (private earnings). The one place to
           see everything earned: balance, tier discount, next payout, history. */}
       {isOwnProfile && (
-        <div style={{ marginBottom: "1.5rem" }}>
+        <div>
           <RewardCreditsCard casualModeActive={casualModeActive} />
         </div>
       )}
 
-      {/* Badge Shelf */}
-      <div style={{ marginBottom: "1.5rem" }}>
-        <BadgeShelf
-          stats={{
-            tankCount: profile.tank_count || 0,
-            speciesCount: profile.species_count || 0,
-            companionTier: profile.companion_tier || "Shallow",
-            xpTotal: profile.xp_total || 0,
-            postCount: currents.length,
-            insightCount: 0, // TODO: query from species_insights
-            tankmateCount: tankmates?.length || 0,
-            // Dex completion percentage — drives the Explorer/Collector/Naturalist/
-            // Encyclopedist/Complete Dex badges. Requires server-side dex_entries
-            // query for the viewed profile; wired in Phase A of the cosmetic spec.
-            dexPercent: 0, // TODO: useSpeciesMastery → computeDexCompletion
-          }}
-          showLocked={false}
-          casualModeActive={casualModeActive}
-        />
-      </div>
+      {/* Badge Shelf (renders its own card, or nothing when no badge is earned) */}
+      <BadgeShelf
+        stats={{
+          tankCount: profile.tank_count || 0,
+          speciesCount: profile.species_count || 0,
+          companionTier: profile.companion_tier || "Shallow",
+          xpTotal: profile.xp_total || 0,
+          postCount: currents.length,
+          insightCount: 0, // TODO: query from species_insights
+          tankmateCount: tankmates?.length || 0,
+          // Dex completion percentage — drives the Explorer/Collector/Naturalist/
+          // Encyclopedist/Complete Dex badges. Requires server-side dex_entries
+          // query for the viewed profile; wired in Phase A of the cosmetic spec.
+          dexPercent: 0, // TODO: useSpeciesMastery → computeDexCompletion
+        }}
+        showLocked={false}
+        casualModeActive={casualModeActive}
+      />
 
       {/* Depth reputation is a separate verified-contribution ledger, not XP. */}
-      <div style={{ marginBottom: "1.5rem" }}>
-        <h3 style={{ fontSize: "0.8rem", fontWeight: 600, color: "var(--text-secondary)", marginBottom: "0.6rem" }}>
-          {casualModeActive ? "⭐ Community Reputation" : "⭐ Depth Reputation"}
+      <section className="pf-card" aria-labelledby="pf-depth-title">
+        <h3 id="pf-depth-title" className="pf-section-title">
+          <Anchor size={20} weight="bold" aria-hidden="true" />
+          {casualModeActive ? "Community Reputation" : "Depth Reputation"}
         </h3>
         <DepthScoreMeter
           walletAddress={walletAddress}
@@ -768,15 +571,16 @@ export function PublicProfile({ walletAddress, onBack, onNavigateProfile, casual
           fallbackScore={profile.depth_score ?? 0}
           fallbackTier={profile.depth_tier ?? undefined}
         />
-      </div>
+      </section>
 
       {/* Expert Audits Received */}
       {audits.length > 0 && (
-        <div style={{ marginBottom: "1.5rem" }}>
-          <h3 style={{ fontSize: "0.8rem", fontWeight: 600, color: "var(--text-secondary)", marginBottom: "0.6rem" }}>
-            {casualModeActive ? "⭐ Tank Reviews" : "⭐ Expert Audits"} ({audits.length})
+        <section className="pf-card" aria-labelledby="pf-audits-title">
+          <h3 id="pf-audits-title" className="pf-section-title">
+            <Star size={20} weight="bold" aria-hidden="true" />
+            {casualModeActive ? "Tank reviews" : "Expert audits"} ({audits.length})
           </h3>
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+          <div className="pf-stack">
             {audits.slice(0, 3).map((audit) => (
               <ExpertAuditCard
                 key={audit.id}
@@ -785,87 +589,69 @@ export function PublicProfile({ walletAddress, onBack, onNavigateProfile, casual
               />
             ))}
             {audits.length > 3 && (
-              <p style={{ fontSize: "0.7rem", color: "var(--text-muted)", textAlign: "center", margin: 0 }}>
+              <p className="pf-more">
                 +{audits.length - 3} more {casualModeActive ? "reviews" : "audits"}
               </p>
             )}
           </div>
-        </div>
+        </section>
       )}
 
-      {/* Mentorship Panel */}
-      <div style={{ marginBottom: "1.5rem" }}>
-        <h3 style={{ fontSize: "0.8rem", fontWeight: 600, color: "var(--text-secondary)", marginBottom: "0.6rem" }}>
-          🎓 Mentorship
-        </h3>
-        <MentorshipPanel
-          walletAddress={walletAddress}
-          acceptingMentees={profile.accepting_mentees === true}
-          onViewProfile={onNavigateProfile}
-          casualModeActive={casualModeActive}
-        />
-      </div>
+      {/* Mentorship. Own profile only: on anyone else's profile the panel has
+          nothing it can show (its reads are own-profile only), so the heading
+          would sit over an empty card. */}
+      {isOwnProfile && (
+        <section className="pf-card" aria-labelledby="pf-mentor-title">
+          <h3 id="pf-mentor-title" className="pf-section-title">
+            <GraduationCap size={20} weight="bold" aria-hidden="true" />
+            Mentorship
+          </h3>
+          <MentorshipPanel
+            walletAddress={walletAddress}
+            acceptingMentees={profile.accepting_mentees === true}
+            onViewProfile={onNavigateProfile}
+            casualModeActive={casualModeActive}
+          />
+        </section>
+      )}
 
-      {/* Moderation Panel (granted founders/stewards, on own profile) */}
+      {/* Moderation Panel (granted founders/stewards, on own profile). The
+          panel mounts only after the toggle is pressed: it signs a request. */}
       {isOwnProfile && canModerate && (
-        <div style={{ marginBottom: "1.5rem" }}>
+        <div className="pf-tool">
           <button
+            type="button"
+            className="reef-btn reef-btn--block"
             onClick={() => setShowModeration(!showModeration)}
-            style={{
-              width: "100%",
-              padding: "0.6rem 1rem",
-              borderRadius: "8px",
-              border: "1px solid rgba(239, 68, 68, 0.2)",
-              background: "rgba(239, 68, 68, 0.04)",
-              color: "var(--text-secondary)",
-              fontSize: "0.75rem",
-              fontWeight: 600,
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "0.4rem",
-              transition: "all 0.15s ease",
-            }}
+            aria-expanded={showModeration}
           >
-            🛡️ {showModeration ? "Hide Moderation Tools" : "Moderation Tools"}
+            <ShieldCheck size={18} weight="bold" aria-hidden="true" />
+            {showModeration ? "Hide moderation tools" : "Moderation tools"}
           </button>
           {showModeration && (
-            <div style={{ marginTop: "0.75rem" }}>
+            <div>
               <ModerationPanel onBack={() => setShowModeration(false)} />
             </div>
           )}
         </div>
       )}
 
-      {/* Review Reports moderation (Task 20) — same granted-authority gate,
+      {/* Review Reports moderation (Task 20): same granted-authority gate,
           composing the exact ModerationPanel pattern for the review_reports
           queue instead of a bespoke moderation surface. */}
       {isOwnProfile && canModerate && (
-        <div style={{ marginBottom: "1.5rem" }}>
+        <div className="pf-tool">
           <button
+            type="button"
+            className="reef-btn reef-btn--block"
             onClick={() => setShowReviewModeration(!showReviewModeration)}
-            style={{
-              width: "100%",
-              padding: "0.6rem 1rem",
-              borderRadius: "8px",
-              border: "1px solid rgba(251, 191, 36, 0.2)",
-              background: "rgba(251, 191, 36, 0.04)",
-              color: "var(--text-secondary)",
-              fontSize: "0.75rem",
-              fontWeight: 600,
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "0.4rem",
-              transition: "all 0.15s ease",
-            }}
+            aria-expanded={showReviewModeration}
           >
-            ⭐ {showReviewModeration ? "Hide Review Reports" : "Review Reports"}
+            <Flag size={18} weight="bold" aria-hidden="true" />
+            {showReviewModeration ? "Hide review reports" : "Review reports"}
           </button>
           {showReviewModeration && (
-            <div style={{ marginTop: "0.75rem" }}>
+            <div>
               <ReviewModerationPanel onBack={() => setShowReviewModeration(false)} />
             </div>
           )}
@@ -874,11 +660,12 @@ export function PublicProfile({ walletAddress, onBack, onNavigateProfile, casual
 
       {/* Tankmates section */}
       {tankmates && tankmates.length > 0 && (
-        <div style={{ marginBottom: "1.5rem" }}>
-          <h3 style={{ fontSize: "0.8rem", fontWeight: 600, color: "var(--text-secondary)", marginBottom: "0.5rem" }}>
+        <section className="pf-card" aria-labelledby="pf-tankmates-title">
+          <h3 id="pf-tankmates-title" className="pf-section-title">
+            <UsersThree size={20} weight="bold" aria-hidden="true" />
             {casualModeActive ? "Tankmates" : "Connections"} ({tankmates.length})
           </h3>
-          <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }} className="reef-tankmates-row">
+          <div className="pf-tankmates">
             {tankmates.slice(0, 8).map((tm) => {
               const p = tm.profiles;
               return (
@@ -894,72 +681,50 @@ export function PublicProfile({ walletAddress, onBack, onNavigateProfile, casual
               );
             })}
             {tankmates.length > 8 && (
-              <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", alignSelf: "center" }}>
-                +{tankmates.length - 8} more
-              </span>
+              <span className="pf-more">+{tankmates.length - 8} more</span>
             )}
           </div>
-        </div>
+        </section>
       )}
 
-      {/* User's Currents */}
-      <div>
-        <h3 style={{ fontSize: "0.8rem", fontWeight: 600, color: "var(--text-secondary)", marginBottom: "0.75rem" }}>
-          {casualModeActive ? "Tank Updates" : "Currents"}{currents.length > 0 ? ` (${currents.length})` : ""}
+      {/* User's Currents. Each post is already a card, so no outer card here. */}
+      <section className="pf-posts" aria-labelledby="pf-posts-title">
+        <h3 id="pf-posts-title" className="pf-section-title">
+          <Newspaper size={20} weight="bold" aria-hidden="true" />
+          {casualModeActive ? "Tank updates" : "Posts"}{currents.length > 0 ? ` (${currents.length})` : ""}
         </h3>
 
         {currents.length === 0 && (
-          <div style={{
-            textAlign: "center",
-            padding: "2rem",
-            borderRadius: "12px",
-            background: "rgba(var(--ink-rgb), 0.03)",
-            border: "1px solid rgba(var(--ink-rgb), 0.1)",
-          }}>
-            <p style={{ margin: 0, fontSize: "0.8rem", color: "var(--text-muted)" }}>
-              No posts yet
-            </p>
+          <div className="reef-empty reef-empty--flat">
+            <p className="pf-muted">No posts yet.</p>
           </div>
         )}
 
-        <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-          {currents.map((current) => (
-            <CurrentCard
-              key={current.id}
-              current={current}
-              casualModeActive={casualModeActive}
-              onProfileClick={onNavigateProfile}
-            />
-          ))}
-        </div>
+        {currents.length > 0 && (
+          <div className="pf-list">
+            {currents.map((current) => (
+              <CurrentCard
+                key={current.id}
+                current={current}
+                casualModeActive={casualModeActive}
+                onProfileClick={onNavigateProfile}
+              />
+            ))}
+          </div>
+        )}
 
         {userCurrents.hasNextPage && (
           <button
+            type="button"
+            className="reef-btn reef-btn--block"
+            style={{ marginTop: "1rem" }}
             onClick={() => userCurrents.fetchNextPage()}
             disabled={userCurrents.isFetchingNextPage}
-            style={{
-              width: "100%",
-              marginTop: "1rem",
-              padding: "0.6rem",
-              borderRadius: "8px",
-              border: "1px solid rgba(var(--ink-rgb), 0.13)",
-              background: "rgba(var(--ink-rgb), 0.03)",
-              color: "var(--text-muted)",
-              fontSize: "0.75rem",
-              cursor: "pointer",
-            }}
           >
-            {userCurrents.isFetchingNextPage ? "Loading..." : "Load more"}
+            {userCurrents.isFetchingNextPage ? "Loading…" : "Load more"}
           </button>
         )}
-      </div>
-
-      <style>{`
-        @keyframes pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.5; }
-        }
-      `}</style>
+      </section>
     </div>
   );
 }

@@ -17,9 +17,28 @@ import {
   useEndMentorship,
   useToggleAcceptingMentees,
 } from "../../hooks/useAudits";
+import { GraduationCap } from "@phosphor-icons/react";
 import { getCurrentWallet } from "../../services/supabaseClient";
 import { sameWallet } from "../../utils/wallet";
 import { UnlockPrompt, useUnlockGate } from "./UnlockPrompt";
+import "./ProfileDaylight.css";
+
+function PersonButton({ profile, meta, onViewProfile }) {
+  const name = profile?.display_name || (profile?.wallet_address ? `${profile.wallet_address.slice(0, 6)}...` : "Unknown");
+  return (
+    <button type="button" className="pf-person" onClick={() => onViewProfile?.(profile?.wallet_address)}>
+      <span
+        className="pf-person-avatar"
+        aria-hidden="true"
+        style={profile?.avatar_url ? { backgroundImage: `url(${profile.avatar_url})` } : undefined}
+      />
+      <span className="pf-person-text">
+        <span className="pf-person-name">{name}</span>
+        {meta && <span className="pf-person-meta">{meta}</span>}
+      </span>
+    </button>
+  );
+}
 
 export function MentorshipPanel({ walletAddress, acceptingMentees = false, onViewProfile, casualModeActive = false }) {
   const currentWallet = getCurrentWallet();
@@ -79,8 +98,8 @@ export function MentorshipPanel({ walletAddress, acceptingMentees = false, onVie
   ].find((mutation) => mutation.error)?.error?.message;
 
   return (
-    <div className="mentorship-panel" style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
-      {panelError && <p role="alert" style={{ margin: 0, color: "var(--accent-red)", fontSize: "0.72rem" }}>{panelError}</p>}
+    <div className="mentorship-panel pf-stack" style={{ gap: "1rem" }}>
+      {panelError && <p role="alert" className="pf-error">{panelError}</p>}
       {/* XP Unlock Prompt */}
       {mentorGate.showPrompt && (
         <UnlockPrompt
@@ -92,140 +111,68 @@ export function MentorshipPanel({ walletAddress, acceptingMentees = false, onVie
 
       {/* Accepting Mentees Toggle (granted mentors, own profile) */}
       {isOwnProfile && mentorGate.hasAccess && (
-        <div className="glass-card" style={{
-          padding: "1rem 1.25rem",
-          borderRadius: "var(--radius-sm)",
-          border: "1px solid rgba(168, 85, 247, 0.15)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-        }}>
-          <div>
-            <div style={{ fontSize: "0.85rem", color: "var(--text-primary)", fontWeight: "500" }}>
-              🎓 Accept Mentees
-            </div>
-            <div style={{ fontSize: "0.7rem", color: "var(--text-muted)", marginTop: "0.2rem" }}>
-              Allow other breeders to request you as their Mentor
-            </div>
+        <div className="pf-switch-row">
+          <div className="pf-switch-text">
+            <strong>Accept mentees</strong>
+            <span>Let other keepers ask you to be their mentor.</span>
           </div>
           <button
+            type="button"
+            className="reef-switch pf-switch"
             onClick={() => toggleMenteesMutation.mutate(!acceptingMentees)}
             disabled={toggleMenteesMutation.isPending}
-            style={{
-              width: "44px",
-              height: "24px",
-              borderRadius: "12px",
-              border: "none",
-              background: acceptingMentees ? "rgba(168, 85, 247, 0.4)" : "rgba(var(--ink-rgb), 0.1)",
-              cursor: "pointer",
-              position: "relative",
-              transition: "background 0.2s ease",
-            }}
             role="switch"
             aria-checked={acceptingMentees}
             aria-label={acceptingMentees ? "Stop accepting mentees" : "Start accepting mentees"}
           >
-            <div style={{
-              width: "18px",
-              height: "18px",
-              borderRadius: "50%",
-              background: "#fff",
-              position: "absolute",
-              top: "3px",
-              left: acceptingMentees ? "23px" : "3px",
-              transition: "left 0.2s ease",
-            }} />
+            <span />
           </button>
         </div>
       )}
 
-      {/* Mentor unlock teaser — shows when user hasn't unlocked mentorship yet */}
+      {/* Mentor teaser: shown when the keeper has not been granted mentoring */}
       {isOwnProfile && !mentorGate.hasAccess && (
-        <div className="glass-card" style={{
-          padding: "1rem 1.25rem",
-          borderRadius: "var(--radius-sm)",
-          border: "1px solid rgba(168, 85, 247, 0.1)",
-          textAlign: "center",
-        }}>
-          <p style={{ fontSize: "1.3rem", margin: "0 0 0.5rem" }}>🎓</p>
-          <p style={{ fontSize: "0.8rem", color: "var(--text-primary)", fontWeight: 600, margin: "0 0 0.3rem" }}>
-            {casualModeActive ? "Become a Mentor" : "Unlock Mentorship"}
-          </p>
-          <p style={{ fontSize: "0.68rem", color: "var(--text-muted)", margin: "0 0 0.75rem", lineHeight: 1.4 }}>
-            {casualModeActive
-              ? "Mentors are trusted community volunteers selected by the Aquacellum team."
-              : "Mentoring is granted to founders and stewards; it is not unlocked by XP or Depth."
-            }
-          </p>
-          <button
-            onClick={() => mentorGate.checkAccess()}
-            style={{
-              padding: "0.4rem 1rem",
-              borderRadius: "8px",
-              border: "1px solid rgba(168, 85, 247, 0.2)",
-              background: "rgba(168, 85, 247, 0.08)",
-              color: "var(--text-primary)",
-              fontSize: "0.72rem",
-              fontWeight: 600,
-              cursor: "pointer",
-            }}
-          >
-            {casualModeActive ? "See how to unlock" : "View Requirements"}
-          </button>
+        <div className="pf-callout">
+          <GraduationCap size={24} weight="duotone" aria-hidden="true" />
+          <div className="pf-callout-body">
+            <strong>{casualModeActive ? "Become a mentor" : "Mentor status"}</strong>
+            <p>
+              {casualModeActive
+                ? "Mentors are trusted community volunteers selected by the Aquacellum team."
+                : "Mentoring is granted to founders and stewards. XP and Depth do not unlock it."
+              }
+            </p>
+            <button type="button" className="reef-btn" onClick={() => mentorGate.checkAccess()}>
+              How mentors are chosen
+            </button>
+          </div>
         </div>
       )}
 
       {/* Pending Requests (as Mentor) */}
       {isOwnProfile && pendingMentorRequests.length > 0 && (
         <div>
-          <h4 style={{ fontSize: "0.8rem", color: "var(--text-secondary)", marginBottom: "0.6rem" }}>
-            Mentee Requests
-          </h4>
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+          <h4 className="pf-sub">Mentee requests</h4>
+          <div className="pf-stack">
             {pendingMentorRequests.map((m) => (
-              <div key={m.id} className="glass-card" style={{
-                padding: "0.75rem 1rem",
-                borderRadius: "var(--radius-sm)",
-                border: "1px solid rgba(168, 85, 247, 0.15)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-              }}>
-                <div
-                  style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: "0.5rem" }}
-                  onClick={() => onViewProfile?.(m.mentee?.wallet_address)}
-                >
-                  <div style={{
-                    width: "28px",
-                    height: "28px",
-                    borderRadius: "50%",
-                    background: m.mentee?.avatar_url
-                      ? `url(${m.mentee.avatar_url}) center/cover`
-                      : "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                  }} />
-                  <div>
-                    <div style={{ fontSize: "0.75rem", color: "var(--text-primary)" }}>
-                      {m.mentee?.display_name || "Unknown"}
-                    </div>
-                    {m.message && (
-                      <div style={{ fontSize: "0.6rem", color: "var(--text-muted)", maxWidth: "200px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        "{m.message}"
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <div style={{ display: "flex", gap: "0.4rem" }}>
+              <div key={m.id} className="pf-row">
+                <PersonButton
+                  profile={m.mentee}
+                  meta={m.message ? `"${m.message}"` : null}
+                  onViewProfile={onViewProfile}
+                />
+                <div className="pf-row-actions">
                   <button
+                    type="button"
                     onClick={() => acceptMentorshipMutation.mutate(m.id)}
-                    className="btn-primary"
-                    style={{ padding: "0.3rem 0.6rem", fontSize: "0.65rem" }}
+                    className="reef-btn reef-btn--primary"
                   >
                     Accept
                   </button>
                   <button
+                    type="button"
                     onClick={() => declineMentorshipMutation.mutate(m.id)}
-                    className="btn-secondary"
-                    style={{ padding: "0.3rem 0.6rem", fontSize: "0.65rem" }}
+                    className="reef-btn"
                   >
                     Decline
                   </button>
@@ -239,10 +186,8 @@ export function MentorshipPanel({ walletAddress, acceptingMentees = false, onVie
       {/* Active Pairings (as Mentor) */}
       {activeMentorPairings.length > 0 && (
         <div>
-          <h4 style={{ fontSize: "0.8rem", color: "var(--text-secondary)", marginBottom: "0.6rem" }}>
-            🎓 My Mentees
-          </h4>
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+          <h4 className="pf-sub">Your mentees</h4>
+          <div className="pf-stack">
             {activeMentorPairings.map((m) => (
               <PairingCard
                 key={m.id}
@@ -260,10 +205,8 @@ export function MentorshipPanel({ walletAddress, acceptingMentees = false, onVie
       {/* Active Pairings (as Mentee) */}
       {activeMenteePairings.length > 0 && (
         <div>
-          <h4 style={{ fontSize: "0.8rem", color: "var(--text-secondary)", marginBottom: "0.6rem" }}>
-            🎓 My Mentor{activeMenteePairings.length > 1 ? "s" : ""}
-          </h4>
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+          <h4 className="pf-sub">Your mentor{activeMenteePairings.length > 1 ? "s" : ""}</h4>
+          <div className="pf-stack">
             {activeMenteePairings.map((m) => (
               <PairingCard
                 key={m.id}
@@ -281,13 +224,11 @@ export function MentorshipPanel({ walletAddress, acceptingMentees = false, onVie
       {/* Pending (as Mentee) */}
       {pendingMenteeRequests.length > 0 && (
         <div>
-          <h4 style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginBottom: "0.5rem" }}>
-            Pending Requests
-          </h4>
+          <h4 className="pf-sub">Waiting for a reply</h4>
           {pendingMenteeRequests.map((m) => (
-            <div key={m.id} style={{ fontSize: "0.7rem", color: "var(--text-muted)", padding: "0.4rem 0" }}>
-              ⏳ Awaiting response from {m.mentor?.display_name || "mentor"}...
-            </div>
+            <p key={m.id} className="pf-muted">
+              Waiting for {m.mentor?.display_name || "your mentor"} to reply.
+            </p>
           ))}
         </div>
       )}
@@ -297,80 +238,56 @@ export function MentorshipPanel({ walletAddress, acceptingMentees = false, onVie
         <button
           type="button"
           onClick={() => setMentorshipsRequested(true)}
-          className="btn-secondary"
-          style={{ width: "100%", padding: "0.7rem", fontSize: "0.8rem" }}
+          className="reef-btn reef-btn--block"
         >
           Show my mentorships
         </button>
       )}
       {isOwnProfile && mentorshipsRequested && mentorshipsLoading && !mentorshipsResult && (
-        <p role="status" style={{ margin: 0, fontSize: "0.75rem", color: "var(--text-muted)" }}>
+        <p role="status" className="pf-muted">
           Loading your mentorships…
         </p>
       )}
       {isOwnProfile && mentorshipsRequested && mentorshipsResult && !mentorshipsResult.error
         && mentorships.asMentor.length === 0 && mentorships.asMentee.length === 0 && (
-        <p style={{ margin: 0, fontSize: "0.75rem", color: "var(--text-muted)" }}>
+        <p className="pf-muted">
           No mentorships yet.
         </p>
       )}
 
       {/* Find a Mentor Button */}
       {isOwnProfile && activeMenteePairings.length === 0 && (
-        <div>
+        <div className="pf-stack">
           <button
+            type="button"
             onClick={() => {
               setShowMentorList(!showMentorList);
               setMentorshipsRequested(true);
             }}
-            className="btn-secondary"
-            style={{ width: "100%", padding: "0.7rem", fontSize: "0.8rem" }}
+            className="reef-btn reef-btn--block"
+            aria-expanded={showMentorList}
           >
-            🎓 {showMentorList ? "Hide Mentors" : "Find a Mentor"}
+            {showMentorList ? "Hide mentors" : "Find a mentor"}
           </button>
 
           {showMentorList && (
-            <div style={{ marginTop: "0.75rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+            <div className="pf-stack">
               {availableMentors.length === 0 ? (
-                <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", textAlign: "center", padding: "1rem" }}>
+                <p className="pf-muted" style={{ textAlign: "center", padding: "0.75rem" }}>
                   No mentors are taking mentees right now. Check back later.
                 </p>
               ) : (
                 availableMentors.map((mentor) => (
-                  <div key={mentor.wallet_address} className="glass-card" style={{
-                    padding: "0.75rem 1rem",
-                    borderRadius: "var(--radius-sm)",
-                    border: "1px solid rgba(var(--ink-rgb), 0.13)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                  }}>
-                    <div
-                      style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer" }}
-                      onClick={() => onViewProfile?.(mentor.wallet_address)}
-                    >
-                      <div style={{
-                        width: "32px",
-                        height: "32px",
-                        borderRadius: "50%",
-                        background: mentor.avatar_url
-                          ? `url(${mentor.avatar_url}) center/cover`
-                          : "linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)",
-                        border: "2px solid rgba(251, 191, 36, 0.3)",
-                      }} />
-                      <div>
-                        <div style={{ fontSize: "0.8rem", color: "var(--text-primary)", fontWeight: "500" }}>
-                          {mentor.display_name || `${mentor.wallet_address.slice(0, 6)}...`}
-                        </div>
-                        <div style={{ fontSize: "0.6rem", color: "var(--accent-amber)" }}>
-                          {mentor.companion_tier} · {mentor.xp_total} XP
-                        </div>
-                      </div>
-                    </div>
+                  <div key={mentor.wallet_address} className="pf-row">
+                    <PersonButton
+                      profile={mentor}
+                      meta={`${mentor.companion_tier} · ${mentor.xp_total} XP`}
+                      onViewProfile={onViewProfile}
+                    />
                     <button
+                      type="button"
                       onClick={() => setRequestingMentor(mentor.wallet_address)}
-                      className="btn-primary"
-                      style={{ padding: "0.3rem 0.7rem", fontSize: "0.65rem" }}
+                      className="reef-btn reef-btn--primary"
                     >
                       Request
                     </button>
@@ -382,69 +299,49 @@ export function MentorshipPanel({ walletAddress, acceptingMentees = false, onVie
         </div>
       )}
 
-      {/* Request Modal */}
+      {/* Request dialog. Escape closes it the same way Cancel does. */}
       {requestingMentor && (
-        <div style={{
-          position: "fixed",
-          inset: 0,
-          zIndex: 1001,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          background: "rgba(11, 37, 48, 0.45)",
-          padding: "1rem",
-        }}>
-          <div className="glass-card" style={{ padding: "1.5rem", maxWidth: "400px", width: "100%", borderRadius: "var(--radius-md)" }}>
-            <h3 style={{ margin: "0 0 1rem", fontSize: "1rem", color: "var(--text-primary)" }}>🎓 Request Mentorship</h3>
+        <div className="pf-modal-backdrop">
+          <div
+            className="pf-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="pf-mentor-request-title"
+            onKeyDown={(e) => {
+              if (e.key === "Escape") {
+                setRequestingMentor(null);
+                setRequestMessage("");
+              }
+            }}
+          >
+            <h3 id="pf-mentor-request-title">Request mentorship</h3>
             <textarea
+              className="reef-form-input reef-form-textarea"
               value={requestMessage}
               onChange={(e) => setRequestMessage(e.target.value.slice(0, 300))}
-              placeholder="Introduce yourself and what you'd like help with..."
+              placeholder="Say who you are and what you'd like help with"
+              aria-label="Message to the mentor"
               rows={3}
               maxLength={300}
-              style={{
-                width: "100%",
-                padding: "0.7rem 1rem",
-                background: "rgba(var(--ink-rgb), 0.04)",
-                border: "1px solid rgba(var(--ink-rgb), 0.15)",
-                borderRadius: "var(--radius-sm)",
-                color: "var(--text-primary)",
-                fontSize: "0.85rem",
-                resize: "none",
-                marginBottom: "0.5rem",
-              }}
+              autoFocus
             />
-            <span style={{ fontSize: "0.6rem", color: "var(--text-muted)" }}>
+            <span className="pf-count">
               {requestMessage.length}/300
             </span>
-            <div style={{ display: "flex", gap: "0.75rem", marginTop: "1rem", justifyContent: "flex-end" }}>
-              <button onClick={() => { setRequestingMentor(null); setRequestMessage(""); }} className="btn-secondary" style={{ padding: "0.5rem 1rem" }}>
+            <div className="pf-modal-actions">
+              <button type="button" onClick={() => { setRequestingMentor(null); setRequestMessage(""); }} className="reef-btn">
                 Cancel
               </button>
               <button
+                type="button"
                 onClick={handleRequestMentorship}
                 disabled={requestMentorshipMutation.isPending}
-                className="btn-primary"
-                style={{ padding: "0.5rem 1rem" }}
+                className="reef-btn reef-btn--primary"
               >
-                {requestMentorshipMutation.isPending ? "Sending..." : "Send Request"}
+                {requestMentorshipMutation.isPending ? "Sending…" : "Send request"}
               </button>
             </div>
           </div>
-        </div>
-      )}
-
-      {/* XP Multiplier Info */}
-      {(activeMentorPairings.length > 0 || activeMenteePairings.length > 0) && (
-        <div style={{
-          padding: "0.6rem 1rem",
-          background: "rgba(168, 85, 247, 0.05)",
-          borderRadius: "var(--radius-sm)",
-          border: "1px solid rgba(168, 85, 247, 0.12)",
-          fontSize: "0.7rem",
-          color: "var(--text-secondary)",
-        }}>
-          ✨ <strong>1.5× XP multiplier</strong> active on interactions between you and your mentor/mentees.
         </div>
       )}
     </div>
@@ -453,42 +350,17 @@ export function MentorshipPanel({ walletAddress, acceptingMentees = false, onVie
 
 function PairingCard({ profile, relationship, onViewProfile, onEnd, isOwnProfile }) {
   if (!profile) return null;
+  const name = profile.display_name || `${profile.wallet_address.slice(0, 6)}...`;
 
   return (
-    <div className="glass-card" style={{
-      padding: "0.6rem 1rem",
-      borderRadius: "var(--radius-sm)",
-      border: "1px solid rgba(168, 85, 247, 0.12)",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "space-between",
-    }}>
-      <div
-        style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer" }}
-        onClick={() => onViewProfile?.(profile.wallet_address)}
-      >
-        <div style={{
-          width: "28px",
-          height: "28px",
-          borderRadius: "50%",
-          background: profile.avatar_url
-            ? `url(${profile.avatar_url}) center/cover`
-            : "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-        }} />
-        <div>
-          <div style={{ fontSize: "0.75rem", color: "var(--text-primary)" }}>
-            {profile.display_name || `${profile.wallet_address.slice(0, 6)}...`}
-          </div>
-          <div style={{ fontSize: "0.6rem", color: "rgba(168, 85, 247, 0.8)" }}>
-            {relationship}
-          </div>
-        </div>
-      </div>
+    <div className="pf-row">
+      <PersonButton profile={profile} meta={relationship} onViewProfile={onViewProfile} />
       {isOwnProfile && (
         <button
+          type="button"
           onClick={onEnd}
-          style={{ background: "none", border: "none", color: "var(--text-muted)", fontSize: "0.6rem", cursor: "pointer" }}
-          title="End pairing"
+          className="reef-btn reef-btn--ghost"
+          aria-label={`End pairing with ${name}`}
         >
           End
         </button>

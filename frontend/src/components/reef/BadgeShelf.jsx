@@ -7,6 +7,8 @@
  */
 
 import React, { useMemo } from "react";
+import { Lock, Medal } from "@phosphor-icons/react";
+import "./ProfileDaylight.css";
 
 /**
  * Badge definitions with unlock criteria.
@@ -39,7 +41,7 @@ const BADGE_DEFINITIONS = [
     id: "ten_tanks",
     icon: "🏭",
     name: "Facility Operator",
-    description: "Running 10+ tanks like a pro",
+    description: "Running 10 or more tanks",
     category: "collection",
     unlock: (stats) => stats.tankCount >= 10,
   },
@@ -47,7 +49,7 @@ const BADGE_DEFINITIONS = [
     id: "ten_species",
     icon: "🐟",
     name: "Species Explorer",
-    description: "Keeping 10+ different species",
+    description: "Keeping 10 or more species",
     category: "collection",
     unlock: (stats) => stats.speciesCount >= 10,
   },
@@ -63,7 +65,7 @@ const BADGE_DEFINITIONS = [
     id: "hundred_species",
     icon: "🧬",
     name: "Biodiversity Champion",
-    description: "100+ species mastered",
+    description: "Kept 100 or more species",
     category: "collection",
     unlock: (stats) => stats.speciesCount >= 100,
   },
@@ -89,7 +91,7 @@ const BADGE_DEFINITIONS = [
     id: "abyssal_tier",
     icon: "💎",
     name: "Abyssal Tier",
-    description: "Reached Abyssal tier (5,000+ pts) — elite status",
+    description: "Reached Abyssal tier (5,000+ pts)",
     category: "tier",
     unlock: (stats) => ["Abyssal", "Hadal", "Hadal-Champion"].includes(stats.companionTier),
   },
@@ -97,7 +99,7 @@ const BADGE_DEFINITIONS = [
     id: "hadal_tier",
     icon: "🔱",
     name: "Hadal Tier",
-    description: "Reached Hadal tier (10,000+ pts) — legendary",
+    description: "Reached Hadal tier (10,000+ pts)",
     category: "tier",
     unlock: (stats) => ["Hadal", "Hadal-Champion"].includes(stats.companionTier),
   },
@@ -115,7 +117,7 @@ const BADGE_DEFINITIONS = [
     id: "first_post",
     icon: "🪸",
     name: "Reef Pioneer",
-    description: "Published your first Tank Current",
+    description: "Posted your first tank update",
     category: "community",
     unlock: (stats) => stats.postCount >= 1,
   },
@@ -123,7 +125,7 @@ const BADGE_DEFINITIONS = [
     id: "ten_posts",
     icon: "📢",
     name: "Active Voice",
-    description: "Shared 10+ updates on The Reef",
+    description: "Shared 10 or more updates on The Reef",
     category: "community",
     unlock: (stats) => stats.postCount >= 10,
   },
@@ -139,7 +141,7 @@ const BADGE_DEFINITIONS = [
     id: "five_tankmates",
     icon: "🤝",
     name: "Social Swimmer",
-    description: "Connected with 5+ Tankmates",
+    description: "Connected with 5 or more tankmates",
     category: "social",
     unlock: (stats) => stats.tankmateCount >= 5,
   },
@@ -165,7 +167,7 @@ const BADGE_DEFINITIONS = [
     id: "xp_5000",
     icon: "🔱",
     name: "Poseidon's Favor",
-    description: "Earned 5,000+ total XP — legendary dedication",
+    description: "Earned 5,000+ total XP",
     category: "xp",
     unlock: (stats) => stats.xpTotal >= 5000,
   },
@@ -173,7 +175,7 @@ const BADGE_DEFINITIONS = [
     id: "xp_10000",
     icon: "🐉",
     name: "Deep Sea Legend",
-    description: "Earned 10,000+ total XP — God-Tier territory",
+    description: "Earned 10,000+ total XP",
     category: "xp",
     unlock: (stats) => stats.xpTotal >= 10000,
   },
@@ -191,7 +193,7 @@ const BADGE_DEFINITIONS = [
     id: "challenge_victor",
     icon: "🏆",
     name: "Challenge Victor",
-    description: "Finished in the top 3 of a School Challenge",
+    description: "Finished in the top 3 of a club challenge",
     category: "event",
     unlock: (stats) => stats.challengeWins >= 1,
   },
@@ -199,7 +201,7 @@ const BADGE_DEFINITIONS = [
     id: "care_streak_30",
     icon: "🔥",
     name: "30-Day Streak",
-    description: "Maintained a 30-day consecutive care streak",
+    description: "Kept a 30-day care streak",
     category: "event",
     unlock: (stats) => stats.longestStreak >= 30,
   },
@@ -207,7 +209,7 @@ const BADGE_DEFINITIONS = [
     id: "care_streak_90",
     icon: "💫",
     name: "90-Day Streak",
-    description: "Maintained a 90-day consecutive care streak — incredible dedication",
+    description: "Kept a 90-day care streak",
     category: "event",
     unlock: (stats) => stats.longestStreak >= 90,
   },
@@ -276,60 +278,20 @@ function getUnlockedBadges(stats) {
 }
 
 /**
- * Single badge display.
+ * Single badge: the badge art (decorative), its name, and the description as
+ * a tooltip plus screen-reader text.
  */
-function Badge({ badge, unlocked = true, size = "default" }) {
-  const sizes = {
-    small: { box: "28px", icon: "0.8rem", font: "0.5rem" },
-    default: { box: "38px", icon: "1.1rem", font: "0.55rem" },
-    large: { box: "48px", icon: "1.4rem", font: "0.6rem" },
-  };
-  const s = sizes[size] || sizes.default;
-
+function Badge({ badge, unlocked = true }) {
   return (
-    <div className="badge-tooltip-container">
-      <div
-        style={{
-          width: s.box,
-          height: s.box,
-          borderRadius: "10px",
-          background: unlocked ? "rgba(var(--ink-rgb), 0.04)" : "rgba(var(--ink-rgb), 0.03)",
-          border: unlocked
-            ? "1px solid rgba(56, 189, 248, 0.2)"
-            : "1px solid rgba(var(--ink-rgb), 0.09)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontSize: s.icon,
-          opacity: unlocked ? 1 : 0.3,
-          cursor: "default",
-          transition: "all 0.2s ease",
-          position: "relative",
-          flexShrink: 0,
-        }}
-        aria-label={`Badge: ${badge.name}${unlocked ? "" : " (locked)"}`}
-      >
-        {badge.icon}
-        {!unlocked && (
-          <span style={{
-            position: "absolute",
-            bottom: "-1px",
-            right: "-1px",
-            fontSize: "0.45rem",
-          }}>
-            🔒
-          </span>
-        )}
-      </div>
-      <div className="badge-tooltip-text">
-        <span className="badge-tooltip-title">
-          {unlocked ? "" : "🔒 "}{badge.name}
-        </span>
-        <span className="badge-tooltip-desc">
-          {badge.description}
-        </span>
-      </div>
-    </div>
+    <li className={`pf-badge${unlocked ? "" : " pf-badge--locked"}`} title={badge.description}>
+      <span className="pf-badge-art" aria-hidden="true">
+        {unlocked ? badge.icon : <Lock size={14} weight="bold" />}
+      </span>
+      <span>{badge.name}</span>
+      <span className="pf-sr-only">
+        {unlocked ? `: ${badge.description}` : `, locked: ${badge.description}`}
+      </span>
+    </li>
   );
 }
 
@@ -345,12 +307,10 @@ function Badge({ badge, unlocked = true, size = "default" }) {
  * @param {number} stats.insightCount - Number of Species Insights
  * @param {number} stats.tankmateCount - Number of Tankmate connections
  * @param {boolean} showLocked - Whether to show locked badges too
- * @param {string} size - Badge size: "small" | "default" | "large"
  */
 export function BadgeShelf({
   stats = {},
   showLocked = false,
-  size = "default",
   casualModeActive = false,
 }) {
   const unlockedBadges = useMemo(() => getUnlockedBadges(stats), [stats]);
@@ -362,82 +322,34 @@ export function BadgeShelf({
   if (unlockedBadges.length === 0 && !showLocked) return null;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-      <style>{`
-        .badge-tooltip-container {
-          position: relative;
-          display: inline-block;
-        }
-        .badge-tooltip-text {
-          visibility: hidden;
-          width: 180px;
-          background: var(--bg-secondary);
-          backdrop-filter: blur(12px);
-          -webkit-backdrop-filter: blur(12px);
-          color: var(--text-primary);
-          text-align: center;
-          border-radius: 8px;
-          padding: 0.5rem 0.6rem;
-          position: absolute;
-          z-index: 100;
-          bottom: 125%;
-          left: 50%;
-          transform: translateX(-50%) translateY(4px);
-          opacity: 0;
-          transition: opacity 0.15s ease, transform 0.15s ease, visibility 0.15s ease;
-          border: 1px solid rgba(var(--ink-rgb), 0.13);
-          box-shadow: var(--shadow-md);
-          pointer-events: none;
-        }
-        .badge-tooltip-title {
-          font-family: var(--font-display);
-          font-weight: 700;
-          font-size: 0.75rem;
-          color: var(--accent-blue);
-          margin-bottom: 2px;
-          display: block;
-        }
-        .badge-tooltip-desc {
-          font-family: var(--font-body);
-          font-size: 0.65rem;
-          color: var(--text-muted);
-          display: block;
-          line-height: 1.3;
-        }
-        .badge-tooltip-container:hover .badge-tooltip-text {
-          visibility: visible;
-          opacity: 1;
-          transform: translateX(-50%) translateY(0);
-        }
-      `}</style>
+    <section className="pf-card" aria-labelledby="pf-badges-title">
+      <h3 id="pf-badges-title" className="pf-section-title">
+        <Medal size={20} weight="bold" aria-hidden="true" />
+        {casualModeActive ? `Achievements (${unlockedBadges.length})` : `Badges (${unlockedBadges.length})`}
+      </h3>
 
       {/* Unlocked badges */}
-      {unlockedBadges.length > 0 && (
-        <div>
-          <span style={{ fontSize: "0.6rem", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: "0.35rem" }}>
-            {casualModeActive ? `✨ Achievements (${unlockedBadges.length})` : `Badges (${unlockedBadges.length})`}
-          </span>
-          <div style={{ display: "flex", gap: "0.35rem", flexWrap: "wrap" }}>
-            {unlockedBadges.map((badge) => (
-              <Badge key={badge.id} badge={badge} unlocked size={size} />
-            ))}
-          </div>
-        </div>
+      {unlockedBadges.length > 0 ? (
+        <ul className="pf-badges">
+          {unlockedBadges.map((badge) => (
+            <Badge key={badge.id} badge={badge} unlocked />
+          ))}
+        </ul>
+      ) : (
+        <p className="pf-muted">No badges yet.</p>
       )}
 
-      {/* Locked badges (optional — for "view all" mode) */}
+      {/* Locked badges (optional, for a "view all" mode) */}
       {showLocked && lockedBadges.length > 0 && (
-        <div style={{ marginTop: "0.5rem" }}>
-          <span style={{ fontSize: "0.6rem", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: "0.35rem" }}>
-            {casualModeActive ? "🔒 Locked" : "Upcoming"}
-          </span>
-          <div style={{ display: "flex", gap: "0.35rem", flexWrap: "wrap" }}>
+        <>
+          <h4 className="pf-badges-label">{casualModeActive ? "Locked" : "Upcoming"}</h4>
+          <ul className="pf-badges">
             {lockedBadges.map((badge) => (
-              <Badge key={badge.id} badge={badge} unlocked={false} size={size} />
+              <Badge key={badge.id} badge={badge} unlocked={false} />
             ))}
-          </div>
-        </div>
+          </ul>
+        </>
       )}
-    </div>
+    </section>
   );
 }

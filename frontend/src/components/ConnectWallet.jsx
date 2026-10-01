@@ -5,12 +5,13 @@
  * Privy is the primary login method; MetaMask is the fallback for advanced users.
  */
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import { CaretDown, Wallet } from "@phosphor-icons/react";
+import { CaretDown, SignOut, UserCircle, Wallet } from "@phosphor-icons/react";
 import { useAuth } from "../contexts/AuthContext";
 import { generateAlias } from "../utils/generateAlias";
 import { useProfile } from "../hooks/useReefProfile";
+import "./AccountMenu.css";
 
 // Shorten address for display: 0xABCD…1234
 function shortAddress(addr) {
@@ -36,7 +37,49 @@ export function ConnectWallet({ onConnected, onDisconnected, casualModeActive, t
   const { data: reefProfile } = useProfile(account, !!account);
   const [showMetaMaskOption, setShowMetaMaskOption] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [menuPos, setMenuPos] = useState(null);
   const [dexieAlias, setDexieAlias] = useState(null);
+  const chipRef = useRef(null);
+  const itemRefs = useRef([]);
+
+  // Menu keyboard support (WAI-ARIA menu button): focus the first item on
+  // open; arrows, Home and End move between items; Escape and Tab close and
+  // return focus to the chip.
+  useEffect(() => {
+    if (menuOpen) itemRefs.current[0]?.focus();
+  }, [menuOpen]);
+
+  const toggleMenu = () => {
+    if (!menuOpen && chipRef.current) {
+      // Open just under the chip, right edges aligned.
+      const r = chipRef.current.getBoundingClientRect();
+      setMenuPos({ top: Math.round(r.bottom + 8), right: Math.max(12, Math.round(window.innerWidth - r.right)) });
+    }
+    setMenuOpen(!menuOpen);
+  };
+
+  const closeMenuToChip = () => {
+    setMenuOpen(false);
+    chipRef.current?.focus();
+  };
+
+  const onMenuKeyDown = (e) => {
+    const items = itemRefs.current.filter(Boolean);
+    const index = items.indexOf(document.activeElement);
+    let next = null;
+    if (e.key === "ArrowDown") next = (index + 1) % items.length;
+    else if (e.key === "ArrowUp") next = (index - 1 + items.length) % items.length;
+    else if (e.key === "Home") next = 0;
+    else if (e.key === "End") next = items.length - 1;
+    else if (e.key === "Escape" || e.key === "Tab") {
+      e.preventDefault();
+      closeMenuToChip();
+      return;
+    }
+    if (next === null) return;
+    e.preventDefault();
+    items[next]?.focus();
+  };
 
   // Resolve display name: Supabase profile name → Dexie alias → generated alias → short address
   const displayNameResolved = reefProfile?.display_name || dexieAlias || (account ? generateAlias(account) : "");
@@ -115,71 +158,40 @@ export function ConnectWallet({ onConnected, onDisconnected, casualModeActive, t
 
     return (
       <div style={{ position: "relative" }}>
-        {/* Profile Chip — clickable */}
+        {/* Profile chip. Keep the child order (avatar div, name div, caret):
+            index.css hides the 2nd div on phones so only the avatar shows. */}
         <button
+          ref={chipRef}
+          type="button"
+          className="acct-chip"
           data-tour-id="profile-widget"
-          onClick={() => setMenuOpen(!menuOpen)}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "0.6rem",
-            padding: "0.35rem 0.75rem 0.35rem 0.35rem",
-            borderRadius: "50px",
-            border: "1px solid rgba(var(--ink-rgb), 0.13)",
-            background: "rgba(var(--ink-rgb), 0.04)",
-            cursor: "pointer",
-            transition: "all 0.2s ease",
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.borderColor = "rgba(var(--ink-rgb), 0.2)"; e.currentTarget.style.background = "rgba(var(--ink-rgb), 0.06)"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.borderColor = "rgba(var(--ink-rgb), 0.13)"; e.currentTarget.style.background = "rgba(var(--ink-rgb), 0.04)"; }}
+          onClick={toggleMenu}
           aria-label="User menu"
+          aria-haspopup="menu"
           aria-expanded={menuOpen}
+          aria-controls={menuOpen ? "acct-menu" : undefined}
         >
           {/* Avatar with status dot */}
-          <div style={{ position: "relative", width: "30px", height: "30px", flexShrink: 0 }}>
-            <div style={{
-              width: "30px",
-              height: "30px",
-              borderRadius: "50%",
-              background: avatarUrl
-                ? `url(${avatarUrl}) center/cover`
-                : "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-              border: "1.5px solid rgba(var(--ink-rgb), 0.17)",
-            }} />
-            {/* Green status dot */}
-            <span style={{
-              position: "absolute",
-              bottom: "0px",
-              right: "0px",
-              width: "8px",
-              height: "8px",
-              borderRadius: "50%",
-              background: "var(--accent-green)",
-              border: "1.5px solid var(--glass-border)",
-              boxShadow: "0 0 4px var(--accent-green)",
-            }} />
+          <div className="acct-avatar-wrap">
+            <div
+              className="acct-avatar"
+              style={avatarUrl ? { backgroundImage: `url(${avatarUrl})` } : undefined}
+            />
+            <span className="acct-dot" />
           </div>
 
           {/* Name + tier */}
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", minWidth: 0 }}>
-            <span style={{
-              fontSize: "0.75rem",
-              color: "var(--text-primary)",
-              fontWeight: 600,
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              maxWidth: "120px",
-            }}>
+          <div className="acct-text">
+            <span className="acct-name">
               {displayNameResolved || shortAddress(account)}
             </span>
-            <span style={{ fontSize: "0.55rem", color: "var(--text-muted)", lineHeight: "1" }}>
+            <span className="acct-tier">
               {tierBadge}
             </span>
           </div>
 
           {/* Chevron */}
-          <CaretDown size={10} weight="bold" style={{ opacity: 0.5, transition: "transform 0.2s", transform: menuOpen ? "rotate(180deg)" : "rotate(0)" }} />
+          <CaretDown size={12} weight="bold" className="acct-caret" aria-hidden="true" />
         </button>
 
         {/* Dropdown Menu — PORTALLED TO document.body.
@@ -195,50 +207,35 @@ export function ConnectWallet({ onConnected, onDisconnected, casualModeActive, t
           <>
             {/* Invisible backdrop to catch outside clicks */}
             <div
+              className="acct-backdrop"
               onClick={() => setMenuOpen(false)}
-              style={{
-                position: "fixed",
-                inset: 0,
-                zIndex: 9998,
-              }}
               aria-hidden="true"
             />
             <div
+              id="acct-menu"
+              className="acct-menu"
               role="menu"
               aria-label="User menu"
-              style={{
-              position: "fixed",
-              top: "70px",
-              right: "2rem",
-              minWidth: "180px",
-              padding: "0.4rem",
-              borderRadius: "var(--radius-sm)",
-              background: "var(--bg-secondary)",
-              border: "1px solid rgba(var(--ink-rgb), 0.17)",
-              backdropFilter: "blur(16px)",
-              boxShadow: "0 12px 40px rgba(var(--ink-rgb), 0.14)",
-              zIndex: 9999,
-              display: "flex",
-              flexDirection: "column",
-              gap: "0.15rem",
-            }}>
+              onKeyDown={onMenuKeyDown}
+              style={menuPos ? { top: `${menuPos.top}px`, right: `${menuPos.right}px` } : undefined}
+            >
             {/* Profile header in dropdown */}
-            <div style={{
-              padding: "0.5rem 0.75rem",
-              borderBottom: "1px solid rgba(var(--ink-rgb), 0.11)",
-              marginBottom: "0.25rem",
-            }}>
-              <div style={{ fontSize: "0.75rem", color: "var(--text-primary)", fontWeight: 600 }}>
+            <div className="acct-head" role="none">
+              <div className="acct-head-name">
                 {displayNameResolved || shortAddress(account)}
               </div>
-              <div style={{ fontSize: "0.6rem", color: "var(--text-muted)", fontFamily: "monospace" }}>
+              <div className="acct-head-address">
                 {shortAddress(account)}
               </div>
             </div>
 
             {/* View Profile */}
             <button
+              ref={(el) => { itemRefs.current[0] = el; }}
+              type="button"
+              className="acct-item"
               role="menuitem"
+              tabIndex={-1}
               onClick={() => {
                 setMenuOpen(false);
                 // Navigate to Reef tab via React Router, then trigger profile view
@@ -248,50 +245,22 @@ export function ConnectWallet({ onConnected, onDisconnected, casualModeActive, t
                   window.dispatchEvent(new CustomEvent("reef_view_profile", { detail: { wallet: account } }));
                 }, 300);
               }}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "0.5rem",
-                padding: "0.5rem 0.75rem",
-                borderRadius: "6px",
-                border: "none",
-                background: "transparent",
-                color: "var(--text-secondary)",
-                fontSize: "0.75rem",
-                cursor: "pointer",
-                textAlign: "left",
-                width: "100%",
-                transition: "all 0.15s ease",
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(var(--ink-rgb), 0.06)"; e.currentTarget.style.color = "var(--text-primary)"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text-secondary)"; }}
             >
-              👤 View Profile
+              <UserCircle size={20} weight="bold" aria-hidden="true" />
+              View profile
             </button>
 
             {/* Disconnect */}
             <button
+              ref={(el) => { itemRefs.current[1] = el; }}
+              type="button"
+              className="acct-item acct-item--danger"
               role="menuitem"
+              tabIndex={-1}
               onClick={() => { setMenuOpen(false); disconnect(); }}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "0.5rem",
-                padding: "0.5rem 0.75rem",
-                borderRadius: "6px",
-                border: "none",
-                background: "transparent",
-                color: "var(--text-muted)",
-                fontSize: "0.75rem",
-                cursor: "pointer",
-                textAlign: "left",
-                width: "100%",
-                transition: "all 0.15s ease",
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(248, 113, 113, 0.08)"; e.currentTarget.style.color = "var(--accent-red)"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text-muted)"; }}
             >
-              {casualModeActive ? "📕 Close Logbook" : "⏻ Disconnect"}
+              <SignOut size={20} weight="bold" aria-hidden="true" />
+              {casualModeActive ? "Close logbook" : "Disconnect"}
             </button>
           </div>
           </>,
