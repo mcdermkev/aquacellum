@@ -31,6 +31,36 @@ import { useUnitPrefs } from "../hooks/useUnitPrefs";
 import { formatTemperature, formatTemperatureRange, resolveTempScale } from "../utils/units";
 import { SexingGuide } from "./SexingGuide";
 import { CARE_NOT_RECORDED, checkRange, entryCareRanges, realCareNumber, realCareText, realRange } from "../services/speciesCare";
+import { nextTabIndex } from "./breedGalleryTabs";
+import {
+  FishSimple,
+  Certificate,
+  GlobeHemisphereWest,
+  ClipboardText,
+  MagnifyingGlass,
+  X,
+  SpinnerGap,
+  Plus,
+  Camera,
+  SlidersHorizontal,
+  CaretDown,
+  WarningCircle,
+  ArrowLeft,
+  Egg,
+  Storefront,
+  Check,
+  Tag,
+  TreeStructure,
+  Sliders,
+  CheckCircle,
+  XCircle,
+  MinusCircle,
+  BookOpenText,
+  ForkKnife,
+  Lightbulb,
+  Warning,
+} from "@phosphor-icons/react";
+import "./BreedGalleryDaylight.css";
 
 // Compatibility ring/label hue per honest fit verdict (Fish Finder T2). Driven
 // by verdict rather than raw score so an unknown-data "caution" never shows a
@@ -40,6 +70,16 @@ const VERDICT_COLOR = Object.freeze({
   caution: "hsl(42, 92%, 52%)",   // amber
   blocked: "hsl(0, 78%, 55%)",    // red
   no_tank: "hsl(210, 10%, 55%)",  // neutral
+});
+
+// Text colour for the same verdicts. VERDICT_COLOR is too light for text on
+// white (2.3:1 to 4.3:1), so it stays on the ring stroke and these text-safe
+// tokens carry the score, verdict label and reason bullets.
+const VERDICT_TEXT = Object.freeze({
+  ok: "var(--accent-green)",
+  caution: "var(--accent-amber)",
+  blocked: "var(--accent-red)",
+  no_tank: "var(--text-muted)",
 });
 
 // Config configurations for Aquadex biological easter eggs
@@ -725,9 +765,12 @@ export function BreedGallery({
 
   if (error) {
     return (
-      <div className="glass-card" style={{ padding: "3rem", textAlign: "center", border: "1px solid rgba(239, 68, 68, 0.2)" }}>
-        <p style={{ color: "var(--accent-red)" }}>{error}</p>
-        <button onClick={() => refetchContractSpecies()} className="btn-secondary" style={{ marginTop: "1rem" }}>Retry</button>
+      <div className="bgal">
+        <div className="bgal-state bgal-state--error" role="alert">
+          <WarningCircle size={28} aria-hidden="true" />
+          <p className="bgal-state-text">{error}</p>
+          <button type="button" onClick={() => refetchContractSpecies()} className="bgal-btn">Try again</button>
+        </div>
       </div>
     );
   }
@@ -768,7 +811,16 @@ export function BreedGallery({
     const breedPhText = breedPhRange ? `${breedPhRange[0]} - ${breedPhRange[1]}` : CARE_NOT_RECORDED;
     const phCheck = checkRange(simPh, breedPhRange);
     const tempCheck = checkRange(simTemp, breedTempRange);
-    const checkIcon = (state) => (state === "pass" ? "🟢" : state === "fail" ? "🔴" : "⚪");
+    const checkIcon = (state) =>
+      state === "pass" ? (
+        <CheckCircle size={18} weight="fill" className="bgal-check-icon" aria-hidden="true" />
+      ) : state === "fail" ? (
+        <XCircle size={18} weight="fill" className="bgal-check-icon" aria-hidden="true" />
+      ) : (
+        <MinusCircle size={18} className="bgal-check-icon" aria-hidden="true" />
+      );
+    // Same branches as before: no recorded minimum is "unknown", never a pass.
+    const volumeCheck = minVol == null ? "unknown" : (simVolume >= minVol ? "pass" : "fail");
     const biotopeText = realCareText(fullProfile.ecology?.biotope);
     const hardnessText = realCareText(fullProfile.ecology?.hardnessRange);
     const tempCeiling = realCareNumber(fullProfile.ecology?.tempCeiling) ?? breedTempRange?.[1] ?? null;
@@ -780,756 +832,758 @@ export function BreedGallery({
     const strokeWidth = 8;
     const circumference = 2 * Math.PI * radius;
     const strokeDashoffset = circumference - (score / 100) * circumference;
+    const verdictText = VERDICT_TEXT[verdict] || VERDICT_TEXT.caution;
+
+    // Records sub-tabs and care-guide tabs: one ARIA tablist each. Arrow keys,
+    // Home and End call the same setter as a click (automatic activation).
+    const subTabs = [
+      {
+        id: "specimens",
+        label: casualModeActive ? "Fish listed" : "Certificates",
+        count: selectedBreedSpecs.length,
+        Icon: Certificate,
+      },
+      { id: "hatchery", label: "Spawning logs", Icon: Egg },
+      { id: "listings", label: "Listings", Icon: Storefront },
+    ];
+    const activeSubIndex = Math.max(0, subTabs.findIndex((t) => t.id === selectedSubTab));
+    const handleSubTabKeyDown = (e) => {
+      const next = nextTabIndex(e.key, activeSubIndex, subTabs.length);
+      if (next === null) return;
+      e.preventDefault();
+      setSelectedSubTab(subTabs[next].id);
+      e.currentTarget.querySelectorAll('[role="tab"]')[next]?.focus();
+    };
+    const guideTabs = [
+      { id: "care", label: "Care", Icon: BookOpenText },
+      { id: "diet", label: "Diet", Icon: ForkKnife },
+      { id: "breeding", label: "Breeding", Icon: Egg },
+      { id: "insights", label: casualModeActive ? "Tips" : "Insights", Icon: Lightbulb },
+    ];
+    const activeGuideIndex = Math.max(0, guideTabs.findIndex((t) => t.id === activeInfoTab));
+    const handleGuideTabKeyDown = (e) => {
+      const next = nextTabIndex(e.key, activeGuideIndex, guideTabs.length);
+      if (next === null) return;
+      e.preventDefault();
+      setActiveInfoTab(guideTabs[next].id);
+      e.currentTarget.querySelectorAll('[role="tab"]')[next]?.focus();
+    };
 
     return (
-      <div>
+      <div className="bgal bgal-detail">
         {/* Back and title header */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem", flexWrap: "wrap", gap: "1rem" }}>
-          <div>
-            <button onClick={() => setSelectedBreed(null)} className="btn-secondary" style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem" }}>
-              ← Back to Species List
-            </button>
-            <h2 style={{ fontSize: "1.75rem", fontWeight: "700", color: "var(--text-primary)", marginTop: "1rem", marginBottom: "0.25rem" }}>
-              {selectedBreed.commonName} Catalog
-            </h2>
-            <p style={{ fontSize: "0.875rem", color: "var(--text-muted)", fontStyle: "italic", margin: 0 }}>
-              {selectedBreed.scientificName}
-            </p>
+        <header className="bgal-detail-head">
+          <button type="button" onClick={() => setSelectedBreed(null)} className="bgal-btn bgal-back">
+            <ArrowLeft size={16} weight="bold" aria-hidden="true" />
+            Back to species
+          </button>
+          <div className="bgal-detail-title-row">
+            <div className="bgal-head-text">
+              <p className="bgal-kicker">Species</p>
+              <h2 className="bgal-title">{selectedBreed.commonName}</h2>
+              <p className="bgal-detail-sci">{selectedBreed.scientificName}</p>
+            </div>
             {selectedBreed.isGlobal && (
-              <button 
-                onClick={() => handleProposeBreed(selectedBreed)} 
-                className="btn-primary" 
-                style={{ 
-                  marginTop: "0.75rem", 
-                  padding: "0.4rem 1rem", 
-                  fontSize: "0.8rem",
-                  boxShadow: "0 0 10px var(--accent-blue-glow)"
-                }}
+              <button
+                type="button"
+                onClick={() => handleProposeBreed(selectedBreed)}
+                className="bgal-btn bgal-btn--primary"
               >
-                Propose Breed to Active Catalog
+                Suggest for the catalog
               </button>
             )}
           </div>
-          {/* Metadata details panel */}
-          <div className="glass-card" style={{ display: "flex", gap: "1.5rem", padding: "0.75rem 1.5rem" }}>
-            <div>
-              <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", display: "block", textTransform: "uppercase" }}>Care Level</span>
-              <strong style={{ fontSize: "0.9rem", color: "var(--accent-blue)" }}>{CARE_LEVEL_STRINGS[selectedBreed.careLevel]}</strong>
-            </div>
-            <div>
-              <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", display: "block", textTransform: "uppercase" }}>Temperature</span>
-              <strong style={{ fontSize: "0.9rem", color: breedTempRange ? "var(--text-primary)" : "var(--text-muted)" }}>
-                {breedTempRange ? formatTemperatureRange(breedTempRange[0], breedTempRange[1], tempUnit, { dash: " - " }) : CARE_NOT_RECORDED}
-              </strong>
-            </div>
-            <div>
-              <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", display: "block", textTransform: "uppercase" }}>pH Range</span>
-              <strong style={{ fontSize: "0.9rem", color: breedPhRange ? "var(--text-primary)" : "var(--text-muted)" }}>{breedPhText}</strong>
-            </div>
-            <div>
-              <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", display: "block", textTransform: "uppercase" }}>Min Tank</span>
-              <strong style={{ fontSize: "0.9rem", color: minVol != null ? "var(--accent-amber)" : "var(--text-muted)" }}>
-                {minVol != null ? `${minVol} Gal` : "Not recorded"}
-              </strong>
-            </div>
-          </div>
-        </div>
+        </header>
 
-        {/* Species Hero Image Banner */}
+        {/* Key facts */}
+        <dl className="bgal-facts">
+          <div className="bgal-fact">
+            <dt className="bgal-fact-label">Care level</dt>
+            <dd className="bgal-fact-value">{CARE_LEVEL_STRINGS[selectedBreed.careLevel]}</dd>
+          </div>
+          <div className="bgal-fact">
+            <dt className="bgal-fact-label">Temperature</dt>
+            <dd className={`bgal-fact-value${breedTempRange ? "" : " bgal-fact-value--muted"}`}>
+              {breedTempRange ? formatTemperatureRange(breedTempRange[0], breedTempRange[1], tempUnit, { dash: " - " }) : CARE_NOT_RECORDED}
+            </dd>
+          </div>
+          <div className="bgal-fact">
+            <dt className="bgal-fact-label">pH</dt>
+            <dd className={`bgal-fact-value${breedPhRange ? "" : " bgal-fact-value--muted"}`}>{breedPhText}</dd>
+          </div>
+          <div className="bgal-fact">
+            <dt className="bgal-fact-label">Minimum tank</dt>
+            <dd className={`bgal-fact-value${minVol != null ? "" : " bgal-fact-value--muted"}`}>
+              {minVol != null ? `${minVol} gal` : "Not recorded"}
+            </dd>
+          </div>
+        </dl>
+
+        {/* Species photo with a caption strip below it */}
         {fullProfile.masterPhotoUrl && (
-          <div style={{
-            width: "100%",
-            height: "220px",
-            borderRadius: "var(--radius-md)",
-            overflow: "hidden",
-            marginBottom: "2rem",
-            position: "relative",
-            border: "1px solid rgba(var(--ink-rgb), 0.13)",
-          }}>
+          <figure className="bgal-hero">
             <img
+              className="bgal-hero-img"
               src={fullProfile.masterPhotoUrl}
               alt={selectedBreed.commonName}
-              style={{
-                width: "100%",
-                height: "100%",
-                objectFit: "cover",
-              }}
             />
-            <div style={{
-              position: "absolute",
-              bottom: 0,
-              left: 0,
-              right: 0,
-              height: "60%",
-              background: "linear-gradient(to top, rgba(10,15,30,0.95) 0%, transparent 100%)",
-            }} />
-            <div style={{
-              position: "absolute",
-              bottom: "1rem",
-              left: "1.5rem",
-              right: "1.5rem",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              flexWrap: "wrap",
-              gap: "0.75rem",
-            }}>
-              <span style={{
-                background: "rgba(255, 255, 255, 0.92)",
-                border: "1px solid rgba(56, 189, 248, 0.35)",
-                color: "var(--accent-blue)",
-                padding: "0.3rem 0.75rem",
-                borderRadius: "50px",
-                fontSize: "0.75rem",
-                fontWeight: "600",
-              }}>
-                🛡️ Verified Master Photo
-              </span>
-              <SpeciesPhotoCredit scientificName={selectedBreed.scientificName} style={{ textAlign: "right" }} />
-            </div>
-          </div>
+            <figcaption className="bgal-hero-caption">
+              <span className="bgal-hero-badge">Catalog photo</span>
+              <SpeciesPhotoCredit scientificName={selectedBreed.scientificName} style={{ color: "var(--text-muted)", textAlign: "right" }} />
+            </figcaption>
+          </figure>
         )}
 
-        {/* Dashboard layout */}
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "2rem", width: "100%", alignItems: "start" }}>
-          
-          {/* Left Column: Specimens or Spawning Timeline */}
-          <div style={{ flex: "1 1 600px", minWidth: "320px", order: 2 }}>
-            
-            {/* Sub-tab Selection */}
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem", flexWrap: "wrap", gap: "1rem" }}>
-              <div 
-                className="glass-card" 
-                style={{ 
-                  display: "flex", 
-                  gap: "0.25rem", 
-                  padding: "0.25rem", 
-                  borderRadius: "var(--radius-sm)",
-                  background: "rgba(var(--ink-rgb), 0.02)"
-                }}
+        {/* Care guide first in the DOM so focus order matches what you see,
+            then records (main) and the tank check (side). */}
+        <div className="bgal-detail-grid">
+
+          {/* Species care guide */}
+          <section className="bgal-guide" aria-labelledby="bgal-guide-title">
+            <h3 className="bgal-panel-title bgal-panel-title--icon" id="bgal-guide-title">
+              <BookOpenText size={20} aria-hidden="true" />
+              Care guide
+            </h3>
+
+            {/* Personality flavor intro; absent = silent (renders only when present for the active mode) */}
+            {personalityFlavorText && (
+              <p className="bgal-guide-intro">{personalityFlavorText}</p>
+            )}
+
+            <div
+              className="bgal-tabs"
+              role="tablist"
+              aria-label="Care guide sections"
+              onKeyDown={handleGuideTabKeyDown}
+            >
+              {guideTabs.map(({ id, label, Icon }, index) => {
+                const selected = activeInfoTab === id;
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    role="tab"
+                    id={`bgal-guide-tab-${id}`}
+                    aria-selected={selected}
+                    aria-controls="bgal-guide-panel"
+                    tabIndex={index === activeGuideIndex ? 0 : -1}
+                    className="bgal-tab"
+                    onClick={() => setActiveInfoTab(id)}
+                  >
+                    <Icon size={18} weight={selected ? "fill" : "regular"} aria-hidden="true" />
+                    <span>{label}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div
+              role="tabpanel"
+              id="bgal-guide-panel"
+              aria-labelledby={`bgal-guide-tab-${guideTabs[activeGuideIndex].id}`}
+              className="bgal-guide-panel"
+            >
+              {activeInfoTab === "care" && (
+                <div className="bgal-guide-body">
+                  {biotopeText && (
+                    <div className="bgal-kv bgal-kv--block">
+                      <span className="bgal-kv-label">Natural habitat</span>
+                      <p className="bgal-kv-text">{biotopeText}</p>
+                    </div>
+                  )}
+
+                  <div className="bgal-kv-grid">
+                    <div className="bgal-kv bgal-kv--block">
+                      <span className="bgal-kv-label">Water hardness</span>
+                      {hardnessText ? (
+                        <span className="badge badge-blue">{hardnessText}</span>
+                      ) : (
+                        <span className="bgal-kv-missing">{CARE_NOT_RECORDED}</span>
+                      )}
+                    </div>
+                    <div className="bgal-kv bgal-kv--block">
+                      <span className="bgal-kv-label">Maximum temperature</span>
+                      {tempCeiling != null ? (
+                        <span className="badge badge-red">
+                          Up to {formatTemperature(tempCeiling, tempScale.scale, { precision: 0 })}
+                        </span>
+                      ) : (
+                        <span className="bgal-kv-missing">{CARE_NOT_RECORDED}</span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="bgal-kv bgal-kv--block">
+                    <span className="bgal-kv-label">pH range</span>
+                    {breedPhRange ? (
+                      <span className="badge badge-green">{breedPhText} pH</span>
+                    ) : (
+                      <span className="bgal-kv-missing">{CARE_NOT_RECORDED}</span>
+                    )}
+                  </div>
+
+                  {socialText && (
+                    <div className="bgal-callout">
+                      <strong className="bgal-callout-title">
+                        <Warning size={16} weight="fill" aria-hidden="true" />
+                        Temperament and tankmates
+                      </strong>
+                      <p className="bgal-callout-text">{socialText}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {activeInfoTab === "diet" && (
+                <div className="bgal-guide-body">
+                  <div className="bgal-kv">
+                    <span className="bgal-kv-label">Diet type</span>
+                    {realDietText(fullProfile.diet?.trophicLevel) ? (
+                      <span className={`badge ${
+                        isCarnivoreTrophic(fullProfile.diet.trophicLevel) ? "badge-red" :
+                        isHerbivoreTrophic(fullProfile.diet.trophicLevel) ? "badge-green" : "badge-blue"
+                      }`}>
+                        {realDietText(fullProfile.diet.trophicLevel)}
+                      </span>
+                    ) : (
+                      <span className="bgal-kv-missing">{DIET_NOT_RECORDED}</span>
+                    )}
+                  </div>
+
+                  {realDietText(fullProfile.diet?.fooditems) && (
+                    <div className="bgal-kv bgal-kv--block">
+                      <span className="bgal-kv-label">Wild diet</span>
+                      <p className="bgal-kv-text">{realDietText(fullProfile.diet.fooditems)}</p>
+                    </div>
+                  )}
+
+                  {realDietText(fullProfile.diet?.feedingPlaybook) && (
+                    <div className="bgal-callout bgal-callout--teal">
+                      <strong className="bgal-callout-title">How to feed</strong>
+                      <p className="bgal-callout-text">{realDietText(fullProfile.diet.feedingPlaybook)}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {activeInfoTab === "breeding" && (
+                <div className="bgal-guide-body">
+                  <div className="bgal-kv">
+                    <span className="bgal-kv-label">Spawning</span>
+                    {spawningText ? (
+                      <span className="badge badge-amber">{spawningText}</span>
+                    ) : (
+                      <span className="bgal-kv-missing">{CARE_NOT_RECORDED}</span>
+                    )}
+                  </div>
+
+                  {layoutText && (
+                    <div className="bgal-callout bgal-callout--green">
+                      <strong className="bgal-callout-title">Spawning setup</strong>
+                      <p className="bgal-callout-text">{layoutText}</p>
+                    </div>
+                  )}
+
+                  {reproNotesText && (
+                    <div className="bgal-kv bgal-kv--block">
+                      <span className="bgal-kv-label">Breeding notes</span>
+                      <p className="bgal-kv-text">{reproNotesText}</p>
+                    </div>
+                  )}
+
+                  {/* Sexing sits in the reproduction tab because that is the decision
+                      it serves: you cannot pair what you cannot sex. Shown even when
+                      undocumented here, because a breeder needs to know the gap is
+                      ours before planning around it. */}
+                  <SexingGuide record={fullProfile} casual={casualModeActive} />
+                </div>
+              )}
+
+              {activeInfoTab === "insights" && (
+                <SpeciesInsights
+                  specCode={selectedBreed.speciesId || fullProfile.specCode}
+                  speciesName={selectedBreed.commonName}
+                  casualModeActive={casualModeActive}
+                />
+              )}
+            </div>
+          </section>
+
+          {/* Main column: certificates, spawning logs, listings */}
+          <div className="bgal-main">
+
+            <div className="bgal-sub-bar">
+              <div
+                className="bgal-tabs"
+                role="tablist"
+                aria-label="Species records"
+                onKeyDown={handleSubTabKeyDown}
               >
-                <button 
-                  className={selectedSubTab === "specimens" ? "btn-primary" : "btn-secondary"} 
-                  onClick={() => setSelectedSubTab("specimens")}
-                  style={{ padding: "0.4rem 1rem", fontSize: "0.8rem", borderRadius: "6px" }}
-                >
-                  {casualModeActive ? `Fish Listed (${selectedBreedSpecs.length})` : `Registered Certificates (${selectedBreedSpecs.length})`}
-                </button>
-                <button 
-                  className={selectedSubTab === "hatchery" ? "btn-primary" : "btn-secondary"} 
-                  onClick={() => setSelectedSubTab("hatchery")}
-                  style={{ padding: "0.4rem 1rem", fontSize: "0.8rem", borderRadius: "6px" }}
-                >
-                  Hatchery Spawning Logs
-                </button>
-                <button 
-                  className={selectedSubTab === "listings" ? "btn-primary" : "btn-secondary"} 
-                  onClick={() => setSelectedSubTab("listings")}
-                  style={{ padding: "0.4rem 1rem", fontSize: "0.8rem", borderRadius: "6px" }}
-                >
-                  Active Listings
-                </button>
+                {subTabs.map(({ id, label, count, Icon }, index) => {
+                  const selected = selectedSubTab === id;
+                  return (
+                    <button
+                      key={id}
+                      type="button"
+                      role="tab"
+                      id={`bgal-sub-tab-${id}`}
+                      aria-selected={selected}
+                      aria-controls="bgal-sub-panel"
+                      tabIndex={index === activeSubIndex ? 0 : -1}
+                      className="bgal-tab"
+                      onClick={() => setSelectedSubTab(id)}
+                    >
+                      <Icon size={18} weight={selected ? "fill" : "regular"} aria-hidden="true" />
+                      <span>{label}</span>
+                      {count !== undefined && <span className="bgal-tab-count">{count}</span>}
+                    </button>
+                  );
+                })}
               </div>
 
               {selectedSubTab === "specimens" && walletAccount && (
-                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                  <span style={{ fontSize: "0.8rem", color: "var(--text-secondary)" }}>Show My Fish Only:</span>
-                  <button 
-                    onClick={() => setShowMyFishOnly(!showMyFishOnly)}
-                    style={{
-                      padding: "0.35rem 0.75rem",
-                      fontSize: "0.75rem",
-                      borderRadius: "4px",
-                      background: showMyFishOnly ? "var(--accent-blue-glow)" : "rgba(var(--ink-rgb), 0.02)",
-                      border: showMyFishOnly ? "1px solid var(--accent-blue)" : "1px solid var(--glass-border)",
-                      color: showMyFishOnly ? "var(--accent-blue)" : "var(--text-secondary)",
-                      cursor: "pointer",
-                      transition: "all 0.2s"
-                    }}
-                  >
-                    {showMyFishOnly ? "Active" : "Inactive"}
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  className="bgal-chip"
+                  aria-pressed={showMyFishOnly}
+                  onClick={() => setShowMyFishOnly(!showMyFishOnly)}
+                >
+                  {showMyFishOnly && <Check size={14} weight="bold" aria-hidden="true" />}
+                  Only my fish
+                </button>
               )}
             </div>
 
-            {selectedSubTab === "specimens" ? (
-              specsLoading ? (
-                <div className="glass-card" style={{ padding: "3rem", textAlign: "center" }}>
-                  <p style={{ color: "var(--text-muted)" }}>Loading registered certificates...</p>
-                </div>
-              ) : (selectedBreedSpecs.length === 0 || (showMyFishOnly && selectedBreedSpecs.filter(s => s.owner.toLowerCase() === walletAccount.toLowerCase()).length === 0)) ? (
-                <div className="glass-card" style={{ padding: "3rem", textAlign: "center" }}>
-                  <p style={{ color: "var(--text-muted)", margin: 0 }}>
-                    {showMyFishOnly ? "You do not own any certificates under this breed." : "No certificates registered under this breed yet."}
-                  </p>
-                </div>
-              ) : (
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "1.5rem" }}>
-                  {(showMyFishOnly && walletAccount
-                    ? selectedBreedSpecs.filter(s => s.owner.toLowerCase() === walletAccount.toLowerCase())
-                    : selectedBreedSpecs
-                  ).map((spec) => {
-                    const statusBadgeColors = [
-                      { text: "#047857", bg: "rgba(34, 197, 94, 0.1)", border: "rgba(34, 197, 94, 0.2)" }, // Active
-                      { text: "#b91c1c", bg: "rgba(239, 68, 68, 0.1)", border: "rgba(239, 68, 68, 0.2)" }, // Deceased
-                      { text: "#1d4ed8", bg: "rgba(59, 130, 246, 0.1)", border: "rgba(59, 130, 246, 0.2)" }  // Rehomed
-                    ];
-                    const badge = statusBadgeColors[spec.status] || statusBadgeColors[0];
-                    const birthDate = spec.birthTimestamp > 0 
-                      ? new Date(spec.birthTimestamp * 1000).toLocaleDateString()
-                      : "Wild-Caught / Unknown";
+            <div
+              role="tabpanel"
+              id="bgal-sub-panel"
+              aria-labelledby={`bgal-sub-tab-${subTabs[activeSubIndex].id}`}
+            >
+              {selectedSubTab === "specimens" ? (
+                specsLoading ? (
+                  <div className="bgal-state" role="status">
+                    <p className="bgal-state-text">Loading certificates…</p>
+                  </div>
+                ) : (selectedBreedSpecs.length === 0 || (showMyFishOnly && selectedBreedSpecs.filter(s => s.owner.toLowerCase() === walletAccount.toLowerCase()).length === 0)) ? (
+                  <div className="bgal-state">
+                    <p className="bgal-state-text">
+                      {showMyFishOnly ? "You don't own any certificates for this species." : "No certificates registered for this species yet."}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="bgal-cert-grid">
+                    {(showMyFishOnly && walletAccount
+                      ? selectedBreedSpecs.filter(s => s.owner.toLowerCase() === walletAccount.toLowerCase())
+                      : selectedBreedSpecs
+                    ).map((spec) => {
+                      // Same colour per status index as before (unknown falls back to Active's).
+                      const statusClass = ["active", "deceased", "rehomed"][spec.status] || "active";
+                      const birthDate = spec.birthTimestamp > 0
+                        ? new Date(spec.birthTimestamp * 1000).toLocaleDateString()
+                        : "Not recorded";
 
-                    const customPhoto = specimenPhotos[spec.specimenId] || null;
-                    const specBreedData = fishbaseData.find(
-                      (item) => item.scientificName.toLowerCase() === selectedBreed.scientificName.toLowerCase()
-                    );
-                    const masterPhotoUrl = specBreedData?.masterPhotoUrl || "";
-                    const finalImgSrc = customPhoto || masterPhotoUrl;
+                      const customPhoto = specimenPhotos[spec.specimenId] || null;
+                      const specBreedData = fishbaseData.find(
+                        (item) => item.scientificName.toLowerCase() === selectedBreed.scientificName.toLowerCase()
+                      );
+                      const masterPhotoUrl = specBreedData?.masterPhotoUrl || "";
+                      const finalImgSrc = customPhoto || masterPhotoUrl;
 
-                    return (
-                      <div 
-                        key={spec.specimenId} 
-                        className="glass-card" 
-                        onClick={() => onSelectSpecimen && onSelectSpecimen(spec.specimenId)}
-                        style={{ padding: "1.5rem", position: "relative", cursor: "pointer" }}
-                      >
-                        {/* Photo / Fallback SVG Area */}
-                        {(() => {
-                          const isPlant = isPlantEntry(specBreedData || {});
-                          const badgeLabel = isPlant ? "🌿 Certified Master Flora" : "🛡️ Breeder-Verified Master Stock";
-                          const badgeBg = isPlant
-                            ? "rgba(236, 253, 245, 0.92)"
-                            : "rgba(240, 249, 255, 0.92)";
-                          const badgeBorder = isPlant
-                            ? "rgba(16, 185, 129, 0.45)"
-                            : "rgba(56, 189, 248, 0.35)";
-                          const badgeColor = isPlant ? "var(--accent-green)" : "var(--accent-blue)";
-                          const fallbackSvg = isPlant ? (
-                            <PlantSilhouetteSVG
-                              specCode={specBreedData?.specCode || 9001}
-                              style={{ width: "100px", height: "100px" }}
-                            />
-                          ) : (
-                            <FishSilhouetteSVG 
-                              specimenId={spec.specimenId} 
-                              style={{ width: "120px", height: "120px" }} 
-                            />
-                          );
-                          return (
-                            <div style={{ 
-                               height: "12rem", 
-                               width: "100%",
-                               borderRadius: "0.75rem", 
-                               background: "linear-gradient(135deg, rgba(var(--ink-rgb), 0.03) 0%, rgba(var(--ink-rgb), 0.02) 100%)", 
-                               backdropFilter: "blur(12px)",
-                               boxShadow: "inset 0 1px 1px rgba(255, 255, 255, 0.05), 0 4px 15px rgba(var(--ink-rgb), 0.04)",
-                               marginBottom: "1rem",
-                               position: "relative",
-                               overflow: "hidden",
-                               border: "1px solid rgba(var(--ink-rgb), 0.13)",
-                               display: "flex",
-                               alignItems: "center",
-                               justifyContent: "center"
-                             }}>
-                              <LazyImage
-                                src={finalImgSrc}
-                                alt={`Specimen ${spec.specimenId}`}
-                                style={{ width: "100%", height: "100%" }}
-                                fallbackSvg={fallbackSvg}
+                      return (
+                        <div
+                          key={spec.specimenId}
+                          className="bgal-cert"
+                          onClick={() => onSelectSpecimen && onSelectSpecimen(spec.specimenId)}
+                        >
+                          {/* Photo / Fallback SVG Area */}
+                          {(() => {
+                            const isPlant = isPlantEntry(specBreedData || {});
+                            const fallbackSvg = isPlant ? (
+                              <PlantSilhouetteSVG
+                                specCode={specBreedData?.specCode || 9001}
+                                style={{ width: "100px", height: "100px" }}
                               />
-
-                              {/* Glassmorphic Verified Master Badge */}
-                              {masterPhotoUrl && (
-                                <span style={{
-                                  position: "absolute",
-                                  bottom: "0.6rem",
-                                  left: "50%",
-                                  transform: "translateX(-50%)",
-                                  fontSize: "0.6rem",
-                                  fontWeight: "700",
-                                  padding: "0.22rem 0.65rem",
-                                  borderRadius: "20px",
-                                  whiteSpace: "nowrap",
-                                  color: badgeColor,
-                                  background: badgeBg,
-                                  border: `1px solid ${badgeBorder}`,
-                                  backdropFilter: "blur(8px)",
-                                  letterSpacing: "0.03em",
-                                  zIndex: 2
-                                }}>
-                                  {badgeLabel}
-                                </span>
-                              )}
-
-                              <span style={{ 
-                                position: "absolute", 
-                                top: "0.75rem", 
-                                right: "0.75rem", 
-                                fontSize: "0.65rem",
-                                fontWeight: "700",
-                                padding: "0.25rem 0.5rem",
-                                borderRadius: "4px",
-                                color: badge.text,
-                                background: badge.bg,
-                                border: `1px solid ${badge.border}`,
-                                zIndex: 2
-                              }}>
-                                {spec.status === 0 ? "Active" : spec.status === 1 ? "Deceased" : "Rehomed"}
-                              </span>
-                            </div>
-                          );
-                        })()}
-
-                        <h3 style={{ fontSize: "1.1rem", fontWeight: "700", color: "var(--text-primary)", marginBottom: "0.75rem", marginTop: 0 }}>
-                          {casualModeActive ? selectedBreed.commonName : `Cert. Serial No. ${spec.specimenId.toString().padStart(3, "0")}`}
-                        </h3>
-
-                        {editingTagId === spec.specimenId ? (
-                          <div style={{ marginBottom: "0.75rem", marginTop: "-0.5rem", display: "flex", gap: "0.35rem", alignItems: "center" }}
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <input
-                              type="text"
-                              value={editingTagValue}
-                              onChange={(e) => setEditingTagValue(e.target.value.slice(0, 16))}
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter") handleTagEditSave(e, spec);
-                                if (e.key === "Escape") handleTagEditCancel(e);
-                              }}
-                              autoFocus
-                              maxLength={16}
-                              placeholder="e.g. esgIV"
-                              style={{
-                                fontSize: "0.7rem",
-                                fontFamily: "monospace",
-                                padding: "0.2rem 0.5rem",
-                                borderRadius: "4px",
-                                background: "rgba(168, 85, 247, 0.08)",
-                                border: "1px solid rgba(168, 85, 247, 0.5)",
-                                color: "var(--accent-violet)",
-                                outline: "none",
-                                width: "100px"
-                              }}
-                            />
-                            <button
-                              onClick={(e) => handleTagEditSave(e, spec)}
-                              style={{
-                                fontSize: "0.6rem",
-                                padding: "0.15rem 0.4rem",
-                                borderRadius: "3px",
-                                background: "rgba(52, 211, 153, 0.15)",
-                                border: "1px solid rgba(52, 211, 153, 0.4)",
-                                color: "var(--accent-green)",
-                                cursor: "pointer"
-                              }}
-                            >Save</button>
-                            <button
-                              onClick={(e) => handleTagEditCancel(e)}
-                              style={{
-                                fontSize: "0.6rem",
-                                padding: "0.15rem 0.4rem",
-                                borderRadius: "3px",
-                                background: "rgba(248, 113, 113, 0.1)",
-                                border: "1px solid rgba(248, 113, 113, 0.3)",
-                                color: "var(--accent-red)",
-                                cursor: "pointer"
-                              }}
-                            >Cancel</button>
-                          </div>
-                        ) : (
-                          <div style={{ marginBottom: "0.75rem", marginTop: "-0.5rem", display: "flex", alignItems: "center", gap: "0.35rem" }}>
-                            {spec.breederStockTag ? (
-                              <span
-                                onClick={(e) => handleTagEditStart(e, spec)}
-                                title="Click to edit stock tag"
-                                style={{
-                                  fontSize: "0.7rem",
-                                  fontWeight: "700",
-                                  padding: "0.2rem 0.6rem",
-                                  borderRadius: "4px",
-                                  background: "rgba(168, 85, 247, 0.12)",
-                                  border: "1px solid rgba(168, 85, 247, 0.35)",
-                                  color: "var(--accent-violet)",
-                                  fontFamily: "monospace",
-                                  letterSpacing: "0.04em",
-                                  cursor: "pointer",
-                                  transition: "border-color 0.2s"
-                                }}
-                              >
-                                {spec.breederStockTag}
-                              </span>
                             ) : (
-                              <button
-                                onClick={(e) => handleTagEditStart(e, spec)}
-                                title="Add breeder stock tag"
-                                style={{
-                                  fontSize: "0.6rem",
-                                  padding: "0.15rem 0.5rem",
-                                  borderRadius: "4px",
-                                  background: "rgba(168, 85, 247, 0.06)",
-                                  border: "1px dashed rgba(168, 85, 247, 0.3)",
-                                  color: "rgba(192, 132, 252, 0.6)",
-                                  cursor: "pointer",
-                                  fontFamily: "monospace"
+                              <FishSilhouetteSVG
+                                specimenId={spec.specimenId}
+                                style={{ width: "120px", height: "120px" }}
+                              />
+                            );
+                            return (
+                              <div className="bgal-cert-media">
+                                <LazyImage
+                                  src={finalImgSrc}
+                                  alt={`Specimen ${spec.specimenId}`}
+                                  style={{ width: "100%", height: "100%" }}
+                                  fallbackSvg={fallbackSvg}
+                                />
+
+                                {/* Only when the picture really is the species photo, not this fish's own */}
+                                {!customPhoto && masterPhotoUrl && (
+                                  <span className="bgal-cert-photo-label">Species photo</span>
+                                )}
+
+                                <span className={`bgal-status bgal-status--${statusClass}`}>
+                                  {spec.status === 0 ? "Active" : spec.status === 1 ? "Deceased" : "Rehomed"}
+                                </span>
+                              </div>
+                            );
+                          })()}
+
+                          {/* The title is the card's keyboard target. It has no handler of
+                              its own; its click bubbles to the card's onClick. */}
+                          <h3 className="bgal-cert-title">
+                            <button type="button" className="bgal-cert-open">
+                              {casualModeActive ? selectedBreed.commonName : `Certificate No. ${spec.specimenId.toString().padStart(3, "0")}`}
+                            </button>
+                          </h3>
+
+                          {editingTagId === spec.specimenId ? (
+                            <div
+                              className="bgal-tag-edit"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <input
+                                type="text"
+                                className="bgal-tag-input"
+                                aria-label="Stock tag"
+                                value={editingTagValue}
+                                onChange={(e) => setEditingTagValue(e.target.value.slice(0, 16))}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") handleTagEditSave(e, spec);
+                                  if (e.key === "Escape") handleTagEditCancel(e);
                                 }}
-                              >+ Tag</button>
+                                autoFocus
+                                maxLength={16}
+                                placeholder="e.g. esgIV"
+                              />
+                              <button
+                                type="button"
+                                className="bgal-btn bgal-btn--primary"
+                                onClick={(e) => handleTagEditSave(e, spec)}
+                              >Save</button>
+                              <button
+                                type="button"
+                                className="bgal-btn"
+                                onClick={(e) => handleTagEditCancel(e)}
+                              >Cancel</button>
+                            </div>
+                          ) : (
+                            <div className="bgal-tag-row">
+                              {spec.breederStockTag ? (
+                                <button
+                                  type="button"
+                                  className="bgal-tag"
+                                  aria-label={`Edit stock tag ${spec.breederStockTag}`}
+                                  title="Edit stock tag"
+                                  onClick={(e) => handleTagEditStart(e, spec)}
+                                >
+                                  {spec.breederStockTag}
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  className="bgal-tag-add"
+                                  title="Add breeder stock tag"
+                                  onClick={(e) => handleTagEditStart(e, spec)}
+                                >
+                                  <Tag size={14} aria-hidden="true" />
+                                  Add tag
+                                </button>
+                              )}
+                            </div>
+                          )}
+
+                          <dl className="bgal-cert-facts">
+                            {proMode && (
+                              <div className="bgal-cert-fact">
+                                <dt>Owner</dt>
+                                <dd className="bgal-mono">
+                                  {spec.owner ? `${spec.owner.substring(0, 6)}...${spec.owner.substring(38)}` : "None"}
+                                </dd>
+                              </div>
+                            )}
+                            {proMode && (
+                              <div className="bgal-cert-fact">
+                                <dt>Breeder</dt>
+                                <dd className="bgal-mono">
+                                  {spec.breeder && spec.breeder !== ZeroAddress
+                                    ? `${spec.breeder.substring(0, 6)}...${spec.breeder.substring(38)}`
+                                    : "Wild-caught"}
+                                </dd>
+                              </div>
+                            )}
+                            <div className="bgal-cert-fact">
+                              <dt>{casualModeActive ? "Date added" : "Hatched"}</dt>
+                              <dd>{birthDate}</dd>
+                            </div>
+                          </dl>
+                          {casualModeActive && (
+                            <div className="bgal-cert-pills">
+                              <span className="bgal-mini-pill">Registered</span>
+                              {spec.status === 0 && (
+                                <span className="bgal-mini-pill">Tank-bred</span>
+                              )}
+                            </div>
+                          )}
+
+                          <div className="bgal-cert-actions">
+                            {proMode && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onViewLineage(spec.specimenId);
+                                }}
+                                className="bgal-btn bgal-btn--primary"
+                              >
+                                <TreeStructure size={16} aria-hidden="true" />
+                                View family tree
+                              </button>
+                            )}
+                            {casualModeActive && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onSelectSpecimen && onSelectSpecimen(spec.specimenId);
+                                }}
+                                className="bgal-btn"
+                              >
+                                View details
+                              </button>
                             )}
                           </div>
-                        )}
-
-                        <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "1.25rem" }}>
-                          {proMode && (
-                            <div style={{ display: "flex", justifyContent: "space-between" }}>
-                              <span>Owner</span>
-                              <strong style={{ fontFamily: "monospace", color: "var(--text-primary)" }}>
-                                {spec.owner ? `${spec.owner.substring(0, 6)}...${spec.owner.substring(38)}` : "None"}
-                              </strong>
-                            </div>
-                          )}
-                          {proMode && (
-                            <div style={{ display: "flex", justifyContent: "space-between" }}>
-                              <span>Breeder</span>
-                              <strong style={{ fontFamily: "monospace", color: "var(--text-primary)" }}>
-                                {spec.breeder && spec.breeder !== ZeroAddress 
-                                  ? `${spec.breeder.substring(0, 6)}...${spec.breeder.substring(38)}` 
-                                  : "Wild-Caught"}
-                              </strong>
-                            </div>
-                          )}
-                          <div style={{ display: "flex", justifyContent: "space-between" }}>
-                            <span>{casualModeActive ? "Date Added" : "Birth/Hatch Date"}</span>
-                            <strong style={{ color: "var(--text-primary)" }}>{birthDate}</strong>
-                          </div>
-                          {casualModeActive && (
-                            <div style={{ display: "flex", gap: "0.35rem", flexWrap: "wrap", marginTop: "0.25rem" }}>
-                              <span style={{
-                                fontSize: "0.6rem",
-                                padding: "0.2rem 0.5rem",
-                                borderRadius: "20px",
-                                background: "rgba(34, 197, 94, 0.12)",
-                                border: "1px solid rgba(34, 197, 94, 0.3)",
-                                color: "var(--accent-green)",
-                                fontWeight: "700"
-                              }}>✅ Registry Verified</span>
-                              {spec.status === 0 && (
-                                <span style={{
-                                  fontSize: "0.6rem",
-                                  padding: "0.2rem 0.5rem",
-                                  borderRadius: "20px",
-                                  background: "rgba(56, 189, 248, 0.12)",
-                                  border: "1px solid rgba(56, 189, 248, 0.3)",
-                                  color: "var(--accent-blue)",
-                                  fontWeight: "700"
-                                }}>🐠 Tank-Bred Premium Stock</span>
-                              )}
-                            </div>
-                          )}
                         </div>
-
-                        <div style={{ display: "flex", gap: "0.5rem" }}>
-                          {proMode && (
-                            <button 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onViewLineage(spec.specimenId);
-                              }}
-                              className="btn-primary" 
-                              style={{ flex: 1, padding: "0.5rem", fontSize: "0.75rem", textAlign: "center", zIndex: 10 }}
-                            >
-                              Trace Ancestry Family Tree
-                            </button>
-                          )}
-                          {casualModeActive && (
-                            <button 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onSelectSpecimen && onSelectSpecimen(spec.specimenId);
-                              }}
-                              className="btn-primary" 
-                              style={{ flex: 1, padding: "0.5rem", fontSize: "0.75rem", textAlign: "center", zIndex: 10, background: "linear-gradient(135deg, rgba(14,165,233,0.3), rgba(56,189,248,0.2))", border: "1px solid rgba(56,189,248,0.4)" }}
-                            >
-                              🐠 View Details
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )
-            ) : selectedSubTab === "hatchery" ? (
-              <div className="glass-card" style={{ padding: "1.5rem 2rem", background: "rgba(var(--ink-rgb), 0.02)", border: "1px solid rgba(var(--ink-rgb), 0.09)" }}>
-                <h3 style={{ fontSize: "1.15rem", fontWeight: "600", color: "var(--text-primary)", marginBottom: "1.5rem", fontFamily: "'Outfit', sans-serif" }}>
-                  Hatchery Insights & Spawning Records
-                </h3>
-                <HatcheryLogs 
-                  specCode={selectedBreed.speciesId} 
-                  contractInstance={contractInstance} 
-                  marketplaceAddress={marketplaceAddress} 
-                  walletAccount={walletAccount} 
-                  onCheckoutSuccessRedirect={onCheckoutSuccessRedirect}
-                />
-              </div>
-            ) : (
-              <div className="glass-card" style={{ padding: "1.5rem 2rem", background: "rgba(var(--ink-rgb), 0.02)", border: "1px solid rgba(var(--ink-rgb), 0.09)" }}>
-                <h3 style={{ fontSize: "1.15rem", fontWeight: "600", color: "var(--text-primary)", marginBottom: "1.5rem", fontFamily: "'Outfit', sans-serif" }}>
-                  Active Marketplace Listings
-                </h3>
-                <MarketplaceBoard 
-                  contractAddress={contractAddress}
-                  marketplaceAddress={marketplaceAddress}
-                  walletAccount={walletAccount}
-                  filterSpeciesId={selectedBreed.speciesId}
-                  onLineageSelect={onViewLineage}
-                  onSelectCheckoutOrder={onSelectCheckoutOrder}
-                  displayTank={displayTank}
-                  setDisplayTank={setDisplayTank}
-                  casualModeActive={true}
-                />
-              </div>
-            )}
-
+                      );
+                    })}
+                  </div>
+                )
+              ) : selectedSubTab === "hatchery" ? (
+                <section className="bgal-panel" aria-labelledby="bgal-hatchery-title">
+                  <h3 className="bgal-panel-title" id="bgal-hatchery-title">Spawning records</h3>
+                  <HatcheryLogs
+                    specCode={selectedBreed.speciesId}
+                    contractInstance={contractInstance}
+                    marketplaceAddress={marketplaceAddress}
+                    walletAccount={walletAccount}
+                    onCheckoutSuccessRedirect={onCheckoutSuccessRedirect}
+                  />
+                </section>
+              ) : (
+                <section className="bgal-panel" aria-labelledby="bgal-listings-title">
+                  <h3 className="bgal-panel-title" id="bgal-listings-title">Listings for this species</h3>
+                  <MarketplaceBoard
+                    contractAddress={contractAddress}
+                    marketplaceAddress={marketplaceAddress}
+                    walletAccount={walletAccount}
+                    filterSpeciesId={selectedBreed.speciesId}
+                    onLineageSelect={onViewLineage}
+                    onSelectCheckoutOrder={onSelectCheckoutOrder}
+                    displayTank={displayTank}
+                    setDisplayTank={setDisplayTank}
+                    casualModeActive={true}
+                  />
+                </section>
+              )}
+            </div>
           </div>
 
-          {/* Right Column: Simulate My Tank Widget */}
-          <div style={{ width: "340px", flexShrink: 0, display: "flex", flexDirection: "column", gap: "1.5rem", order: 3 }}>
-            
-            {/* Simulator Main Card */}
-            <div 
-              className="glass-card" 
-              style={{ 
-                padding: "1.5rem", 
-                background: "rgba(var(--ink-rgb), 0.02)",
-                border: "1px solid rgba(var(--ink-rgb), 0.1)",
-                display: "flex",
-                flexDirection: "column",
-                gap: "1.25rem"
-              }}
-            >
-              <h3 style={{ fontSize: "1.2rem", fontWeight: "700", color: "var(--text-primary)", margin: 0, display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                <span>🎮</span> {casualModeActive ? "Tank Match" : "Simulate My Tank"}
-              </h3>
+          {/* Side column: check your tank, parameter check, tankmates */}
+          <aside className="bgal-side" aria-label="Tank check">
 
-              {/* Match Score Display Panel */}
-              <div 
-                style={{ 
-                  display: "flex", 
-                  alignItems: "center", 
-                  gap: "1rem", 
-                  padding: "1rem", 
-                  background: "var(--bg-band)", 
-                  borderRadius: "var(--radius-sm)",
-                  border: `1px solid ${color}30`
-                }}
-              >
-                {/* Circular Gauge */}
-                <div style={{ position: "relative", width: "80px", height: "80px", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                  <svg width="80" height="80" viewBox="0 0 100 100" style={{ transform: "rotate(-90deg)", position: "absolute", top: 0, left: 0 }}>
-                    <circle 
-                      cx="50" 
-                      cy="50" 
-                      r={radius} 
-                      fill="none" 
-                      stroke="rgba(11,37,48,0.09)" 
-                      strokeWidth={strokeWidth} 
+            <section className="bgal-sim" aria-labelledby="bgal-sim-title">
+              <h3 className="bgal-panel-title bgal-panel-title--icon" id="bgal-sim-title">
+                <Sliders size={18} aria-hidden="true" />
+                {casualModeActive ? "Tank match" : "Check your tank"}
+              </h3>
+              <p className="bgal-panel-lead">Set your tank's size, pH and temperature to see how this species fits.</p>
+
+              {/* Match score */}
+              <div className="bgal-sim-score">
+                {/* Circular gauge: the ring keeps the verdict hue, the number uses the text-safe one */}
+                <div className="bgal-ring">
+                  <svg width="80" height="80" viewBox="0 0 100 100" className="bgal-ring-svg" aria-hidden="true">
+                    <circle
+                      cx="50"
+                      cy="50"
+                      r={radius}
+                      fill="none"
+                      stroke="rgba(11,37,48,0.09)"
+                      strokeWidth={strokeWidth}
                     />
-                    <circle 
-                      cx="50" 
-                      cy="50" 
-                      r={radius} 
-                      fill="none" 
-                      stroke={color} 
-                      strokeWidth={strokeWidth} 
+                    <circle
+                      cx="50"
+                      cy="50"
+                      r={radius}
+                      fill="none"
+                      stroke={color}
+                      strokeWidth={strokeWidth}
                       strokeDasharray={circumference}
                       strokeDashoffset={strokeDashoffset}
                       strokeLinecap="round"
-                      style={{ transition: "stroke-dashoffset 0.3s ease, stroke 0.3s ease" }}
+                      className="bgal-ring-bar"
                     />
                   </svg>
-                  <div style={{ fontSize: "1.1rem", fontWeight: "700", color: color, textShadow: `0 0 6px ${color}30` }}>
+                  <span className="bgal-ring-value" style={{ color: verdictText }}>
                     {score}%
-                  </div>
+                  </span>
                 </div>
 
-                <div>
-                  <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", display: "block", textTransform: "uppercase", fontWeight: "600" }}>
-                    {casualModeActive ? "Tank Compatibility" : "Compatibility Score"}
+                <div className="bgal-sim-verdict-wrap">
+                  <span className="bgal-sim-verdict-label">
+                    {casualModeActive ? "Tank fit" : "Fit score"}
                   </span>
-                  <strong style={{ fontSize: "1rem", color: color, display: "block", marginTop: "0.15rem", transition: "color 0.3s ease" }}>
+                  <strong className="bgal-sim-verdict" style={{ color: verdictText }}>
                     {verdict === "ok"
-                      ? (casualModeActive ? (score === 100 ? "✅ 100% Compatibility Match" : "👍 Good for your tank!") : "Good Match")
+                      ? (casualModeActive ? (score === 100 ? "Perfect fit for your tank" : "Good for your tank") : "Good fit")
                       : verdict === "blocked"
-                        ? (casualModeActive ? "🚫 Not a safe fit" : "Warning")
-                        : (casualModeActive ? "⚠️ Proceed with caution" : "Caution")}
+                        ? (casualModeActive ? "Not a safe fit" : "Not a fit")
+                        : (casualModeActive ? "Check before you buy" : "Caution")}
                   </strong>
                   {casualModeActive && verdict === "ok" && score === 100 && (
-                    <span style={{ display: "inline-block", marginTop: "0.4rem", fontSize: "0.6rem", padding: "0.2rem 0.6rem", borderRadius: "20px", background: "rgba(34,197,94,0.15)", border: "1px solid rgba(34,197,94,0.4)", color: "var(--accent-green)", fontWeight: "700", letterSpacing: "0.03em" }}>
-                      [ Perfect Aquarium Fit ]
-                    </span>
+                    <span className="bgal-mini-pill">Perfect fit</span>
                   )}
                 </div>
               </div>
 
               {/* Feedback description */}
-              <p style={{ fontSize: "0.75rem", color: "var(--text-secondary)", margin: 0, lineHeight: "1.4" }}>
-                {text}
-              </p>
+              <p className="bgal-sim-headline">{text}</p>
 
               {/* Honest per-parameter reasons from the canonical fit engine
-                  (why the verdict is what it is — e.g. an unknown minimum tank
+                  (why the verdict is what it is, e.g. an unknown minimum tank
                   size, or which water parameter is off). Fish Finder T2. */}
               {Array.isArray(reasons) && reasons.length > 0 && (
-                <ul style={{ margin: "0.5rem 0 0", padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: "0.3rem" }}>
+                <ul className="bgal-reasons">
                   {reasons.map((reason, i) => (
-                    <li key={i} style={{ fontSize: "0.7rem", color: "var(--text-muted)", lineHeight: "1.35", display: "flex", gap: "0.4rem" }}>
-                      <span aria-hidden="true" style={{ color, flexShrink: 0 }}>{verdict === "ok" ? "✓" : "•"}</span>
+                    <li key={i}>
+                      <span aria-hidden="true" className="bgal-reasons-mark" style={{ color: verdictText }}>
+                        {verdict === "ok" ? <Check size={12} weight="bold" /> : "•"}
+                      </span>
                       <span>{reason}</span>
                     </li>
                   ))}
                 </ul>
               )}
 
-              {/* Sliders Container */}
-              <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem", borderTop: "1px solid rgba(var(--ink-rgb), 0.1)", paddingTop: "1.25rem" }}>
-                
-                {/* Tank Size Slider */}
-                <div>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.75rem", marginBottom: "0.4rem" }}>
-                    <span style={{ color: "var(--text-secondary)" }}>Tank Size</span>
-                    <strong style={{ color: "var(--text-primary)" }}>{simVolume} Gal</strong>
+              {/* Sliders */}
+              <div className="bgal-sliders">
+                <div className="bgal-slider">
+                  <div className="bgal-slider-head">
+                    <label htmlFor="bgal-sim-volume">Tank size</label>
+                    <output htmlFor="bgal-sim-volume">{simVolume} gal</output>
                   </div>
-                  <input 
-                    type="range" 
-                    min="5" 
-                    max="300" 
+                  <input
+                    type="range"
+                    id="bgal-sim-volume"
+                    className="bgal-range"
+                    min="5"
+                    max="300"
                     step="5"
-                    value={simVolume} 
+                    value={simVolume}
                     onChange={(e) => setSimVolume(Number(e.target.value))}
-                    className="premium-slider"
+                    aria-valuetext={`${simVolume} gallons`}
                   />
-                  <div style={{ fontSize: "0.65rem", color: "var(--text-muted)", marginTop: "0.25rem", display: "flex", justifyContent: "space-between" }}>
+                  <div className="bgal-slider-scale">
                     <span>5 gal</span>
-                    {minVol != null && <span>Min ideal: {minVol} gal</span>}
+                    {minVol != null && <span>Minimum: {minVol} gal</span>}
                     <span>300 gal</span>
                   </div>
                 </div>
 
-                {/* pH Slider */}
-                <div>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.75rem", marginBottom: "0.4rem" }}>
-                    <span style={{ color: "var(--text-secondary)" }}>Water pH</span>
-                    <strong style={{ color: "var(--text-primary)" }}>{simPh}</strong>
+                <div className="bgal-slider">
+                  <div className="bgal-slider-head">
+                    <label htmlFor="bgal-sim-ph">Water pH</label>
+                    <output htmlFor="bgal-sim-ph">{simPh}</output>
                   </div>
-                  <input 
-                    type="range" 
-                    min="4.0" 
-                    max="10.0" 
+                  <input
+                    type="range"
+                    id="bgal-sim-ph"
+                    className="bgal-range"
+                    min="4.0"
+                    max="10.0"
                     step="0.1"
-                    value={simPh} 
+                    value={simPh}
                     onChange={(e) => setSimPh(Number(e.target.value))}
-                    className="premium-slider"
+                    aria-valuetext={`pH ${simPh}`}
                   />
-                  <div style={{ fontSize: "0.65rem", color: "var(--text-muted)", marginTop: "0.25rem", display: "flex", justifyContent: "space-between" }}>
-                    <span>4.0 pH</span>
-                    <span>Ideal: {breedPhText}</span>
-                    <span>10.0 pH</span>
+                  <div className="bgal-slider-scale">
+                    <span>4.0</span>
+                    <span>Species range: {breedPhText}</span>
+                    <span>10.0</span>
                   </div>
                 </div>
 
-                {/* Temperature Slider */}
-                <div>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.75rem", marginBottom: "0.4rem" }}>
-                    <span style={{ color: "var(--text-secondary)" }}>Temperature</span>
-                    <strong style={{ color: "var(--text-primary)" }}>{tempScale.convert(simTemp).toFixed(1)} {tempScale.suffix}</strong>
+                <div className="bgal-slider">
+                  <div className="bgal-slider-head">
+                    <label htmlFor="bgal-sim-temp">Temperature</label>
+                    <output htmlFor="bgal-sim-temp">{tempScale.convert(simTemp).toFixed(1)} {tempScale.suffix}</output>
                   </div>
-                  <input 
-                    type="range" 
-                    min="15.0" 
-                    max="35.0" 
+                  <input
+                    type="range"
+                    id="bgal-sim-temp"
+                    className="bgal-range"
+                    min="15.0"
+                    max="35.0"
                     step="0.5"
-                    value={simTemp} 
+                    value={simTemp}
                     onChange={(e) => setSimTemp(Number(e.target.value))}
-                    className="premium-slider"
+                    aria-valuetext={`${tempScale.convert(simTemp).toFixed(1)} ${tempScale.suffix}`}
                   />
-                  <div style={{ fontSize: "0.65rem", color: "var(--text-muted)", marginTop: "0.25rem", display: "flex", justifyContent: "space-between" }}>
-                    {/* The slider's domain stays 15–35 °C; only these end labels
+                  <div className="bgal-slider-scale">
+                    {/* The slider's domain stays 15 to 35 °C; only these end labels
                         are converted, so the input value never changes meaning. */}
                     <span>{tempScale.convert(15).toFixed(1)} {tempScale.suffix}</span>
-                    <span>Ideal: {breedTempText}</span>
+                    <span>Species range: {breedTempText}</span>
                     <span>{tempScale.convert(35).toFixed(1)} {tempScale.suffix}</span>
                   </div>
                 </div>
-
               </div>
-            </div>
+            </section>
 
-            {/* Checklist telemetry card */}
-            <div 
-              className="glass-card" 
-              style={{ 
-                padding: "1.25rem", 
-                background: "rgba(var(--ink-rgb), 0.02)",
-                border: "1px solid rgba(var(--ink-rgb), 0.08)",
-                display: "flex",
-                flexDirection: "column",
-                gap: "0.75rem"
-              }}
-            >
-              <h4 style={{ fontSize: "0.85rem", fontWeight: "700", color: "var(--text-primary)", textTransform: "uppercase", letterSpacing: "0.05em", margin: 0 }}>
-                Parameter Check
-              </h4>
-              <ul style={{ listStyle: "none", fontSize: "0.75rem", display: "flex", flexDirection: "column", gap: "0.5rem", padding: 0, margin: 0 }}>
+            {/* Parameter check */}
+            <section className="bgal-checks" aria-labelledby="bgal-checks-title">
+              <h4 className="bgal-side-title" id="bgal-checks-title">Parameter check</h4>
+              <ul className="bgal-check-list">
                 {/* Volume check. With no recorded minimum we say so rather than
                     scoring against a fabricated default (Decision D3). */}
-                <li style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                  <span>{minVol == null ? "⚪" : (simVolume >= minVol ? "🟢" : "🔴")}</span>
-                  <span style={{ color: minVol != null && simVolume >= minVol ? "var(--text-primary)" : "var(--text-muted)" }}>
+                <li className={`bgal-check bgal-check--${volumeCheck}`}>
+                  {checkIcon(volumeCheck)}
+                  <span>
                     {minVol == null
                       ? "Minimum volume not recorded for this species"
-                      : (simVolume >= minVol ? `Volume is sufficient (>= ${minVol} gal)` : `Volume too low (need >= ${minVol} gal)`)}
+                      : (simVolume >= minVol ? `Tank is big enough (${minVol} gal minimum)` : `Tank is too small (needs ${minVol} gal)`)}
                   </span>
                 </li>
                 {/* pH and temperature: a species with no recorded range is
                     "not recorded", never a pass against a default. */}
-                <li style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                  <span>{checkIcon(phCheck)}</span>
-                  <span style={{ color: phCheck === "pass" ? "var(--text-primary)" : "var(--text-muted)" }}>
+                <li className={`bgal-check bgal-check--${phCheck}`}>
+                  {checkIcon(phCheck)}
+                  <span>
                     {phCheck === "unknown"
                       ? "pH range not recorded for this species"
                       : phCheck === "pass"
-                        ? `pH is within safe limits (${breedPhText})`
+                        ? `pH is in range (${breedPhText})`
                         : `pH is out of range (${breedPhText})`}
                   </span>
                 </li>
-                <li style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                  <span>{checkIcon(tempCheck)}</span>
-                  <span style={{ color: tempCheck === "pass" ? "var(--text-primary)" : "var(--text-muted)" }}>
+                <li className={`bgal-check bgal-check--${tempCheck}`}>
+                  {checkIcon(tempCheck)}
+                  <span>
                     {tempCheck === "unknown"
                       ? "Temperature range not recorded for this species"
                       : tempCheck === "pass"
-                        ? `Temp is within safe limits (${breedTempText})`
-                        : `Temp is out of range (${breedTempText})`}
+                        ? `Temperature is in range (${breedTempText})`
+                        : `Temperature is out of range (${breedTempText})`}
                   </span>
                 </li>
               </ul>
-            </div>
+            </section>
 
-            {/* Verified Safe Companions */}
-            <div 
-              className="glass-card" 
-              style={{ 
-                padding: "1.25rem", 
-                background: "rgba(var(--ink-rgb), 0.02)",
-                border: "1px solid rgba(var(--ink-rgb), 0.08)",
-                display: "flex",
-                flexDirection: "column",
-                gap: "0.75rem"
-              }}
-            >
-              <h4 style={{ fontSize: "0.85rem", fontWeight: "700", color: "var(--text-primary)", textTransform: "uppercase", letterSpacing: "0.05em", margin: 0 }}>
-                Verified Safe Companions
-              </h4>
+            {/* Tankmates that match */}
+            <section className="bgal-mates" aria-labelledby="bgal-mates-title">
+              <h4 className="bgal-side-title" id="bgal-mates-title">Tankmates that match</h4>
+              <p className="bgal-panel-lead">Species whose recorded pH and temperature ranges fit the settings above.</p>
               {(() => {
                 const companions = fishbaseData.filter((item) => {
                   if (item.scientificName.toLowerCase() === selectedBreed.scientificName.toLowerCase()) {
@@ -1545,8 +1599,8 @@ export function BreedGallery({
 
                 if (companions.length === 0) {
                   return (
-                    <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", margin: 0, fontStyle: "italic" }}>
-                      No compatible companions found.
+                    <p className="bgal-mates-empty">
+                      No species with recorded ranges match these settings.
                     </p>
                   );
                 }
@@ -1556,518 +1610,192 @@ export function BreedGallery({
                     focusable
                     role="group"
                     aria-label="Compatible tankmates"
-                    style={{
-                      display: "flex",
-                      gap: "0.75rem",
-                      overflowX: "auto",
-                      paddingBottom: "0.5rem",
-                      scrollbarWidth: "thin",
-                      scrollbarColor: "rgba(var(--ink-rgb), 0.15) transparent"
-                    }}
+                    className="bgal-mates-row"
                   >
                     {companions.map((comp) => (
-                      <div 
-                        key={comp.specCode} 
-                        style={{ 
-                          flex: "0 0 110px", 
-                          padding: "0.5rem", 
-                          background: isPlantEntry(comp)
-                            ? "rgba(16, 185, 129, 0.04)"
-                            : "rgba(var(--ink-rgb), 0.02)", 
-                          border: `1px solid ${isPlantEntry(comp) ? "rgba(16,185,129,0.15)" : "rgba(var(--ink-rgb), 0.1)"}`, 
-                          borderRadius: "6px",
-                          display: "flex",
-                          flexDirection: "column",
-                          alignItems: "center",
-                          textAlign: "center"
-                        }}
+                      <div
+                        key={comp.specCode}
+                        className={`bgal-mate${isPlantEntry(comp) ? " bgal-mate--plant" : ""}`}
                       >
-                        <div style={{ width: "40px", height: "30px", marginBottom: "0.25rem" }}>
+                        <div className="bgal-mate-art">
                           {isPlantEntry(comp) ? (
                             <PlantSilhouetteSVG specCode={comp.specCode} />
                           ) : (
                             <FishSilhouetteSVG specimenId={comp.specCode} />
                           )}
                         </div>
-                        <span style={{ fontSize: "0.7rem", fontWeight: "600", color: isPlantEntry(comp) ? "var(--accent-green)" : "var(--text-primary)", display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", width: "100%" }} title={comp.commonName}>
+                        <span className="bgal-mate-name" title={comp.commonName}>
                           {comp.commonName}
                         </span>
-                        <span style={{ fontSize: "0.55rem", color: "var(--text-muted)", fontStyle: "italic", display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", width: "100%" }} title={comp.scientificName}>
+                        <span className="bgal-mate-sci" title={comp.scientificName}>
                           {comp.scientificName}
                         </span>
-                        <span style={{ fontSize: "0.55rem", color: isPlantEntry(comp) ? "var(--accent-green)" : "var(--accent-blue)", marginTop: "0.15rem" }}>
-                          {isPlantEntry(comp) ? "🌿 Flora" : `pH ${comp.tankMetrics?.phRange?.[0]}-${comp.tankMetrics?.phRange?.[1]}`}
+                        <span className="bgal-mate-meta">
+                          {isPlantEntry(comp) ? "Plant" : `pH ${comp.tankMetrics?.phRange?.[0]}-${comp.tankMetrics?.phRange?.[1]}`}
                         </span>
                       </div>
                     ))}
                   </ScrollFade>
                 );
               })()}
-            </div>
+            </section>
 
-          </div>
-
-          {/* Species Care Guide — shown first via flex order */}
-          <div 
-            className="bg-white/[0.02] border border-white/[0.06] p-5 rounded-2xl glass-card"
-            style={{ 
-              flex: "1 1 100%", 
-              minWidth: "320px",
-              order: 1,
-              background: "rgba(var(--ink-rgb), 0.02)", 
-              border: "1px solid rgba(var(--ink-rgb), 0.11)", 
-              padding: "1.25rem", 
-              borderRadius: "1rem",
-              display: "flex",
-              flexDirection: "column",
-              gap: "1.25rem"
-            }}
-          >
-            <h3 style={{ fontSize: "1.2rem", fontWeight: "700", color: "var(--text-primary)", margin: 0, display: "flex", alignItems: "center", gap: "0.5rem" }}>
-              <span>📋</span> Species Care Guide
-            </h3>
-
-            {/* Personality flavor intro — absent = silent (renders only when present for the active mode) */}
-            {personalityFlavorText && (
-              <p
-                style={{
-                  margin: 0,
-                  paddingLeft: "0.85rem",
-                  borderLeft: "2px solid var(--accent-blue)",
-                  fontStyle: "italic",
-                  fontSize: "0.85rem",
-                  lineHeight: "1.5",
-                  color: "var(--text-secondary)"
-                }}
-              >
-                {personalityFlavorText}
-              </p>
-            )}
-
-            {/* Sub-tab Selection */}
-            <div className="species-detail__tabs">
-              <button 
-                className={`species-detail__tab${activeInfoTab === "care" ? " active" : ""}`}
-                onClick={() => setActiveInfoTab("care")}
-              >
-                Care Blueprint
-              </button>
-              <button 
-                className={`species-detail__tab${activeInfoTab === "diet" ? " active" : ""}`}
-                onClick={() => setActiveInfoTab("diet")}
-              >
-                Diet & Nutrition
-              </button>
-              <button 
-                className={`species-detail__tab${activeInfoTab === "breeding" ? " active" : ""}`}
-                onClick={() => setActiveInfoTab("breeding")}
-              >
-                Breeding Profile
-              </button>
-              <button 
-                className={`species-detail__tab${activeInfoTab === "insights" ? " active" : ""}`}
-                onClick={() => setActiveInfoTab("insights")}
-              >
-                {casualModeActive ? "💡 Tips" : "Insights"}
-              </button>
-            </div>
-
-            {/* Tab Contents */}
-            {activeInfoTab === "care" && (
-              <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
-                {biotopeText && (
-                  <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                    <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", textTransform: "uppercase", fontWeight: "600" }}>Biotope Origin</span>
-                    <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)", lineHeight: "1.4" }}>
-                      {biotopeText}
-                    </p>
-                  </div>
-                )}
-
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
-                  <div>
-                    <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", textTransform: "uppercase", fontWeight: "600", display: "block", marginBottom: "0.25rem" }}>Water Hardness</span>
-                    {hardnessText ? (
-                      <span className="badge badge-blue" style={{ fontSize: "0.8rem", padding: "0.35rem 0.75rem" }}>
-                        {hardnessText}
-                      </span>
-                    ) : (
-                      <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>{CARE_NOT_RECORDED}</span>
-                    )}
-                  </div>
-                  <div>
-                    <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", textTransform: "uppercase", fontWeight: "600", display: "block", marginBottom: "0.25rem" }}>Temp Ceiling</span>
-                    {tempCeiling != null ? (
-                      <span className="badge badge-red" style={{ fontSize: "0.8rem", padding: "0.35rem 0.75rem" }}>
-                        Up to {formatTemperature(tempCeiling, tempScale.scale, { precision: 0 })}
-                      </span>
-                    ) : (
-                      <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>{CARE_NOT_RECORDED}</span>
-                    )}
-                  </div>
-                </div>
-
-                <div>
-                  <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", textTransform: "uppercase", fontWeight: "600", display: "block", marginBottom: "0.25rem" }}>pH Envelope</span>
-                  {breedPhRange ? (
-                    <span className="badge badge-green" style={{ fontSize: "0.8rem", padding: "0.35rem 0.75rem" }}>
-                      {breedPhText} pH
-                    </span>
-                  ) : (
-                    <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>{CARE_NOT_RECORDED}</span>
-                  )}
-                </div>
-
-                {socialText && <div style={{ 
-                  padding: "1rem", 
-                  background: "var(--accent-amber-glow)", 
-                  border: "1px solid rgba(251, 191, 36, 0.2)", 
-                  borderRadius: "8px", 
-                  display: "flex", 
-                  flexDirection: "column", 
-                  gap: "0.25rem" 
-                }}>
-                  <strong style={{ fontSize: "0.75rem", color: "var(--accent-amber)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                    ⚠️ Social & Aggression Rules
-                  </strong>
-                  <p style={{ fontSize: "0.8rem", color: "var(--text-primary)", lineHeight: "1.4" }}>
-                    {socialText}
-                  </p>
-                </div>}
-              </div>
-            )}
-
-            {activeInfoTab === "diet" && (
-              <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", textTransform: "uppercase", fontWeight: "600" }}>Trophic Level</span>
-                  {realDietText(fullProfile.diet?.trophicLevel) ? (
-                    <span className={`badge ${
-                      isCarnivoreTrophic(fullProfile.diet.trophicLevel) ? "badge-red" :
-                      isHerbivoreTrophic(fullProfile.diet.trophicLevel) ? "badge-green" : "badge-blue"
-                    }`} style={{ fontSize: "0.8rem" }}>
-                      {realDietText(fullProfile.diet.trophicLevel)}
-                    </span>
-                  ) : (
-                    <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>{DIET_NOT_RECORDED}</span>
-                  )}
-                </div>
-
-                {realDietText(fullProfile.diet?.fooditems) && (
-                  <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                    <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", textTransform: "uppercase", fontWeight: "600" }}>Wild Food Items</span>
-                    <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)", lineHeight: "1.4" }}>
-                      {realDietText(fullProfile.diet.fooditems)}
-                    </p>
-                  </div>
-                )}
-
-                {realDietText(fullProfile.diet?.feedingPlaybook) && <div style={{ 
-                  padding: "1rem", 
-                  background: "var(--accent-blue-glow)", 
-                  border: "1px solid rgba(56, 189, 248, 0.2)", 
-                  borderRadius: "8px", 
-                  display: "flex", 
-                  flexDirection: "column", 
-                  gap: "0.25rem" 
-                }}>
-                  <strong style={{ fontSize: "0.75rem", color: "var(--accent-blue)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                    📋 Hobbyist Feeding Playbook
-                  </strong>
-                  <p style={{ fontSize: "0.8rem", color: "var(--text-primary)", lineHeight: "1.4" }}>
-                    {realDietText(fullProfile.diet.feedingPlaybook)}
-                  </p>
-                </div>}
-              </div>
-            )}
-
-            {activeInfoTab === "breeding" && (
-              <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", textTransform: "uppercase", fontWeight: "600" }}>Spawning Trait</span>
-                  {spawningText ? (
-                    <span className="badge badge-amber" style={{ fontSize: "0.8rem" }}>
-                      {spawningText}
-                    </span>
-                  ) : (
-                    <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>{CARE_NOT_RECORDED}</span>
-                  )}
-                </div>
-
-                {layoutText && <div style={{ 
-                  padding: "1rem", 
-                  background: "var(--accent-green-glow)", 
-                  border: "1px solid rgba(52, 211, 153, 0.2)", 
-                  borderRadius: "8px", 
-                  display: "flex", 
-                  flexDirection: "column", 
-                  gap: "0.25rem" 
-                }}>
-                  <strong style={{ fontSize: "0.75rem", color: "var(--accent-green)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                    🌿 Tank Decoration Requirements
-                  </strong>
-                  <p style={{ fontSize: "0.8rem", color: "var(--text-primary)", lineHeight: "1.4" }}>
-                    {layoutText}
-                  </p>
-                </div>}
-
-                {reproNotesText && (
-                  <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                    <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", textTransform: "uppercase", fontWeight: "600" }}>Biological Reproduction Notes</span>
-                    <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)", lineHeight: "1.4" }}>
-                      {reproNotesText}
-                    </p>
-                  </div>
-                )}
-
-                {/* Sexing sits in the reproduction tab because that is the decision
-                    it serves: you cannot pair what you cannot sex. Shown even when
-                    undocumented here — a breeder needs to know the gap is ours
-                    before planning around it. */}
-                <SexingGuide record={fullProfile} casual={casualModeActive} />
-              </div>
-            )}
-
-            {activeInfoTab === "insights" && (
-              <SpeciesInsights
-                specCode={selectedBreed.speciesId || fullProfile.specCode}
-                speciesName={selectedBreed.commonName}
-                casualModeActive={casualModeActive}
-              />
-            )}
-          </div>
+          </aside>
         </div>
       </div>
     );
   }
 
+  // One tab row for the catalog views. Each `activate` is the exact body the
+  // old toggle button ran on click; keyboard moves call the same function.
+  const viewTabs = proMode
+    ? [
+        {
+          id: "mine",
+          label: "In my tanks",
+          count: residingSpecies.length,
+          Icon: FishSimple,
+          selected: viewMode === "contract" && showMyTankSpeciesOnly,
+          activate: () => {
+            setViewMode("contract");
+            setShowMyTankSpeciesOnly(true);
+            setSelectedBreed(null);
+            setSearchTerm("");
+          },
+        },
+        {
+          id: "registered",
+          label: "Registered breeds",
+          count: speciesList.length,
+          Icon: Certificate,
+          selected: viewMode === "contract" && !showMyTankSpeciesOnly,
+          activate: () => {
+            setViewMode("contract");
+            setShowMyTankSpeciesOnly(false);
+            setSelectedBreed(null);
+            setSearchTerm("");
+          },
+        },
+        {
+          id: "all",
+          label: "All species",
+          Icon: GlobeHemisphereWest,
+          selected: viewMode === "global",
+          activate: () => {
+            setViewMode("global");
+            setSelectedBreed(null);
+            setSearchTerm("");
+          },
+        },
+      ]
+    : [
+        {
+          id: "collection",
+          label: "My collection",
+          count: residingSpecies.length,
+          Icon: FishSimple,
+          selected: viewMode === "contract",
+          activate: () => {
+            setViewMode("contract");
+            setSelectedBreed(null);
+            setSearchTerm("");
+          },
+        },
+        {
+          id: "all",
+          label: "All species",
+          Icon: GlobeHemisphereWest,
+          selected: viewMode === "global",
+          activate: () => {
+            setViewMode("global");
+            setSelectedBreed(null);
+            setSearchTerm("");
+          },
+        },
+      ];
+  // Gated on the server-authoritative keeper role, OR on holding the
+  // on-chain curator address. `isCurator` alone matched only the deployer
+  // wallet (0xc42e…c934), so neither founder could ever open this tab,
+  // the same class of bug as the Hardhat allowlist in BreedersCouncil.
+  if (isCouncilMember || isCurator) {
+    viewTabs.push({
+      id: "review",
+      label: "Review queue",
+      Icon: ClipboardText,
+      selected: viewMode === "curation",
+      activate: () => {
+        setViewMode("curation");
+        setSelectedBreed(null);
+        setSearchTerm("");
+      },
+    });
+  }
+  const selectedViewIndex = viewTabs.findIndex((t) => t.selected);
+  const activeViewIndex = selectedViewIndex < 0 ? 0 : selectedViewIndex;
+  const activeViewTabId = viewTabs[activeViewIndex].id;
+  const handleViewTabKeyDown = (e) => {
+    const next = nextTabIndex(e.key, activeViewIndex, viewTabs.length);
+    if (next === null) return;
+    e.preventDefault();
+    viewTabs[next].activate();
+    e.currentTarget.querySelectorAll('[role="tab"]')[next]?.focus();
+  };
+  const filtersActive = filters.type !== "All" || filters.difficulty !== "All" || filters.tempBucket !== "All" || filters.phBucket !== "All";
+
   return (
-    <div>
+    <div className="bgal">
       {/* Toast notification */}
       {toastMessage && (
         <div className="inline-toast">
           {toastMessage}
         </div>
       )}
-      <h2 style={{ fontSize: "1.75rem", fontWeight: "700", color: "var(--text-primary)", marginBottom: "0.5rem", marginTop: 0 }}>
-        Breed & Species Catalog
-      </h2>
-      <p style={{ color: "var(--text-muted)", fontSize: "0.875rem", marginBottom: "2rem" }}>
-        Browse verified genetic registries by aquatic species.
-      </p>
+      {/* Pro only: in Casual, Fish Finder already titles this section. */}
+      {proMode && (
+        <header className="bgal-head">
+          <div className="bgal-head-text">
+            <p className="bgal-kicker">Breeding</p>
+            <h2 className="bgal-title">Breed Gallery</h2>
+            <p className="bgal-subtitle">
+              Registered breeds, the species in your tanks, and the full species catalog.
+            </p>
+          </div>
+        </header>
+      )}
 
-      {/* Search Input and Navigation Tabs Container */}
-      <div style={{ 
-        display: "flex", 
-        justifyContent: "space-between", 
-        alignItems: "center", 
-        gap: "1rem", 
-        marginBottom: "2rem",
-        flexWrap: "wrap"
-      }}>
-        {/* Tabs */}
-        <div 
-          style={{ 
-            display: "inline-flex", 
-            background: "var(--bg-band)", 
-            border: "1px solid var(--glass-border)", 
-            padding: "0.25rem", 
-            borderRadius: "50px",
-            boxShadow: "inset 0 1px 2px rgba(var(--ink-rgb), 0.14)",
-            margin: 0
-          }}
+      <div className="bgal-toolbar">
+        <div
+          className="bgal-tabs"
+          role="tablist"
+          aria-label="Catalog views"
+          onKeyDown={handleViewTabKeyDown}
         >
-          {proMode ? (
-            <>
-              <button 
-                type="button"
-                onClick={() => {
-                  setViewMode("contract");
-                  setShowMyTankSpeciesOnly(true);
-                  setSelectedBreed(null);
-                  setSearchTerm("");
-                }}
-                style={{ 
-                  background: (viewMode === "contract" && showMyTankSpeciesOnly) 
-                    ? "linear-gradient(135deg, rgba(56, 189, 248, 0.15) 0%, rgba(14, 165, 233, 0.25) 100%)" 
-                    : "transparent",
-                  outline: "none",
-                  borderRadius: "50px",
-                  color: (viewMode === "contract" && showMyTankSpeciesOnly) ? "var(--accent-blue)" : "var(--text-secondary)",
-                  padding: "0.45rem 1.25rem",
-                  fontSize: "0.78rem",
-                  fontWeight: "600",
-                  cursor: "pointer",
-                  transition: "all 0.25s ease",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.4rem",
-                  border: (viewMode === "contract" && showMyTankSpeciesOnly) ? "1px solid rgba(56, 189, 248, 0.3)" : "1px solid transparent",
-                  boxShadow: (viewMode === "contract" && showMyTankSpeciesOnly) ? "var(--glass-shadow)" : "none"
-                }}
-              >
-                🐠 My Tank Species ({residingSpecies.length})
-              </button>
-              <button 
-                type="button"
-                onClick={() => {
-                  setViewMode("contract");
-                  setShowMyTankSpeciesOnly(false);
-                  setSelectedBreed(null);
-                  setSearchTerm("");
-                }}
-                style={{ 
-                  background: (viewMode === "contract" && !showMyTankSpeciesOnly) 
-                    ? "linear-gradient(135deg, rgba(56, 189, 248, 0.15) 0%, rgba(14, 165, 233, 0.25) 100%)" 
-                    : "transparent",
-                  outline: "none",
-                  borderRadius: "50px",
-                  color: (viewMode === "contract" && !showMyTankSpeciesOnly) ? "var(--accent-blue)" : "var(--text-secondary)",
-                  padding: "0.45rem 1.25rem",
-                  fontSize: "0.78rem",
-                  fontWeight: "600",
-                  cursor: "pointer",
-                  transition: "all 0.25s ease",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.4rem",
-                  border: (viewMode === "contract" && !showMyTankSpeciesOnly) ? "1px solid rgba(56, 189, 248, 0.3)" : "1px solid transparent",
-                  boxShadow: (viewMode === "contract" && !showMyTankSpeciesOnly) ? "var(--glass-shadow)" : "none"
-                }}
-              >
-                🌐 All Catalog Breeds ({speciesList.length})
-              </button>
-              <button 
-                type="button"
-                onClick={() => {
-                  setViewMode("global");
-                  setSelectedBreed(null);
-                  setSearchTerm("");
-                }}
-                style={{ 
-                  background: (viewMode === "global") 
-                    ? "linear-gradient(135deg, rgba(56, 189, 248, 0.15) 0%, rgba(14, 165, 233, 0.25) 100%)" 
-                    : "transparent",
-                  outline: "none",
-                  borderRadius: "50px",
-                  color: (viewMode === "global") ? "var(--accent-blue)" : "var(--text-secondary)",
-                  padding: "0.45rem 1.25rem",
-                  fontSize: "0.78rem",
-                  fontWeight: "600",
-                  cursor: "pointer",
-                  transition: "all 0.25s ease",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.4rem",
-                  border: (viewMode === "global") ? "1px solid rgba(56, 189, 248, 0.3)" : "1px solid transparent",
-                  boxShadow: (viewMode === "global") ? "var(--glass-shadow)" : "none"
-                }}
-              >
-                🌍 Global Database
-              </button>
-            </>
-          ) : (
-            <>
-              <button 
-                type="button"
-                onClick={() => {
-                  setViewMode("contract");
-                  setSelectedBreed(null);
-                  setSearchTerm("");
-                }}
-                style={{ 
-                  background: (viewMode === "contract") 
-                    ? "linear-gradient(135deg, rgba(56, 189, 248, 0.15) 0%, rgba(14, 165, 233, 0.25) 100%)" 
-                    : "transparent",
-                  outline: "none",
-                  borderRadius: "50px",
-                  color: (viewMode === "contract") ? "var(--accent-blue)" : "var(--text-secondary)",
-                  padding: "0.45rem 1.25rem",
-                  fontSize: "0.78rem",
-                  fontWeight: "600",
-                  cursor: "pointer",
-                  transition: "all 0.25s ease",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.4rem",
-                  border: (viewMode === "contract") ? "1px solid rgba(56, 189, 248, 0.3)" : "1px solid transparent",
-                  boxShadow: (viewMode === "contract") ? "var(--glass-shadow)" : "none"
-                }}
-              >
-                🐠 My Collection ({residingSpecies.length})
-              </button>
-              <button 
-                type="button"
-                onClick={() => {
-                  setViewMode("global");
-                  setSelectedBreed(null);
-                  setSearchTerm("");
-                }}
-                style={{ 
-                  background: (viewMode === "global") 
-                    ? "linear-gradient(135deg, rgba(56, 189, 248, 0.15) 0%, rgba(14, 165, 233, 0.25) 100%)" 
-                    : "transparent",
-                  outline: "none",
-                  borderRadius: "50px",
-                  color: (viewMode === "global") ? "var(--accent-blue)" : "var(--text-secondary)",
-                  padding: "0.45rem 1.25rem",
-                  fontSize: "0.78rem",
-                  fontWeight: "600",
-                  cursor: "pointer",
-                  transition: "all 0.25s ease",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.4rem",
-                  border: (viewMode === "global") ? "1px solid rgba(56, 189, 248, 0.3)" : "1px solid transparent",
-                  boxShadow: (viewMode === "global") ? "var(--glass-shadow)" : "none"
-                }}
-              >
-                🌐 All Species
-              </button>
-            </>
-          )}
-          {/* Gated on the server-authoritative keeper role, OR on holding the
-              on-chain curator address. `isCurator` alone matched only the deployer
-              wallet (0xc42e…c934), so neither founder could ever open this tab —
-              the same class of bug as the Hardhat allowlist in BreedersCouncil. */}
-          {(isCouncilMember || isCurator) && (
+          {viewTabs.map(({ id, label, count, Icon, selected, activate }, index) => (
             <button
+              key={id}
               type="button"
-              onClick={() => {
-                setViewMode("curation");
-                setSelectedBreed(null);
-                setSearchTerm("");
-              }}
-              style={{ 
-                background: (viewMode === "curation") 
-                  ? "linear-gradient(135deg, rgba(56, 189, 248, 0.15) 0%, rgba(14, 165, 233, 0.25) 100%)" 
-                  : "transparent",
-                outline: "none",
-                borderRadius: "50px",
-                color: (viewMode === "curation") ? "var(--accent-blue)" : "var(--text-secondary)",
-                padding: "0.45rem 1.25rem",
-                fontSize: "0.78rem",
-                fontWeight: "600",
-                cursor: "pointer",
-                transition: "all 0.25s ease",
-                display: "flex",
-                alignItems: "center",
-                gap: "0.4rem",
-                border: (viewMode === "curation") ? "1px solid rgba(56, 189, 248, 0.3)" : "1px solid transparent",
-                boxShadow: (viewMode === "curation") ? "var(--glass-shadow)" : "none"
-              }}
+              role="tab"
+              id={`bgal-view-tab-${id}`}
+              aria-selected={selected}
+              aria-controls="bgal-view-panel"
+              tabIndex={index === activeViewIndex ? 0 : -1}
+              className="bgal-tab"
+              onClick={activate}
             >
-              🛠️ Curation Queue
+              <Icon size={18} weight={selected ? "fill" : "regular"} aria-hidden="true" />
+              <span>{label}</span>
+              {count !== undefined && <span className="bgal-tab-count">{count}</span>}
             </button>
-          )}
+          ))}
         </div>
 
-        {/* Search Bar & Suggest Button Row */}
-        <div style={{ display: "flex", gap: "1rem", alignItems: "center", minWidth: "300px", flex: "1", maxWidth: "550px" }}>
-          <div style={{ position: "relative", flex: "1" }}>
-            <input 
-              type="text" 
-              placeholder={casualModeActive ? "Try: 'beginner fish for warm water'" : "Search species or describe what you need..."} 
+        <div className="bgal-search-row">
+          <div className="bgal-search">
+            <input
+              type="text"
+              className={`bgal-search-input${isParsing ? " bgal-search-input--busy" : ""}`}
+              aria-label="Search species"
+              placeholder={casualModeActive ? "Try: 'beginner fish for warm water'" : "Search species or describe what you need"}
               value={searchTerm}
               onChange={(e) => {
                 setSearchTerm(e.target.value);
@@ -2078,153 +1806,80 @@ export function BreedGallery({
                   nlParseQuery(searchTerm);
                 }
               }}
-              style={{ 
-                width: "100%", 
-                padding: "0.6rem 2.5rem 0.6rem 1rem", 
-                background: "rgba(var(--ink-rgb), 0.03)", 
-                border: `1px solid ${isParsing ? 'rgba(56, 189, 248, 0.4)' : 'var(--glass-border)'}`, 
-                borderRadius: "50px", 
-                color: "var(--text-primary)", 
-                fontSize: "0.875rem",
-                outline: "none",
-                transition: "border-color 0.2s"
-              }}
-              onFocus={(e) => e.target.style.borderColor = "var(--accent-blue)"}
-              onBlur={(e) => { if (!isParsing) e.target.style.borderColor = "var(--glass-border)"; }}
             />
             {isParsing && (
-              <span style={{ position: "absolute", right: "38px", top: "50%", transform: "translateY(-50%)", fontSize: "0.65rem", color: "var(--accent-blue)" }}>
-                🔱
+              <span className="bgal-search-busy" role="status">
+                <SpinnerGap className="bgal-spin" size={16} aria-hidden="true" />
+                <span className="bgal-sr-only">Reading your search</span>
               </span>
             )}
             {searchTerm ? (
-              <button 
+              <button
+                type="button"
+                className="bgal-search-clear"
+                aria-label="Clear search"
                 onClick={() => { setSearchTerm(""); clearParsed(); }}
-                style={{
-                  position: "absolute",
-                  right: "10px",
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  background: "none",
-                  border: "none",
-                  color: "var(--text-muted)",
-                  cursor: "pointer",
-                  fontSize: "1.1rem",
-                  padding: "0 5px",
-                  lineHeight: "1"
-                }}
               >
-                &times;
+                <X size={16} aria-hidden="true" />
               </button>
             ) : (
-              <svg 
-                width="16" 
-                height="16" 
-                viewBox="0 0 24 24" 
-                fill="none" 
-                stroke="var(--text-muted)" 
-                strokeWidth="2" 
-                strokeLinecap="round" 
-                strokeLinejoin="round"
-                style={{
-                  position: "absolute",
-                  right: "15px",
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  pointerEvents: "none"
-                }}
-              >
-                <circle cx="11" cy="11" r="8" />
-                <line x1="21" y1="21" x2="16.65" y2="16.65" />
-              </svg>
+              <MagnifyingGlass className="bgal-search-icon" size={16} aria-hidden="true" />
             )}
           </div>
           {!casualModeActive && (
-            <button 
+            <button
+              type="button"
               onClick={() => setIsSuggestModalOpen(true)}
-              className="btn-secondary"
-              style={{
-                padding: "0.6rem 1.25rem",
-                borderRadius: "50px",
-                border: "1px solid rgba(56, 189, 248, 0.3)",
-                color: "var(--accent-blue)",
-                fontSize: "0.875rem",
-                fontWeight: "700",
-                cursor: "pointer",
-                whiteSpace: "nowrap",
-                background: "rgba(56, 189, 248, 0.05)",
-                boxShadow: "none",
-                outline: "none"
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = "rgba(56, 189, 248, 0.12)";
-                e.currentTarget.style.boxShadow = "var(--glass-shadow)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = "rgba(56, 189, 248, 0.05)";
-                e.currentTarget.style.boxShadow = "none";
-              }}
+              className="bgal-btn bgal-btn--soft"
             >
-              ⚡ Suggest Species
+              <Plus size={16} weight="bold" aria-hidden="true" />
+              Suggest a species
             </button>
           )}
         </div>
       </div>
 
-      {/* Picture Drop Bar — upload a photo for species identification */}
+      {/* Picture drop bar: upload a photo for species identification */}
       <div
-        style={{
-          marginBottom: "1rem",
-          padding: galleryDropPhoto ? "0.6rem" : "0.75rem 1rem",
-          borderRadius: "12px",
-          border: `1.5px dashed ${galleryDropPhoto ? "rgba(52, 211, 153, 0.4)" : (casualModeActive ? "rgba(56, 189, 248, 0.25)" : "rgba(168, 85, 247, 0.25)")}`,
-          background: galleryDropPhoto ? "rgba(52, 211, 153, 0.04)" : (casualModeActive ? "rgba(56, 189, 248, 0.03)" : "rgba(168, 85, 247, 0.03)"),
-          display: "flex",
-          alignItems: "center",
-          gap: "0.75rem",
-          cursor: "pointer",
-          transition: "all 0.2s ease",
-        }}
+        className={`bgal-drop${galleryDropPhoto ? " bgal-drop--filled" : ""}`}
         onClick={() => !galleryDropPhoto && galleryPhotoInputRef.current?.click()}
-        onDragOver={(e) => { e.preventDefault(); e.currentTarget.style.borderColor = "rgba(56, 189, 248, 0.6)"; }}
-        onDragLeave={(e) => { e.currentTarget.style.borderColor = ""; }}
+        onKeyDown={(e) => {
+          if (galleryDropPhoto) return;
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            galleryPhotoInputRef.current?.click();
+          }
+        }}
+        onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add("bgal-drop--over"); }}
+        onDragLeave={(e) => { e.currentTarget.classList.remove("bgal-drop--over"); }}
         onDrop={(e) => {
           e.preventDefault();
-          e.currentTarget.style.borderColor = "";
+          e.currentTarget.classList.remove("bgal-drop--over");
           const file = e.dataTransfer.files?.[0];
           if (file && file.type.startsWith("image/")) {
             setGalleryDropPhoto({ preview: URL.createObjectURL(file) });
           }
         }}
-        role="button"
-        tabIndex={0}
-        aria-label={casualModeActive ? "Drop or tap to add a photo" : "Upload a reference photo"}
+        role={galleryDropPhoto ? undefined : "button"}
+        tabIndex={galleryDropPhoto ? undefined : 0}
+        aria-label={galleryDropPhoto ? undefined : (casualModeActive ? "Drop or tap to add a photo" : "Upload a reference photo")}
       >
         {galleryDropPhoto ? (
           <>
             <img
               src={galleryDropPhoto.preview}
               alt="Uploaded reference"
-              style={{ width: "48px", height: "48px", objectFit: "cover", borderRadius: "8px", border: "1px solid var(--glass-border)" }}
+              className="bgal-drop-thumb"
             />
-            <span style={{ flex: 1, fontSize: "0.78rem", color: "var(--accent-green, #34d399)" }}>
-              📷 Photo added — visible on your gallery
-            </span>
+            <span className="bgal-drop-done">Photo added</span>
             <button
               type="button"
+              className="bgal-btn"
+              aria-label="Remove photo"
               onClick={(e) => {
                 e.stopPropagation();
                 setGalleryDropPhoto(null);
                 if (galleryPhotoInputRef.current) galleryPhotoInputRef.current.value = "";
-              }}
-              style={{
-                background: "rgba(248, 113, 113, 0.1)",
-                border: "1px solid rgba(248, 113, 113, 0.3)",
-                color: "var(--accent-red, #f87171)",
-                borderRadius: "6px",
-                padding: "0.3rem 0.6rem",
-                fontSize: "0.7rem",
-                cursor: "pointer",
               }}
             >
               Remove
@@ -2232,9 +1887,9 @@ export function BreedGallery({
           </>
         ) : (
           <>
-            <span style={{ fontSize: "1.4rem" }}>📷</span>
-            <span style={{ fontSize: "0.8rem", color: "var(--text-secondary)" }}>
-              {casualModeActive ? "Drop or tap to add a picture" : "Drop image or click to upload a reference photo"}
+            <Camera size={22} aria-hidden="true" />
+            <span className="bgal-drop-text">
+              {casualModeActive ? "Drop or tap to add a picture" : "Drop an image or click to upload a reference photo"}
             </span>
           </>
         )}
@@ -2242,7 +1897,7 @@ export function BreedGallery({
           ref={galleryPhotoInputRef}
           type="file"
           accept="image/*"
-          style={{ display: "none" }}
+          className="bgal-drop-input"
           onChange={(e) => {
             const file = e.target.files?.[0];
             if (file) {
@@ -2252,34 +1907,21 @@ export function BreedGallery({
         />
       </div>
 
-      {/* Residing Species Quick-Tap Badges */}
+      {/* Residing species shortcuts */}
       {residingSpecies.length > 0 && (
-        <div style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "0.5rem",
-          flexWrap: "wrap",
-          marginBottom: "1.5rem",
-          padding: "0.25rem 0.5rem"
-        }}>
-          <span style={{ 
-            fontSize: "0.65rem", 
-            color: "var(--text-muted)", 
-            fontWeight: "700", 
-            textTransform: "uppercase",
-            letterSpacing: "0.05em",
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "0.25rem"
-          }}>
-            🐠 My Tank Species
+        <div className="bgal-chips">
+          <span className="bgal-chips-label">
+            <FishSimple size={14} weight="fill" aria-hidden="true" />
+            In your tanks
           </span>
-          <div style={{ display: "flex", gap: "0.35rem", flexWrap: "wrap" }}>
+          <div className="bgal-chips-list">
             {residingSpecies.map((item) => {
               const isBadgeSelected = selectedBreed && Number(selectedBreed.speciesId) === Number(item.id);
               return (
                 <button
                   key={`badge-${item.id}`}
+                  type="button"
+                  className={`bgal-chip${isBadgeSelected ? " bgal-chip--current" : ""}`}
                   onClick={() => {
                     const breed = speciesList.find(s => Number(s.speciesId) === Number(item.id)) ||
                                   globalRefList.find(s => Number(s.speciesId) === Number(item.id));
@@ -2290,42 +1932,8 @@ export function BreedGallery({
                       }
                     }
                   }}
-                  style={{
-                    background: isBadgeSelected 
-                      ? "linear-gradient(135deg, rgba(56, 189, 248, 0.15) 0%, rgba(14, 165, 233, 0.25) 100%)" 
-                      : "rgba(var(--ink-rgb), 0.03)",
-                    border: isBadgeSelected 
-                      ? "1px solid rgba(56, 189, 248, 0.45)" 
-                      : "1px solid rgba(var(--ink-rgb), 0.11)",
-                    color: isBadgeSelected ? "var(--accent-blue)" : "var(--text-secondary)",
-                    padding: "0.25rem 0.65rem",
-                    borderRadius: "50px",
-                    fontSize: "0.7rem",
-                    fontWeight: "500",
-                    cursor: "pointer",
-                    transition: "all 0.25s ease",
-                    boxShadow: isBadgeSelected ? "var(--glass-shadow)" : "0 1px 2px rgba(var(--ink-rgb), 0.05)"
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!isBadgeSelected) {
-                      e.currentTarget.style.background = "rgba(56, 189, 248, 0.08)";
-                      e.currentTarget.style.borderColor = "rgba(56, 189, 248, 0.3)";
-                      e.currentTarget.style.color = "var(--accent-blue)";
-                      e.currentTarget.style.boxShadow = "0 4px 12px rgba(56, 189, 248, 0.15)";
-                    }
-                    e.currentTarget.style.transform = "translateY(-1px)";
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!isBadgeSelected) {
-                      e.currentTarget.style.background = "rgba(var(--ink-rgb), 0.03)";
-                      e.currentTarget.style.borderColor = "rgba(var(--ink-rgb), 0.11)";
-                      e.currentTarget.style.color = "var(--text-secondary)";
-                      e.currentTarget.style.boxShadow = "0 2px 8px rgba(var(--ink-rgb), 0.04)";
-                    }
-                    e.currentTarget.style.transform = "translateY(0)";
-                  }}
                 >
-                  {item.name} ({item.count})
+                  {item.name} <span className="bgal-chip-count">({item.count})</span>
                 </button>
               );
             })}
@@ -2333,6 +1941,7 @@ export function BreedGallery({
         </div>
       )}
 
+      <div role="tabpanel" id="bgal-view-panel" aria-labelledby={`bgal-view-tab-${activeViewTabId}`}>
       {viewMode === "curation" ? (
         <CurationQueuePanel
           walletAccount={walletAccount}
@@ -2345,85 +1954,54 @@ export function BreedGallery({
           marketplaceAddress={marketplaceAddress}
         />
       ) : loading || (viewMode === "global" && !globalData) ? (
-        <div className="glass-card" style={{ padding: "3rem", textAlign: "center" }}>
-          <p style={{ color: "var(--text-muted)", fontSize: "1.1rem" }}>
-            {viewMode === "contract" ? "Querying Breed Catalog..." : "Loading Global Reference Library..."}
+        <div className="bgal-state" role="status">
+          <p className="bgal-state-text">
+            {viewMode === "contract" ? "Loading registered breeds…" : "Loading the species catalog…"}
           </p>
         </div>
       ) : error ? (
-        <div className="glass-card" style={{ padding: "3rem", textAlign: "center", border: "1px solid rgba(239, 68, 68, 0.2)" }}>
-          <p style={{ color: "var(--accent-red)" }}>{error}</p>
-          <button onClick={refetchContractSpecies} className="btn-secondary" style={{ marginTop: "1rem" }}>Retry</button>
+        <div className="bgal-state bgal-state--error" role="alert">
+          <WarningCircle size={28} aria-hidden="true" />
+          <p className="bgal-state-text">{error}</p>
+          <button type="button" onClick={refetchContractSpecies} className="bgal-btn">Try again</button>
         </div>
       ) : filteredSpecies.length === 0 ? (
-        <div className="glass-card" style={{ padding: "3rem", textAlign: "center" }}>
-          <p style={{ color: "var(--text-muted)", margin: 0 }}>No species registered in the catalog yet.</p>
+        <div className="bgal-state">
+          <p className="bgal-state-text">No species registered in the catalog yet.</p>
         </div>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+        <div className="bgal-results">
           {/* Poseidon NL Search explanation chip */}
           {nlExplanation && nlExplanation !== 'Parsed locally' && (
-            <div style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "0.5rem",
-              padding: "0.4rem 0.75rem",
-              borderRadius: "20px",
-              background: "rgba(56, 189, 248, 0.06)",
-              border: "1px solid rgba(56, 189, 248, 0.15)",
-              fontSize: "0.72rem",
-              color: "rgba(103, 232, 249, 0.85)",
-              width: "fit-content"
-            }}>
-              <img src="/echo/face.webp" alt="" style={{ width: "18px", height: "18px", borderRadius: "50%", objectFit: "cover" }} />
+            <div className="bgal-nl-chip">
+              <img src="/echo/face.webp" alt="" />
               <span>{nlExplanation}</span>
               <button
+                type="button"
+                aria-label="Clear this search"
                 onClick={() => { resetFilters(); clearParsed(); setSearchTerm(""); }}
-                style={{ background: "none", border: "none", color: "rgba(103, 232, 249, 0.6)", cursor: "pointer", fontSize: "0.8rem", padding: "0 4px" }}
               >
-                ✕
+                <X size={14} aria-hidden="true" />
               </button>
             </div>
           )}
 
           {/* Filter Toggle Button */}
           <button
+            type="button"
             onClick={() => setFiltersOpen(!filtersOpen)}
-            className="gallery-filter-bar"
-            style={{
-              cursor: "pointer",
-              width: "100%",
-              justifyContent: "space-between",
-              border: filtersOpen ? "1px solid rgba(56, 189, 248, 0.3)" : undefined,
-            }}
+            className="bgal-filter-toggle"
+            aria-expanded={filtersOpen}
+            aria-controls="bgal-filter-panel"
           >
-            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-              <span style={{ fontSize: "1.1rem" }}>🎛️</span>
-              <span style={{ fontSize: "0.85rem", fontWeight: "600", color: "var(--text-primary)", letterSpacing: "0.03em" }}>
-                {casualModeActive ? "Filter Fish" : "Filters & Refinement"}
-              </span>
-              {(filters.type !== "All" || filters.difficulty !== "All" || filters.tempBucket !== "All" || filters.phBucket !== "All") && (
-                <span style={{
-                  background: "var(--accent-blue)",
-                  color: "#fff",
-                  fontSize: "0.6rem",
-                  fontWeight: "700",
-                  padding: "0.15rem 0.5rem",
-                  borderRadius: "50px",
-                }}>
-                  ACTIVE
-                </span>
+            <span className="bgal-filter-toggle-label">
+              <SlidersHorizontal size={18} aria-hidden="true" />
+              <span>{casualModeActive ? "Filter fish" : "Filters"}</span>
+              {filtersActive && (
+                <span className="bgal-filter-on">On</span>
               )}
-            </div>
-            <span style={{ 
-              color: "var(--text-muted)", 
-              fontSize: "0.8rem",
-              transform: filtersOpen ? "rotate(180deg)" : "rotate(0deg)",
-              transition: "transform 0.3s ease",
-              display: "inline-block",
-            }}>
-              ▼
             </span>
+            <CaretDown className="bgal-filter-caret" size={16} weight="bold" aria-hidden="true" />
           </button>
 
           {/* Mobile filter backdrop */}
@@ -2434,50 +2012,28 @@ export function BreedGallery({
             />
           )}
 
-          {/* Collapsible Filter Panel — becomes bottom sheet on mobile */}
-          <div className={`breed-filter-panel ${filtersOpen ? "breed-filter-panel--open" : ""}`} style={{
+          {/* Collapsible filter panel, a bottom sheet on phones */}
+          <div id="bgal-filter-panel" className={`breed-filter-panel ${filtersOpen ? "breed-filter-panel--open" : ""}`} style={{
             maxHeight: filtersOpen ? "600px" : "0px",
             overflow: "hidden",
             transition: "max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease",
             opacity: filtersOpen ? 1 : 0,
           }}>
-          <div 
-            className="glass-card" 
-            style={{ 
-              padding: "1.5rem", 
-              display: "flex", 
-              flexWrap: "wrap",
-              gap: "1.5rem",
-              background: "rgba(var(--ink-rgb), 0.02)",
-              border: "1px solid rgba(var(--ink-rgb), 0.11)",
-              borderRadius: "var(--radius-sm)"
-            }}
-          >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid rgba(var(--ink-rgb), 0.1)", paddingBottom: "0.75rem", width: "100%" }}>
-              <span style={{ fontSize: "0.8rem", fontWeight: "700", color: "var(--text-primary)", letterSpacing: "0.05em" }}>FILTERS</span>
-              <button 
-                onClick={resetFilters} 
-                style={{ 
-                  background: "none", 
-                  border: "none", 
-                  color: "var(--accent-blue)", 
-                  fontSize: "0.75rem", 
-                  cursor: "pointer",
-                  textDecoration: "underline",
-                  padding: 0
-                }}
-              >
-                Reset All
+          <div className="bgal-filters">
+            <div className="bgal-filters-head">
+              <h3 className="bgal-filters-title">Filters</h3>
+              <button type="button" onClick={resetFilters} className="bgal-linkbtn">
+                Reset all
               </button>
             </div>
 
             {/* Category / Type Filter */}
             {availableFacets.type && (
-              <div>
-                <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", letterSpacing: "0.05em", textTransform: "uppercase", fontWeight: "600", display: "block", marginBottom: "0.5rem" }}>
+              <div className="bgal-filter-group" role="group" aria-labelledby="bgal-filter-label-type">
+                <span id="bgal-filter-label-type" className="bgal-filter-label">
                   Category
                 </span>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "0.35rem" }}>
+                <div className="bgal-filter-options">
                   {[
                     { val: "All", label: "All" },
                     { val: "Fish", label: "Fish" },
@@ -2490,19 +2046,12 @@ export function BreedGallery({
                     return (
                       <button
                         key={opt.val}
+                        type="button"
                         onClick={() => setFilters(prev => ({ ...prev, type: opt.val }))}
-                        className={isActive ? "btn-primary" : "btn-secondary"}
-                        style={{ 
-                          padding: "0.35rem 0.65rem", 
-                          fontSize: "0.725rem", 
-                          borderRadius: "20px",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "0.25rem",
-                          cursor: "pointer"
-                        }}
+                        className="bgal-chip"
+                        aria-pressed={isActive}
                       >
-                        {opt.label} <span style={{ opacity: 0.6, fontSize: "0.65rem" }}>({count})</span>
+                        {opt.label} <span className="bgal-chip-count">({count})</span>
                       </button>
                     );
                   })}
@@ -2512,11 +2061,11 @@ export function BreedGallery({
 
             {/* Care Level Difficulty Filter */}
             {availableFacets.difficulty && (
-              <div>
-                <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", letterSpacing: "0.05em", textTransform: "uppercase", fontWeight: "600", display: "block", marginBottom: "0.5rem" }}>
-                  Care Level
+              <div className="bgal-filter-group" role="group" aria-labelledby="bgal-filter-label-difficulty">
+                <span id="bgal-filter-label-difficulty" className="bgal-filter-label">
+                  Care level
                 </span>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "0.35rem" }}>
+                <div className="bgal-filter-options">
                   {[
                     { val: "All", label: "All" },
                     { val: "Easy", label: "Easy" },
@@ -2529,19 +2078,12 @@ export function BreedGallery({
                     return (
                       <button
                         key={opt.val}
+                        type="button"
                         onClick={() => setFilters(prev => ({ ...prev, difficulty: opt.val }))}
-                        className={isActive ? "btn-primary" : "btn-secondary"}
-                        style={{ 
-                          padding: "0.35rem 0.65rem", 
-                          fontSize: "0.725rem", 
-                          borderRadius: "20px",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "0.25rem",
-                          cursor: "pointer"
-                        }}
+                        className="bgal-chip"
+                        aria-pressed={isActive}
                       >
-                        {opt.label} <span style={{ opacity: 0.6, fontSize: "0.65rem" }}>({count})</span>
+                        {opt.label} <span className="bgal-chip-count">({count})</span>
                       </button>
                     );
                   })}
@@ -2551,11 +2093,11 @@ export function BreedGallery({
 
             {/* Temperature Range Filter */}
             {availableFacets.temp && (
-              <div>
-                <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", letterSpacing: "0.05em", textTransform: "uppercase", fontWeight: "600", display: "block", marginBottom: "0.5rem" }}>
+              <div className="bgal-filter-group" role="group" aria-labelledby="bgal-filter-label-temp">
+                <span id="bgal-filter-label-temp" className="bgal-filter-label">
                   Temperature
                 </span>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "0.35rem" }}>
+                <div className="bgal-filter-options">
                   {[
                     { val: "All", label: "All" },
                     // The 22/28 °C bucket boundaries are the filter's own logic and
@@ -2569,19 +2111,12 @@ export function BreedGallery({
                     return (
                       <button
                         key={opt.val}
+                        type="button"
                         onClick={() => setFilters(prev => ({ ...prev, tempBucket: opt.val }))}
-                        className={isActive ? "btn-primary" : "btn-secondary"}
-                        style={{ 
-                          padding: "0.35rem 0.65rem", 
-                          fontSize: "0.725rem", 
-                          borderRadius: "20px",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "0.25rem",
-                          cursor: "pointer"
-                        }}
+                        className="bgal-chip"
+                        aria-pressed={isActive}
                       >
-                        {opt.label} <span style={{ opacity: 0.6, fontSize: "0.65rem" }}>({count})</span>
+                        {opt.label} <span className="bgal-chip-count">({count})</span>
                       </button>
                     );
                   })}
@@ -2591,11 +2126,11 @@ export function BreedGallery({
 
             {/* pH Range Filter */}
             {availableFacets.ph && (
-              <div>
-                <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", letterSpacing: "0.05em", textTransform: "uppercase", fontWeight: "600", display: "block", marginBottom: "0.5rem" }}>
-                  pH Level
+              <div className="bgal-filter-group" role="group" aria-labelledby="bgal-filter-label-ph">
+                <span id="bgal-filter-label-ph" className="bgal-filter-label">
+                  pH
                 </span>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "0.35rem" }}>
+                <div className="bgal-filter-options">
                   {[
                     { val: "All", label: "All" },
                     { val: "Acidic", label: "Acidic (<6.8)" },
@@ -2607,19 +2142,12 @@ export function BreedGallery({
                     return (
                       <button
                         key={opt.val}
+                        type="button"
                         onClick={() => setFilters(prev => ({ ...prev, phBucket: opt.val }))}
-                        className={isActive ? "btn-primary" : "btn-secondary"}
-                        style={{ 
-                          padding: "0.35rem 0.65rem", 
-                          fontSize: "0.725rem", 
-                          borderRadius: "20px",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "0.25rem",
-                          cursor: "pointer"
-                        }}
+                        className="bgal-chip"
+                        aria-pressed={isActive}
                       >
-                        {opt.label} <span style={{ opacity: 0.6, fontSize: "0.65rem" }}>({count})</span>
+                        {opt.label} <span className="bgal-chip-count">({count})</span>
                       </button>
                     );
                   })}
@@ -2629,11 +2157,11 @@ export function BreedGallery({
 
             {/* Biotope Origin Filter */}
             {availableFacets.origin && (
-              <div>
-                <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", letterSpacing: "0.05em", textTransform: "uppercase", fontWeight: "600", display: "block", marginBottom: "0.5rem" }}>
-                  Biotope Origin
+              <div className="bgal-filter-group" role="group" aria-labelledby="bgal-filter-label-origin">
+                <span id="bgal-filter-label-origin" className="bgal-filter-label">
+                  Natural habitat
                 </span>
-                <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
+                <div className="bgal-filter-options bgal-filter-options--stack">
                   {[
                     { val: "All", label: "All" },
                     { val: "South American", label: "South American" },
@@ -2647,22 +2175,13 @@ export function BreedGallery({
                     return (
                       <button
                         key={opt.val}
+                        type="button"
                         onClick={() => setFilters(prev => ({ ...prev, origin: opt.val }))}
-                        className={isActive ? "btn-primary" : "btn-secondary"}
-                        style={{ 
-                          padding: "0.35rem 0.75rem", 
-                          fontSize: "0.725rem", 
-                          borderRadius: "20px",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          width: "100%",
-                          textAlign: "left",
-                          cursor: "pointer"
-                        }}
+                        className="bgal-chip"
+                        aria-pressed={isActive}
                       >
                         <span>{opt.label}</span>
-                        <span style={{ opacity: 0.6, fontSize: "0.65rem" }}>({count})</span>
+                        <span className="bgal-chip-count">({count})</span>
                       </button>
                     );
                   })}
@@ -2670,183 +2189,83 @@ export function BreedGallery({
               </div>
             )}
           </div>
-          {/* Mobile Apply Filters button — inside the panel */}
+          {/* Phone "Show results" button, inside the sheet (index.css shows it at 640px and below) */}
           <button
-            className="breed-filter-apply-btn btn-primary"
+            type="button"
+            className="breed-filter-apply-btn bgal-btn bgal-btn--primary"
             onClick={() => setFiltersOpen(false)}
-            style={{ 
-              display: "none", 
-              width: "100%", 
-              padding: "0.85rem", 
-              marginTop: "1rem",
-              fontSize: "0.9rem",
-              fontWeight: "600",
-              borderRadius: "var(--radius-sm)"
-            }}
           >
-            Apply Filters ({filteredSpecies.length} results)
+            Show {filteredSpecies.length} {filteredSpecies.length === 1 ? "result" : "results"}
           </button>
           </div>
           <div style={{ width: "100%" }}>
             {filteredSpecies.length === 0 ? (
               showMyTankSpeciesOnly && residingSpecies.length === 0 ? (
-                <div className="glass-card" style={{ 
-                  padding: "5rem 2rem", 
-                  textAlign: "center", 
-                  background: "linear-gradient(135deg, rgba(5, 150, 105, 0.06) 0%, var(--bg-secondary) 100%)",
-                  border: "1px dashed rgba(16, 185, 129, 0.3)",
-                  borderRadius: "20px",
-                  boxShadow: "var(--glass-shadow)",
-                  maxWidth: "600px",
-                  margin: "2rem auto"
-                }}>
-                  <div style={{
-                    width: "80px",
-                    height: "80px",
-                    borderRadius: "50%",
-                    background: "rgba(16, 185, 129, 0.1)",
-                    border: "1px solid rgba(16, 185, 129, 0.3)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    margin: "0 auto 1.5rem",
-                    boxShadow: "none"
-                  }}>
-                    <span style={{ fontSize: "2.5rem" }}>🐠</span>
-                  </div>
-                  <h3 style={{ 
-                    color: "var(--accent-green)", 
-                    fontSize: "1.5rem", 
-                    fontWeight: "700", 
-                    marginBottom: "0.75rem",
-                    letterSpacing: "-0.01em",
-                    background: "linear-gradient(90deg, #047857, #059669)",
-                    WebkitBackgroundClip: "text",
-                    WebkitTextFillColor: "transparent"
-                  }}>
-                    Breeder's Tank Registry Empty
-                  </h3>
-                  <p style={{ color: "var(--text-muted)", fontSize: "0.9rem", lineHeight: "1.5", marginBottom: "2rem", maxWidth: "420px", margin: "0 auto 2rem" }}>
-                    Your local aquariums don't contain any registered species yet. Register your specimens or mint a digital certificate to establish your pedigree lines.
+                <div className="bgal-empty">
+                  <span className="bgal-empty-icon" aria-hidden="true">
+                    <FishSimple size={28} weight="duotone" />
+                  </span>
+                  <h3 className="bgal-empty-title">No fish in your tanks yet</h3>
+                  <p className="bgal-empty-lead">
+                    When your aquariums have fish in them, their species show up here. Register a fish in Breeder Tools to start a pedigree line.
                   </p>
                   <button
+                    type="button"
                     onClick={() => { window.location.hash = "breeder"; }}
-                    className="btn-primary"
-                    style={{
-                      padding: "0.75rem 2rem",
-                      fontSize: "0.9rem",
-                      fontWeight: "600",
-                      borderRadius: "50px",
-                      background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
-                      border: "1px solid rgba(52, 211, 153, 0.4)",
-                      color: "#fff",
-                      cursor: "pointer",
-                      boxShadow: "0 4px 12px rgba(5, 150, 105, 0.22)",
-                      transition: "all 0.25s ease"
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.transform = "translateY(-2px)";
-                      e.currentTarget.style.boxShadow = "0 6px 16px rgba(5, 150, 105, 0.3)";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = "translateY(0)";
-                      e.currentTarget.style.boxShadow = "0 4px 12px rgba(5, 150, 105, 0.22)";
-                    }}
+                    className="bgal-btn bgal-btn--primary"
                   >
-                    Register First Specimen 🐠
+                    Register a fish
                   </button>
                 </div>
               ) : showMyTankSpeciesOnly ? (
-                <div className="glass-card" style={{ 
-                  padding: "4rem 2rem", 
-                  textAlign: "center", 
-                  border: "1px dashed var(--glass-border)", 
-                  background: "none",
-                  borderRadius: "20px",
-                  maxWidth: "600px",
-                  margin: "2rem auto"
-                }}>
-                  <h3 style={{ color: "var(--text-secondary)", marginBottom: "0.5rem", fontSize: "1.25rem", fontWeight: "600" }}>
-                    No Matching Tank Species
-                  </h3>
-                  <p style={{ color: "var(--text-muted)", fontSize: "0.875rem", marginBottom: "2rem" }}>
-                    None of the species residing in your tanks match the current search query or active filters.
+                <div className="bgal-empty">
+                  <span className="bgal-empty-icon" aria-hidden="true">
+                    <MagnifyingGlass size={28} weight="duotone" />
+                  </span>
+                  <h3 className="bgal-empty-title">None of your tank species match</h3>
+                  <p className="bgal-empty-lead">
+                    Nothing in your tanks matches this search or these filters.
                   </p>
-                  <div style={{ display: "flex", gap: "1rem", justifyContent: "center" }}>
+                  <div className="bgal-empty-actions">
                     <button
+                      type="button"
                       onClick={() => { resetFilters(); clearParsed(); setSearchTerm(""); }}
-                      className="btn-secondary"
-                      style={{
-                        padding: "0.5rem 1.5rem",
-                        fontSize: "0.85rem",
-                        borderRadius: "20px",
-                        cursor: "pointer"
-                      }}
+                      className="bgal-btn"
                     >
-                      Clear Search & Filters
+                      Clear search and filters
                     </button>
                     <button
+                      type="button"
                       onClick={() => setShowMyTankSpeciesOnly(false)}
-                      className="btn-primary"
-                      style={{
-                        padding: "0.5rem 1.5rem",
-                        fontSize: "0.85rem",
-                        borderRadius: "20px",
-                        background: "rgba(56, 189, 248, 0.15)",
-                        border: "1px solid rgba(56, 189, 248, 0.5)",
-                        color: "var(--accent-blue)",
-                        cursor: "pointer",
-                        boxShadow: "none"
-                      }}
+                      className="bgal-btn bgal-btn--primary"
                     >
-                      Browse All Catalog Breeds 🌐
+                      Show all registered breeds
                     </button>
                   </div>
                 </div>
               ) : (
-                <div className="glass-card" style={{ 
-                  padding: "4rem 2rem", 
-                  textAlign: "center", 
-                  border: "1px dashed var(--glass-border)", 
-                  background: "none",
-                  borderRadius: "20px",
-                  maxWidth: "600px",
-                  margin: "2rem auto"
-                }}>
-                  <h3 style={{ color: "var(--text-secondary)", marginBottom: "0.5rem", fontSize: "1.25rem", fontWeight: "600" }}>
-                    No Species Matches
-                  </h3>
-                  <p style={{ color: "var(--text-muted)", fontSize: "0.875rem", marginBottom: "2rem" }}>
-                    No species match the current search query or active filters.
+                <div className="bgal-empty">
+                  <span className="bgal-empty-icon" aria-hidden="true">
+                    <MagnifyingGlass size={28} weight="duotone" />
+                  </span>
+                  <h3 className="bgal-empty-title">No species match</h3>
+                  <p className="bgal-empty-lead">
+                    Nothing matches this search or these filters.
                   </p>
-                  <div style={{ display: "flex", gap: "1rem", justifyContent: "center" }}>
+                  <div className="bgal-empty-actions">
                     <button
+                      type="button"
                       onClick={() => { resetFilters(); clearParsed(); setSearchTerm(""); }}
-                      className="btn-secondary"
-                      style={{
-                        padding: "0.5rem 1.5rem",
-                        fontSize: "0.85rem",
-                        borderRadius: "20px",
-                        cursor: "pointer"
-                      }}
+                      className="bgal-btn"
                     >
-                      Clear Search & Filters
+                      Clear search and filters
                     </button>
                     <button
+                      type="button"
                       onClick={() => setIsSuggestModalOpen(true)}
-                      className="btn-primary"
-                      style={{
-                        padding: "0.5rem 1.5rem",
-                        fontSize: "0.875rem",
-                        borderRadius: "20px",
-                        background: "rgba(56, 189, 248, 0.15)",
-                        border: "1px solid rgba(56, 189, 248, 0.5)",
-                        color: "var(--accent-blue)",
-                        cursor: "pointer",
-                        boxShadow: "none"
-                      }}
+                      className="bgal-btn bgal-btn--primary"
                     >
-                      Propose new species suggestion 🐠
+                      Suggest a species
                     </button>
                   </div>
                 </div>
@@ -2854,15 +2273,7 @@ export function BreedGallery({
             ) : (
               <div 
                 ref={parentRefCallback}
-                className={starryBgActive ? "starry-grid-overlay" : ""}
-                style={{
-                  height: "750px", // Scrollable container viewport height
-                  overflowY: "auto",
-                  width: "100%",
-                  position: "relative",
-                  scrollbarWidth: "thin",
-                  scrollbarColor: "rgba(var(--ink-rgb), 0.15) transparent"
-                }}
+                className={"bgal-grid-scroller" + (starryBgActive ? " starry-grid-overlay" : "")}
               >
                 <div
                   style={{
@@ -2925,8 +2336,8 @@ export function BreedGallery({
                   })}
                 </div>
                 {visibleCount < filteredSpecies.length && (
-                  <div style={{ height: "60px", display: "flex", justifyContent: "center", alignItems: "center", marginTop: "1rem" }}>
-                    <div className="shimmer-placeholder" style={{ width: "120px", height: "12px", borderRadius: "10px" }} />
+                  <div className="bgal-grid-more">
+                    <div className="shimmer-placeholder" />
                   </div>
                 )}
               </div>
@@ -2934,100 +2345,83 @@ export function BreedGallery({
           </div>
           </div>
         )}
+      </div>
 
       {notification && (
-        <div 
-          style={{
-            position: "fixed",
-            bottom: "2rem",
-            right: "2rem",
-            background: "var(--bg-secondary)",
-            border: "1px solid var(--accent-blue)",
-            borderRadius: "var(--radius-sm)",
-            padding: "1rem 1.25rem",
-            boxShadow: "0 8px 32px rgba(var(--ink-rgb), 0.14)",
-            zIndex: 10000,
-            display: "flex",
-            flexDirection: "column",
-            animation: "shimmer 3s ease-in-out infinite",
-          }}
-        >
-          <strong style={{ color: "var(--text-primary)", display: "block", fontSize: "0.85rem", marginBottom: "0.25rem" }}>CURATION QUEUE</strong>
-          <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>{notification.message}</span>
+        <div className="bgal-toast" role="status">
+          <strong>Suggestion sent</strong>
+          <span>{notification.message}</span>
         </div>
       )}
 
       {activeLoreEgg && (
-        <div style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: "rgba(11, 37, 48, 0.45)",
-          backdropFilter: "blur(12px)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          zIndex: 20000,
-          padding: "1.5rem"
-        }}>
-          <div className="glass-card" style={{
-            maxWidth: "480px",
-            width: "100%",
-            padding: "2rem",
-            background: "var(--bg-secondary)",
-            border: `1px solid ${activeLoreEgg.border}`,
-            borderRadius: "1rem",
-            boxShadow: `0 20px 50px ${activeLoreEgg.glow}`,
-            textAlign: "center",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: "1.25rem",
-            animation: "shimmer 3s ease-in-out infinite"
-          }}>
-            <div style={{
-              width: "64px",
-              height: "64px",
-              borderRadius: "50%",
-              background: activeLoreEgg.bg,
-              border: `1px solid ${activeLoreEgg.border}`,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: "2rem",
-              boxShadow: `0 0 15px ${activeLoreEgg.glow}`
-            }}>
+        <div
+          className="bgal-egg-overlay"
+          onKeyDown={(e) => {
+            if (e.key === "Escape") {
+              setActiveLoreEgg(null);
+              setEvolutionError("");
+            }
+            // Keep Tab and Shift+Tab inside the dialog
+            if (e.key === "Tab") {
+              const focusable = e.currentTarget.querySelectorAll(
+                '.bgal-egg-dialog button:not([disabled]), .bgal-egg-dialog a[href], .bgal-egg-dialog input, .bgal-egg-dialog [tabindex]:not([tabindex="-1"])'
+              );
+              if (focusable.length === 0) return;
+              const first = focusable[0];
+              const last = focusable[focusable.length - 1];
+              if (e.shiftKey && document.activeElement === first) {
+                e.preventDefault();
+                last.focus();
+              } else if (!e.shiftKey && document.activeElement === last) {
+                e.preventDefault();
+                first.focus();
+              }
+            }
+          }}
+        >
+          <div
+            className="bgal-egg-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="bgal-egg-title"
+            style={{ borderColor: activeLoreEgg.border }}
+          >
+            <div
+              className="bgal-egg-emoji"
+              aria-hidden="true"
+              style={{
+                background: activeLoreEgg.bg,
+                border: `1px solid ${activeLoreEgg.border}`,
+                boxShadow: `0 0 15px ${activeLoreEgg.glow}`
+              }}
+            >
               {activeLoreEgg.emoji}
             </div>
             
-            <h3 style={{ fontSize: "1.5rem", fontWeight: "800", color: "var(--text-primary)", margin: 0 }}>
+            <h3 id="bgal-egg-title" className="bgal-egg-title">
               {activeLoreEgg.title}
             </h3>
             
-            <p style={{ fontSize: "0.9rem", color: "var(--text-secondary)", lineHeight: "1.6", margin: 0 }}>
+            <p className="bgal-egg-lore">
               "{activeLoreEgg.lore}"
             </p>
 
             {activeLoreEgg.key === "magikarp_pokemon" && evolutionError && (
-              <p style={{ color: "var(--accent-red)", fontSize: "0.8rem", margin: "0.5rem 0", lineHeight: "1.4" }}>
+              <p className="bgal-egg-error" role="alert">
                 ⚠️ {evolutionError}
               </p>
             )}
             
-            <div style={{ display: "flex", gap: "1rem", marginTop: "0.5rem" }}>
+            <div className="bgal-egg-actions">
               <button 
+                type="button"
                 onClick={() => {
                   setActiveLoreEgg(null);
                   setEvolutionError("");
                 }} 
-                className="btn-secondary" 
-                style={{ 
-                  padding: "0.5rem 1.5rem", 
-                  fontSize: "0.85rem",
-                  cursor: "pointer"
-                }}
+                className="bgal-btn"
+                autoFocus
               >
                 Close
               </button>
@@ -3146,7 +2540,7 @@ export function BreedGallery({
         onSubmit={async (data) => {
           await suggestSpecies(data);
           setNotification({
-            message: `Proposal submitted! Proposing ${data.commonName} (${data.scientificName}) to the curation queue.`
+            message: `Sent ${data.commonName} (${data.scientificName}) to the review queue.`
           });
           setTimeout(() => setNotification(null), 5000);
         }}
