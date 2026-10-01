@@ -72,7 +72,7 @@ describe("SpeciesCardPremium: Daylight card", () => {
 
   it("uses the plain card copy", () => {
     expect(CARD).toContain("In your tanks ({ownedCount})");
-    expect(CARD).toContain("{breed.specimenCount} certificates");
+    expect(CARD).toContain('{breed.specimenCount} {breed.specimenCount === 1 ? "certificate" : "certificates"}');
     expect(CARD).toContain('"See available fish"');
     expect(CARD).toContain('"Learn more"');
     expect(CARD).toContain('"View certificates"');
@@ -167,7 +167,7 @@ describe("BreedGallery list: Daylight header, tabs, filters and states", () => {
     expect(GALLERY).toContain("breed-filter-backdrop");
     expect(GALLERY).toContain('className="breed-filter-apply-btn bgal-btn bgal-btn--primary"');
     expect(GALLERY_RAW).toContain('{ val: "Coral", label: "Corals" }');
-    expect(LIST).toContain("Show {filteredSpecies.length} results");
+    expect(LIST).toContain('Show {filteredSpecies.length} {filteredSpecies.length === 1 ? "result" : "results"}');
   });
 
   it("gives tabs and chips at least a 44px target", () => {

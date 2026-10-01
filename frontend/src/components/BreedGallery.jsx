@@ -2195,7 +2195,7 @@ export function BreedGallery({
             className="breed-filter-apply-btn bgal-btn bgal-btn--primary"
             onClick={() => setFiltersOpen(false)}
           >
-            Show {filteredSpecies.length} results
+            Show {filteredSpecies.length} {filteredSpecies.length === 1 ? "result" : "results"}
           </button>
           </div>
           <div style={{ width: "100%" }}>

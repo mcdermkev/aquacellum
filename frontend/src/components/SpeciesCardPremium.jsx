@@ -288,7 +288,7 @@ export function SpeciesCardPremium({
           {proMode && viewMode === "contract" && breed.specimenCount > 0 && (
             <span className="species-card-premium__pill">
               <span className="species-card-premium__pill-icon"><Certificate size={13} aria-hidden="true" /></span>
-              {breed.specimenCount} certificates
+              {breed.specimenCount} {breed.specimenCount === 1 ? "certificate" : "certificates"}
             </span>
           )}
         </div>
